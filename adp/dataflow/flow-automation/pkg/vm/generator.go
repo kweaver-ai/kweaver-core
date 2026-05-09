@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/vm/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/vm/opcode"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/vm/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/vm/opcode"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils"
 	"github.com/mitchellh/mapstructure"
 )
 

@@ -81,6 +81,10 @@ sandbox-control-plane:
   max_sessions: 3
   active_sessions: 1
   max_concurrent_tasks: 100
+vega-backend:
+  private_host: "vega-backend-svc.anyshare"
+  private_port: 13014
+  private_protocol: "http"
 
 redis:
   connectType: "sentinel"

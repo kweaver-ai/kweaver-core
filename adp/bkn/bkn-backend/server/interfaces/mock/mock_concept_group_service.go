@@ -22,6 +22,7 @@ import (
 type MockConceptGroupService struct {
 	ctrl     *gomock.Controller
 	recorder *MockConceptGroupServiceMockRecorder
+	isgomock struct{}
 }
 
 // MockConceptGroupServiceMockRecorder is the mock recorder for MockConceptGroupService.
@@ -51,7 +52,7 @@ func (m *MockConceptGroupService) AddObjectTypesToConceptGroup(ctx context.Conte
 }
 
 // AddObjectTypesToConceptGroup indicates an expected call of AddObjectTypesToConceptGroup.
-func (mr *MockConceptGroupServiceMockRecorder) AddObjectTypesToConceptGroup(ctx, tx, knID, branch, cgID, otIDs, importMode, strictMode interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) AddObjectTypesToConceptGroup(ctx, tx, knID, branch, cgID, otIDs, importMode, strictMode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddObjectTypesToConceptGroup", reflect.TypeOf((*MockConceptGroupService)(nil).AddObjectTypesToConceptGroup), ctx, tx, knID, branch, cgID, otIDs, importMode, strictMode)
 }
@@ -67,7 +68,7 @@ func (m *MockConceptGroupService) CheckConceptGroupExistByID(ctx context.Context
 }
 
 // CheckConceptGroupExistByID indicates an expected call of CheckConceptGroupExistByID.
-func (mr *MockConceptGroupServiceMockRecorder) CheckConceptGroupExistByID(ctx, knID, branch, cgID interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) CheckConceptGroupExistByID(ctx, knID, branch, cgID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConceptGroupExistByID", reflect.TypeOf((*MockConceptGroupService)(nil).CheckConceptGroupExistByID), ctx, knID, branch, cgID)
 }
@@ -83,7 +84,7 @@ func (m *MockConceptGroupService) CheckConceptGroupExistByName(ctx context.Conte
 }
 
 // CheckConceptGroupExistByName indicates an expected call of CheckConceptGroupExistByName.
-func (mr *MockConceptGroupServiceMockRecorder) CheckConceptGroupExistByName(ctx, knID, branch, cgName interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) CheckConceptGroupExistByName(ctx, knID, branch, cgName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConceptGroupExistByName", reflect.TypeOf((*MockConceptGroupService)(nil).CheckConceptGroupExistByName), ctx, knID, branch, cgName)
 }
@@ -98,7 +99,7 @@ func (m *MockConceptGroupService) CreateConceptGroup(ctx context.Context, tx *sq
 }
 
 // CreateConceptGroup indicates an expected call of CreateConceptGroup.
-func (mr *MockConceptGroupServiceMockRecorder) CreateConceptGroup(ctx, tx, conceptGroup, mode, strictMode interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) CreateConceptGroup(ctx, tx, conceptGroup, mode, strictMode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConceptGroup", reflect.TypeOf((*MockConceptGroupService)(nil).CreateConceptGroup), ctx, tx, conceptGroup, mode, strictMode)
 }
@@ -112,7 +113,7 @@ func (m *MockConceptGroupService) DeleteConceptGroupByID(ctx context.Context, tx
 }
 
 // DeleteConceptGroupByID indicates an expected call of DeleteConceptGroupByID.
-func (mr *MockConceptGroupServiceMockRecorder) DeleteConceptGroupByID(ctx, tx, knID, branch, cgID interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) DeleteConceptGroupByID(ctx, tx, knID, branch, cgID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConceptGroupByID", reflect.TypeOf((*MockConceptGroupService)(nil).DeleteConceptGroupByID), ctx, tx, knID, branch, cgID)
 }
@@ -126,7 +127,7 @@ func (m *MockConceptGroupService) DeleteConceptGroupsByKnID(ctx context.Context,
 }
 
 // DeleteConceptGroupsByKnID indicates an expected call of DeleteConceptGroupsByKnID.
-func (mr *MockConceptGroupServiceMockRecorder) DeleteConceptGroupsByKnID(ctx, tx, knID, branch interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) DeleteConceptGroupsByKnID(ctx, tx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConceptGroupsByKnID", reflect.TypeOf((*MockConceptGroupService)(nil).DeleteConceptGroupsByKnID), ctx, tx, knID, branch)
 }
@@ -140,7 +141,7 @@ func (m *MockConceptGroupService) DeleteObjectTypesFromGroup(ctx context.Context
 }
 
 // DeleteObjectTypesFromGroup indicates an expected call of DeleteObjectTypesFromGroup.
-func (mr *MockConceptGroupServiceMockRecorder) DeleteObjectTypesFromGroup(ctx, tx, knID, branch, cgID, otIDs interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) DeleteObjectTypesFromGroup(ctx, tx, knID, branch, cgID, otIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObjectTypesFromGroup", reflect.TypeOf((*MockConceptGroupService)(nil).DeleteObjectTypesFromGroup), ctx, tx, knID, branch, cgID, otIDs)
 }
@@ -155,7 +156,7 @@ func (m *MockConceptGroupService) GetConceptGroupByID(ctx context.Context, knID,
 }
 
 // GetConceptGroupByID indicates an expected call of GetConceptGroupByID.
-func (mr *MockConceptGroupServiceMockRecorder) GetConceptGroupByID(ctx, knID, branch, cgID, mode interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) GetConceptGroupByID(ctx, knID, branch, cgID, mode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConceptGroupByID", reflect.TypeOf((*MockConceptGroupService)(nil).GetConceptGroupByID), ctx, knID, branch, cgID, mode)
 }
@@ -170,7 +171,7 @@ func (m *MockConceptGroupService) GetConceptGroupIDsByKnID(ctx context.Context, 
 }
 
 // GetConceptGroupIDsByKnID indicates an expected call of GetConceptGroupIDsByKnID.
-func (mr *MockConceptGroupServiceMockRecorder) GetConceptGroupIDsByKnID(ctx, knID, branch interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) GetConceptGroupIDsByKnID(ctx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConceptGroupIDsByKnID", reflect.TypeOf((*MockConceptGroupService)(nil).GetConceptGroupIDsByKnID), ctx, knID, branch)
 }
@@ -185,7 +186,7 @@ func (m *MockConceptGroupService) GetStatByConceptGroup(ctx context.Context, con
 }
 
 // GetStatByConceptGroup indicates an expected call of GetStatByConceptGroup.
-func (mr *MockConceptGroupServiceMockRecorder) GetStatByConceptGroup(ctx, conceptGroup interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) GetStatByConceptGroup(ctx, conceptGroup any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatByConceptGroup", reflect.TypeOf((*MockConceptGroupService)(nil).GetStatByConceptGroup), ctx, conceptGroup)
 }
@@ -200,7 +201,7 @@ func (m *MockConceptGroupService) ListConceptGroupRelations(ctx context.Context,
 }
 
 // ListConceptGroupRelations indicates an expected call of ListConceptGroupRelations.
-func (mr *MockConceptGroupServiceMockRecorder) ListConceptGroupRelations(ctx, query interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) ListConceptGroupRelations(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListConceptGroupRelations", reflect.TypeOf((*MockConceptGroupService)(nil).ListConceptGroupRelations), ctx, query)
 }
@@ -216,7 +217,7 @@ func (m *MockConceptGroupService) ListConceptGroups(ctx context.Context, query i
 }
 
 // ListConceptGroups indicates an expected call of ListConceptGroups.
-func (mr *MockConceptGroupServiceMockRecorder) ListConceptGroups(ctx, query interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) ListConceptGroups(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListConceptGroups", reflect.TypeOf((*MockConceptGroupService)(nil).ListConceptGroups), ctx, query)
 }
@@ -230,7 +231,7 @@ func (m *MockConceptGroupService) UpdateConceptGroup(ctx context.Context, tx *sq
 }
 
 // UpdateConceptGroup indicates an expected call of UpdateConceptGroup.
-func (mr *MockConceptGroupServiceMockRecorder) UpdateConceptGroup(ctx, tx, conceptGroup, strictMode interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) UpdateConceptGroup(ctx, tx, conceptGroup, strictMode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConceptGroup", reflect.TypeOf((*MockConceptGroupService)(nil).UpdateConceptGroup), ctx, tx, conceptGroup, strictMode)
 }
@@ -244,7 +245,7 @@ func (m *MockConceptGroupService) UpdateConceptGroupDetail(ctx context.Context, 
 }
 
 // UpdateConceptGroupDetail indicates an expected call of UpdateConceptGroupDetail.
-func (mr *MockConceptGroupServiceMockRecorder) UpdateConceptGroupDetail(ctx, knID, branch, cgID, detail interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) UpdateConceptGroupDetail(ctx, knID, branch, cgID, detail any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConceptGroupDetail", reflect.TypeOf((*MockConceptGroupService)(nil).UpdateConceptGroupDetail), ctx, knID, branch, cgID, detail)
 }
@@ -258,7 +259,7 @@ func (m *MockConceptGroupService) ValidateConceptGroups(ctx context.Context, knI
 }
 
 // ValidateConceptGroups indicates an expected call of ValidateConceptGroups.
-func (mr *MockConceptGroupServiceMockRecorder) ValidateConceptGroups(ctx, knID, branch, conceptGroups, strictMode, parentBatch, mode interface{}) *gomock.Call {
+func (mr *MockConceptGroupServiceMockRecorder) ValidateConceptGroups(ctx, knID, branch, conceptGroups, strictMode, parentBatch, mode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateConceptGroups", reflect.TypeOf((*MockConceptGroupService)(nil).ValidateConceptGroups), ctx, knID, branch, conceptGroups, strictMode, parentBatch, mode)
 }

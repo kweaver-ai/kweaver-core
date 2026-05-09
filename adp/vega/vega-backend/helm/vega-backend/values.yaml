@@ -91,6 +91,18 @@ depServices:
     host: hydra-admin
     port: 4445
     protocol: http
+  kafka-connect:
+    host: kafka-connect-svc
+    port: 8083
+    protocol: http
+  mf-model-manager:
+    host: mf-model-manager
+    port: 9898
+    protocol: http
+  mf-model-api:
+    host: mf-model-api
+    port: 9898
+    protocol: http
 
 config:
   server:

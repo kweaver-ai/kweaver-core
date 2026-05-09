@@ -86,9 +86,17 @@ class TestCreateCache:
         with patch(
             "app.logic.agent_core_logic_v2.agent_cache_manage_logic.create_cache.AgentCacheIdVO"
         ) as mock_cache_id_vo_class:
-            with patch(
-                "app.logic.agent_core_logic_v2.agent_core_v2.AgentCoreV2",
-                side_effect=Exception("Test error"),
+            with (
+                patch(
+                    "app.logic.agent_core_logic_v2.agent_core_v2.AgentCoreV2",
+                    side_effect=Exception("Test error"),
+                ),
+                patch(
+                    "app.logic.agent_core_logic_v2.agent_cache_manage_logic.create_cache.StandLogger.error"
+                ) as mock_standard_error,
+                patch(
+                    "app.logic.agent_core_logic_v2.agent_cache_manage_logic.create_cache.o11y_logger"
+                ) as mock_o11y_logger,
             ):
                 mock_cache_id_vo = MagicMock()
                 mock_cache_id_vo_class.return_value = mock_cache_id_vo
@@ -109,6 +117,8 @@ class TestCreateCache:
                     )
 
                 assert "Test error" in str(exc_info.value)
+                mock_standard_error.assert_called_once()
+                mock_o11y_logger().error.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_cache_with_warmup_failure(

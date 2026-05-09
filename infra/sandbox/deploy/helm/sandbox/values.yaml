@@ -6,7 +6,7 @@ image:
   registry: "acr.aishu.cn"
   controlPlane:
     repository: dip/sandbox-control-plane
-    tag: "v1.0.0"
+    tag: "latest"
     pullPolicy: IfNotPresent
   defaultTemplate:
     repository: dip/sandbox-template-python-basic

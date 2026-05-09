@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	ierrors "github.com/kweaver-ai/adp/autoflow/flow-automation/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	ierrors "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils"
 )
 
 // BuildDagVersionParams 构建版本记录所需的参数

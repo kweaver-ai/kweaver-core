@@ -242,7 +242,20 @@ func (r *restHandler) UpdateConnectorType(c *gin.Context) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-	req.Type = tp
+	if req.Type == "" {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_ConnectorType_InvalidParameter_Type).
+			WithErrorDetails("body field 'type' is required and must equal path parameter")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if req.Type != tp {
+		httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_ConnectorType_TypeMismatch).
+			WithErrorDetails(fmt.Sprintf("path type %q != body type %q", tp, req.Type))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
 
 	if err := ValidateConnectorTypeReq(ctx, &req); err != nil {
 		httpErr := err.(*rest.HTTPError)
@@ -345,13 +358,21 @@ func (r *restHandler) DeleteConnectorType(c *gin.Context) {
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
-// SetConnectorTypeEnabled handles POST /api/vega-backend/v1/connector-types/:type/enable
-func (r *restHandler) SetConnectorTypeEnabled(c *gin.Context) {
+// EnableConnectorType handles POST /api/vega-backend/v1/connector-types/:type/enable
+func (r *restHandler) EnableConnectorType(c *gin.Context) {
+	r.setConnectorTypeEnabled(c, true, "EnableConnectorType")
+}
+
+// DisableConnectorType handles POST /api/vega-backend/v1/connector-types/:type/disable
+func (r *restHandler) DisableConnectorType(c *gin.Context) {
+	r.setConnectorTypeEnabled(c, false, "DisableConnectorType")
+}
+
+func (r *restHandler) setConnectorTypeEnabled(c *gin.Context, value bool, spanName string) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"SetConnectorTypeEnabled", trace.WithSpanKind(trace.SpanKindServer))
+		spanName, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	// 校验token
 	visitor, err := r.verifyOAuth(ctx, c)
 	if err != nil {
 		return
@@ -381,17 +402,7 @@ func (r *restHandler) SetConnectorTypeEnabled(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Value bool `json:"value"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
-			WithErrorDetails(err.Error())
-		rest.ReplyError(c, httpErr)
-		return
-	}
-
-	if err := r.cts.SetEnabled(ctx, tp, req.Value); err != nil {
+	if err := r.cts.SetEnabled(ctx, tp, value); err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, err)
@@ -401,7 +412,7 @@ func (r *restHandler) SetConnectorTypeEnabled(c *gin.Context) {
 	audit.NewInfoLog(audit.OPERATION, audit.UPDATE, audit.TransforOperator(visitor),
 		interfaces.GenerateConnectorTypeAuditObject(tp, ""), "")
 
-	logger.Debug("Handler SetConnectorTypeEnabled Success")
+	logger.Debugf("Handler %s Success", spanName)
 	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }

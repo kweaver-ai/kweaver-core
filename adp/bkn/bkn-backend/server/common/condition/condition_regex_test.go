@@ -35,7 +35,7 @@ func TestNewRegexCond(t *testing.T) {
 		Convey("non-string field should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
-				Name:      "field3",
+				Field:     "field3",
 				NameField: fieldsMap["field3"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -51,7 +51,7 @@ func TestNewRegexCond(t *testing.T) {
 		Convey("invalid value_from should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
@@ -67,7 +67,7 @@ func TestNewRegexCond(t *testing.T) {
 		Convey("non-string value should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -83,7 +83,7 @@ func TestNewRegexCond(t *testing.T) {
 		Convey("invalid regex pattern should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -99,7 +99,7 @@ func TestNewRegexCond(t *testing.T) {
 		Convey("valid regex pattern should create RegexCond", func() {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -118,7 +118,7 @@ func TestNewRegexCond(t *testing.T) {
 		Convey("text field should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
-				Name:      "field2",
+				Field:     "field2",
 				NameField: fieldsMap["field2"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -145,7 +145,7 @@ func TestRegexCond_Convert(t *testing.T) {
 		Convey("should create regexp query", func() {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -184,7 +184,7 @@ func TestRegexCond_Convert2SQL(t *testing.T) {
 		Convey("should return empty string", func() {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,

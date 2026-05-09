@@ -32,10 +32,11 @@ type logicViewSQLGenerator struct {
 	sqls          map[string]cachedSql
 	nodeFieldsMap map[string]map[string]*interfaces.ViewProperty
 	RefResources  map[string]*interfaces.Resource
+	viewFieldMap  map[string]*interfaces.Property
 }
 
 // NewlogicViewSQLGenerator 创建SQL生成器
-func NewlogicViewSQLGenerator(view *interfaces.LogicView) *logicViewSQLGenerator {
+func NewlogicDefinitionSQLGenerator(view *interfaces.LogicView) *logicViewSQLGenerator {
 	nodeMap := make(map[string]*interfaces.LogicDefinitionNode)
 	var outputNode *interfaces.LogicDefinitionNode
 	nodes := view.LogicDefinition
@@ -45,18 +46,25 @@ func NewlogicViewSQLGenerator(view *interfaces.LogicView) *logicViewSQLGenerator
 			outputNode = nodes[i]
 		}
 	}
+
+	viewFieldMap := make(map[string]*interfaces.Property)
+	for _, field := range view.SchemaDefinition {
+		viewFieldMap[field.Name] = field
+	}
+
 	return &logicViewSQLGenerator{
 		nodes:         nodeMap,
 		outputNode:    outputNode,
 		sqls:          make(map[string]cachedSql),
 		nodeFieldsMap: make(map[string]map[string]*interfaces.ViewProperty),
 		RefResources:  view.RefResources,
+		viewFieldMap:  viewFieldMap,
 	}
 }
 
 // BuildLogicViewSQL 构建逻辑视图的 SQL
-func (g *logicViewSQLGenerator) BuildLogicViewSQL(ctx context.Context, res *interfaces.LogicView) (string, error) {
-	sql, args, err := g.buildLogicViewSQLWithDepth(ctx, &res.Resource, interfaces.MaxRecursionDepth)
+func (g *logicViewSQLGenerator) BuildLogicDefinitionSQL(ctx context.Context, res *interfaces.LogicView) (string, error) {
+	sql, args, err := g.buildLogicDefinitionSQLWithDepth(ctx, &res.Resource, interfaces.MaxRecursionDepth)
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +72,7 @@ func (g *logicViewSQLGenerator) BuildLogicViewSQL(ctx context.Context, res *inte
 	return g.interpolate(sql, args)
 }
 
-func (g *logicViewSQLGenerator) buildLogicViewSQLWithDepth(ctx context.Context, res *interfaces.Resource, depth int) (string, []any, error) {
+func (g *logicViewSQLGenerator) buildLogicDefinitionSQLWithDepth(ctx context.Context, res *interfaces.Resource, depth int) (string, []any, error) {
 	if depth <= 0 {
 		return "", nil, fmt.Errorf("max recursion depth (%d) exceeded, possible circular reference in logic view", interfaces.MaxRecursionDepth)
 	}
@@ -144,7 +152,7 @@ func (g *logicViewSQLGenerator) buildResourceNodeSQL(ctx context.Context,
 
 	// 如果资源本身也是逻辑视图，递归构建（消耗一层深度）
 	if resource.Category == interfaces.ResourceCategoryLogicView {
-		return g.buildLogicViewSQLWithDepth(ctx, resource, depth-1)
+		return g.buildLogicDefinitionSQLWithDepth(ctx, resource, depth-1)
 	}
 
 	// 构建原始字段映射，供过滤和别名使用
@@ -248,11 +256,6 @@ func (g *logicViewSQLGenerator) buildJoinNodeSQL(ctx context.Context, node *inte
 		return "", nil, fmt.Errorf("join node must have exactly 2 inputs, got %d", len(node.Inputs))
 	}
 
-	// MariaDB 不支持 FULL OUTER JOIN
-	if strings.EqualFold(cfg.JoinType, interfaces.JoinType_FullOuter) {
-		return "", nil, fmt.Errorf("MariaDB does not support FULL OUTER JOIN, please use LEFT JOIN + UNION instead")
-	}
-
 	leftID := node.Inputs[0]
 	rightID := node.Inputs[1]
 
@@ -303,7 +306,7 @@ func (g *logicViewSQLGenerator) buildJoinNodeSQL(ctx context.Context, node *inte
 	allArgs = append(allArgs, leftArgs...)
 	allArgs = append(allArgs, rightArgs...)
 
-	sqlStr := fmt.Sprintf("SELECT %s FROM (%s) AS l %s JOIN (%s) AS r ON %s",
+	sqlStr := fmt.Sprintf("SELECT %s FROM ((%s) AS l %s JOIN (%s) AS r ON %s)",
 		strings.Join(fields, ", "), leftSQL, joinType, rightSQL, joinOn)
 
 	// 处理 Join 节点自身的过滤条件
@@ -436,16 +439,66 @@ func (g *logicViewSQLGenerator) buildSqlNodeSQL(ctx context.Context, node *inter
 	g.nodeFieldsMap[node.ID] = outputFieldsMap
 
 	var allArgs []any
+
+	// 预构建所有输入节点的 SQL 并生成别名
+	type nodeContext struct {
+		SQL     string
+		Alias   string
+		WithSQL string // 带别名的完整 SQL: (subquery) AS alias
+	}
+	nodeContexts := make(map[string]*nodeContext)
+
+	for _, inputID := range node.Inputs {
+		subSQL, subArgs, err := g.buildNodeSQL(ctx, inputID, depth)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to build sql node input %s: %w", inputID, err)
+		}
+		allArgs = append(allArgs, subArgs...)
+
+		// 生成唯一别名：将节点 ID 中的特殊字符替换为下划线
+		alias := sanitizeAlias(inputID)
+
+		nodeContexts[inputID] = &nodeContext{
+			SQL:     subSQL,
+			Alias:   alias,
+			WithSQL: fmt.Sprintf("(%s) AS %s", subSQL, alias),
+		}
+	}
+
 	// 创建模板函数映射
 	funcMap := template.FuncMap{
+		// node 函数：返回带别名的子查询 SQL
 		"node": func(nodeID string) (string, error) {
-			subSQL, subArgs, err := g.buildNodeSQL(ctx, nodeID, depth)
-			if err != nil {
-				return "", err
+			ctx, ok := nodeContexts[nodeID]
+			if !ok {
+				return "", fmt.Errorf("unknown node ID in template: %s", nodeID)
 			}
-			allArgs = append(allArgs, subArgs...)
-			return "(" + subSQL + ")", nil
+			return ctx.WithSQL, nil
 		},
+		// nodeSQL 函数：仅返回子查询 SQL（不带别名和括号）
+		"nodeSQL": func(nodeID string) (string, error) {
+			ctx, ok := nodeContexts[nodeID]
+			if !ok {
+				return "", fmt.Errorf("unknown node ID in template: %s", nodeID)
+			}
+			return ctx.SQL, nil
+		},
+		// nodeAlias 函数：返回节点别名
+		"nodeAlias": func(nodeID string) (string, error) {
+			ctx, ok := nodeContexts[nodeID]
+			if !ok {
+				return "", fmt.Errorf("unknown node ID in template: %s", nodeID)
+			}
+			return ctx.Alias, nil
+		},
+	}
+
+	// 准备模板上下文：提供两种引用方式
+	// 1. 直接使用 .node1 会获取带别名的 SQL（向后兼容）
+	// 2. 使用模板函数 node()/nodeSQL()/nodeAlias() 获取不同形式
+	contextMap := make(map[string]string)
+	for inputID, ctx := range nodeContexts {
+		contextMap[inputID] = ctx.WithSQL
 	}
 
 	// 解析模板
@@ -454,23 +507,34 @@ func (g *logicViewSQLGenerator) buildSqlNodeSQL(ctx context.Context, node *inter
 		return "", nil, fmt.Errorf("failed to parse SQL template for node %s: %w", node.ID, err)
 	}
 
-	// 准备上下文
-	contextMap := make(map[string]string)
-	for _, inputID := range node.Inputs {
-		subSQL, subArgs, err := g.buildNodeSQL(ctx, inputID, depth)
-		if err != nil {
-			return "", nil, fmt.Errorf("failed to build sql node input %s: %w", inputID, err)
-		}
-		contextMap[inputID] = "(" + subSQL + ")"
-		allArgs = append(allArgs, subArgs...)
-	}
-
 	var result strings.Builder
 	if err := tmpl.Execute(&result, contextMap); err != nil {
 		return "", nil, fmt.Errorf("failed to execute SQL template for node %s: %w", node.ID, err)
 	}
 
-	return result.String(), allArgs, nil
+	// 去除 SQL 结尾的分号（可能有多个分号或空格）
+	finalSQL := strings.TrimSpace(result.String())
+	for strings.HasSuffix(finalSQL, ";") {
+		finalSQL = strings.TrimSuffix(finalSQL, ";")
+		finalSQL = strings.TrimSpace(finalSQL)
+	}
+
+	return finalSQL, allArgs, nil
+}
+
+// sanitizeAlias 清理节点 ID 生成合法的 SQL 别名
+func sanitizeAlias(nodeID string) string {
+	// 替换所有非字母数字字符为下划线
+	alias := regexp.MustCompile(`[^a-zA-Z0-9_]`).ReplaceAllString(nodeID, "_")
+	// 如果以数字开头，添加前缀
+	if len(alias) > 0 && alias[0] >= '0' && alias[0] <= '9' {
+		alias = "n_" + alias
+	}
+	// 限制长度（MySQL 标识符最大 64 字符）
+	if len(alias) > 60 {
+		alias = alias[:60]
+	}
+	return alias
 }
 
 // GetNodeFieldsMap 获取节点的输出字段map
@@ -538,38 +602,57 @@ func (g *logicViewSQLGenerator) buildOutputNodeSQL(ctx context.Context, node *in
 		return "", nil, fmt.Errorf("output node %s requires exactly one input node", node.ID)
 	}
 
-	// 维护状态
+	// 构建 SELECT 字段列表
+	var fields []string
 	outputFieldsMap := make(map[string]*interfaces.ViewProperty)
-	for _, field := range node.OutputFields {
-		outputFieldsMap[field.Name] = field
+	if len(node.OutputFields) > 0 {
+		fields = make([]string, 0, len(node.OutputFields))
+
+		// 先构建上游节点的 SQL，以便获取上游节点的输出字段映射
+		upstreamNodeID := node.Inputs[0]
+		_, _, err := g.buildNodeSQL(ctx, upstreamNodeID, depth)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to build upstream node SQL for output node %s: %w", node.ID, err)
+		}
+
+		// 从上游节点的输出字段映射中获取字段信息
+		upstreamFieldsMap, hasUpstreamFields := g.nodeFieldsMap[upstreamNodeID]
+
+		for _, f := range node.OutputFields {
+			outputFieldsMap[f.Name] = f // 维护状态
+
+			// 尝试从上游节点的输出字段中查找
+			var sourceField *interfaces.ViewProperty
+			if hasUpstreamFields {
+				sourceField = upstreamFieldsMap[f.Name]
+			}
+
+			if sourceField == nil {
+				// 如果上游没有字段映射，直接使用字段名
+				fields = append(fields, QuotationMark(f.Name))
+			} else {
+				// 使用上游节点的输出字段名（可能已经被重命名）
+				// sourceField.Name 是上游节点输出的字段名（别名）
+				// f.Name 是当前节点期望的输出字段名
+				if sourceField.Name != f.Name {
+					// 字段名不同，需要别名
+					fields = append(fields, fmt.Sprintf("%s AS %s",
+						QuotationMark(sourceField.Name),
+						QuotationMark(f.Name)))
+				} else {
+					// 字段名相同，直接使用
+					fields = append(fields, QuotationMark(f.Name))
+				}
+			}
+		}
+	} else {
+		fields = []string{"*"}
 	}
 	g.nodeFieldsMap[node.ID] = outputFieldsMap
 
-	inputNodeID := node.Inputs[0]
-	return g.buildNodeSQL(ctx, inputNodeID, depth)
+	sql, args, err := g.buildNodeSQL(ctx, node.Inputs[0], depth)
+	return "SELECT " + strings.Join(fields, ", ") + " FROM (" + sql + ") AS " + sanitizeAlias(node.ID), args, err
 }
-
-// buildCondition 构建过滤条件, fieldsMap 为这个引用视图的字段map
-func buildSQLCondition(ctx context.Context, filter *interfaces.FilterCondCfg, vType string, fieldsMap map[string]*interfaces.ViewProperty) (string, error) {
-	// NOTE: LEGACY PATH. FilterCondition no longer provides Convert2SQL
-	// natively. logicViewSQLGenerator handles this via ConvertFilterCondition now.
-	// Returning empty condition to fix compilation since this is only called
-	// by legacy query paths that will be commented out.
-	return "", nil
-}
-
-// func isValidFilters(cfg *interfaces.FilterCondCfg) bool {
-// 	if cfg == nil {
-// 		return false
-// 	}
-
-// 	// 判断过滤器是否为空对象 {}
-// 	if cfg.Name == "" && cfg.Operation == "" && len(cfg.SubConds) == 0 && cfg.ValueFrom == "" && cfg.Value == nil {
-// 		return false
-// 	}
-
-// 	return true
-// }
 
 // 构建sort
 func buildSQLSortParams(sort []*interfaces.SortField) string {
@@ -582,7 +665,7 @@ func buildSQLSortParams(sort []*interfaces.SortField) string {
 		if i > 0 {
 			sortSql.WriteString(", ")
 		}
-		sortSql.WriteString(fmt.Sprintf("%s %s", QuotationMark(sortParam.Field), sortParam.Direction))
+		fmt.Fprintf(&sortSql, "%s %s", QuotationMark(sortParam.Field), sortParam.Direction)
 	}
 
 	return sortSql.String()
@@ -590,6 +673,7 @@ func buildSQLSortParams(sort []*interfaces.SortField) string {
 
 // SQLBuilder - SQL 构建器结构体
 type SQLBuilder struct {
+	g                *logicViewSQLGenerator
 	baseQuery        string
 	whereClauses     []string
 	isSubQuery       bool
@@ -599,17 +683,18 @@ type SQLBuilder struct {
 }
 
 // NewQueryBuilder 创建逻辑视图的 SQL 构建器
-func (g *logicViewSQLGenerator) NewQueryBuilder(ctx context.Context, res *interfaces.LogicView) (*SQLBuilder, error) {
-	sql, err := g.BuildLogicViewSQL(ctx, res)
+func (g *logicViewSQLGenerator) NewQueryBuilder(ctx context.Context, view *interfaces.LogicView) (*SQLBuilder, error) {
+	sql, err := g.BuildLogicDefinitionSQL(ctx, view)
 	if err != nil {
 		return nil, err
 	}
-	return NewSQLBuilder(sql), nil
+	return g.NewSQLBuilder(sql), nil
 }
 
 // NewSQLBuilder 创建新的 SQL 构建器
-func NewSQLBuilder(baseQuery string) *SQLBuilder {
+func (g *logicViewSQLGenerator) NewSQLBuilder(baseQuery string) *SQLBuilder {
 	builder := &SQLBuilder{
+		g:            g,
 		baseQuery:    strings.TrimSpace(baseQuery),
 		whereClauses: []string{},
 	}
@@ -663,17 +748,33 @@ func (b *SQLBuilder) Limit(count int) *SQLBuilder {
 // ApplyParams 统一应用查询参数（过滤、排序、分页）
 func (b *SQLBuilder) ApplyParams(ctx context.Context, params *interfaces.ResourceDataQueryParams, res *interfaces.LogicView) error {
 	// 1. 处理过滤条件
-	fieldsMap := make(map[string]*interfaces.ViewProperty)
+	fieldsMap := make(map[string]*interfaces.Property)
 	for _, prop := range res.SchemaDefinition {
-		fieldsMap[prop.Name] = &interfaces.ViewProperty{Property: *prop}
+		fieldsMap[prop.Name] = prop
 	}
 
-	globalFilterSql, err := buildSQLCondition(ctx, params.FilterCondCfg, res.Category, fieldsMap)
+	globalFilterCond, err := filter_condition.NewFilterCondition(ctx, params.FilterCondCfg, fieldsMap)
 	if err != nil {
 		return err
 	}
-	if globalFilterSql != "" {
-		b.AddWhere(globalFilterSql)
+
+	if globalFilterCond != nil {
+		sqlCond, err := b.g.ConvertFilterCondition(ctx, globalFilterCond, fieldsMap)
+		if err != nil {
+			return err
+		}
+
+		if sqlCond != nil {
+			sqlCondStr, args, err := sqlCond.ToSql()
+			if err != nil {
+				return err
+			}
+			sqlCondStr, err = b.g.interpolate(sqlCondStr, args)
+			if err != nil {
+				return err
+			}
+			b.AddWhere(sqlCondStr)
+		}
 	}
 
 	// 2. 处理排序
@@ -682,7 +783,7 @@ func (b *SQLBuilder) ApplyParams(ctx context.Context, params *interfaces.Resourc
 	}
 
 	// 3. 处理分页/限制
-	if params.QueryType == "standard" && params.Limit > 0 {
+	if (params.QueryType == "" || params.QueryType == interfaces.QueryType_Standard) && params.Limit > 0 {
 		b.Limit(params.Limit)
 	}
 

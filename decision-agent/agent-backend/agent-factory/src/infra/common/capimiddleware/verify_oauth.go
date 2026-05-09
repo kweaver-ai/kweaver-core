@@ -15,7 +15,7 @@ import (
 
 var hydraInstance rest.Hydra
 
-const defaultMockUserID = "e39adc84-6de8-11f0-b206-4a2c3f0cd493"
+const defaultMockUserID = "mocked_user_id"
 
 type MockHydra struct{}
 

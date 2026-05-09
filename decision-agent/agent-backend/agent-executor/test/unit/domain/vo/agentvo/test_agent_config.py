@@ -23,6 +23,8 @@ class TestAgentConfigVo:
         assert config.related_question == {}
         assert config.plan_mode is None
         assert config.metadata is not None  # Validator creates default ConfigMetadataVo
+        assert config.mode is None
+        assert config.react_config is None
         assert config.agent_id is None
         assert config.conversation_id is not None  # Validator auto-generates if None
         assert config.agent_run_id is None
@@ -183,3 +185,47 @@ class TestAgentConfigVo:
         output_dict = {"default_format": "json"}
         config = AgentConfigVo(output=output_dict)
         assert config.output is not None
+
+    def test_react_config_dict_to_vo_when_mode_is_react(self):
+        """测试 mode=react 时字典转换为 ReactConfigVo"""
+        config = AgentConfigVo(
+            mode="react",
+            react_config={
+                "disable_history_in_a_conversation": True,
+                "disable_llm_cache": True,
+            }
+        )
+
+        assert config.react_config is not None
+        assert config.react_disable_history_in_a_conversation() is True
+        assert config.react_disable_llm_cache() is True
+
+    def test_react_config_is_ignored_when_mode_is_default(self):
+        """测试非 react 模式下 react_config 不生效"""
+        config = AgentConfigVo(
+            mode="default",
+            react_config={
+                "disable_history_in_a_conversation": True,
+                "disable_llm_cache": True,
+            },
+        )
+
+        assert config.react_config is not None
+        assert config.react_disable_history_in_a_conversation() is False
+        assert config.react_disable_llm_cache() is False
+
+    def test_react_config_is_ignored_when_mode_is_dolphin(self):
+        """测试 dolphin 模式下 react_config 不生效"""
+        config = AgentConfigVo(
+            mode="dolphin",
+            is_dolphin_mode=True,
+            dolphin="some_config",
+            react_config={
+                "disable_history_in_a_conversation": True,
+                "disable_llm_cache": True,
+            },
+        )
+
+        assert config.react_config is not None
+        assert config.react_disable_history_in_a_conversation() is False
+        assert config.react_disable_llm_cache() is False

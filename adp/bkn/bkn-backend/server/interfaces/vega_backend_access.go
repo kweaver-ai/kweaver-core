@@ -87,8 +87,8 @@ type DatasetQueryResponse struct {
 	SearchAfter []any            `json:"search_after"`
 }
 
-// DatasetQueryParams represents query parameters for dataset data retrieval
-type DatasetQueryParams struct {
+// ResourceDataQueryParams represents query parameters for dataset data retrieval
+type ResourceDataQueryParams struct {
 	FilterCondition map[string]any `json:"filter_condition,omitempty"`
 	SearchAfter     []any          `json:"search_after,omitempty"`
 	Offset          int            `json:"offset,omitempty"`
@@ -117,8 +117,8 @@ type VegaBackendAccess interface {
 	// DeleteResource deletes a resource by ID
 	DeleteResource(ctx context.Context, id string) error
 
-	// QueryDatasetData queries data from dataset
-	QueryDatasetData(ctx context.Context, datasetID string, params *DatasetQueryParams) (*DatasetQueryResponse, error)
+	// QueryResourceData queries data from a vega Resource (same HTTP contract as dataset resource data API).
+	QueryResourceData(ctx context.Context, resourceID string, params *ResourceDataQueryParams) (*DatasetQueryResponse, error)
 
 	// WriteDatasetDocuments writes documents to dataset
 	WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error

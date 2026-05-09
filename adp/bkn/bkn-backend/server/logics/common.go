@@ -58,3 +58,20 @@ func BuildDslQuery(ctx context.Context, queryStr string, query *interfaces.Conce
 
 	return dsl, nil
 }
+
+// VegaResourceSchemaToFieldsMap maps vega Resource schema to view-like fields for display and validation.
+func VegaResourceSchemaToFieldsMap(res *interfaces.VegaResource) map[string]*interfaces.ViewField {
+	fields := make(map[string]*interfaces.ViewField)
+	for _, p := range res.SchemaDefinition {
+		if p == nil {
+			continue
+		}
+		fields[p.Name] = &interfaces.ViewField{
+			Name:         p.Name,
+			Type:         p.Type,
+			DisplayName:  p.DisplayName,
+			OriginalName: p.OriginalName,
+		}
+	}
+	return fields
+}

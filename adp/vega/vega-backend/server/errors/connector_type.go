@@ -18,9 +18,10 @@ const (
 	VegaBackend_ConnectorType_BadRequest                = "VegaBackend.ConnectorType.BadRequest"
 
 	// 404 Not Found / 409 Conflict
-	VegaBackend_ConnectorType_NotFound   = "VegaBackend.ConnectorType.NotFound"
-	VegaBackend_ConnectorType_TypeExists = "VegaBackend.ConnectorType.TypeExists"
-	VegaBackend_ConnectorType_NameExists = "VegaBackend.ConnectorType.NameExists"
+	VegaBackend_ConnectorType_NotFound     = "VegaBackend.ConnectorType.NotFound"
+	VegaBackend_ConnectorType_TypeExists   = "VegaBackend.ConnectorType.TypeExists"
+	VegaBackend_ConnectorType_NameExists   = "VegaBackend.ConnectorType.NameExists"
+	VegaBackend_ConnectorType_TypeMismatch = "VegaBackend.ConnectorType.TypeMismatch"
 
 	// 500 Internal Server Error
 	VegaBackend_ConnectorType_InternalError                = "VegaBackend.ConnectorType.InternalError"
@@ -41,6 +42,7 @@ var ConnectorTypeErrCodeList = []string{
 	VegaBackend_ConnectorType_NotFound,
 	VegaBackend_ConnectorType_NameExists,
 	VegaBackend_ConnectorType_TypeExists,
+	VegaBackend_ConnectorType_TypeMismatch,
 	VegaBackend_ConnectorType_InternalError,
 	VegaBackend_ConnectorType_InternalError_RegisterFailed,
 	VegaBackend_ConnectorType_InternalError_GetFailed,

@@ -20,6 +20,8 @@ func resetCHttpInjectGlobals() {
 	bizDomainImpl = nil
 	umOnce = sync.Once{}
 	umImpl = nil
+	userManagementOnce = sync.Once{}
+	userManagementImpl = nil
 }
 
 func baseConfig(mockAuthz, mockBizDomain bool) (*conf.Config, *cconf.Config) {
@@ -150,4 +152,57 @@ func TestNewUmHttpAcc(t *testing.T) {
 
 	u2 := NewUmHttpAcc()
 	assert.Same(t, u1, u2)
+}
+
+func TestNewUmHttpAcc_MockUserManagerModule(t *testing.T) {
+	oldCfg := global.GConfig
+	oldCCfg := cglobal.GConfig
+
+	t.Cleanup(func() {
+		global.GConfig = oldCfg
+		cglobal.GConfig = oldCCfg
+
+		resetCHttpInjectGlobals()
+	})
+
+	resetCHttpInjectGlobals()
+
+	cfg, ccfg := baseConfig(false, false)
+	cfg.SwitchFields.Mock.MockUserManagerModule = true
+	global.GConfig = cfg
+	cglobal.GConfig = ccfg
+
+	umAcc := NewUmHttpAcc()
+	require.NotNil(t, umAcc)
+
+	ret, err := umAcc.GetUserIDNameMap(t.Context(), []string{"user-1"})
+	require.NoError(t, err)
+	assert.Equal(t, "user-1", ret["user-1"])
+}
+
+func TestNewUserManagementClient_MockUserManagerModule(t *testing.T) {
+	oldCfg := global.GConfig
+	oldCCfg := cglobal.GConfig
+
+	t.Cleanup(func() {
+		global.GConfig = oldCfg
+		cglobal.GConfig = oldCCfg
+
+		resetCHttpInjectGlobals()
+	})
+
+	resetCHttpInjectGlobals()
+
+	cfg, ccfg := baseConfig(false, false)
+	cfg.SwitchFields.Mock.MockUserManagerModule = true
+	global.GConfig = cfg
+	cglobal.GConfig = ccfg
+
+	client := NewUserManagementClient()
+	require.NotNil(t, client)
+
+	users, err := client.GetUserInfoByUserID(t.Context(), []string{"user-1"}, []string{"name"})
+	require.NoError(t, err)
+	require.Contains(t, users, "user-1")
+	assert.Equal(t, "user-1", users["user-1"].Name)
 }

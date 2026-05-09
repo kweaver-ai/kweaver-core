@@ -157,6 +157,12 @@ func (stubKnSearchHandler) KnSearch(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+type stubKnFindSkillsHandler struct{}
+
+func (stubKnFindSkillsHandler) FindSkills(c *gin.Context) {
+	c.Status(http.StatusOK)
+}
+
 func TestRestPublicHandler_AppliesResponseFormatMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -172,6 +178,7 @@ func TestRestPublicHandler_AppliesResponseFormatMiddleware(t *testing.T) {
 			KnQueryObjectInstanceHandler:   stubQueryObjectInstanceHandler{},
 			KnQuerySubgraphHandler:         stubQuerySubgraphHandler{},
 			KnSearchHandler:                stubKnSearchHandler{},
+			KnFindSkillsHandler:            stubKnFindSkillsHandler{},
 			Logger:                         logger.DefaultLogger(),
 		}
 		handler.RegisterRouter(routerGroup)

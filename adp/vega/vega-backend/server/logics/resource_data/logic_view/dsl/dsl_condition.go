@@ -164,7 +164,7 @@ func (c *logicViewDSLGenerator) ConvertFilterConditionMultiMatch(ctx context.Con
 		return nil, fmt.Errorf("condition is not *filter_condition.MultiMatchCond")
 	}
 
-	value := cond.Cfg.ValueOptCfg.Value
+	value := cond.Cfg.Value
 	fields := make([]string, 0, len(cond.Fields))
 	for _, field := range cond.Fields {
 		fields = append(fields, field.Name)
@@ -637,7 +637,7 @@ func (c *logicViewDSLGenerator) ConvertFilterConditionMatch(ctx context.Context,
 		return nil, fmt.Errorf("condition is not *filter_condition.MatchCond")
 	}
 
-	value := cond.Cfg.ValueOptCfg.Value
+	value := cond.Cfg.Value
 
 	// 如果是全部字段匹配
 	if len(cond.Fields) > 1 {
@@ -676,7 +676,7 @@ func (c *logicViewDSLGenerator) ConvertFilterConditionMatchPhrase(ctx context.Co
 		return nil, fmt.Errorf("condition is not *filter_condition.MatchPhraseCond")
 	}
 
-	value := cond.Cfg.ValueOptCfg.Value
+	value := cond.Cfg.Value
 
 	// 如果是全部字段匹配
 	if len(cond.Fields) > 1 {
@@ -1036,7 +1036,7 @@ func (c *logicViewDSLGenerator) ConvertFilterConditionKnnVector(ctx context.Cont
 		return nil, fmt.Errorf("condition is not *filter_condition.KnnVectorCond")
 	}
 
-	value := cond.Cfg.ValueOptCfg.Value
+	value := cond.Cfg.Value
 
 	// 构建 knn 查询
 	knnQuery := map[string]any{
@@ -1134,9 +1134,9 @@ func (c *logicViewDSLGenerator) replaceLikeWildcards(input string) string {
 // getKeywordSuffix text 类型在部分查询场景（如 eq/in）下，需使用 keyword 类型的子字段，返回关键字后缀，否则返回空字符串
 func (c *logicViewDSLGenerator) getKeywordSuffix(fieldName string, fieldsMap map[string]*interfaces.Property) (string, error) {
 	for _, prop := range fieldsMap {
-		if prop.OriginalName == fieldName && prop.Type == "text" {
+		if prop.OriginalName == fieldName && prop.Type == interfaces.DataType_Text {
 			for _, feature := range prop.Features {
-				if feature.FeatureType == "keyword" {
+				if feature.FeatureType == interfaces.PropertyFeatureType_Keyword {
 					return "." + feature.FeatureName, nil
 				}
 			}

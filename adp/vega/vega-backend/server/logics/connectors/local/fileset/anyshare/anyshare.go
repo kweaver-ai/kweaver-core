@@ -7,7 +7,6 @@
 package anyshare
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -28,13 +27,15 @@ const (
 	authTypeToken       = 1
 	authTypeAppSecret   = 2
 	docLibTypeKnowledge = 1
-	// docLibTypeDocument = 2 — list all entry doc libs when not filtering by knowledge type
+	docLibTypeDocument  = 2
 
 	httpTimeout = 60 * time.Second
 
 	PORT_MIN = 1
 	// PORT_MAX 有效端口最大值
 	PORT_MAX = 65535
+
+	customDocLibSubTypeDocumentId = "54425A761CC54DC6A990DA3C9EFB328D" // 自定义文档库子类[文档库]id
 )
 
 type anyshareConfig struct {
@@ -64,6 +65,19 @@ type userInfoDTO struct {
 }
 
 type docLibDTO struct {
+	ID      string         `json:"id"`
+	Name    string         `json:"name"`
+	Type    string         `json:"type"`
+	SubType *docLibSubType `json:"subtype"`
+}
+
+type docLibSubType struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// entryDocLibDTO 用于表示getEntryDocLib接口返回的文档库信息
+type entryDocLibDTO struct {
 	ID         string      `json:"id"`
 	Name       string      `json:"name"`
 	Type       string      `json:"type"`
@@ -119,12 +133,12 @@ func NewAnyShareConnector() connectors.FilesetConnector {
 
 // GetType returns the data source type.
 func (c *AnyShareConnector) GetType() string {
-	return "anyshare"
+	return interfaces.ConnectorTypeAnyShare
 }
 
 // GetName returns the connector name.
 func (c *AnyShareConnector) GetName() string {
-	return "anyshare"
+	return interfaces.ConnectorTypeAnyShare
 }
 
 // GetMode returns the connector mode.
@@ -162,7 +176,7 @@ func (c *AnyShareConnector) GetFieldConfig() map[string]interfaces.ConnectorFiel
 		"token":        {Name: "访问令牌", Type: "string", Description: "auth_type=1 时必填", Required: false, Encrypted: true},
 		"app_id":       {Name: "应用账户 ID", Type: "string", Description: "auth_type=2 时必填", Required: false, Encrypted: false},
 		"app_secret":   {Name: "应用密钥", Type: "string", Description: "auth_type=2 时必填", Required: false, Encrypted: true},
-		"doc_lib_type": {Name: "文档库类型", Type: "integer", Description: "1=知识库", Required: true, Encrypted: false},
+		"doc_lib_type": {Name: "文档库类型", Type: "integer", Description: "1=知识库，2=文档库", Required: true, Encrypted: false},
 		"paths":        {Name: "路径列表", Type: "array", Description: "可选；按文档库名称路径解析起点，空则按文档库类型枚举", Required: false, Encrypted: false},
 	}
 }
@@ -204,8 +218,8 @@ func (c *AnyShareConnector) New(cfg interfaces.ConnectorConfig) (connectors.Conn
 			return nil, fmt.Errorf("anyshare app_id and app_secret are required when auth_type=2")
 		}
 	}
-	if ac.DocLibType != docLibTypeKnowledge {
-		return nil, fmt.Errorf("anyshare doc_lib_type must be 1 (knowledge)")
+	if ac.DocLibType != docLibTypeKnowledge && ac.DocLibType != docLibTypeDocument {
+		return nil, fmt.Errorf("anyshare doc_lib_type must be 1 (knowledge) or 2 (document)")
 	}
 
 	// 检查数组中是否存在重复元素
@@ -286,7 +300,7 @@ func (c *AnyShareConnector) fetchOAuthToken(ctx context.Context) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("oauth2 token request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -338,6 +352,17 @@ func (c *AnyShareConnector) TestConnection(ctx context.Context) error {
 			if docInfo.Size != -1 {
 				return fmt.Errorf("path %q must be a directory, not a file", p)
 			}
+
+			// 获取文档详细信息，判断路径类型
+			detail, err := c.getDocItemDetail(ctx, docInfo.DocID, "doc_lib")
+			if err != nil {
+				return fmt.Errorf("failed to get doc item detail for path %q: %w", p, err)
+			}
+
+			// 判断路径类型是否与配置一致
+			if err := c.validateDocLibType(detail.DocLib); err != nil {
+				return fmt.Errorf("path %q validation failed: %w", p, err)
+			}
 		}
 		return nil
 	}
@@ -346,226 +371,45 @@ func (c *AnyShareConnector) TestConnection(ctx context.Context) error {
 	return err
 }
 
+// validateDocLibType 验证文档库类型是否与配置一致
+func (c *AnyShareConnector) validateDocLibType(docLib docLibDTO) error {
+	// 先判断type
+	if docLib.Type == "knowledge_doc_lib" {
+		if c.config.DocLibType != docLibTypeKnowledge {
+			return fmt.Errorf("path belongs to knowledge doc lib, but config expects document lib")
+		}
+		return nil
+	}
+
+	// 再判断subtype
+	if docLib.Type == "custom_doc_lib" {
+		if c.config.DocLibType != docLibTypeDocument {
+			return fmt.Errorf("path belongs to document lib, but config expects knowledge lib")
+		}
+		// 检查subtype是否为文档库
+		if docLib.SubType == nil {
+			return fmt.Errorf("custom doc lib missing subtype information")
+		}
+		if docLib.SubType.ID != customDocLibSubTypeDocumentId {
+			return fmt.Errorf("custom doc lib subtype is not document lib")
+		}
+		return nil
+	}
+
+	return fmt.Errorf("unknown doc lib type: %s", docLib.Type)
+}
+
 // GetMetadata returns basic catalog metadata.
 func (c *AnyShareConnector) GetMetadata(ctx context.Context) (map[string]any, error) {
 	if err := c.Connect(ctx); err != nil {
 		return nil, err
 	}
 	return map[string]any{
-		"connector":        "anyshare",
+		"connector":        interfaces.ConnectorTypeAnyShare,
 		"host":             c.config.Host,
 		"port":             c.config.Port,
 		"doc_lib_type":     c.config.DocLibType,
 		"protocol":         c.config.Protocol,
 		"paths_configured": len(c.config.Paths) > 0,
 	}, nil
-}
-
-// buildFilesetMeta 创建 FilesetMeta 对象的辅助函数
-func buildFilesetMeta(id, name, displayPath, itemType, createdAt, modifiedAt string, createdBy, modifiedBy userInfoDTO, rev string) *interfaces.FilesetMeta {
-	return &interfaces.FilesetMeta{
-		ID:          id,
-		Name:        name,
-		DisplayPath: displayPath,
-		SourceMetadata: map[string]any{
-			"id":          id,
-			"name":        name,
-			"type":        itemType,
-			"created_at":  createdAt,
-			"modified_at": modifiedAt,
-			"created_by":  createdBy,
-			"modified_by": modifiedBy,
-			"rev":         rev,
-		},
-	}
-}
-
-// ListFilesets discovers one level of files/folders per configured roots (see design doc).
-func (c *AnyShareConnector) ListFilesets(ctx context.Context) ([]*interfaces.FilesetMeta, error) {
-	if err := c.Connect(ctx); err != nil {
-		return nil, err
-	}
-	var out []*interfaces.FilesetMeta
-
-	if len(c.config.Paths) == 0 {
-		// 获取知识库列表（仅第一层）
-		libs, err := c.getEntryDocLib(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		// 将知识库信息转换为FilesetMeta返回
-		for _, lib := range libs {
-			meta := buildFilesetMeta(lib.ID, lib.Name, lib.Name, lib.Type, lib.CreatedAt, lib.ModifiedAt, lib.CreatedBy, lib.ModifiedBy, lib.Rev)
-			out = append(out, meta)
-		}
-		return out, nil
-	}
-
-	// 遍历每个路径
-	for _, p := range c.config.Paths {
-
-		// 根据路径获取doc_id
-		docInfo, err := c.getDocIDByPath(ctx, p)
-		if err != nil {
-			return nil, err
-		}
-
-		// 检查路径是否指向文件（size != -1 表示文件）
-		if docInfo.Size != -1 {
-			return nil, fmt.Errorf("path %q must be a directory, not a file", p)
-		}
-
-		// 获取文件夹详细信息
-		detail, err := c.getDocItemDetail(ctx, docInfo.DocID)
-		if err != nil {
-			return nil, err
-		}
-
-		// 将文件夹本身作为一个 resource
-		meta := buildFilesetMeta(detail.DocID, detail.Name, detail.Path, detail.Type, detail.CreatedAt, detail.ModifiedAt, detail.CreatedBy, detail.ModifiedBy, detail.Rev)
-		out = append(out, meta)
-	}
-
-	return out, nil
-}
-
-// GetObjectDownloadInfo returns download info for a given file or folder.
-func (c *AnyShareConnector) GetObjectDownloadInfo(ctx context.Context, resourceName, docID string) (map[string]any, error) {
-	if err := c.Connect(ctx); err != nil {
-		return nil, err
-	}
-	if docID == "" {
-		return nil, fmt.Errorf("empty doc id")
-	}
-	u := fmt.Sprintf("%s/api/open-doc/v1/file-download", c.baseURL)
-	// 当前 docID 为 gns://... 的形式，name为下载文件时的打包名称
-	payload := map[string]interface{}{
-		"doc": []map[string]string{
-			{"id": docID},
-		},
-		"name": resourceName,
-	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", c.authHeader)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("file-download http %d: %s", resp.StatusCode, truncateForLog(raw))
-	}
-	var m map[string]any
-	if err := json.Unmarshal(raw, &m); err != nil {
-		return nil, fmt.Errorf("file-download decode: %w", err)
-	}
-	if msg, ok := m["message"].(string); ok && msg != "" {
-		return nil, fmt.Errorf("file-download: %s", msg)
-	}
-	return m, nil
-}
-
-func (c *AnyShareConnector) getEntryDocLib(ctx context.Context) ([]docLibDTO, error) {
-	q := url.Values{}
-	q.Set("sort", "doc_lib_name")
-	q.Set("direction", "asc")
-	if c.config.DocLibType == docLibTypeKnowledge {
-		q.Set("type", "knowledge_doc_lib")
-	}
-	u := fmt.Sprintf("%s/api/document/v1/entry-doc-lib?%s", c.baseURL, q.Encode())
-	var libs []docLibDTO
-	if err := c.getJSON(ctx, u, &libs); err != nil {
-		return nil, err
-	}
-	return libs, nil
-}
-
-func (c *AnyShareConnector) getDocIDByPath(ctx context.Context, namepath string) (pathInfoDTO, error) {
-	u := fmt.Sprintf("%s/api/efast/v1/file/getinfobypath", c.baseURL)
-	body, err := json.Marshal(map[string]string{"namepath": namepath})
-
-	var info pathInfoDTO
-	if err != nil {
-		return info, err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
-	if err != nil {
-		return info, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", c.authHeader)
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return info, err
-	}
-	defer resp.Body.Close()
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return info, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return info, fmt.Errorf("getinfobypath http %d: %s", resp.StatusCode, truncateForLog(raw))
-	}
-	if err := json.Unmarshal(raw, &info); err != nil {
-		return info, err
-	}
-	if info.DocID == "" {
-		return info, fmt.Errorf("getinfobypath: empty docid for path %q", namepath)
-	}
-	return info, nil
-}
-
-func (c *AnyShareConnector) getDocItemDetail(ctx context.Context, docID string) (*docItemDetailDTO, error) {
-	// docID格式为 gns://.../.../object_id，需要提取object_id
-	parts := strings.Split(docID, "/")
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("invalid docID format: %s", docID)
-	}
-	objectID := parts[len(parts)-1]
-
-	u := fmt.Sprintf("%s/api/efast/v2/items/%s/all", c.baseURL, objectID)
-
-	var detail docItemDetailDTO
-	if err := c.getJSON(ctx, u, &detail); err != nil {
-		return nil, err
-	}
-	return &detail, nil
-}
-
-func (c *AnyShareConnector) getJSON(ctx context.Context, reqURL string, out any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", c.authHeader)
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("GET %s: http %d %s", reqURL, resp.StatusCode, truncateForLog(raw))
-	}
-	if err := json.Unmarshal(raw, out); err != nil {
-		return fmt.Errorf("decode response: %w", err)
-	}
-	return nil
 }

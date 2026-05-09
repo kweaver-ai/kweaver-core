@@ -9,7 +9,9 @@ package errors
 // Resource 错误码
 const (
 	// LogicView 校验相关
+	VegaBackend_LogicView_InvalidParameter_JoinType          = "VegaBackend.LogicView.InvalidParameter.JoinType"
 	VegaBackend_LogicView_InvalidParameter_LogicDefinition   = "VegaBackend.LogicView.InvalidParameter.LogicDefinition"
+	VegaBackend_LogicView_Duplicated_NodeID                  = "VegaBackend.LogicView.Duplicated.NodeID"
 	VegaBackend_LogicView_InvalidParameter_FieldName         = "VegaBackend.LogicView.InvalidParameter.FieldName"
 	VegaBackend_LogicView_LengthExceeded_FieldName           = "VegaBackend.LogicView.LengthExceeded.FieldName"
 	VegaBackend_LogicView_LengthExceeded_FieldDisplayName    = "VegaBackend.LogicView.LengthExceeded.FieldDisplayName"
@@ -23,7 +25,9 @@ const (
 )
 
 var LogicViewErrCodeList = []string{
+	VegaBackend_LogicView_InvalidParameter_JoinType,
 	VegaBackend_LogicView_InvalidParameter_LogicDefinition,
+	VegaBackend_LogicView_Duplicated_NodeID,
 	VegaBackend_LogicView_InvalidParameter_FieldName,
 	VegaBackend_LogicView_LengthExceeded_FieldName,
 	VegaBackend_LogicView_LengthExceeded_FieldDisplayName,

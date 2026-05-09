@@ -104,13 +104,38 @@ func (rta *riskTypeAccess) CreateRiskType(ctx context.Context, tx *sql.Tx, riskT
 
 	sqlStr, vals, err := sq.Insert(RT_TABLE_NAME).
 		Columns(
-			"f_id", "f_name", "f_comment", "f_tags", "f_icon", "f_color",
-			"f_kn_id", "f_branch", "f_creator", "f_creator_type", "f_create_time", "f_updater", "f_updater_type", "f_update_time",
+			"f_id",
+			"f_name",
+			"f_comment",
+			"f_tags",
+			"f_icon",
+			"f_color",
+			"f_bkn_raw_content",
+			"f_kn_id",
+			"f_branch",
+			"f_creator",
+			"f_creator_type",
+			"f_create_time",
+			"f_updater",
+			"f_updater_type",
+			"f_update_time",
 		).
 		Values(
-			riskType.RTID, riskType.RTName, riskType.Comment, tagsStr, riskType.Icon, riskType.Color,
-			riskType.KNID, riskType.Branch, riskType.Creator.ID, riskType.Creator.Type, riskType.CreateTime,
-			riskType.Updater.ID, riskType.Updater.Type, riskType.UpdateTime,
+			riskType.RTID,
+			riskType.RTName,
+			riskType.Comment,
+			tagsStr,
+			riskType.Icon,
+			riskType.Color,
+			riskType.BKNRawContent,
+			riskType.KNID,
+			riskType.Branch,
+			riskType.Creator.ID,
+			riskType.Creator.Type,
+			riskType.CreateTime,
+			riskType.Updater.ID,
+			riskType.Updater.Type,
+			riskType.UpdateTime,
 		).
 		ToSql()
 	if err != nil {
@@ -126,8 +151,21 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 	defer span.End()
 
 	subBuilder := sq.Select(
-		"f_id", "f_name", "f_comment", "f_tags", "f_icon", "f_color",
-		"f_kn_id", "f_branch", "f_creator", "f_creator_type", "f_create_time", "f_updater", "f_updater_type", "f_update_time",
+		"f_id",
+		"f_name",
+		"f_comment",
+		"f_tags",
+		"f_icon",
+		"f_color",
+		"f_bkn_raw_content",
+		"f_kn_id",
+		"f_branch",
+		"f_creator",
+		"f_creator_type",
+		"f_create_time",
+		"f_updater",
+		"f_updater_type",
+		"f_update_time",
 	).From(RT_TABLE_NAME)
 
 	builder := processRiskTypeQueryCondition(query, subBuilder)
@@ -157,8 +195,21 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 		var tagsStr string
 
 		err := rows.Scan(
-			&rt.RTID, &rt.RTName, &rt.Comment, &tagsStr, &rt.Icon, &rt.Color,
-			&rt.KNID, &rt.Branch, &rt.Creator.ID, &rt.Creator.Type, &rt.CreateTime, &rt.Updater.ID, &rt.Updater.Type, &rt.UpdateTime,
+			&rt.RTID,
+			&rt.RTName,
+			&rt.Comment,
+			&tagsStr,
+			&rt.Icon,
+			&rt.Color,
+			&rt.BKNRawContent,
+			&rt.KNID,
+			&rt.Branch,
+			&rt.Creator.ID,
+			&rt.Creator.Type,
+			&rt.CreateTime,
+			&rt.Updater.ID,
+			&rt.Updater.Type,
+			&rt.UpdateTime,
 		)
 		if err != nil {
 			return nil, err
@@ -202,8 +253,21 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 	}
 
 	sqlStr, vals, err := sq.Select(
-		"f_id", "f_name", "f_comment", "f_tags", "f_icon", "f_color",
-		"f_kn_id", "f_branch", "f_creator", "f_creator_type", "f_create_time", "f_updater", "f_updater_type", "f_update_time",
+		"f_id",
+		"f_name",
+		"f_comment",
+		"f_tags",
+		"f_icon",
+		"f_color",
+		"f_bkn_raw_content",
+		"f_kn_id",
+		"f_branch",
+		"f_creator",
+		"f_creator_type",
+		"f_create_time",
+		"f_updater",
+		"f_updater_type",
+		"f_update_time",
 	).From(RT_TABLE_NAME).
 		Where(sq.Eq{"f_kn_id": knID}).
 		Where(sq.Eq{"f_branch": branch}).
@@ -225,8 +289,21 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 		var tagsStr string
 
 		err := rows.Scan(
-			&rt.RTID, &rt.RTName, &rt.Comment, &tagsStr, &rt.Icon, &rt.Color,
-			&rt.KNID, &rt.Branch, &rt.Creator.ID, &rt.Creator.Type, &rt.CreateTime, &rt.Updater.ID, &rt.Updater.Type, &rt.UpdateTime,
+			&rt.RTID,
+			&rt.RTName,
+			&rt.Comment,
+			&tagsStr,
+			&rt.Icon,
+			&rt.Color,
+			&rt.BKNRawContent,
+			&rt.KNID,
+			&rt.Branch,
+			&rt.Creator.ID,
+			&rt.Creator.Type,
+			&rt.CreateTime,
+			&rt.Updater.ID,
+			&rt.Updater.Type,
+			&rt.UpdateTime,
 		)
 		if err != nil {
 			return nil, err
@@ -248,14 +325,15 @@ func (rta *riskTypeAccess) UpdateRiskType(ctx context.Context, tx *sql.Tx, riskT
 	tagsStr := libCommon.TagSlice2TagString(riskType.Tags)
 
 	data := map[string]any{
-		"f_name":         riskType.RTName,
-		"f_comment":      riskType.Comment,
-		"f_tags":         tagsStr,
-		"f_icon":         riskType.Icon,
-		"f_color":        riskType.Color,
-		"f_updater":      riskType.Updater.ID,
-		"f_updater_type": riskType.Updater.Type,
-		"f_update_time":  riskType.UpdateTime,
+		"f_name":            riskType.RTName,
+		"f_comment":         riskType.Comment,
+		"f_tags":            tagsStr,
+		"f_icon":            riskType.Icon,
+		"f_color":           riskType.Color,
+		"f_bkn_raw_content": riskType.BKNRawContent,
+		"f_updater":         riskType.Updater.ID,
+		"f_updater_type":    riskType.Updater.Type,
+		"f_update_time":     riskType.UpdateTime,
 	}
 
 	sqlStr, vals, err := sq.Update(RT_TABLE_NAME).

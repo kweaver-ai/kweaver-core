@@ -200,6 +200,7 @@ func (ra *resourceAccess) GetByID(ctx context.Context, id string) (*interfaces.R
 		"f_updater",
 		"f_updater_type",
 		"f_update_time",
+		"f_local_index_name",
 	).From(RESOURCE_TABLE_NAME).
 		Where(sq.Eq{"f_id": id}).
 		ToSql()
@@ -235,6 +236,7 @@ func (ra *resourceAccess) GetByID(ctx context.Context, id string) (*interfaces.R
 		&resource.Updater.ID,
 		&resource.Updater.Type,
 		&resource.UpdateTime,
+		&resource.LocalIndexName,
 	)
 	if err == sql.ErrNoRows {
 		span.SetStatus(codes.Ok, "")
@@ -293,6 +295,7 @@ func (ra *resourceAccess) GetByIDs(ctx context.Context, ids []string) ([]*interf
 		"f_updater",
 		"f_updater_type",
 		"f_update_time",
+		"f_local_index_name",
 	).From(RESOURCE_TABLE_NAME).
 		Where(sq.Eq{"f_id": ids}).
 		ToSql()
@@ -308,7 +311,7 @@ func (ra *resourceAccess) GetByIDs(ctx context.Context, ids []string) ([]*interf
 		span.SetStatus(codes.Error, "Query failed")
 		return []*interfaces.Resource{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	resources := make([]*interfaces.Resource, 0)
 	for rows.Next() {
@@ -337,6 +340,7 @@ func (ra *resourceAccess) GetByIDs(ctx context.Context, ids []string) ([]*interf
 			&resource.Updater.ID,
 			&resource.Updater.Type,
 			&resource.UpdateTime,
+			&resource.LocalIndexName,
 		)
 
 		if err != nil {
@@ -408,7 +412,7 @@ func (ra *resourceAccess) GetByIDsBasic(ctx context.Context, ids []string) ([]*i
 		span.SetStatus(codes.Error, "Query failed")
 		return []*interfaces.Resource{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	resources := make([]*interfaces.Resource, 0)
 	for rows.Next() {
@@ -579,7 +583,7 @@ func (ra *resourceAccess) ListIDs(ctx context.Context, params interfaces.Resourc
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	ids := make([]string, 0)
 	for rows.Next() {
@@ -668,7 +672,7 @@ func (ra *resourceAccess) List(ctx context.Context, params interfaces.ResourcesQ
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	resources := make([]*interfaces.Resource, 0)
 	for rows.Next() {
@@ -756,6 +760,7 @@ func (ra *resourceAccess) Update(ctx context.Context, resource *interfaces.Resou
 		Set("f_updater", resource.Updater.ID).
 		Set("f_updater_type", resource.Updater.Type).
 		Set("f_update_time", resource.UpdateTime).
+		Set("f_local_index_name", resource.LocalIndexName).
 		Where(sq.Eq{"f_id": resource.ID}).
 		ToSql()
 	if err != nil {
@@ -815,7 +820,7 @@ func (ra *resourceAccess) GetByCatalogID(ctx context.Context, catalogID string) 
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	resources := make([]*interfaces.Resource, 0)
 	for rows.Next() {
@@ -957,7 +962,7 @@ func (ra *resourceAccess) ListResourceSrcsIDs(ctx context.Context, params interf
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	ids := make([]string, 0)
 	for rows.Next() {
@@ -999,7 +1004,7 @@ func (ra *resourceAccess) ListResourceSrcsByIDs(ctx context.Context, ids []strin
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	entries := make([]*interfaces.ListResourceEntry, 0)
 	for rows.Next() {
@@ -1072,7 +1077,7 @@ func (ra *resourceAccess) ListResourceSrcs(ctx context.Context, params interface
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	entries := make([]*interfaces.ListResourceEntry, 0)
 	for rows.Next() {

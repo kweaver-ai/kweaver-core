@@ -35,7 +35,7 @@ func NewNotInCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewF
 	return &NotInCond{
 		mCfg:             cfg,
 		mValue:           cfg.ValueOptCfg.Value.([]any),
-		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
+		mFilterFieldName: getFilterFieldName(cfg.Field, fieldsMap, false),
 	}, nil
 }
 
@@ -85,7 +85,7 @@ func (cond *NotInCond) Convert2SQL(ctx context.Context) (string, error) {
 // convertNotInCondToDatasetFilterCondition converts NotInCond to dataset filter condition format
 func convertNotInCondToDatasetFilterCondition(cfg *CondCfg) (map[string]any, error) {
 	return map[string]any{
-		"field":      cfg.Name,
+		"field":      cfg.Field,
 		"operation":  "not_in",
 		"value":      cfg.Value, // 数组
 		"value_from": "const",

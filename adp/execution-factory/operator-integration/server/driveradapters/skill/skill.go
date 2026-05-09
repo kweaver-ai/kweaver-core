@@ -52,6 +52,123 @@ func (h *skillHandler) RegisterSkill(c *gin.Context) {
 	rest.ReplyOK(c, http.StatusOK, resp)
 }
 
+func (h *skillHandler) UpdateSkillMetadata(c *gin.Context) {
+	req := &interfaces.UpdateSkillMetadataReq{}
+	if err := c.ShouldBindHeader(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := c.ShouldBindUri(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := utils.GetBindJSONRaw(c, req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	if err := validator.New().Struct(req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	resp, err := h.Registry.UpdateSkillMetadata(c.Request.Context(), req)
+	if err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, resp)
+}
+
+func (h *skillHandler) UpdateSkillPackage(c *gin.Context) {
+	req := &interfaces.UpdateSkillPackageReq{}
+	if err := c.ShouldBindHeader(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := c.ShouldBindUri(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	switch c.ContentType() {
+	case "application/x-www-form-urlencoded":
+		if err := utils.GetBindFormRaw(c, req); err != nil {
+			rest.ReplyError(c, err)
+			return
+		}
+	case "multipart/form-data":
+		fileBytes, err := utils.GetBindMultipartFormRaw(c, req, "file", 0)
+		if err != nil {
+			rest.ReplyError(c, err)
+			return
+		}
+		req.File = fileBytes
+	default:
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, "unsupported content type"))
+		return
+	}
+	if err := validator.New().Struct(req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	resp, err := h.Registry.UpdateSkillPackage(c.Request.Context(), req)
+	if err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, resp)
+}
+
+func (h *skillHandler) RepublishSkillHistory(c *gin.Context) {
+	req := &interfaces.RepublishSkillHistoryReq{}
+	if err := c.ShouldBindHeader(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := c.ShouldBindUri(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := utils.GetBindJSONRaw(c, req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	if err := validator.New().Struct(req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	resp, err := h.Registry.RepublishSkillHistory(c.Request.Context(), req)
+	if err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, resp)
+}
+
+func (h *skillHandler) PublishSkillHistory(c *gin.Context) {
+	req := &interfaces.PublishSkillHistoryReq{}
+	if err := c.ShouldBindHeader(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := c.ShouldBindUri(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := utils.GetBindJSONRaw(c, req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	if err := validator.New().Struct(req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	resp, err := h.Registry.PublishSkillHistory(c.Request.Context(), req)
+	if err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, resp)
+}
+
 func (h *skillHandler) DeleteSkill(c *gin.Context) {
 	req := &interfaces.DeleteSkillReq{}
 	if err := c.ShouldBindHeader(req); err != nil {
@@ -214,6 +331,28 @@ func (h *skillHandler) GetSkillContent(c *gin.Context) {
 	rest.ReplyOK(c, http.StatusOK, resp)
 }
 
+func (h *skillHandler) GetSkillReleaseHistory(c *gin.Context) {
+	req := &interfaces.GetSkillReleaseHistoryReq{}
+	if err := c.ShouldBindHeader(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := c.ShouldBindUri(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := validator.New().Struct(req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	resp, err := h.Reader.GetSkillReleaseHistory(c.Request.Context(), req)
+	if err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, resp)
+}
+
 func (h *skillHandler) ReadSkillFile(c *gin.Context) {
 	req := &interfaces.ReadSkillFileReq{}
 	if err := c.ShouldBindHeader(req); err != nil {
@@ -259,6 +398,32 @@ func (h *skillHandler) UpdateSkillStatus(c *gin.Context) {
 		return
 	}
 	resp, err := h.Registry.UpdateSkillStatus(c.Request.Context(), req)
+	if err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, resp)
+}
+
+func (h *skillHandler) ExecuteSkill(c *gin.Context) {
+	req := &interfaces.ExecuteSkillReq{}
+	if err := c.ShouldBindHeader(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := c.ShouldBindUri(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := utils.GetBindJSONRaw(c, req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	if err := validator.New().Struct(req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	resp, err := h.Registry.ExecuteSkill(c.Request.Context(), req)
 	if err != nil {
 		rest.ReplyError(c, err)
 		return

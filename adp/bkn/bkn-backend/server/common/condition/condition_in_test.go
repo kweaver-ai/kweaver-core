@@ -27,7 +27,7 @@ func TestNewInCond(t *testing.T) {
 		Convey("invalid value_from should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
 					Value:     []any{"value1"},
@@ -42,7 +42,7 @@ func TestNewInCond(t *testing.T) {
 		Convey("non-slice value should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -57,7 +57,7 @@ func TestNewInCond(t *testing.T) {
 		Convey("mixed type array should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{"value1", 123},
@@ -72,7 +72,7 @@ func TestNewInCond(t *testing.T) {
 		Convey("valid string array should create InCond", func() {
 			cfg := &CondCfg{
 				Operation: OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{"value1", "value2"},
@@ -89,7 +89,7 @@ func TestNewInCond(t *testing.T) {
 		Convey("valid numeric array should create InCond", func() {
 			cfg := &CondCfg{
 				Operation: OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{1, 2, 3},
@@ -115,7 +115,7 @@ func TestInCond_Convert(t *testing.T) {
 		Convey("string array should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{"value1", "value2"},
@@ -140,7 +140,7 @@ func TestInCond_Convert(t *testing.T) {
 		Convey("numeric array should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{1, 2, 3},
@@ -174,7 +174,7 @@ func TestInCond_Convert2SQL(t *testing.T) {
 		Convey("string array should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{"value1", "value2"},
@@ -195,7 +195,7 @@ func TestInCond_Convert2SQL(t *testing.T) {
 		Convey("numeric array should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{1, 2, 3},

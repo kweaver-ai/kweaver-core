@@ -63,9 +63,17 @@ class TestUpdateCacheData:
         mock_cache_data = MagicMock()
         mock_agent_core_v2.cache_handler.get_cache_data.return_value = mock_cache_data
 
-        with patch(
-            "app.logic.agent_core_logic_v2.agent_core_v2.AgentCoreV2",
-            return_value=mock_agent_core_v2,
+        with (
+            patch(
+                "app.logic.agent_core_logic_v2.agent_core_v2.AgentCoreV2",
+                return_value=mock_agent_core_v2,
+            ),
+            patch(
+                "app.logic.agent_core_logic_v2.agent_cache_manage_logic.update_cache_data.StandLogger.error"
+            ) as mock_standard_error,
+            patch(
+                "app.logic.agent_core_logic_v2.agent_cache_manage_logic.update_cache_data.o11y_logger"
+            ) as mock_o11y_logger,
         ):
             from app.logic.agent_core_logic_v2.agent_cache_manage_logic.update_cache_data import (
                 update_cache_data,
@@ -124,9 +132,17 @@ class TestUpdateCacheData:
         mock_agent_core_v2.cache_handler = MagicMock()
         mock_agent_core_v2.cache_handler.get_cache_data.return_value = MagicMock()
 
-        with patch(
-            "app.logic.agent_core_logic_v2.agent_core_v2.AgentCoreV2",
-            return_value=mock_agent_core_v2,
+        with (
+            patch(
+                "app.logic.agent_core_logic_v2.agent_core_v2.AgentCoreV2",
+                return_value=mock_agent_core_v2,
+            ),
+            patch(
+                "app.logic.agent_core_logic_v2.agent_cache_manage_logic.update_cache_data.StandLogger.error"
+            ) as mock_standard_error,
+            patch(
+                "app.logic.agent_core_logic_v2.agent_cache_manage_logic.update_cache_data.o11y_logger"
+            ) as mock_o11y_logger,
         ):
             from app.logic.agent_core_logic_v2.agent_cache_manage_logic.update_cache_data import (
                 update_cache_data,
@@ -141,6 +157,8 @@ class TestUpdateCacheData:
                 )
 
             assert "Redis error" in str(exc_info.value)
+            mock_standard_error.assert_called_once()
+            mock_o11y_logger().error.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_update_cache_data_warmup_exception(

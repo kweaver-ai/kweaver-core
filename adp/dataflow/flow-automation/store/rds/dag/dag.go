@@ -9,14 +9,14 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/db"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/trace"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/event"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/mod"
-	data "github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/utils/data"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/db"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/trace"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/event"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/mod"
+	data "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/utils/data"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils"
 	"github.com/shiningrush/goevent"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -385,12 +385,12 @@ func (d *dag) CreateDag(ctx context.Context, dagEntity *entity.Dag) (string, err
 			return err
 		}
 
-		err = store.CreateDagVars(newCtx, BuildDagVars(dagEntity))
+		err = store.CreateDagVars(newCtx, BuildDagVars(dagEntity), true)
 		if err != nil {
 			return err
 		}
 
-		err = store.refreshDagIndexes(newCtx, dagEntity)
+		err = store.refreshDagIndexes(newCtx, dagEntity, true)
 		if err != nil {
 			return err
 		}
@@ -409,50 +409,127 @@ func (d *dag) CreateDag(ctx context.Context, dagEntity *entity.Dag) (string, err
 	return dagEntity.ID, err
 }
 
-func (d *dag) CreateDagVars(ctx context.Context, dagVars []*DagVarModel) error {
+// getExistingDagVars 查询现有变量
+func (d *dag) getExistingDagVars(ctx context.Context, dagID uint64) ([]existingDagVar, error) {
+	db, _, cancel := d.dbWithContext(ctx)
+	defer cancel()
+
+	var vars []existingDagVar
+	sqlStr := `SELECT f_var_name, f_default_value, f_var_type, f_description FROM t_flow_dag_var WHERE f_dag_id = ?`
+	trace.SetAttributes(ctx, attribute.String(trace.TABLE_NAME, DAGVAR_TABLENAME), attribute.String(trace.DB_SQL, sqlStr))
+	err := db.Raw(sqlStr, dagID).Scan(&vars).Error
+	return vars, err
+}
+
+// getExistingDagSteps 查询现有步骤
+func (d *dag) getExistingDagSteps(ctx context.Context, dagID uint64) ([]existingDagStep, error) {
+	db, _, cancel := d.dbWithContext(ctx)
+	defer cancel()
+
+	var steps []existingDagStep
+	sqlStr := `SELECT f_id, f_operator, f_source_id, f_has_datasource FROM t_flow_dag_step WHERE f_dag_id = ?`
+	trace.SetAttributes(ctx, attribute.String(trace.TABLE_NAME, DAGSTEPINDEX_TABLENAME), attribute.String(trace.DB_SQL, sqlStr))
+	err := db.Raw(sqlStr, dagID).Scan(&steps).Error
+	return steps, err
+}
+
+// getExistingDagAccessors 查询现有访问者
+func (d *dag) getExistingDagAccessors(ctx context.Context, dagID uint64) ([]existingDagAccessor, error) {
+	db, _, cancel := d.dbWithContext(ctx)
+	defer cancel()
+
+	var accessors []existingDagAccessor
+	sqlStr := `SELECT f_id, f_accessor_id FROM t_flow_dag_accessor WHERE f_dag_id = ?`
+	trace.SetAttributes(ctx, attribute.String(trace.TABLE_NAME, DAGACCESSORINDEX_TABLENAME), attribute.String(trace.DB_SQL, sqlStr))
+	err := db.Raw(sqlStr, dagID).Scan(&accessors).Error
+	return accessors, err
+}
+
+// insertDagVars 插入变量
+func (d *dag) insertDagVars(ctx context.Context, dagVars []*DagVarModel) error {
+	if len(dagVars) == 0 {
+		return nil
+	}
+
+	sqlStr := `INSERT INTO t_flow_dag_var (f_id, f_dag_id, f_var_name, f_default_value, f_var_type, f_description) VALUES `
+	values := make([]any, 0, len(dagVars)*6)
+	for _, data := range dagVars {
+		sqlStr += "(?, ?, ?, ?, ?, ?),"
+		values = append(values, data.ID, data.DagID, data.VarName, data.DefaultValue, data.VarType, data.Description)
+	}
+	sqlStr = strings.TrimSuffix(sqlStr, ",")
+
+	return d.db.Exec(sqlStr, values...).Error
+}
+
+func (d *dag) CreateDagVars(ctx context.Context, dagVars []*DagVarModel, isCreate bool) error {
 	var err error
 	newCtx, span := trace.StartInternalSpan(ctx)
-	msgStr, _ := jsoniter.MarshalToString(dagVars)
 	defer func() { trace.TelemetrySpanEnd(span, err) }()
 
-	fn := func(store *dag, dagVars []*DagVarModel) error {
+	fn := func(store *dag, dagVars []*DagVarModel, isCreate bool) error {
 		if len(dagVars) == 0 {
 			return nil
 		}
 
 		dagID := dagVars[0].DagID
-		sqlStr := `DELETE FROM t_flow_dag_var WHERE f_dag_id = ?`
-		trace.SetAttributes(newCtx, attribute.String(trace.TABLE_NAME, DAGVAR_TABLENAME), attribute.String(trace.DB_SQL, sqlStr), attribute.String(trace.DB_QUERY, fmt.Sprintf("%v", dagID)))
-		err = store.db.Exec(sqlStr, dagID).Error
+
+		if isCreate {
+			// 快速路径：直接 INSERT
+			return store.insertDagVars(newCtx, dagVars)
+		}
+
+		// 更新路径：diff + 精确操作
+		existing, err := store.getExistingDagVars(newCtx, dagID)
 		if err != nil {
 			return err
 		}
 
-		sqlStr = `INSERT INTO t_flow_dag_var (f_id, f_dag_id, f_var_name, f_default_value, f_var_type, f_description) VALUES `
-		trace.SetAttributes(newCtx, attribute.String(trace.TABLE_NAME, DAGVAR_TABLENAME), attribute.String(trace.DB_SQL, sqlStr), attribute.String(trace.DB_Values, msgStr))
-		values := make([]any, 0, len(dagVars)*5)
-		for _, data := range dagVars {
-			sqlStr += "(?, ?, ?, ?, ?, ?),"
-			values = append(values, data.ID, data.DagID, data.VarName, data.DefaultValue, data.VarType, data.Description)
+		diff := diffDagVars(existing, dagVars)
+
+		// 执行删除（构建正确的 IN 子句）
+		if len(diff.toDelete) > 0 {
+			placeholders := make([]string, len(diff.toDelete))
+			args := make([]any, len(diff.toDelete)+1)
+			args[0] = dagID
+			for i, name := range diff.toDelete {
+				placeholders[i] = "?"
+				args[i+1] = name
+			}
+			sqlStr := fmt.Sprintf("DELETE FROM t_flow_dag_var WHERE f_dag_id = ? AND f_var_name IN (%s)",
+				strings.Join(placeholders, ","))
+			trace.SetAttributes(newCtx, attribute.String(trace.TABLE_NAME, DAGVAR_TABLENAME), attribute.String(trace.DB_SQL, sqlStr))
+			if err = store.db.Exec(sqlStr, args...).Error; err != nil {
+				return err
+			}
 		}
 
-		sqlStr = sqlStr[:len(sqlStr)-1]
+		// 执行插入
+		if len(diff.toInsert) > 0 {
+			if err = store.insertDagVars(newCtx, diff.toInsert); err != nil {
+				return err
+			}
+		}
 
-		err = store.db.Exec(sqlStr, values...).Error
-		if err != nil {
-			return err
+		// 执行更新（逐行）
+		if len(diff.toUpdate) > 0 {
+			for _, v := range diff.toUpdate {
+				sqlStr := `UPDATE t_flow_dag_var SET f_default_value = ?, f_var_type = ?, f_description = ? WHERE f_dag_id = ? AND f_var_name = ?`
+				if err = store.db.Exec(sqlStr, v.DefaultValue, v.VarType, v.Description, dagID, v.VarName).Error; err != nil {
+					return err
+				}
+			}
 		}
 
 		return nil
-
 	}
 
 	if !d.isTX {
 		err = d.WithTransaction(newCtx, func(_ context.Context, txStore mod.Store) error {
-			return fn(txStore.(*dag), dagVars)
+			return fn(txStore.(*dag), dagVars, isCreate)
 		})
 	} else {
-		err = fn(d, dagVars)
+		err = fn(d, dagVars, isCreate)
 	}
 
 	return err
@@ -544,12 +621,120 @@ func (d *dag) replaceDagInstanceKeywords(ctx context.Context, dagInsID uint64, k
 	return d.insertDagInstanceKeywords(ctx, dagInsID, keywords)
 }
 
-func (d *dag) refreshDagIndexes(ctx context.Context, dag *entity.Dag) error {
+// insertDagSteps 插入 step 索引
+func (d *dag) insertDagSteps(ctx context.Context, steps []*DagStepModel) error {
+	if len(steps) == 0 {
+		return nil
+	}
+
+	sqlStr := `INSERT INTO t_flow_dag_step (f_id, f_dag_id, f_operator, f_source_id, f_has_datasource) VALUES `
+	values := make([]any, 0, len(steps)*5)
+	for _, row := range steps {
+		sqlStr += "(?, ?, ?, ?, ?),"
+		values = append(values, row.ID, row.DagID, row.Operator, row.SourceID, row.HasDatasource)
+	}
+	sqlStr = strings.TrimSuffix(sqlStr, ",")
+
+	return d.db.Exec(sqlStr, values...).Error
+}
+
+// insertDagAccessors 插入 accessor 索引
+func (d *dag) insertDagAccessors(ctx context.Context, accessors []*DagAccessorModel) error {
+	if len(accessors) == 0 {
+		return nil
+	}
+
+	sqlStr := `INSERT INTO t_flow_dag_accessor (f_id, f_dag_id, f_accessor_id) VALUES `
+	values := make([]any, 0, len(accessors)*3)
+	for _, row := range accessors {
+		sqlStr += "(?, ?, ?),"
+		values = append(values, row.ID, row.DagID, row.AccessorID)
+	}
+	sqlStr = strings.TrimSuffix(sqlStr, ",")
+
+	return d.db.Exec(sqlStr, values...).Error
+}
+
+// refreshDagStepsWithDiff 使用 diff 方式刷新 step 索引
+func (d *dag) refreshDagStepsWithDiff(ctx context.Context, dagID uint64, newSteps []*DagStepModel) error {
+	existing, err := d.getExistingDagSteps(ctx, dagID)
+	if err != nil {
+		return err
+	}
+
+	diff := diffDagSteps(existing, newSteps)
+
+	// 删除
+	if len(diff.toDelete) > 0 {
+		placeholders := make([]string, len(diff.toDelete))
+		args := make([]any, len(diff.toDelete))
+		for i, id := range diff.toDelete {
+			placeholders[i] = "?"
+			args[i] = id
+		}
+		sqlStr := fmt.Sprintf("DELETE FROM t_flow_dag_step WHERE f_id IN (%s)", strings.Join(placeholders, ","))
+		if err = d.db.Exec(sqlStr, args...).Error; err != nil {
+			return err
+		}
+	}
+
+	// 插入
+	if len(diff.toInsert) > 0 {
+		if err = d.insertDagSteps(ctx, diff.toInsert); err != nil {
+			return err
+		}
+	}
+
+	// 更新
+	if len(diff.toUpdate) > 0 {
+		for _, s := range diff.toUpdate {
+			sqlStr := `UPDATE t_flow_dag_step SET f_has_datasource = ? WHERE f_id = ?`
+			if err = d.db.Exec(sqlStr, s.HasDatasource, s.ID).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// refreshDagAccessorsWithDiff 使用 diff 方式刷新 accessor 索引
+func (d *dag) refreshDagAccessorsWithDiff(ctx context.Context, dagID uint64, newAccessors []*DagAccessorModel) error {
+	existing, err := d.getExistingDagAccessors(ctx, dagID)
+	if err != nil {
+		return err
+	}
+
+	diff := diffDagAccessors(existing, newAccessors)
+
+	// 删除
+	if len(diff.toDelete) > 0 {
+		placeholders := make([]string, len(diff.toDelete))
+		args := make([]any, len(diff.toDelete))
+		for i, id := range diff.toDelete {
+			placeholders[i] = "?"
+			args[i] = id
+		}
+		sqlStr := fmt.Sprintf("DELETE FROM t_flow_dag_accessor WHERE f_id IN (%s)", strings.Join(placeholders, ","))
+		if err = d.db.Exec(sqlStr, args...).Error; err != nil {
+			return err
+		}
+	}
+
+	// 插入
+	if len(diff.toInsert) > 0 {
+		if err = d.insertDagAccessors(ctx, diff.toInsert); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *dag) refreshDagIndexes(ctx context.Context, dag *entity.Dag, isCreate bool) error {
 	var err error
 	newCtx, span := trace.StartInternalSpan(ctx)
 	defer func() { trace.TelemetrySpanEnd(span, err) }()
-	db, _, cancel := d.dbWithContext(newCtx)
-	defer cancel()
 
 	if dag == nil {
 		return nil
@@ -561,78 +746,32 @@ func (d *dag) refreshDagIndexes(ctx context.Context, dag *entity.Dag) error {
 	}
 
 	stepRows := BuildDagStepIndex(dag)
-	// triggerRows := BuildDagTriggerConfigIndex(dag)
 	accessorRows := BuildDagAccessorIndex(dag)
 
-	deleteIndexes := func(table string) error {
-		sqlStr := fmt.Sprintf("DELETE FROM %s WHERE f_dag_id = ?", table)
-		trace.SetAttributes(newCtx, attribute.String(trace.TABLE_NAME, table), attribute.String(trace.DB_SQL, sqlStr), attribute.String(trace.DB_QUERY, fmt.Sprintf("%v", dagID)))
-		return db.Exec(sqlStr, dagID).Error
-	}
-
-	if err = deleteIndexes(DAGSTEPINDEX_TABLENAME); err != nil {
-		return err
-	}
-	// if err = deleteIndexes(DAGTRIGGERINDEX_TABLENAME); err != nil {
-	// 	return err
-	// }
-	if err = deleteIndexes(DAGACCESSORINDEX_TABLENAME); err != nil {
-		return err
-	}
-
-	insertStepRows := func(rows []*DagStepModel) error {
-		if len(rows) == 0 {
-			return nil
+	// 处理 t_flow_dag_step 表
+	if isCreate {
+		if len(stepRows) > 0 {
+			if err = d.insertDagSteps(newCtx, stepRows); err != nil {
+				return err
+			}
 		}
-		sqlStr := fmt.Sprintf("INSERT INTO %s (f_id, f_dag_id, f_operator, f_source_id, f_has_datasource) VALUES ", DAGSTEPINDEX_TABLENAME)
-		values := make([]any, 0, len(rows)*5)
-		for _, row := range rows {
-			sqlStr += "(?, ?, ?, ?, ?),"
-			values = append(values, row.ID, row.DagID, row.Operator, row.SourceID, row.HasDatasource)
+	} else {
+		if err = d.refreshDagStepsWithDiff(newCtx, dagID, stepRows); err != nil {
+			return err
 		}
-		sqlStr = strings.TrimSuffix(sqlStr, ",")
-		trace.SetAttributes(newCtx, attribute.String(trace.TABLE_NAME, DAGSTEPINDEX_TABLENAME), attribute.String(trace.DB_SQL, sqlStr))
-		return db.Exec(sqlStr, values...).Error
 	}
 
-	// insertTriggerRows := func(rows []*DagTriggerConfigIndex) error {
-	// 	if len(rows) == 0 {
-	// 		return nil
-	// 	}
-	// 	sqlStr := fmt.Sprintf("INSERT INTO %s (f_id, f_dag_id, f_operator, f_source_id) VALUES ", DAGTRIGGERINDEX_TABLENAME)
-	// 	values := make([]any, 0, len(rows)*4)
-	// 	for _, row := range rows {
-	// 		sqlStr += "(?, ?, ?, ?),"
-	// 		values = append(values, row.ID, row.DagID, row.Operator, row.SourceID)
-	// 	}
-	// 	sqlStr = strings.TrimSuffix(sqlStr, ",")
-	// 	trace.SetAttributes(newCtx, attribute.String(trace.TABLE_NAME, DAGTRIGGERINDEX_TABLENAME), attribute.String(trace.DB_SQL, sqlStr))
-	// 	return d.db.Exec(sqlStr, values...).Error
-	// }
-
-	insertAccessorRows := func(rows []*DagAccessorModel) error {
-		if len(rows) == 0 {
-			return nil
+	// 处理 t_flow_dag_accessor 表
+	if isCreate {
+		if len(accessorRows) > 0 {
+			if err = d.insertDagAccessors(newCtx, accessorRows); err != nil {
+				return err
+			}
 		}
-		sqlStr := fmt.Sprintf("INSERT INTO %s (f_id, f_dag_id, f_accessor_id) VALUES ", DAGACCESSORINDEX_TABLENAME)
-		values := make([]any, 0, len(rows)*3)
-		for _, row := range rows {
-			sqlStr += "(?, ?, ?),"
-			values = append(values, row.ID, row.DagID, row.AccessorID)
+	} else {
+		if err = d.refreshDagAccessorsWithDiff(newCtx, dagID, accessorRows); err != nil {
+			return err
 		}
-		sqlStr = strings.TrimSuffix(sqlStr, ",")
-		trace.SetAttributes(newCtx, attribute.String(trace.TABLE_NAME, DAGACCESSORINDEX_TABLENAME), attribute.String(trace.DB_SQL, sqlStr))
-		return db.Exec(sqlStr, values...).Error
-	}
-
-	if err = insertStepRows(stepRows); err != nil {
-		return err
-	}
-	// if err = insertTriggerRows(triggerRows); err != nil {
-	// 	return err
-	// }
-	if err = insertAccessorRows(accessorRows); err != nil {
-		return err
 	}
 
 	return nil
@@ -743,12 +882,12 @@ func (d *dag) UpdateDag(ctx context.Context, dagEntity *entity.Dag) error {
 			return err
 		}
 
-		err = store.CreateDagVars(newCtx, BuildDagVars(dagEntity))
+		err = store.CreateDagVars(newCtx, BuildDagVars(dagEntity), false)
 		if err != nil {
 			return err
 		}
 
-		err = store.refreshDagIndexes(newCtx, dagEntity)
+		err = store.refreshDagIndexes(newCtx, dagEntity, false)
 		if err != nil {
 			return err
 		}

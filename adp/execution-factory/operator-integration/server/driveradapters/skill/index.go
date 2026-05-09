@@ -11,6 +11,15 @@ import (
 
 type SkillHandler interface {
 	RegisterSkill(c *gin.Context)
+	CreateSkillIndexBuildTask(c *gin.Context)
+	QuerySkillIndexBuildTaskList(c *gin.Context)
+	GetSkillIndexBuildTask(c *gin.Context)
+	CancelSkillIndexBuildTask(c *gin.Context)
+	RetrySkillIndexBuildTask(c *gin.Context)
+	UpdateSkillMetadata(c *gin.Context)
+	UpdateSkillPackage(c *gin.Context)
+	RepublishSkillHistory(c *gin.Context)
+	PublishSkillHistory(c *gin.Context)
 	DeleteSkill(c *gin.Context)
 	UpdateSkillStatus(c *gin.Context)
 	DownloadSkill(c *gin.Context)
@@ -19,14 +28,17 @@ type SkillHandler interface {
 	GetSkillMarketDetail(c *gin.Context)
 	GetSkillDetail(c *gin.Context)
 	GetSkillContent(c *gin.Context)
+	GetSkillReleaseHistory(c *gin.Context)
 	ReadSkillFile(c *gin.Context)
+	ExecuteSkill(c *gin.Context)
 }
 
 type skillHandler struct {
-	Logger   interfaces.Logger
-	Registry interfaces.SkillRegistry
-	Market   interfaces.SkillMarket
-	Reader   interfaces.SkillReader
+	Logger            interfaces.Logger
+	Registry          interfaces.SkillRegistry
+	Market            interfaces.SkillMarket
+	Reader            interfaces.SkillReader
+	IndexBuildService interfaces.SkillIndexBuildService
 }
 
 var (
@@ -40,10 +52,11 @@ func NewSkillHandler() SkillHandler {
 		registry := logicsskill.NewSkillRegistry()
 		market, _ := registry.(interfaces.SkillMarket)
 		h = &skillHandler{
-			Logger:   conf.GetLogger(),
-			Registry: registry,
-			Market:   market,
-			Reader:   logicsskill.NewSkillReader(),
+			Logger:            conf.GetLogger(),
+			Registry:          registry,
+			Market:            market,
+			Reader:            logicsskill.NewSkillReader(),
+			IndexBuildService: logicsskill.NewSkillIndexBuildService(),
 		}
 	})
 	return h

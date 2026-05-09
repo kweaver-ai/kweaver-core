@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/i18n"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/i18n"
 )
 
 const PublicErrorType = "Public"

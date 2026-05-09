@@ -22,7 +22,7 @@ class BaseConfig(object):
     # 结构化数据库相关
     RDSHOSTDEFAULT = DIPHOSTDEFAULT
     RDSPORTDEFAULT = 3330
-    RDSDBNAMEDEFAULT = 'adp'
+    RDSDBNAMEDEFAULT = 'kweaver'
     RDSUSERDEFAULT = 'root'
     RDSPASSDEFAULT = 'password'
 
@@ -104,6 +104,11 @@ class BaseConfig(object):
     KAFKAPORT = os.getenv('KAFKAPORT', KAFKAPORTDEFAULT)
     KAFKAUSER = os.getenv('KAFKAUSER', KAFKAUSERDEFAULT)
     KAFKAPASS = os.getenv('KAFKAPASS', KAFKAPASSDEFAULT)
+
+    # 权限控制开关：true=开启完整鉴权与资源权限逻辑；false=关闭，所有接口放行，不过滤数据
+    AUTH_ENABLED = os.getenv('AUTH_ENABLED', 'false').lower() == 'true'
+    # 权限关闭时写入审计日志所用的匿名用户ID占位符
+    ANONYMOUS_USER_ID = "anonymous-user"
 
 
 base_config = BaseConfig()

@@ -2,6 +2,7 @@ package skill
 
 import (
 	"bytes"
+	"context"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +16,30 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+type skillRegistryAdapter struct {
+	*mocks.MockSkillRegistry
+	updateSkillMetadata   func(ctx context.Context, req *interfaces.UpdateSkillMetadataReq) (*interfaces.UpdateSkillMetadataResp, error)
+	updateSkillPackage    func(ctx context.Context, req *interfaces.UpdateSkillPackageReq) (*interfaces.UpdateSkillPackageResp, error)
+	republishSkillHistory func(ctx context.Context, req *interfaces.RepublishSkillHistoryReq) (*interfaces.RepublishSkillHistoryResp, error)
+	publishSkillHistory   func(ctx context.Context, req *interfaces.PublishSkillHistoryReq) (*interfaces.PublishSkillHistoryResp, error)
+}
+
+func (s *skillRegistryAdapter) UpdateSkillMetadata(ctx context.Context, req *interfaces.UpdateSkillMetadataReq) (*interfaces.UpdateSkillMetadataResp, error) {
+	return s.updateSkillMetadata(ctx, req)
+}
+
+func (s *skillRegistryAdapter) UpdateSkillPackage(ctx context.Context, req *interfaces.UpdateSkillPackageReq) (*interfaces.UpdateSkillPackageResp, error) {
+	return s.updateSkillPackage(ctx, req)
+}
+
+func (s *skillRegistryAdapter) RepublishSkillHistory(ctx context.Context, req *interfaces.RepublishSkillHistoryReq) (*interfaces.RepublishSkillHistoryResp, error) {
+	return s.republishSkillHistory(ctx, req)
+}
+
+func (s *skillRegistryAdapter) PublishSkillHistory(ctx context.Context, req *interfaces.PublishSkillHistoryReq) (*interfaces.PublishSkillHistoryResp, error) {
+	return s.publishSkillHistory(ctx, req)
+}
+
 func TestSkillHandler(t *testing.T) {
 	Convey("SkillHandler", t, func() {
 		ctrl := gomock.NewController(t)
@@ -25,7 +50,7 @@ func TestSkillHandler(t *testing.T) {
 			mockMarket := mocks.NewMockSkillMarket(ctrl)
 			mockReader := mocks.NewMockSkillReader(ctrl)
 			handler := &skillHandler{
-				Registry: mockRegistry,
+				Registry: &skillRegistryAdapter{MockSkillRegistry: mockRegistry},
 				Market:   mockMarket,
 				Reader:   mockReader,
 			}
@@ -66,12 +91,148 @@ func TestSkillHandler(t *testing.T) {
 			So(recorder.Code, ShouldEqual, http.StatusBadRequest)
 		})
 
+		Convey("UpdateSkillMetadata binds body and calls registry", func() {
+			mockRegistry := mocks.NewMockSkillRegistry(ctrl)
+			mockMarket := mocks.NewMockSkillMarket(ctrl)
+			mockReader := mocks.NewMockSkillReader(ctrl)
+			handler := &skillHandler{
+				Registry: &skillRegistryAdapter{
+					MockSkillRegistry: mockRegistry,
+					updateSkillMetadata: func(ctx context.Context, req *interfaces.UpdateSkillMetadataReq) (*interfaces.UpdateSkillMetadataResp, error) {
+						return &interfaces.UpdateSkillMetadataResp{SkillID: "skill-meta-1", Version: "v1", Status: interfaces.BizStatusEditing}, nil
+					},
+				},
+				Market: mockMarket,
+				Reader: mockReader,
+			}
+			handler.Registry.(*skillRegistryAdapter).updateSkillMetadata = func(_ context.Context, req *interfaces.UpdateSkillMetadataReq) (*interfaces.UpdateSkillMetadataResp, error) {
+				So(req.SkillID, ShouldEqual, "skill-meta-1")
+				So(req.Name, ShouldEqual, "demo-skill")
+				So(req.Description, ShouldEqual, "new-desc")
+				return &interfaces.UpdateSkillMetadataResp{SkillID: "skill-meta-1", Version: "v1", Status: interfaces.BizStatusEditing}, nil
+			}
+
+			recorder := performSkillRequest(http.MethodPut, "/skills/:skill_id/metadata", "application/json",
+				`{"name":"demo-skill","description":"new-desc","category":"other_category","source":"custom"}`,
+				map[string]string{
+					"x-business-domain": "bd-test",
+					"user_id":           "user-1",
+				}, handler.UpdateSkillMetadata, "skill-meta-1")
+
+			So(recorder.Code, ShouldEqual, http.StatusOK)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-meta-1"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"status":"editing"`)
+		})
+
+		Convey("UpdateSkillPackage binds multipart form and calls registry", func() {
+			mockRegistry := mocks.NewMockSkillRegistry(ctrl)
+			mockMarket := mocks.NewMockSkillMarket(ctrl)
+			mockReader := mocks.NewMockSkillReader(ctrl)
+			handler := &skillHandler{
+				Registry: &skillRegistryAdapter{
+					MockSkillRegistry: mockRegistry,
+					updateSkillPackage: func(ctx context.Context, req *interfaces.UpdateSkillPackageReq) (*interfaces.UpdateSkillPackageResp, error) {
+						return &interfaces.UpdateSkillPackageResp{SkillID: "skill-pkg-1", Version: "v2", Status: interfaces.BizStatusEditing}, nil
+					},
+				},
+				Market: mockMarket,
+				Reader: mockReader,
+			}
+			handler.Registry.(*skillRegistryAdapter).updateSkillPackage = func(_ context.Context, req *interfaces.UpdateSkillPackageReq) (*interfaces.UpdateSkillPackageResp, error) {
+				So(req.SkillID, ShouldEqual, "skill-pkg-1")
+				So(req.FileType, ShouldEqual, "zip")
+				return &interfaces.UpdateSkillPackageResp{SkillID: "skill-pkg-1", Version: "v2", Status: interfaces.BizStatusEditing}, nil
+			}
+
+			body := &bytes.Buffer{}
+			writer := multipart.NewWriter(body)
+			So(writer.WriteField("file_type", "zip"), ShouldBeNil)
+			filePart, err := writer.CreateFormFile("file", "skill.zip")
+			So(err, ShouldBeNil)
+			_, err = filePart.Write([]byte("zip-binary"))
+			So(err, ShouldBeNil)
+			So(writer.Close(), ShouldBeNil)
+
+			recorder := performSkillRequest(http.MethodPut, "/skills/:skill_id/package", writer.FormDataContentType(), body.String(), map[string]string{
+				"x-business-domain": "bd-test",
+				"user_id":           "user-1",
+			}, handler.UpdateSkillPackage, "skill-pkg-1")
+
+			So(recorder.Code, ShouldEqual, http.StatusOK)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-pkg-1"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"version":"v2"`)
+		})
+
+		Convey("RepublishSkillHistory binds body and calls registry", func() {
+			mockRegistry := mocks.NewMockSkillRegistry(ctrl)
+			mockMarket := mocks.NewMockSkillMarket(ctrl)
+			mockReader := mocks.NewMockSkillReader(ctrl)
+			handler := &skillHandler{
+				Registry: &skillRegistryAdapter{
+					MockSkillRegistry: mockRegistry,
+					republishSkillHistory: func(ctx context.Context, req *interfaces.RepublishSkillHistoryReq) (*interfaces.RepublishSkillHistoryResp, error) {
+						return &interfaces.RepublishSkillHistoryResp{SkillID: "skill-h1", Version: "hist-v1", Status: interfaces.BizStatusEditing}, nil
+					},
+				},
+				Market: mockMarket,
+				Reader: mockReader,
+			}
+			handler.Registry.(*skillRegistryAdapter).republishSkillHistory = func(_ context.Context, req *interfaces.RepublishSkillHistoryReq) (*interfaces.RepublishSkillHistoryResp, error) {
+				So(req.SkillID, ShouldEqual, "skill-h1")
+				So(req.Version, ShouldEqual, "hist-v1")
+				return &interfaces.RepublishSkillHistoryResp{SkillID: "skill-h1", Version: "hist-v1", Status: interfaces.BizStatusEditing}, nil
+			}
+
+			recorder := performSkillRequest(http.MethodPost, "/skills/:skill_id/history/republish", "application/json",
+				`{"version":"hist-v1"}`,
+				map[string]string{
+					"x-business-domain": "bd-test",
+					"user_id":           "user-1",
+				}, handler.RepublishSkillHistory, "skill-h1")
+
+			So(recorder.Code, ShouldEqual, http.StatusOK)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-h1"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"status":"editing"`)
+		})
+
+		Convey("PublishSkillHistory binds body and calls registry", func() {
+			mockRegistry := mocks.NewMockSkillRegistry(ctrl)
+			mockMarket := mocks.NewMockSkillMarket(ctrl)
+			mockReader := mocks.NewMockSkillReader(ctrl)
+			handler := &skillHandler{
+				Registry: &skillRegistryAdapter{
+					MockSkillRegistry: mockRegistry,
+					publishSkillHistory: func(ctx context.Context, req *interfaces.PublishSkillHistoryReq) (*interfaces.PublishSkillHistoryResp, error) {
+						return &interfaces.PublishSkillHistoryResp{SkillID: "skill-h2", Version: "hist-v2", Status: interfaces.BizStatusPublished}, nil
+					},
+				},
+				Market: mockMarket,
+				Reader: mockReader,
+			}
+			handler.Registry.(*skillRegistryAdapter).publishSkillHistory = func(_ context.Context, req *interfaces.PublishSkillHistoryReq) (*interfaces.PublishSkillHistoryResp, error) {
+				So(req.SkillID, ShouldEqual, "skill-h2")
+				So(req.Version, ShouldEqual, "hist-v2")
+				return &interfaces.PublishSkillHistoryResp{SkillID: "skill-h2", Version: "hist-v2", Status: interfaces.BizStatusPublished}, nil
+			}
+
+			recorder := performSkillRequest(http.MethodPost, "/skills/:skill_id/history/publish", "application/json",
+				`{"version":"hist-v2"}`,
+				map[string]string{
+					"x-business-domain": "bd-test",
+					"user_id":           "user-1",
+				}, handler.PublishSkillHistory, "skill-h2")
+
+			So(recorder.Code, ShouldEqual, http.StatusOK)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-h2"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"status":"published"`)
+		})
+
 		Convey("GetSkillContent binds uri and calls reader", func() {
 			mockRegistry := mocks.NewMockSkillRegistry(ctrl)
 			mockMarket := mocks.NewMockSkillMarket(ctrl)
 			mockReader := mocks.NewMockSkillReader(ctrl)
 			handler := &skillHandler{
-				Registry: mockRegistry,
+				Registry: &skillRegistryAdapter{MockSkillRegistry: mockRegistry},
 				Market:   mockMarket,
 				Reader:   mockReader,
 			}
@@ -88,7 +249,8 @@ func TestSkillHandler(t *testing.T) {
 			}, handler.GetSkillContent, "skill-2")
 
 			So(recorder.Code, ShouldEqual, http.StatusOK)
-			So(recorder.Body.String(), ShouldContainSubstring, `"skill_content":"guide"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-2"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"url":"https://download/skill-2/SKILL.md"`)
 		})
 
 		Convey("ReadSkillFile binds body and calls reader", func() {
@@ -96,7 +258,7 @@ func TestSkillHandler(t *testing.T) {
 			mockMarket := mocks.NewMockSkillMarket(ctrl)
 			mockReader := mocks.NewMockSkillReader(ctrl)
 			handler := &skillHandler{
-				Registry: mockRegistry,
+				Registry: &skillRegistryAdapter{MockSkillRegistry: mockRegistry},
 				Market:   mockMarket,
 				Reader:   mockReader,
 			}
@@ -114,7 +276,9 @@ func TestSkillHandler(t *testing.T) {
 			}, handler.ReadSkillFile, "skill-3")
 
 			So(recorder.Code, ShouldEqual, http.StatusOK)
-			So(recorder.Body.String(), ShouldContainSubstring, `"content":"body"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-3"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"rel_path":"refs/guide.md"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"url":"https://download/skill-3/refs/guide.md"`)
 		})
 
 		Convey("DownloadSkill binds uri and returns zip response", func() {
@@ -122,7 +286,7 @@ func TestSkillHandler(t *testing.T) {
 			mockMarket := mocks.NewMockSkillMarket(ctrl)
 			mockReader := mocks.NewMockSkillReader(ctrl)
 			handler := &skillHandler{
-				Registry: mockRegistry,
+				Registry: &skillRegistryAdapter{MockSkillRegistry: mockRegistry},
 				Market:   mockMarket,
 				Reader:   mockReader,
 			}
@@ -153,7 +317,7 @@ func TestSkillHandler(t *testing.T) {
 			mockMarket := mocks.NewMockSkillMarket(ctrl)
 			mockReader := mocks.NewMockSkillReader(ctrl)
 			handler := &skillHandler{
-				Registry: mockRegistry,
+				Registry: &skillRegistryAdapter{MockSkillRegistry: mockRegistry},
 				Market:   mockMarket,
 				Reader:   mockReader,
 			}
@@ -168,8 +332,11 @@ func TestSkillHandler(t *testing.T) {
 							PageSize:   5,
 							TotalCount: 1,
 						},
-						Data: []*interfaces.SkillSummary{
-							{SkillID: "skill-market-1", Name: "market-demo"},
+						Data: []*interfaces.SkillInfo{
+							{
+								SkillID: "skill-market-1",
+								Name:    "market-demo",
+							},
 						},
 					}, nil
 				},
@@ -193,7 +360,7 @@ func TestSkillHandler(t *testing.T) {
 			mockMarket := mocks.NewMockSkillMarket(ctrl)
 			mockReader := mocks.NewMockSkillReader(ctrl)
 			handler := &skillHandler{
-				Registry: mockRegistry,
+				Registry: &skillRegistryAdapter{MockSkillRegistry: mockRegistry},
 				Market:   mockMarket,
 				Reader:   mockReader,
 			}
@@ -217,6 +384,44 @@ func TestSkillHandler(t *testing.T) {
 			So(recorder.Code, ShouldEqual, http.StatusOK)
 			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-market-2"`)
 			So(recorder.Body.String(), ShouldContainSubstring, `"status":"published"`)
+		})
+
+		Convey("ExecuteSkill binds body and calls registry", func() {
+			mockRegistry := mocks.NewMockSkillRegistry(ctrl)
+			mockMarket := mocks.NewMockSkillMarket(ctrl)
+			mockReader := mocks.NewMockSkillReader(ctrl)
+			handler := &skillHandler{
+				Registry: &skillRegistryAdapter{MockSkillRegistry: mockRegistry},
+				Market:   mockMarket,
+				Reader:   mockReader,
+			}
+			mockRegistry.EXPECT().ExecuteSkill(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(_ any, req *interfaces.ExecuteSkillReq) (*interfaces.ExecuteSkillResp, error) {
+					So(req.SkillID, ShouldEqual, "skill-5")
+					So(req.EntryShell, ShouldEqual, "bash run.sh")
+					return &interfaces.ExecuteSkillResp{
+						SkillID:      "skill-5",
+						SessionID:    "sess-1",
+						WorkDir:      "/workspace/skills/sess-1/demo-skill",
+						UploadedPath: "/workspace/skills/skill-5/demo.zip",
+						Command:      "bash run.sh",
+						ExitCode:     0,
+						Mocked:       true,
+					}, nil
+				},
+			)
+
+			recorder := performSkillRequest(http.MethodPost, "/skills/:skill_id/execute", "application/json",
+				`{"entry_shell":"bash run.sh"}`,
+				map[string]string{
+					"x-business-domain": "bd-test",
+					"user_id":           "user-1",
+				}, handler.ExecuteSkill, "skill-5")
+
+			So(recorder.Code, ShouldEqual, http.StatusOK)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-5"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"session_id":"sess-1"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"mocked":true`)
 		})
 	})
 }

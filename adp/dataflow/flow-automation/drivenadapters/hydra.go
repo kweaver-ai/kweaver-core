@@ -14,10 +14,10 @@ import (
 	"sync"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	otelHttp "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/http"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
-	traceLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	otelHttp "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/http"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
+	traceLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/log"
 )
 
 //go:generate mockgen -package mock_drivenadapters -source ../drivenadapters/hydra.go -destination ../tests/mock_drivenadapters/hydra_mock.go

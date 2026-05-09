@@ -826,497 +826,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取指定对话的session列表，包含session的详细信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "可观测性"
-                ],
-                "summary": "获取指定对话的session列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "agent_id",
-                        "name": "agent_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "conversation_id",
-                        "name": "conversation_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功返回session列表",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "404": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "500": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/detail": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取指定session的详情信息，包含多个指标",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "可观测性"
-                ],
-                "summary": "获取指定session的详情信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "agent_id",
-                        "name": "agent_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "conversation_id",
-                        "name": "conversation_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "session_id",
-                        "name": "session_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功返回session详情",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "404": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "500": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取指定对话的session下的run列表，返回每个run的详情列表",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "可观测性"
-                ],
-                "summary": "获取指定session下的run列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "agent_id",
-                        "name": "agent_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "conversation_id",
-                        "name": "conversation_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "session_id",
-                        "name": "session_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功返回run列表",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "404": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "500": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run/{run_id}/detail": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取指定run的详情信息，包含run的完整信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "可观测性"
-                ],
-                "summary": "获取指定run的详情信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "agent_id",
-                        "name": "agent_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "conversation_id",
-                        "name": "conversation_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "session_id",
-                        "name": "session_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "run_id",
-                        "name": "run_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功返回run详情",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "404": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "500": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/observability/agent/{agent_id}/detail": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "查询指定Agent的可观测信息，返回结果包含Agent的配置信息以及可观测性的指标，支持时间过滤",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "可观测性"
-                ],
-                "summary": "查询指定Agent的可观测信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "agent_id",
-                        "name": "agent_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功返回Agent可观测信息",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "404": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "500": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/observability/agent/{agent_key}/conversation": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "查询Agent下的所有对话列表，支持分页和根据对话title模糊查询",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "可观测性"
-                ],
-                "summary": "查询Agent下的所有对话列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "agent_key",
-                        "name": "agent_key",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功返回对话列表",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "404": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "500": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
         "/v3/agent": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "- Agent列表（供模型工厂做 Agent 的 Benchmarch 使用） - 只提供` + "`" + `内部接口` + "`" + `",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "agent-ignore"
-                ],
-                "summary": "Agent列表（benchmarch）",
-                "responses": {
-                    "200": {
-                        "description": "成功",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "401": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "403": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "500": {
-                        "description": "失败",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -2564,6 +2074,70 @@ const docTemplate = `{
                         "description": "失败",
                         "schema": {
                             "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/v3/agent/react": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "创建一个新的 React 模式 Agent 配置。请求体与普通创建接口一致，但 config.mode 必须为 react。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agent",
+                    "agent-internal"
+                ],
+                "summary": "创建react agent",
+                "parameters": [
+                    {
+                        "description": "React Agent 配置",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/swagger.AgentConfigCreateReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.AgentConfigCreateRes"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "禁止访问",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.APIError"
                         }
                     }
                 }
@@ -4309,6 +3883,19 @@ const docTemplate = `{
                 "RespErrorTypeAgentExecutor"
             ]
         },
+        "cdaenum.AgentMode": {
+            "type": "string",
+            "enum": [
+                "default",
+                "dolphin",
+                "react"
+            ],
+            "x-enum-varnames": [
+                "AgentModeDefault",
+                "AgentModeDolphin",
+                "AgentModeReact"
+            ]
+        },
         "cdaenum.AvatarType": {
             "type": "integer",
             "enum": [
@@ -5085,6 +4672,19 @@ const docTemplate = `{
                 "question": {
                     "description": "问题内容",
                     "type": "string"
+                }
+            }
+        },
+        "daconfvalobj.ReactConfig": {
+            "type": "object",
+            "properties": {
+                "disable_history_in_a_conversation": {
+                    "description": "是否禁用单次会话的历史记录",
+                    "type": "boolean"
+                },
+                "disable_llm_cache": {
+                    "description": "是否禁用LLM缓存",
+                    "type": "boolean"
                 }
             }
         },
@@ -6043,6 +5643,14 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "mode": {
+                    "description": "配置模式",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/cdaenum.AgentMode"
+                        }
+                    ]
+                },
                 "opening_remark_config": {
                     "description": "开场白配置",
                     "allOf": [
@@ -6087,6 +5695,14 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/daconfvalobj.PresetQuestion"
                     }
+                },
+                "react_config": {
+                    "description": "ReAct 模式配置",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/daconfvalobj.ReactConfig"
+                        }
+                    ]
                 },
                 "related_question": {
                     "description": "相关问题配置",

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
+	icommon "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
 	myErr "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/errors"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/logger"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
@@ -518,6 +519,11 @@ func TestRegisterOperatorByOpenAPI(t *testing.T) {
 			So(resp[0].Status, ShouldEqual, interfaces.ResultStatusFailed)
 		})
 		Convey("添加成功,发送审计日志", func() {
+			ctx := icommon.SetAccountAuthContextToCtx(context.Background(), &interfaces.AccountAuthContext{
+				AccountID:   "user-1",
+				AccountType: interfaces.AccessorTypeUser,
+				TokenInfo:   &interfaces.TokenInfo{VisitorID: "user-1"},
+			})
 			req.MetadataType = interfaces.MetadataTypeFunc
 			req.DirectPublish = true
 			metadataDBs := []interfaces.IMetadataDB{&model.FunctionMetadataDB{}}
@@ -546,7 +552,7 @@ func TestRegisterOperatorByOpenAPI(t *testing.T) {
 			mockOpReleaseDB.EXPECT().Insert(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			mockOpReleaseHistoryDB.EXPECT().Insert(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			mockAuditLog.EXPECT().Logger(gomock.Any(), gomock.Any()).Times(2)
-			resp, err := operator.RegisterOperatorByOpenAPI(context.TODO(), req, "")
+			resp, err := operator.RegisterOperatorByOpenAPI(ctx, req, "")
 			So(err, ShouldBeNil)
 			So(resp, ShouldNotBeNil)
 			So(len(resp), ShouldEqual, 1)

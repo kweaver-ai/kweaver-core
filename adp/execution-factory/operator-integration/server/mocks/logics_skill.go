@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	interfaces "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
+	model "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -70,6 +71,21 @@ func (mr *MockSkillRegistryMockRecorder) DownloadSkill(ctx, req any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadSkill", reflect.TypeOf((*MockSkillRegistry)(nil).DownloadSkill), ctx, req)
 }
 
+// ExecuteSkill mocks base method.
+func (m *MockSkillRegistry) ExecuteSkill(ctx context.Context, req *interfaces.ExecuteSkillReq) (*interfaces.ExecuteSkillResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecuteSkill", ctx, req)
+	ret0, _ := ret[0].(*interfaces.ExecuteSkillResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExecuteSkill indicates an expected call of ExecuteSkill.
+func (mr *MockSkillRegistryMockRecorder) ExecuteSkill(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteSkill", reflect.TypeOf((*MockSkillRegistry)(nil).ExecuteSkill), ctx, req)
+}
+
 // GetSkillDetail mocks base method.
 func (m *MockSkillRegistry) GetSkillDetail(ctx context.Context, req *interfaces.GetSkillDetailReq) (*interfaces.SkillInfo, error) {
 	m.ctrl.T.Helper()
@@ -83,6 +99,21 @@ func (m *MockSkillRegistry) GetSkillDetail(ctx context.Context, req *interfaces.
 func (mr *MockSkillRegistryMockRecorder) GetSkillDetail(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSkillDetail", reflect.TypeOf((*MockSkillRegistry)(nil).GetSkillDetail), ctx, req)
+}
+
+// PublishSkillHistory mocks base method.
+func (m *MockSkillRegistry) PublishSkillHistory(ctx context.Context, req *interfaces.PublishSkillHistoryReq) (*interfaces.PublishSkillHistoryResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PublishSkillHistory", ctx, req)
+	ret0, _ := ret[0].(*interfaces.PublishSkillHistoryResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PublishSkillHistory indicates an expected call of PublishSkillHistory.
+func (mr *MockSkillRegistryMockRecorder) PublishSkillHistory(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishSkillHistory", reflect.TypeOf((*MockSkillRegistry)(nil).PublishSkillHistory), ctx, req)
 }
 
 // QuerySkillList mocks base method.
@@ -113,6 +144,51 @@ func (m *MockSkillRegistry) RegisterSkill(ctx context.Context, req *interfaces.R
 func (mr *MockSkillRegistryMockRecorder) RegisterSkill(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterSkill", reflect.TypeOf((*MockSkillRegistry)(nil).RegisterSkill), ctx, req)
+}
+
+// RepublishSkillHistory mocks base method.
+func (m *MockSkillRegistry) RepublishSkillHistory(ctx context.Context, req *interfaces.RepublishSkillHistoryReq) (*interfaces.RepublishSkillHistoryResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RepublishSkillHistory", ctx, req)
+	ret0, _ := ret[0].(*interfaces.RepublishSkillHistoryResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RepublishSkillHistory indicates an expected call of RepublishSkillHistory.
+func (mr *MockSkillRegistryMockRecorder) RepublishSkillHistory(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RepublishSkillHistory", reflect.TypeOf((*MockSkillRegistry)(nil).RepublishSkillHistory), ctx, req)
+}
+
+// UpdateSkillMetadata mocks base method.
+func (m *MockSkillRegistry) UpdateSkillMetadata(ctx context.Context, req *interfaces.UpdateSkillMetadataReq) (*interfaces.UpdateSkillMetadataResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSkillMetadata", ctx, req)
+	ret0, _ := ret[0].(*interfaces.UpdateSkillMetadataResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSkillMetadata indicates an expected call of UpdateSkillMetadata.
+func (mr *MockSkillRegistryMockRecorder) UpdateSkillMetadata(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSkillMetadata", reflect.TypeOf((*MockSkillRegistry)(nil).UpdateSkillMetadata), ctx, req)
+}
+
+// UpdateSkillPackage mocks base method.
+func (m *MockSkillRegistry) UpdateSkillPackage(ctx context.Context, req *interfaces.UpdateSkillPackageReq) (*interfaces.UpdateSkillPackageResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSkillPackage", ctx, req)
+	ret0, _ := ret[0].(*interfaces.UpdateSkillPackageResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSkillPackage indicates an expected call of UpdateSkillPackage.
+func (mr *MockSkillRegistryMockRecorder) UpdateSkillPackage(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSkillPackage", reflect.TypeOf((*MockSkillRegistry)(nil).UpdateSkillPackage), ctx, req)
 }
 
 // UpdateSkillStatus mocks base method.
@@ -223,6 +299,21 @@ func (mr *MockSkillReaderMockRecorder) GetSkillContent(ctx, req any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSkillContent", reflect.TypeOf((*MockSkillReader)(nil).GetSkillContent), ctx, req)
 }
 
+// GetSkillReleaseHistory mocks base method.
+func (m *MockSkillReader) GetSkillReleaseHistory(ctx context.Context, req *interfaces.GetSkillReleaseHistoryReq) ([]*interfaces.SkillReleaseHistoryInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSkillReleaseHistory", ctx, req)
+	ret0, _ := ret[0].([]*interfaces.SkillReleaseHistoryInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSkillReleaseHistory indicates an expected call of GetSkillReleaseHistory.
+func (mr *MockSkillReaderMockRecorder) GetSkillReleaseHistory(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSkillReleaseHistory", reflect.TypeOf((*MockSkillReader)(nil).GetSkillReleaseHistory), ctx, req)
+}
+
 // ReadSkillFile mocks base method.
 func (m *MockSkillReader) ReadSkillFile(ctx context.Context, req *interfaces.ReadSkillFileReq) (*interfaces.ReadSkillFileResp, error) {
 	m.ctrl.T.Helper()
@@ -236,4 +327,197 @@ func (m *MockSkillReader) ReadSkillFile(ctx context.Context, req *interfaces.Rea
 func (mr *MockSkillReaderMockRecorder) ReadSkillFile(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadSkillFile", reflect.TypeOf((*MockSkillReader)(nil).ReadSkillFile), ctx, req)
+}
+
+// MockSkillIndexBuildService is a mock of SkillIndexBuildService interface.
+type MockSkillIndexBuildService struct {
+	ctrl     *gomock.Controller
+	recorder *MockSkillIndexBuildServiceMockRecorder
+	isgomock struct{}
+}
+
+// MockSkillIndexBuildServiceMockRecorder is the mock recorder for MockSkillIndexBuildService.
+type MockSkillIndexBuildServiceMockRecorder struct {
+	mock *MockSkillIndexBuildService
+}
+
+// NewMockSkillIndexBuildService creates a new mock instance.
+func NewMockSkillIndexBuildService(ctrl *gomock.Controller) *MockSkillIndexBuildService {
+	mock := &MockSkillIndexBuildService{ctrl: ctrl}
+	mock.recorder = &MockSkillIndexBuildServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSkillIndexBuildService) EXPECT() *MockSkillIndexBuildServiceMockRecorder {
+	return m.recorder
+}
+
+// CancelTask mocks base method.
+func (m *MockSkillIndexBuildService) CancelTask(ctx context.Context, req *interfaces.CancelSkillIndexBuildTaskReq) (*interfaces.CancelSkillIndexBuildTaskResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CancelTask", ctx, req)
+	ret0, _ := ret[0].(*interfaces.CancelSkillIndexBuildTaskResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CancelTask indicates an expected call of CancelTask.
+func (mr *MockSkillIndexBuildServiceMockRecorder) CancelTask(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelTask", reflect.TypeOf((*MockSkillIndexBuildService)(nil).CancelTask), ctx, req)
+}
+
+// CreateTask mocks base method.
+func (m *MockSkillIndexBuildService) CreateTask(ctx context.Context, req *interfaces.CreateSkillIndexBuildTaskReq) (*interfaces.CreateSkillIndexBuildTaskResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTask", ctx, req)
+	ret0, _ := ret[0].(*interfaces.CreateSkillIndexBuildTaskResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateTask indicates an expected call of CreateTask.
+func (mr *MockSkillIndexBuildServiceMockRecorder) CreateTask(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockSkillIndexBuildService)(nil).CreateTask), ctx, req)
+}
+
+// GetTask mocks base method.
+func (m *MockSkillIndexBuildService) GetTask(ctx context.Context, req *interfaces.GetSkillIndexBuildTaskReq) (*interfaces.SkillIndexBuildTaskResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTask", ctx, req)
+	ret0, _ := ret[0].(*interfaces.SkillIndexBuildTaskResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTask indicates an expected call of GetTask.
+func (mr *MockSkillIndexBuildServiceMockRecorder) GetTask(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTask", reflect.TypeOf((*MockSkillIndexBuildService)(nil).GetTask), ctx, req)
+}
+
+// QueryTaskList mocks base method.
+func (m *MockSkillIndexBuildService) QueryTaskList(ctx context.Context, req *interfaces.QuerySkillIndexBuildTaskListReq) (*interfaces.QuerySkillIndexBuildTaskListResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "QueryTaskList", ctx, req)
+	ret0, _ := ret[0].(*interfaces.QuerySkillIndexBuildTaskListResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// QueryTaskList indicates an expected call of QueryTaskList.
+func (mr *MockSkillIndexBuildServiceMockRecorder) QueryTaskList(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryTaskList", reflect.TypeOf((*MockSkillIndexBuildService)(nil).QueryTaskList), ctx, req)
+}
+
+// RetryTask mocks base method.
+func (m *MockSkillIndexBuildService) RetryTask(ctx context.Context, req *interfaces.RetrySkillIndexBuildTaskReq) (*interfaces.RetrySkillIndexBuildTaskResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RetryTask", ctx, req)
+	ret0, _ := ret[0].(*interfaces.RetrySkillIndexBuildTaskResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RetryTask indicates an expected call of RetryTask.
+func (mr *MockSkillIndexBuildServiceMockRecorder) RetryTask(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetryTask", reflect.TypeOf((*MockSkillIndexBuildService)(nil).RetryTask), ctx, req)
+}
+
+// MockSkillIndexSyncService is a mock of SkillIndexSyncService interface.
+type MockSkillIndexSyncService struct {
+	ctrl     *gomock.Controller
+	recorder *MockSkillIndexSyncServiceMockRecorder
+	isgomock struct{}
+}
+
+// MockSkillIndexSyncServiceMockRecorder is the mock recorder for MockSkillIndexSyncService.
+type MockSkillIndexSyncServiceMockRecorder struct {
+	mock *MockSkillIndexSyncService
+}
+
+// NewMockSkillIndexSyncService creates a new mock instance.
+func NewMockSkillIndexSyncService(ctrl *gomock.Controller) *MockSkillIndexSyncService {
+	mock := &MockSkillIndexSyncService{ctrl: ctrl}
+	mock.recorder = &MockSkillIndexSyncServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSkillIndexSyncService) EXPECT() *MockSkillIndexSyncServiceMockRecorder {
+	return m.recorder
+}
+
+// DeleteSkill mocks base method.
+func (m *MockSkillIndexSyncService) DeleteSkill(ctx context.Context, skillID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSkill", ctx, skillID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSkill indicates an expected call of DeleteSkill.
+func (mr *MockSkillIndexSyncServiceMockRecorder) DeleteSkill(ctx, skillID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSkill", reflect.TypeOf((*MockSkillIndexSyncService)(nil).DeleteSkill), ctx, skillID)
+}
+
+// EnsureInitialized mocks base method.
+func (m *MockSkillIndexSyncService) EnsureInitialized(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnsureInitialized", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EnsureInitialized indicates an expected call of EnsureInitialized.
+func (mr *MockSkillIndexSyncServiceMockRecorder) EnsureInitialized(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureInitialized", reflect.TypeOf((*MockSkillIndexSyncService)(nil).EnsureInitialized), ctx)
+}
+
+// Init mocks base method.
+func (m *MockSkillIndexSyncService) Init(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Init", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Init indicates an expected call of Init.
+func (mr *MockSkillIndexSyncServiceMockRecorder) Init(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockSkillIndexSyncService)(nil).Init), ctx)
+}
+
+// UpdateSkill mocks base method.
+func (m *MockSkillIndexSyncService) UpdateSkill(ctx context.Context, skill *model.SkillRepositoryDB) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSkill", ctx, skill)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSkill indicates an expected call of UpdateSkill.
+func (mr *MockSkillIndexSyncServiceMockRecorder) UpdateSkill(ctx, skill any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSkill", reflect.TypeOf((*MockSkillIndexSyncService)(nil).UpdateSkill), ctx, skill)
+}
+
+// UpsertSkill mocks base method.
+func (m *MockSkillIndexSyncService) UpsertSkill(ctx context.Context, skill *model.SkillRepositoryDB) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertSkill", ctx, skill)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpsertSkill indicates an expected call of UpsertSkill.
+func (mr *MockSkillIndexSyncServiceMockRecorder) UpsertSkill(ctx, skill any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertSkill", reflect.TypeOf((*MockSkillIndexSyncService)(nil).UpsertSkill), ctx, skill)
 }

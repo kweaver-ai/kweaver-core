@@ -1,6 +1,7 @@
 package agentconfigresp
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/entity/daconfeo"
@@ -206,6 +207,97 @@ func TestDetailRes_WithChineseCharacters(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "中文智能体", res.Name)
 	assert.Equal(t, "中文描述", res.Profile)
+}
+
+func TestDetailRes_LoadFromEo_UsesReactConfigFieldInJSON(t *testing.T) {
+	t.Parallel()
+
+	res := NewDetailRes()
+	eo := &daconfeo.DataAgent{
+		DataAgentPo: dapo.DataAgentPo{
+			ID:   "react-agent",
+			Key:  "react-agent",
+			Name: "React Agent",
+		},
+		Config: &daconfvalobj.Config{
+			Input:  &daconfvalobj.Input{},
+			Output: &daconfvalobj.Output{},
+			Mode:   cdaenum.AgentModeReact,
+			ReactConfig: &daconfvalobj.ReactConfig{
+				DisableHistoryInAConversation: true,
+				DisableLLMCache:               true,
+			},
+		},
+	}
+
+	err := res.LoadFromEo(eo)
+	require.NoError(t, err)
+
+	data, err := json.Marshal(res)
+	require.NoError(t, err)
+
+	var payload map[string]any
+	err = json.Unmarshal(data, &payload)
+	require.NoError(t, err)
+
+	config, ok := payload["config"].(map[string]any)
+	require.True(t, ok)
+	_, ok = config["react_config"]
+	assert.True(t, ok)
+}
+
+func TestDetailRes_LoadFromEo_FillsDolphinModeOnResponseCopy(t *testing.T) {
+	t.Parallel()
+
+	res := NewDetailRes()
+	eo := &daconfeo.DataAgent{
+		DataAgentPo: dapo.DataAgentPo{
+			ID:   "dolphin-agent",
+			Key:  "dolphin-agent",
+			Name: "Dolphin Agent",
+		},
+		Config: &daconfvalobj.Config{
+			Input:         &daconfvalobj.Input{},
+			Output:        &daconfvalobj.Output{},
+			IsDolphinMode: cdaenum.DolphinModeEnabled,
+		},
+	}
+
+	err := res.LoadFromEo(eo)
+	require.NoError(t, err)
+
+	require.NotNil(t, res.Config)
+	assert.Equal(t, cdaenum.AgentModeDolphin, res.Config.Mode)
+	assert.Equal(t, cdaenum.AgentModeDolphin, res.Config.GetMode())
+	assert.Empty(t, eo.Config.Mode)
+	assert.NotSame(t, eo.Config, res.Config)
+}
+
+func TestDetailRes_LoadFromEo_FillsDefaultModeOnResponseCopy(t *testing.T) {
+	t.Parallel()
+
+	res := NewDetailRes()
+	eo := &daconfeo.DataAgent{
+		DataAgentPo: dapo.DataAgentPo{
+			ID:   "default-agent",
+			Key:  "default-agent",
+			Name: "Default Agent",
+		},
+		Config: &daconfvalobj.Config{
+			Input:         &daconfvalobj.Input{},
+			Output:        &daconfvalobj.Output{},
+			IsDolphinMode: cdaenum.DolphinModeDisabled,
+		},
+	}
+
+	err := res.LoadFromEo(eo)
+	require.NoError(t, err)
+
+	require.NotNil(t, res.Config)
+	assert.Equal(t, cdaenum.AgentModeDefault, res.Config.Mode)
+	assert.Equal(t, cdaenum.AgentModeDefault, res.Config.GetMode())
+	assert.Empty(t, eo.Config.Mode)
+	assert.NotSame(t, eo.Config, res.Config)
 }
 
 // Helper function

@@ -31,6 +31,8 @@ type ServerSetting struct {
 	WriteTimeout             time.Duration `mapstructure:"writeTimeOut"`
 	ViewDataTimeout          string        `mapstructure:"viewDataTimeout"`
 	DefaultSmallModelEnabled bool          `mapstructure:"defaultSmallModelEnabled"`
+	// FilteredCrossJoinMaxEdgeExpand caps virtual edge expansion per filtered_cross_join step in subgraph BFS (silent truncate). 0 uses default in code.
+	FilteredCrossJoinMaxEdgeExpand int `mapstructure:"filteredCrossJoinMaxEdgeExpand"`
 }
 
 // app配置项
@@ -43,8 +45,9 @@ type AppSetting struct {
 	OpenSearchSetting rest.OpenSearchClientConfig
 	HydraAdminSetting hydra.HydraAdminSetting
 
-	BKNBackendUrl string
-	UniQueryUrl   string
+	BKNBackendUrl  string
+	UniQueryUrl    string
+	VegaBackendUrl string
 	// 算子执行 url
 	AgentOperatorUrl string
 	// 工具箱执行 url
@@ -69,6 +72,7 @@ const (
 	modelFactoryAPIServiceName     string = "mf-model-api"
 	bknBackendServiceName          string = "bkn-backend"
 	uniQueryServiceName            string = "uniquery"
+	vegaBackendServiceName         string = "vega-backend"
 	agentOperatorServiceName       string = "agent-operator-integration"
 )
 
@@ -77,6 +81,9 @@ var (
 	vp         *viper.Viper
 
 	settingOnce sync.Once
+
+	// 当前系统时区
+	APP_LOCATION *time.Location
 )
 
 // NewSetting 读取服务配置
@@ -119,6 +126,14 @@ func loadSetting(vp *viper.Viper) {
 		logger.Fatalf("err:%s\n", err)
 	}
 
+	// 加载时区
+	loc, err := time.LoadLocation(os.Getenv("TZ"))
+	if err != nil {
+		loc = time.Local
+		logger.Warnf("WARNING: Failed to load timezone from env, using Local[%v] as default. Error: %v\n", time.Local, err)
+	}
+	APP_LOCATION = loc
+
 	SetLogSetting(appSetting.LogSetting)
 
 	SetOpenSearchSetting()
@@ -130,6 +145,7 @@ func loadSetting(vp *viper.Viper) {
 	SetModelFactoryAPISetting()
 
 	SetUniQuerySetting()
+	SetVegaBackendSetting()
 
 	SetAgentOperatorSetting()
 
@@ -238,6 +254,17 @@ func SetUniQuerySetting() {
 	port := setting["port"].(int)
 
 	appSetting.UniQueryUrl = fmt.Sprintf("%s://%s:%d/api/mdl-uniquery/in/v1", protocol, host, port)
+}
+
+func SetVegaBackendSetting() {
+	setting, ok := appSetting.DepServices[vegaBackendServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", vegaBackendServiceName)
+	}
+	protocol := setting["protocol"].(string)
+	host := setting["host"].(string)
+	port := setting["port"].(int)
+	appSetting.VegaBackendUrl = fmt.Sprintf("%s://%s:%d/api/vega-backend/in/v1", protocol, host, port)
 }
 
 func SetAgentOperatorSetting() {

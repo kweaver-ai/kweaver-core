@@ -3,7 +3,7 @@ package entity
 import (
 	"testing"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/store"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/store"
 	"github.com/stretchr/testify/assert"
 )
 

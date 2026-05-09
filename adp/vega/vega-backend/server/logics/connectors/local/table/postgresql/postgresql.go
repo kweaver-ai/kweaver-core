@@ -53,12 +53,12 @@ func NewPostgresqlConnector() connectors.TableConnector {
 
 // GetType 返回数据源类型键（与 t_connector_type.f_type、factory 注册键一致）。
 func (c *PostgresqlConnector) GetType() string {
-	return "postgresql"
+	return interfaces.ConnectorTypePostgreSQL
 }
 
 // GetName 返回连接器名称。
 func (c *PostgresqlConnector) GetName() string {
-	return "postgresql"
+	return interfaces.ConnectorTypePostgreSQL
 }
 
 // GetMode 返回连接器模式。
@@ -167,7 +167,7 @@ func (c *PostgresqlConnector) Connect(ctx context.Context) error {
 	}
 
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 		return err
 	}
 
@@ -233,7 +233,7 @@ func (c *PostgresqlConnector) ExecuteRawSQL(ctx context.Context, sql string) (*i
 	if err != nil {
 		return nil, fmt.Errorf("execute query failed: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {

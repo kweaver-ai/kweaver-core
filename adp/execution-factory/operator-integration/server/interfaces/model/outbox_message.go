@@ -23,7 +23,7 @@ const (
 	OutboxMessageStatusPending string = "pending" // 待处理
 	OutboxMessageStatusFailed  string = "failed"  // 失败
 )
-
+//go:generate mockgen -source=outbox_message.go -destination=../../mocks/model_outbox_message.go -package=mocks
 // IOutboxMessage outbox消息接口
 type IOutboxMessage interface {
 	Insert(ctx context.Context, tx *sql.Tx, message *OutboxMessageDB) (eventID string, err error)

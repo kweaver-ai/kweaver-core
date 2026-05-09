@@ -39,7 +39,6 @@ tags:
   - name: 对话管理
   - name: 对话session管理
   - name: 对话
-  - name: 可观测性
   - name: 自定义错误码汇总
   - name: 相关文档
     description: |-
@@ -67,7 +66,6 @@ x-tagGroups:
       - 对话管理
       - 对话session管理
       - 对话
-      - 可观测性
   - name: 错误码
     tags:
       - 自定义错误码汇总

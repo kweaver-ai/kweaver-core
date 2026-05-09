@@ -13,9 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	drivenadapters "github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	dependency "github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/dependency"
-	utils "github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/utils"
+	drivenadapters "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	dependency "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/dependency"
+	utils "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/utils"
 	gomock "go.uber.org/mock/gomock"
 )
 

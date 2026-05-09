@@ -5,9 +5,12 @@
 
 package interfaces
 
+import cond "ontology-query/common/condition"
+
 const (
-	RELATION_TYPE_DIRECT    = "direct"
-	RELATION_TYPE_DATA_VIEW = "data_view"
+	RELATION_TYPE_DIRECT              = "direct"
+	RELATION_TYPE_DATA_VIEW           = "data_view"
+	RELATION_TYPE_FILTERED_CROSS_JOIN = "filtered_cross_join"
 )
 
 type RelationType struct {
@@ -35,4 +38,10 @@ type Mapping struct {
 type SimpleProperty struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
+}
+
+// FilteredCrossJoinMapping rules for relation type filtered_cross_join (per-side conditions, no key mapping).
+type FilteredCrossJoinMapping struct {
+	SourceCondition *cond.CondCfg `json:"source_condition"`
+	TargetCondition *cond.CondCfg `json:"target_condition"`
 }

@@ -9,4 +9,4 @@ coverage_report
 specs*
 .specify*
 .claude*
-
+test-result/

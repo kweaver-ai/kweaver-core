@@ -21,7 +21,16 @@ CONF_DIR="${CONF_DIR:-${SCRIPT_DIR}/conf}"
 
 CONFIG_YAML_PATH="${CONFIG_YAML_PATH:-${CONF_DIR}/config.yaml}"
 
+# Top-level Helm values key `namespace:` from a platform config YAML (same as generate_config_yaml / awk in config.sh).
+# Optional first argument overrides the file path (defaults to CONFIG_YAML_PATH).
+kweaver_values_namespace_from_config() {
+    local cfg="${1:-${CONFIG_YAML_PATH:-}}"
+    [[ -n "${cfg}" && -f "${cfg}" ]] || return 0
+    awk '$1=="namespace:"{print $2; exit}' "${cfg}" 2>/dev/null | sed -e 's/^["'\'']//; s/["'\'']$//' | tr -d '\r'
+}
+
 AUTO_GENERATE_CONFIG="${AUTO_GENERATE_CONFIG:-true}"
+DEFAULT_SQL_VERSION="${DEFAULT_SQL_VERSION:-0.5.0}"
 
 # Local Helm charts directory
 LOCAL_CHARTS_DIR="${LOCAL_CHARTS_DIR:-${SCRIPT_DIR}/charts}"
@@ -30,21 +39,94 @@ SHARED_CHARTS_DIR="${SHARED_CHARTS_DIR:-${SCRIPT_DIR}/.tmp/charts}"
 # Default namespace for infrastructure components (MariaDB/Redis/Kafka/OpenSearch, etc.)
 RESOURCE_NAMESPACE="${RESOURCE_NAMESPACE:-resource}"
 
-# Generate a random password
-generate_random_password() {
-    local length="${1:-16}"
-    # Use tr to get only alphanumeric characters and some safe special characters
-    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w "${length}" | head -n 1
+# Cluster bootstrap for ensure_platform_prerequisites (internal: kubeadm | k3s).
+# User-facing env/flags use k8s (default, = kubeadm packages + k8s module) or k3s (single-node lightweight).
+# Legacy: KUBE_DISTRO=kubeadm is still accepted and normalized to kubeadm.
+kweaver_normalize_kube_distro() {
+    local d="${1:-k8s}"
+    case "${d}" in
+        k3s|K3S) printf '%s' "k3s" ;;
+        k8s|K8S|kubeadm|kubernetes|KUBEADM) printf '%s' "kubeadm" ;;
+        *) printf '%s' "kubeadm" ;;
+    esac
 }
 
-# Check if component is already installed in Helm
+KUBE_DISTRO="$(kweaver_normalize_kube_distro "${KUBE_DISTRO:-k8s}")"
+export KUBE_DISTRO
+
+# Generate a random password (alphanumeric). Uses openssl when available; avoids macOS/BSD
+# tr + urandom locale issues ("Illegal byte sequence") via LC_ALL=C.
+generate_random_password() {
+    local length="${1:-16}"
+    local nbytes=$(( (length + 1) / 2 ))
+    if command -v openssl >/dev/null 2>&1; then
+        openssl rand -hex "${nbytes}" 2>/dev/null | LC_ALL=C head -c "${length}"
+        return 0
+    fi
+    LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom 2>/dev/null | LC_ALL=C head -c "${length}"
+}
+
+# True only when the release exists and Helm status is **deployed** (not failed/pending-install).
 is_helm_installed() {
     local release="$1"
     local ns="$2"
-    helm list -n "${ns}" --short | grep -q "^${release}$"
+    local out
+    if ! out="$(helm status "${release}" -n "${ns}" 2>/dev/null)"; then
+        return 1
+    fi
+    echo "${out}" | grep -q '^STATUS: deployed$'
 }
 
-# Get currently installed chart version for a release.
+# When a release is failed or pending-*, helm upgrade --install often errors with
+# "has no deployed releases". Uninstall the stuck release so install can proceed.
+# Does not set --wait; chart-managed Pods/STS may be removed; PVCs typically remain.
+kweaver_helm_uninstall_if_not_deployed() {
+    local release="$1"
+    local ns="$2"
+    local out st
+    if ! out="$(helm status "${release}" -n "${ns}" 2>/dev/null)"; then
+        return 0
+    fi
+    st="$(echo "${out}" | grep '^STATUS:' | head -1 | awk '{print $2}')"
+    if [[ "${st}" == "deployed" ]]; then
+        return 0
+    fi
+    log_warn "Helm release '${release}' in ${ns} is ${st:-unknown}; uninstalling so install can retry (data PVs are usually kept)."
+    helm uninstall "${release}" -n "${ns}" 2>/dev/null || true
+}
+
+# Bundled Bitnami charts (Kafka, etc.) embed bitnami/common templates that require a current Helm 3.x
+# (older clients may parse templates as empty → Helm error "no objects visited").
+KWEAVER_HELM_MIN_SEMVER="${KWEAVER_HELM_MIN_SEMVER:-3.10.0}"
+
+kweaver_semver_ge() {
+    local have="$1"
+    local need="$2"
+    [[ -n "${have}" && -n "${need}" ]] || return 1
+    [[ "$(printf '%s\n' "${need}" "${have}" | sort -V | head -1)" == "${need}" ]]
+}
+
+kweaver_helm_client_semver() {
+    local raw
+    raw="$(helm version 2>/dev/null || true)"
+    # Typical: version.BuildInfo{Version:"v3.19.0", ...}
+    printf '%s' "${raw}" | grep -oE 'Version:"v[0-9]+\.[0-9]+\.[0-9]+"' | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true
+}
+
+kweaver_require_helm_min_for_bitnami() {
+    local cur
+    cur="$(kweaver_helm_client_semver)"
+    if [[ -z "${cur}" ]]; then
+        log_error "Could not parse Helm client version. Install Helm ${KWEAVER_HELM_MIN_SEMVER}+ (e.g. macOS: brew upgrade helm)."
+        return 1
+    fi
+    if kweaver_semver_ge "${cur}" "${KWEAVER_HELM_MIN_SEMVER}"; then
+        return 0
+    fi
+    log_error "Helm ${cur} is too old for bundled data-service charts (Kafka/OpenSearch use Bitnami common; need >= ${KWEAVER_HELM_MIN_SEMVER})."
+    log_error "Fix (macOS): brew install helm && hash -r   — or put a newer helm before stale /usr/local/bin/helm in PATH."
+    return 1
+}
 # Args: <release_name> <namespace> [chart_name]
 get_installed_chart_version() {
     local release_name="$1"
@@ -234,22 +316,67 @@ download_chart_to_cache() {
         --destination "${charts_dir}"
 }
 
+# Bash 3.2–safe substitute for mapfile -t arr < <(cmd) (mapfile needs bash 4+).
+# Usage: kweaver_mapfile_compat <array_name> <command> [args...]
+# Runs <command args...> and stores non-empty lines into the named array.
+kweaver_mapfile_compat() {
+    local _dst="$1"
+    shift
+    local _lines=()
+    local _l
+    while IFS= read -r _l || [[ -n "${_l}" ]]; do
+        [[ -n "${_l}" ]] && _lines+=("${_l}")
+    done < <("$@")
+    eval "${_dst}=(\"\${_lines[@]}\")"
+}
+
 # Ensure a Helm repo is registered and refreshed.
 # Args: <repo_name> <repo_url>
 ensure_helm_repo() {
     local repo_name="$1"
     local repo_url="$2"
-    helm repo add --force-update "${repo_name}" "${repo_url}" || true
-    helm repo update "${repo_name}" || true
+    # Avoid helm repo add --force-update (not supported on some Helm 4 / builds). Idempotent refresh.
+    helm repo remove "${repo_name}" 2>/dev/null || true
+    helm repo add "${repo_name}" "${repo_url}" || return 1
+    helm repo update 2>/dev/null || true
 }
 
-# Ensure helm is available before running chart download logic.
+# Ensure helm is available AND is Helm v3+ before running chart download / install.
+# All deploy charts use v3+ style flags (e.g. --timeout=600s, duration syntax).
+# A pre-existing Helm v2 on the host will explode with confusing errors like
+#   invalid argument "600s" for "--timeout" flag: strconv.ParseInt: parsing "600s": invalid syntax
+# So we explicitly upgrade out-of-spec installs (v2 or missing) to ${HELM_VERSION}.
 ensure_helm_available() {
+    local existing=""
     if type -P helm >/dev/null 2>&1; then
-        return 0
+        existing="$(helm version --short 2>/dev/null | awk '{print $1}' | cut -d'+' -f1 || true)"
+        # Helm v2 prints "Client: v2.x.x" instead — guard both shapes.
+        if [[ -z "${existing}" ]]; then
+            existing="$(helm version --short --client 2>/dev/null | awk -F': ' 'NR==1{print $2}' | awk '{print $1}' | cut -d'+' -f1 || true)"
+        fi
+        case "${existing}" in
+            v3.*|v4.*)
+                return 0
+                ;;
+            v2.*)
+                log_warn "Helm ${existing} detected; this deploy requires Helm v3+ (charts use --timeout duration syntax). Re-installing ${HELM_VERSION}..."
+                install_helm
+                return $?
+                ;;
+            "")
+                log_warn "Could not parse 'helm version --short'; re-installing ${HELM_VERSION} to be safe..."
+                install_helm
+                return $?
+                ;;
+            *)
+                log_warn "Unexpected helm version '${existing}'; re-installing ${HELM_VERSION}..."
+                install_helm
+                return $?
+                ;;
+        esac
     fi
 
-    log_info "Helm not found; installing it before continuing..."
+    log_info "Helm not found; installing ${HELM_VERSION} before continuing..."
     install_helm
 }
 
@@ -260,6 +387,447 @@ get_local_chart_version() {
     helm show chart "${chart_tgz}" 2>/dev/null | awk '$1=="version:" {print $2; exit}'
 }
 
+# Find a cached chart tarball for an exact chart version.
+# Args: <charts_dir> <chart_name> <chart_version>
+find_cached_chart_tgz_by_version() {
+    local charts_dir="$1"
+    local chart_name="$2"
+    local chart_version="$3"
+    local chart_tgz
+    local resolved_chart_name
+    local resolved_chart_version
+
+    while IFS= read -r chart_tgz; do
+        [[ -n "${chart_tgz}" ]] || continue
+        resolved_chart_name="$(get_local_chart_name "${chart_tgz}")"
+        resolved_chart_version="$(get_local_chart_version "${chart_tgz}")"
+        if [[ "${resolved_chart_name}" == "${chart_name}" && "${resolved_chart_version}" == "${chart_version}" ]]; then
+            echo "${chart_tgz}"
+            return 0
+        fi
+    done < <(list_cached_chart_candidates "${charts_dir}" "${chart_name}")
+
+    return 1
+}
+
+_manifest_fail() {
+    echo "$1" >&2
+    return 1
+}
+
+_manifest_strip_quotes() {
+    local value="${1:-}"
+    value="${value%\"}"
+    value="${value#\"}"
+    value="${value%\'}"
+    value="${value#\'}"
+    echo "${value}"
+}
+
+_manifest_read_top_level_value() {
+    local manifest_file="$1"
+    local key="$2"
+
+    awk -F': ' -v key="${key}" '
+        $1 == key { print $2; exit }
+    ' "${manifest_file}" | sed 's/[[:space:]]*$//'
+}
+
+_manifest_validate_identity() {
+    local manifest_file="$1"
+    local expected_product="${2:-}"
+    local expected_version="${3:-}"
+
+    [[ -f "${manifest_file}" ]] || _manifest_fail "Manifest file not found: ${manifest_file}" || return 1
+
+    local actual_product actual_version
+    actual_product="$(_manifest_strip_quotes "$(_manifest_read_top_level_value "${manifest_file}" "product")")"
+    actual_version="$(_manifest_strip_quotes "$(_manifest_read_top_level_value "${manifest_file}" "version")")"
+
+    if [[ -n "${expected_product}" && "${actual_product}" != "${expected_product}" ]]; then
+        _manifest_fail "Manifest product mismatch for ${manifest_file}: expected ${expected_product}, got ${actual_product:-<empty>}"
+        return 1
+    fi
+
+    if [[ -n "${expected_version}" && "${actual_version}" != "${expected_version}" ]]; then
+        _manifest_fail "Manifest version mismatch for ${manifest_file}: expected ${expected_version}, got ${actual_version:-<empty>}"
+        return 1
+    fi
+}
+
+_manifest_read_release_field() {
+    local manifest_file="$1"
+    local release_name="$2"
+    local field_name="$3"
+
+    awk -v release="${release_name}" -v field="${field_name}" '
+        BEGIN {
+            in_releases = 0
+            in_target = 0
+        }
+        /^releases:/ {
+            in_releases = 1
+            next
+        }
+        in_releases && /^[A-Za-z0-9_-]+:/ {
+            in_releases = 0
+        }
+        !in_releases { next }
+        $0 == "  " release ":" {
+            in_target = 1
+            next
+        }
+        in_target && $0 ~ /^  [^[:space:]][^:]*:/ {
+            in_target = 0
+        }
+        in_target && $1 == field ":" {
+            print $2
+            exit
+        }
+    ' "${manifest_file}" | sed 's/[[:space:]]*$//'
+}
+
+_manifest_list_release_names() {
+    local manifest_file="$1"
+
+    awk '
+        BEGIN {
+            in_releases = 0
+        }
+        /^releases:/ {
+            in_releases = 1
+            next
+        }
+        in_releases && /^[A-Za-z0-9_-]+:/ {
+            in_releases = 0
+        }
+        !in_releases { next }
+        /^  [^[:space:]][^:]*:/ {
+            line = $0
+            sub(/^  /, "", line)
+            sub(/:.*/, "", line)
+            print line
+        }
+    ' "${manifest_file}"
+}
+
+_manifest_read_dependency_field() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+    local field_name="$3"
+
+    awk -v dependency="${dependency_product}" -v field="${field_name}" '
+        BEGIN {
+            in_dependencies = 0
+            in_target = 0
+        }
+        /^dependencies:/ {
+            in_dependencies = 1
+            next
+        }
+        in_dependencies && /^[A-Za-z0-9_-]+:/ {
+            in_dependencies = 0
+        }
+        !in_dependencies { next }
+        $1 == "-" && $2 == "product:" {
+            in_target = ($3 == dependency)
+            next
+        }
+        in_target && $1 == field ":" {
+            print $2
+            exit
+        }
+    ' "${manifest_file}" | sed 's/[[:space:]]*$//'
+}
+
+# Get the value of a key from an array of key=value strings.
+# Args: <key> <array_of_set_values...>
+# Returns: value if found, empty string otherwise
+# Example: get_set_value "auth.enabled" "${CORE_SET_VALUES[@]}"
+get_set_value() {
+    local key="$1"
+    shift
+    local -a set_values=("$@")
+    
+    local item
+    for item in "${set_values[@]}"; do
+        if [[ "${item}" == "${key}="* ]]; then
+            echo "${item#*=}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Check if a dependency should be enabled based on its enabledIf condition.
+# Args: <manifest_file> <dependency_product> <array_of_set_values...>
+# Returns: 0 if enabled, 1 if disabled
+is_dependency_enabled() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+    shift 2
+    local -a set_values=("$@")
+    
+    # Read enabledIf field from manifest
+    local enabled_if
+    enabled_if="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "enabledIf")")"
+    
+    # If no enabledIf condition, check defaultEnabled
+    if [[ -z "${enabled_if}" ]]; then
+        local default_enabled
+        default_enabled="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "defaultEnabled")")"
+        
+        # Default to true if defaultEnabled is not specified or is true
+        if [[ -z "${default_enabled}" || "${default_enabled}" == "true" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+    
+    # Check if the enabledIf key is set in --set values
+    local value
+    if value="$(get_set_value "${enabled_if}" "${set_values[@]}" 2>/dev/null)"; then
+        # Value was explicitly set, check if it's true
+        if [[ "${value}" == "true" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    else
+        # Value not set, use defaultEnabled
+        local default_enabled
+        default_enabled="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "defaultEnabled")")"
+        
+        if [[ -z "${default_enabled}" || "${default_enabled}" == "true" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+}
+
+# Resolve the embedded release manifest path for one aggregate product version.
+# Args: <product> <version>
+resolve_embedded_release_manifest() {
+    local product="$1"
+    local version="${2:-}"
+
+    if [[ -z "${product}" || -z "${version}" ]]; then
+        return 0
+    fi
+
+    local candidate="${RELEASE_MANIFESTS_DIR}/${version}/${product}.yaml"
+    if [[ -f "${candidate}" ]]; then
+        echo "${candidate}"
+    fi
+}
+
+# Resolve the latest embedded release manifest path for one aggregate product.
+# Args: <product>
+resolve_latest_embedded_release_manifest() {
+    local product="$1"
+
+    if [[ -z "${product}" ]] || [[ ! -d "${RELEASE_MANIFESTS_DIR}" ]]; then
+        return 0
+    fi
+
+    find "${RELEASE_MANIFESTS_DIR}" -mindepth 2 -maxdepth 2 -type f -name "${product}.yaml" 2>/dev/null \
+        | sort -V \
+        | tail -1
+}
+
+# Resolve the exact chart version for one aggregate release.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name> [fallback_version]
+resolve_release_chart_version() {
+    local manifest_file="${1:-}"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+    local fallback_version="${5:-}"
+
+    if [[ -z "${manifest_file}" ]]; then
+        echo "${fallback_version}"
+        return 0
+    fi
+
+    get_release_manifest_release_version "${manifest_file}" "${expected_product}" "${aggregate_version}" "${release_name}"
+}
+
+# Resolve the chart name for one aggregate release.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name> [fallback_chart_name]
+resolve_release_chart_name() {
+    local manifest_file="${1:-}"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+    local fallback_chart_name="${5:-${release_name}}"
+
+    if [[ -z "${manifest_file}" ]]; then
+        echo "${fallback_chart_name}"
+        return 0
+    fi
+
+    get_release_manifest_release_chart_name "${manifest_file}" "${expected_product}" "${aggregate_version}" "${release_name}"
+}
+
+# Get one release's exact chart version from a release manifest.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name>
+get_release_manifest_release_version() {
+    local manifest_file="$1"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+
+    _manifest_validate_identity "${manifest_file}" "${expected_product}" "${aggregate_version}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_release_field "${manifest_file}" "${release_name}" "version")")"
+    if [[ -z "${value}" ]]; then
+        _manifest_fail "Release version missing in manifest: ${release_name}"
+        return 1
+    fi
+    echo "${value}"
+}
+
+# Get one release's chart name from a release manifest.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name>
+get_release_manifest_release_chart_name() {
+    local manifest_file="$1"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+
+    _manifest_validate_identity "${manifest_file}" "${expected_product}" "${aggregate_version}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_release_field "${manifest_file}" "${release_name}" "chart")")"
+    if [[ -z "${value}" ]]; then
+        echo "${release_name}"
+        return 0
+    fi
+
+    echo "${value}"
+}
+
+# List release names from a release manifest in manifest order.
+# Args: <manifest_file> <expected_product> <aggregate_version>
+get_release_manifest_release_names() {
+    local manifest_file="$1"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+
+    _manifest_validate_identity "${manifest_file}" "${expected_product}" "${aggregate_version}" || return 1
+    _manifest_list_release_names "${manifest_file}"
+}
+
+# Get one release's install stage from a release manifest.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name>
+get_release_manifest_release_stage() {
+    local manifest_file="$1"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+
+    _manifest_validate_identity "${manifest_file}" "${expected_product}" "${aggregate_version}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_release_field "${manifest_file}" "${release_name}" "stage")")"
+    if [[ -z "${value}" ]]; then
+        echo "main"
+        return 0
+    fi
+
+    case "${value}" in
+        pre|main|post)
+            echo "${value}"
+            ;;
+        *)
+            _manifest_fail "Unsupported release stage in manifest for ${release_name}: ${value} (expected pre, main, or post)"
+            return 1
+            ;;
+    esac
+}
+
+# Get one dependency's aggregate version from a release manifest.
+# Args: <manifest_file> <dependency_product>
+get_release_manifest_dependency_version() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+
+    [[ -f "${manifest_file}" ]] || _manifest_fail "Manifest file not found: ${manifest_file}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "version")")"
+    if [[ -z "${value}" ]]; then
+        _manifest_fail "Dependency version missing in manifest: ${dependency_product}"
+        return 1
+    fi
+    echo "${value}"
+}
+
+# Get one dependency's manifest file from a release manifest.
+# Args: <manifest_file> <dependency_product>
+get_release_manifest_dependency_manifest() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+    local manifest_dir
+
+    [[ -f "${manifest_file}" ]] || _manifest_fail "Manifest file not found: ${manifest_file}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "manifest")")"
+    if [[ -z "${value}" ]]; then
+        _manifest_fail "Dependency manifest missing in manifest: ${dependency_product}"
+        return 1
+    fi
+
+    if [[ "${value}" == /* ]]; then
+        echo "${value}"
+        return 0
+    fi
+
+    manifest_dir="$(cd "$(dirname "${manifest_file}")" && pwd)"
+    echo "$(cd "${manifest_dir}" && cd "$(dirname "${value}")" && pwd)/$(basename "${value}")"
+}
+
+# Get one dependency's aggregate version from a release manifest (optional, returns empty if not found).
+# Args: <manifest_file> <dependency_product>
+get_release_manifest_dependency_version_optional() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+
+    [[ -f "${manifest_file}" ]] || return 0
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "version")")"
+    echo "${value}"
+}
+
+# Get one dependency's manifest file from a release manifest (optional, returns empty if not found).
+# Args: <manifest_file> <dependency_product>
+get_release_manifest_dependency_manifest_optional() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+    local manifest_dir
+
+    [[ -f "${manifest_file}" ]] || return 0
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "manifest")")"
+    if [[ -z "${value}" ]]; then
+        return 0
+    fi
+
+    if [[ "${value}" == /* ]]; then
+        echo "${value}"
+        return 0
+    fi
+
+    manifest_dir="$(cd "$(dirname "${manifest_file}")" && pwd)"
+    echo "$(cd "${manifest_dir}" && cd "$(dirname "${value}")" && pwd)/$(basename "${value}")"
+}
+
 # Decide whether upgrade can be skipped when installed chart version equals target version.
 # Return 0 => skip upgrade, Return 1 => continue upgrade.
 # Args: <release_name> <namespace> <chart_name> <target_version>
@@ -268,6 +836,11 @@ should_skip_upgrade_same_chart_version() {
     local namespace="$2"
     local chart_name="$3"
     local target_version="$4"
+
+    # Honor explicit override: never skip when caller asked to force re-render.
+    if [[ "${FORCE_UPGRADE:-false}" == "true" ]]; then
+        return 1
+    fi
 
     if [[ -z "${target_version}" ]]; then
         return 1
@@ -283,7 +856,7 @@ should_skip_upgrade_same_chart_version() {
     local installed_version
     installed_version=$(get_installed_chart_version "${release_name}" "${namespace}" "${chart_name}")
     if [[ -n "${installed_version}" && "${installed_version}" == "${target_version}" ]]; then
-        log_info "Skip ${release_name}: installed chart version ${installed_version} equals target ${target_version}."
+        log_info "Skip ${release_name}: installed chart version ${installed_version} equals target ${target_version}. (Pass --force-upgrade to re-render with updated values.)"
         return 0
     fi
 
@@ -296,6 +869,95 @@ get_existing_password() {
     if [[ -f "${CONFIG_YAML_PATH}" ]]; then
         grep "${key}:" "${CONFIG_YAML_PATH}" | awk '{print $2}' | tr -d '"'\'' '
     fi
+}
+
+# Name of the StorageClass marked default (storageclass.kubernetes.io/is-default-class=true), or empty.
+kweaver_kubectl_default_storage_class() {
+    if ! command -v kubectl >/dev/null 2>&1; then
+        return 0
+    fi
+    kubectl get storageclass -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{end}' 2>/dev/null || true
+}
+
+# proton-redis: honor REDIS_STORAGE_CLASS; otherwise prefer cluster default SC (matches kind/docker-desktop),
+# then "local-path" only if that StorageClass exists (rancher/k3s-style).
+kweaver_resolve_redis_storage_class() {
+    if [[ -n "${REDIS_STORAGE_CLASS:-}" ]]; then
+        printf '%s' "${REDIS_STORAGE_CLASS}"
+        return 0
+    fi
+    local def
+    def="$(kweaver_kubectl_default_storage_class)"
+    if [[ -n "${def}" ]]; then
+        printf '%s' "${def}"
+        return 0
+    fi
+    if kubectl get storageclass local-path &>/dev/null 2>&1; then
+        printf '%s' 'local-path'
+        return 0
+    fi
+    printf '%s' 'local-path'
+}
+
+resolve_sql_version() {
+    local requested_version="${1:-}"
+    if [[ -n "${requested_version}" ]]; then
+        echo "${requested_version}"
+        return 0
+    fi
+
+    echo "${DEFAULT_SQL_VERSION}"
+}
+
+# Resolve the SQL base directory for one product/version pair.
+# Args: <product> [version]
+resolve_versioned_sql_dir() {
+    local product="$1"
+    local version="${2:-}"
+    local resolved_version
+
+    if [[ -z "${product}" ]]; then
+        return 0
+    fi
+
+    resolved_version="$(resolve_sql_version "${version}")"
+    echo "${SCRIPT_DIR}/scripts/sql/${resolved_version}/${product}"
+}
+
+# Return 0 when a directory exists and contains at least one .sql file.
+# Args: <sql_dir>
+sql_dir_has_files() {
+    local sql_dir="$1"
+    [[ -d "${sql_dir}" ]] || return 1
+    find "${sql_dir}" -type f -name "*.sql" -print -quit 2>/dev/null | grep -q .
+}
+
+# List module subdirectories under one product/version SQL directory.
+# Args: <product> [version]
+list_versioned_sql_modules() {
+    local product="$1"
+    local version="${2:-}"
+    local sql_base_dir
+
+    sql_base_dir="$(resolve_versioned_sql_dir "${product}" "${version}")"
+    [[ -d "${sql_base_dir}" ]] || return 0
+
+    find "${sql_base_dir}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort
+}
+
+# Execute one SQL directory only when it exists and contains SQL files.
+# Args: <module_name> <sql_dir> [display_name]
+init_module_database_if_present() {
+    local module_name="$1"
+    local sql_dir="$2"
+    local display_name="${3:-${module_name}}"
+
+    if ! sql_dir_has_files "${sql_dir}"; then
+        log_info "Skipping ${display_name} database initialization: no SQL files found in ${sql_dir}"
+        return 0
+    fi
+
+    init_module_database "${module_name}" "${sql_dir}"
 }
 
 # Check if RDS is internal (MariaDB installed in cluster)
@@ -370,6 +1032,7 @@ HELM_TARBALL_BASEURL="${HELM_TARBALL_BASEURL:-https://repo.huaweicloud.com/helm/
 HELM_CHART_VERSION="${HELM_CHART_VERSION:-}"
 HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
 HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
+RELEASE_MANIFESTS_DIR="${RELEASE_MANIFESTS_DIR:-${VERSION_MANIFESTS_DIR:-${SCRIPT_DIR}/release-manifests}}"
 
 DOCKER_IO_MIRROR_PREFIX="${DOCKER_IO_MIRROR_PREFIX:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/}"
 DOCKER_CE_REPO_URL="${DOCKER_CE_REPO_URL:-http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo}"
@@ -395,9 +1058,9 @@ MARIADB_PERSISTENCE_ENABLED="${MARIADB_PERSISTENCE_ENABLED:-true}"
 MARIADB_STORAGE_CLASS="${MARIADB_STORAGE_CLASS:-}"
 MARIADB_PURGE_PVC="${MARIADB_PURGE_PVC:-false}"
 MARIADB_ROOT_PASSWORD="${MARIADB_ROOT_PASSWORD:-}"
-MARIADB_DATABASE="${MARIADB_DATABASE:-adp}"
-MARIADB_USER="${MARIADB_USER:-adp}"
-MARIADB_PASSWORD="${MARIADB_PASSWORD:-}"
+MARIADB_DATABASE="${MARIADB_DATABASE:-kweaver}"
+MARIADB_USER="${MARIADB_USER:-kweaver}"
+MARIADB_PASSWORD="${MARIADB_PASSWORD:-kweaver}"
 MARIADB_STORAGE_SIZE="${MARIADB_STORAGE_SIZE:-10Gi}"
 MARIADB_MAX_CONNECTIONS="${MARIADB_MAX_CONNECTIONS:-5000}"
 
@@ -413,6 +1076,7 @@ REDIS_IMAGE_REGISTRY="${REDIS_IMAGE_REGISTRY:-}"
 REDIS_IMAGE_REPOSITORY="${REDIS_IMAGE_REPOSITORY:-proton/proton-redis}"
 REDIS_IMAGE_TAG="${REDIS_IMAGE_TAG:-1.11.2-20251029.2.169ac3c0}"
 REDIS_PERSISTENCE_ENABLED="${REDIS_PERSISTENCE_ENABLED:-true}"
+# Empty: pick cluster default StorageClass (e.g. kind "standard"); else local-path if that SC exists; else local-path.
 REDIS_STORAGE_CLASS="${REDIS_STORAGE_CLASS:-}"
 REDIS_PURGE_PVC="${REDIS_PURGE_PVC:-true}"
 REDIS_PASSWORD="${REDIS_PASSWORD:-}"
@@ -420,6 +1084,61 @@ REDIS_STORAGE_SIZE="${REDIS_STORAGE_SIZE:-5Gi}"
 REDIS_MASTER_GROUP_NAME="${REDIS_MASTER_GROUP_NAME:-mymaster}"
 REDIS_REPLICA_COUNT="${REDIS_REPLICA_COUNT:-1}"
 REDIS_SENTINEL_QUORUM="${REDIS_SENTINEL_QUORUM:-1}"
+# Auto-patch StatefulSet to self-heal ACL drift on Pod restart; set false to opt out.
+REDIS_AUTO_PATCH_ACL="${REDIS_AUTO_PATCH_ACL:-true}"
+# Resource overrides for the proton-redis chart. Empty = don't pass --set, keep chart defaults
+# (chart default: redis.maxmemory=4GB, resources.requests=cpu 100m/memory 512Mi, no limits).
+# Lower defaults for resource-constrained environments are layered on top:
+#   - mac dev: see deploy/dev/lib/mac_common.sh (mac_common_init)
+#   - k3s    : see kweaver_apply_k3s_lightweight_defaults below (KUBE_DISTRO=k3s)
+# Note: only the `redis` container gets these resources; the chart template does not wire
+# `resources` into the sentinel/exporter sidecars.
+REDIS_MAXMEMORY="${REDIS_MAXMEMORY:-}"
+REDIS_MEMORY_REQUEST="${REDIS_MEMORY_REQUEST:-}"
+REDIS_MEMORY_LIMIT="${REDIS_MEMORY_LIMIT:-}"
+REDIS_CPU_REQUEST="${REDIS_CPU_REQUEST:-}"
+REDIS_CPU_LIMIT="${REDIS_CPU_LIMIT:-}"
+
+# Apply lightweight defaults for single-node k3s (only fills values the user has not set).
+# Called once below so k8s/kubeadm path is untouched.
+kweaver_apply_k3s_lightweight_defaults() {
+    [[ "${KUBE_DISTRO}" == "k3s" ]] || return 0
+    # redis (chart default 4GB / 512Mi req)
+    : "${REDIS_MAXMEMORY:=1gb}"
+    : "${REDIS_MEMORY_REQUEST:=256Mi}"
+    : "${REDIS_MEMORY_LIMIT:=512Mi}"
+    : "${REDIS_CPU_REQUEST:=50m}"
+    # opensearch (k8s default below: req=512Mi, lim=2048Mi)
+    : "${OPENSEARCH_MEMORY_REQUEST:=512Mi}"
+    : "${OPENSEARCH_MEMORY_LIMIT:=1024Mi}"
+    # zookeeper (k8s default below: req cpu=500m mem=1Gi, lim cpu=1 mem=2Gi, jvm 500m)
+    # Note: chart hard-codes a zookeeper-exporter sidecar at req/lim 100m/100Mi (no knob).
+    : "${ZOOKEEPER_RESOURCES_REQUESTS_CPU:=50m}"
+    : "${ZOOKEEPER_RESOURCES_REQUESTS_MEMORY:=128Mi}"
+    : "${ZOOKEEPER_RESOURCES_LIMITS_CPU:=500m}"
+    : "${ZOOKEEPER_RESOURCES_LIMITS_MEMORY:=384Mi}"
+    : "${ZOOKEEPER_JVMFLAGS:=-Xms128m -Xmx192m}"
+    # kweaver-core app services (chart defaults: limits=4-8Gi, mostly request=0)
+    # Loose ceiling so heavier services (agent-retrieval, ontology-query) still have headroom.
+    : "${KWEAVER_CORE_REQ_CPU:=100m}"
+    : "${KWEAVER_CORE_REQ_MEM:=128Mi}"
+    : "${KWEAVER_CORE_LIM_CPU:=2}"
+    : "${KWEAVER_CORE_LIM_MEM:=2Gi}"
+    # ISF (Information Security Fabric) charts (chart defaults: limits 1-8Gi, some unset).
+    # Same uniform ceiling as core; auth-heavy services rarely need more in dev.
+    : "${KWEAVER_ISF_REQ_CPU:=100m}"
+    : "${KWEAVER_ISF_REQ_MEM:=128Mi}"
+    : "${KWEAVER_ISF_LIM_CPU:=2}"
+    : "${KWEAVER_ISF_LIM_MEM:=2Gi}"
+    export REDIS_MAXMEMORY REDIS_MEMORY_REQUEST REDIS_MEMORY_LIMIT REDIS_CPU_REQUEST \
+           OPENSEARCH_MEMORY_REQUEST OPENSEARCH_MEMORY_LIMIT \
+           ZOOKEEPER_RESOURCES_REQUESTS_CPU ZOOKEEPER_RESOURCES_REQUESTS_MEMORY \
+           ZOOKEEPER_RESOURCES_LIMITS_CPU ZOOKEEPER_RESOURCES_LIMITS_MEMORY \
+           ZOOKEEPER_JVMFLAGS \
+           KWEAVER_CORE_REQ_CPU KWEAVER_CORE_REQ_MEM KWEAVER_CORE_LIM_CPU KWEAVER_CORE_LIM_MEM \
+           KWEAVER_ISF_REQ_CPU KWEAVER_ISF_REQ_MEM KWEAVER_ISF_LIM_CPU KWEAVER_ISF_LIM_MEM
+}
+kweaver_apply_k3s_lightweight_defaults
 
 # Kafka Configuration
 KAFKA_NAMESPACE="${KAFKA_NAMESPACE:-${RESOURCE_NAMESPACE}}"
@@ -548,8 +1267,8 @@ ZOOKEEPER_SASL_PASSWORD="${ZOOKEEPER_SASL_PASSWORD:-}"
 ZOOKEEPER_EXTRA_SET_VALUES="${ZOOKEEPER_EXTRA_SET_VALUES:-}"  # Additional --set values (space-separated, e.g., "image.registry=xxx key2=value2")
 
 # Ingress-Nginx Configuration
-INGRESS_NGINX_HTTP_PORT="${INGRESS_NGINX_HTTP_PORT:-30080}"
-INGRESS_NGINX_HTTPS_PORT="${INGRESS_NGINX_HTTPS_PORT:-30443}"
+INGRESS_NGINX_HTTP_PORT="${INGRESS_NGINX_HTTP_PORT:-80}"
+INGRESS_NGINX_HTTPS_PORT="${INGRESS_NGINX_HTTPS_PORT:-443}"
 INGRESS_NGINX_CLASS="${INGRESS_NGINX_CLASS:-class-443}"
 INGRESS_NGINX_CONTROLLER_IMAGE="${INGRESS_NGINX_CONTROLLER_IMAGE:-swr.cn-east-3.myhuaweicloud.com/kweaver-ai/ingress-nginx/controller:v1.14.1}"
 INGRESS_NGINX_CONTROLLER_IMAGE_REPOSITORY="${INGRESS_NGINX_CONTROLLER_IMAGE_REPOSITORY:-swr.cn-east-3.myhuaweicloud.com/kweaver-ai/ingress-nginx/controller}"
@@ -609,6 +1328,37 @@ k8s_is_running() {
     fi
 
     return 1
+}
+
+# Idempotent single-node k3s path: Helm + k3s (built-in CNI/storage/DNS) + ingress-nginx.
+# Requires deploy.sh to source scripts/services/k3s.sh before this runs.
+ensure_k3s() {
+    if [[ "${KWEAVER_K8S_ENSURED:-false}" == "true" ]]; then
+        return 0
+    fi
+
+    if k3s_is_running; then
+        log_info "k3s cluster detected, skipping k3s installation."
+        if [[ -f /root/.kube/config ]]; then
+            export KUBECONFIG=/root/.kube/config
+        elif [[ -f /etc/rancher/k3s/k3s.yaml ]]; then
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        fi
+        export KWEAVER_K8S_ENSURED="true"
+        return 0
+    fi
+
+    log_info "No running k3s cluster detected. Installing k3s first..."
+    check_root
+    install_helm || return 1
+    install_k3s || return 1
+
+    if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
+        install_ingress_nginx || return 1
+    fi
+
+    export KWEAVER_K8S_ENSURED="true"
+    log_info "k3s-based platform bootstrap completed."
 }
 
 ensure_k8s() {
@@ -672,12 +1422,66 @@ ensure_data_services() {
     export KWEAVER_DATA_SERVICES_ENSURED="true"
 }
 
+# Delete Kubernetes Job objects in a namespace whose names match an ERE (grep -E).
+# Completed Helm hooks / migrator Jobs often keep pods until the Job is deleted when TTL is unset.
+kweaver_delete_jobs_name_match_ere_in_ns() {
+    local ns="$1"
+    local ere="$2"
+    [[ -z "${ns}" ]] || [[ -z "${ere}" ]] && return 0
+    if ! kubectl get namespace "${ns}" >/dev/null 2>&1; then
+        return 0
+    fi
+    local j
+    while IFS= read -r j; do
+        [[ -z "${j}" ]] && continue
+        log_info "Deleting leftover job '${j}' in namespace ${ns}"
+        kubectl delete job "${j}" -n "${ns}" --ignore-not-found >/dev/null 2>&1 || true
+    done < <(kubectl get jobs -n "${ns}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | grep -E "${ere}" || true)
+}
+
+# Uninstall bundled MariaDB / Redis / Kafka / ZooKeeper / OpenSearch (and ingress-nginx when
+# AUTO_INSTALL_INGRESS_NGINX is true), reverse of ensure_data_services. Continues past individual
+# failures so partially-missing installs still get cleaned up. Remaining argv is passed only to
+# mariadb uninstall (e.g. --delete-data / MARIADB_PURGE_PVC); other stacks use existing env knobs.
+uninstall_platform_data_services() {
+    log_info "Uninstalling bundled platform data services..."
+    uninstall_opensearch || true
+    if [[ "${AUTO_INSTALL_INGRESS_NGINX:-true}" == "true" ]]; then
+        uninstall_ingress_nginx || true
+    fi
+    uninstall_kafka || true
+    uninstall_zookeeper || true
+    uninstall_redis || true
+    uninstall_mariadb "$@" || true
+    local rns="${RESOURCE_NAMESPACE:-resource}"
+    kweaver_delete_jobs_name_match_ere_in_ns "${rns}" '(^|[-/])(kafka|zookeeper|opensearch|mariadb|redis)(-|$)|migrator|data-migrator'
+    log_info "Bundled platform data services uninstall finished (PVC defaults unchanged; MariaDB accepts --delete-data)."
+}
+
 ensure_platform_prerequisites() {
     if [[ "${KWEAVER_PLATFORM_PREREQUISITES_DONE:-false}" == "true" ]]; then
         return 0
     fi
 
-    ensure_k8s || return 1
+    # Mac / bring-your-own-cluster: skip k3s/kubeadm + bundled data services (e.g. deploy/dev/mac.sh + kind).
+    if [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" == "true" ]]; then
+        export KWEAVER_PLATFORM_PREREQUISITES_DONE="true"
+        return 0
+    fi
+
+    case "${KUBE_DISTRO:-kubeadm}" in
+        k3s)
+            ensure_k3s || return 1
+            ;;
+        kubeadm)
+            ensure_k8s || return 1
+            ;;
+        *)
+            log_error "Unknown KUBE_DISTRO='${KUBE_DISTRO}' after normalization. Expected internal 'kubeadm' (default) or 'k3s' (set KUBE_DISTRO=k8s or k3s)."
+            return 1
+            ;;
+    esac
+
     ensure_data_services || return 1
 
     export KWEAVER_PLATFORM_PREREQUISITES_DONE="true"
@@ -710,6 +1514,16 @@ get_access_address_base_url() {
     fi
 
     scheme="${scheme:-https}"
+
+    # Omit default ports in the canonical base URL — some ingress backends and CLI
+    # flows treat ":80"/":443" differently from implicit defaults (routing / probes).
+    if [[ -n "${port}" ]] && [[ "${scheme}" =~ ^[Hh][Tt][Tt][Pp]$ ]] && [[ "${port}" == "80" ]]; then
+        port=""
+    fi
+    if [[ -n "${port}" ]] && [[ "${scheme}" =~ ^[Hh][Tt][Tt][Pp][Ss]$ ]] && [[ "${port}" == "443" ]]; then
+        port=""
+    fi
+
     path="${path:-/}"
     if [[ "${path}" != /* ]]; then
         path="/${path}"
@@ -727,12 +1541,45 @@ get_access_address_base_url() {
     echo "${url}${path}"
 }
 
-random_password() {
-    if command -v openssl >/dev/null 2>&1; then
-        openssl rand -base64 18 | tr -d '\n'
+get_dip_studio_openclaw_field() {
+    local field="$1"
+    local cfg="${CONFIG_YAML_PATH}"
+
+    if [[ ! -f "${cfg}" ]]; then
         return 0
     fi
-    head -c 32 /dev/urandom | base64 | tr -d '\n' | head -c 24
+
+    awk -v key="${field}:" '
+        $1=="studio:" {
+            in_studio=1
+            in_openclaw=0
+            next
+        }
+        in_studio && $1=="openclaw:" {
+            in_openclaw=1
+            next
+        }
+        in_studio && in_openclaw && $1==key {
+            sub(/^[^:]+:[[:space:]]*/, "", $0)
+            print $0
+            exit
+        }
+        in_studio && in_openclaw && $0 ~ /^  [^ ]/ {
+            in_openclaw=0
+        }
+        in_studio && $0 ~ /^[^ ]/ {
+            in_studio=0
+            in_openclaw=0
+        }
+    ' "${cfg}" 2>/dev/null | sed -e 's/^"//; s/"$//' -e "s/^'//; s/'$//" | tr -d '\r'
+}
+
+random_password() {
+    if command -v openssl >/dev/null 2>&1; then
+        openssl rand -base64 18 2>/dev/null | LC_ALL=C tr -d '\n'
+        return 0
+    fi
+    LC_ALL=C head -c 32 /dev/urandom 2>/dev/null | base64 | LC_ALL=C tr -d '\n' | LC_ALL=C head -c 24
 }
 
 # Quote a string for YAML single-quoted scalars.
@@ -815,7 +1662,7 @@ read_or_fetch() {
 
 # Initialize database by connecting to MariaDB pod and executing SQL files
 # Usage: init_module_database "module_name" "sql_directory"
-# Example: init_module_database "decisionagent" "${SCRIPT_DIR}/scripts/sql/decisionagent"
+# Example: init_module_database "decisionagent" "${SCRIPT_DIR}/scripts/sql/0.5.0/kweaver-core/decisionagent"
 init_module_database() {
     local module_name="$1"
     local sql_dir="$2"
@@ -840,10 +1687,10 @@ init_module_database() {
     # Get MariaDB credentials from config.yaml (under depServices.rds section)
     local mariadb_user=$(grep -A 20 "^  rds:" "${CONFIG_YAML_PATH}" | grep "user:" | head -1 | awk '{print $2}' | tr -d "'\"")
     local mariadb_password=$(grep -A 20 "^  rds:" "${CONFIG_YAML_PATH}" | grep "password:" | head -1 | awk '{print $2}' | tr -d "'\"")
-    
+
     # Set defaults if not found
-    mariadb_user="${mariadb_user:-adp}"
-    mariadb_password="${mariadb_password:-adp}"
+    mariadb_user="${mariadb_user:-kweaver}"
+    mariadb_password="${mariadb_password:-kweaver}"
     
     log_info "Using MariaDB user: ${mariadb_user}"
     
@@ -931,4 +1778,117 @@ show_status() {
     kubectl get nodes -o wide
     echo ""
     kubectl get pods -A
+}
+
+# =============================================================================
+# Release Manifest Database Initialization Detection
+# =============================================================================
+
+# Check if a release manifest has a stage="pre" data-migrator release.
+# This indicates the manifest handles database initialization via Helm chart.
+# Args: <manifest_file>
+# Returns: 0 if pre-stage data-migrator found, 1 otherwise
+manifest_has_pre_stage_db_init() {
+    local manifest_file="$1"
+
+    if [[ -z "${manifest_file}" || ! -f "${manifest_file}" ]]; then
+        return 1
+    fi
+
+    # Look for any release with stage="pre" and chart name containing "data-migrator"
+    local release_name
+    for release_name in $(_manifest_list_release_names "${manifest_file}"); do
+        local stage
+        stage="$(_manifest_strip_quotes "$(_manifest_read_release_field "${manifest_file}" "${release_name}" "stage")")"
+        if [[ "${stage}" == "pre" && "${release_name}" == *"data-migrator"* ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+# Check if the manifest version is 0.6.0 or higher (semver comparison).
+# Args: <manifest_file>
+# Returns: 0 if version >= 0.6.0, 1 otherwise
+manifest_version_gte_060() {
+    local manifest_file="$1"
+
+    if [[ -z "${manifest_file}" || ! -f "${manifest_file}" ]]; then
+        return 1
+    fi
+
+    local version
+    version="$(_manifest_strip_quotes "$(_manifest_read_top_level_field "${manifest_file}" "version")")"
+
+    if [[ -z "${version}" ]]; then
+        return 1
+    fi
+
+    # Extract major.minor.patch
+    local major minor
+    major="$(echo "${version}" | cut -d. -f1)"
+    minor="$(echo "${version}" | cut -d. -f2)"
+
+    # Compare: >= 0.6.0
+    if [[ "${major}" -gt 0 ]] || [[ "${major}" -eq 0 && "${minor}" -ge 6 ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
+# Check if database initialization should be skipped for this manifest.
+# Returns true (0) if:
+#   1. Manifest version is >= 0.6.0 AND
+#   2. Manifest has a stage="pre" data-migrator release
+# Args: <manifest_file>
+# Returns: 0 if DB init should be skipped, 1 otherwise
+should_skip_db_init_for_manifest() {
+    local manifest_file="$1"
+
+    if [[ -z "${manifest_file}" || ! -f "${manifest_file}" ]]; then
+        return 1
+    fi
+
+    # Check version >= 0.6.0 and has pre-stage data-migrator
+    if manifest_version_gte_060 "${manifest_file}" && manifest_has_pre_stage_db_init "${manifest_file}"; then
+        return 0
+    fi
+
+    return 1
+}
+
+# Read a top-level field from a YAML manifest file.
+# Args: <manifest_file> <field_name>
+_manifest_read_top_level_field() {
+    local manifest_file="$1"
+    local field_name="$2"
+
+    awk -v field="${field_name}" '
+        BEGIN { in_releases = 0 }
+        /^releases:/ || /^dependencies:/ { in_releases = 1; next }
+        in_releases && /^[A-Za-z0-9_-]+:/ { in_releases = 0 }
+        !in_releases && $1 == field ":" {
+            sub(/^[^:]+:[[:space:]]*/, "", $0)
+            print $0
+            exit
+        }
+    ' "${manifest_file}" | sed 's/[[:space:]]*$//'
+}
+
+# List all release names from a manifest file.
+# Args: <manifest_file>
+_manifest_list_release_names() {
+    local manifest_file="$1"
+
+    awk '
+        BEGIN { in_releases = 0 }
+        /^releases:/ { in_releases = 1; next }
+        in_releases && /^  [A-Za-z0-9_-]+:/ {
+            sub(/:.*$/, "", $0)
+            sub(/^  /, "", $0)
+            print $0
+        }
+    ' "${manifest_file}"
 }

@@ -49,7 +49,7 @@ func BuildViewSort(objectType interfaces.ObjectType) []*interfaces.SortParams {
 			if fieldName != "" {
 				// 存在映射，则组装到对象属性中
 				sorts = append(sorts, &interfaces.SortParams{
-					Field:     fieldName,
+					Field:     pri,
 					Direction: interfaces.ASC_DIRECTION,
 				})
 			}
@@ -455,7 +455,7 @@ func CheckViewDataMatchesCondition(viewData map[string]any,
 
 // 使用视图数据检查间接映射条件
 func CheckIndirectMappingConditionsWithViewData(currentObjectData map[string]any,
-	nextObject map[string]any, mappingRules interfaces.InDirectMapping, isForward bool,
+	nextObject map[string]any, mappingRules *interfaces.InDirectMapping, isForward bool,
 	viewData []map[string]any) bool {
 
 	// 检查是否存在一个视图记录能够连接当前对象和下一层对象
@@ -1295,4 +1295,61 @@ func toFloat64(value any) float64 {
 		return v
 	}
 	return 0
+}
+
+// CondCfgToFilterMap serializes a condition tree for vega resource filter_condition JSON.
+func CondCfgToFilterMap(c *cond.CondCfg) map[string]any {
+	if c == nil {
+		return nil
+	}
+	raw, err := json.Marshal(c)
+	if err != nil {
+		return nil
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return nil
+	}
+	return m
+}
+
+// ActionDynamicParamGetValue returns a value from a dynamic-params map using dot-separated keys for nested access.
+// Same semantics as action_scheduler.getNestedValue.
+func ActionDynamicParamGetValue(data map[string]any, key string) any {
+	if data == nil {
+		return nil
+	}
+
+	if strings.Contains(key, ".") {
+		parts := strings.Split(key, ".")
+		current := data
+
+		for i, part := range parts {
+			if i == len(parts)-1 {
+				return current[part]
+			}
+			next, ok := current[part].(map[string]any)
+			if !ok {
+				return nil
+			}
+			current = next
+		}
+	}
+
+	return data[key]
+}
+
+// MissingActionInputDynamicParamNames lists action-type parameter names with value_from=input
+// that are missing from dynamicParams (nil map or absent/nil value per ActionDynamicParamGetValue).
+func MissingActionInputDynamicParamNames(actionType *interfaces.ActionType, dynamicParams map[string]any) []string {
+	var missing []string
+	for _, param := range actionType.Parameters {
+		if param.ValueFrom != interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT {
+			continue
+		}
+		if ActionDynamicParamGetValue(dynamicParams, param.Name) == nil {
+			missing = append(missing, param.Name)
+		}
+	}
+	return missing
 }

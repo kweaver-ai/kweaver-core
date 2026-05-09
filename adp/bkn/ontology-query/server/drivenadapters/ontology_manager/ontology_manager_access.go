@@ -162,6 +162,90 @@ func (oma *ontologyManagerAccess) GetObjectType(ctx context.Context, knID string
 	return response.ObjectTypes[0], true, nil
 }
 
+// GetMetricDefinition 获取指标详情（与 GetObjectType 相同 bkn-backend 基址与鉴权头）
+func (oma *ontologyManagerAccess) GetMetricDefinition(ctx context.Context, knID string, branch string,
+	metricID string) (*interfaces.MetricDefinition, bool, error) {
+
+	httpURL := fmt.Sprintf("%s/%s/metrics/%s?branch=%s", oma.ontologyManagerUrl, knID, metricID, branch)
+
+	ctx, span := ar_trace.Tracer.Start(ctx, "请求 bkn-backend 获取指标定义", trace.WithSpanKind(trace.SpanKindClient))
+	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+		HttpUrl:         httpURL,
+		HttpMethod:      http.MethodGet,
+		HttpContentType: rest.ContentTypeJson,
+	})
+	defer span.End()
+
+	var (
+		respCode int
+		result   []byte
+		err      error
+	)
+
+	accountInfo := interfaces.AccountInfo{}
+	if ctx.Value(interfaces.ACCOUNT_INFO_KEY) != nil {
+		accountInfo = ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo)
+	}
+
+	headers := map[string]string{
+		interfaces.CONTENT_TYPE_NAME:        interfaces.CONTENT_TYPE_JSON,
+		interfaces.HTTP_HEADER_ACCOUNT_ID:   accountInfo.ID,
+		interfaces.HTTP_HEADER_ACCOUNT_TYPE: accountInfo.Type,
+	}
+
+	respCode, result, err = oma.httpClient.GetNoUnmarshal(ctx, httpURL, nil, headers)
+
+	if err != nil {
+		logger.Errorf("GetMetricDefinition request failed: %v", err)
+		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Get Failed")
+		o11y.Error(ctx, fmt.Sprintf("Get metric definition request failed: %v", err))
+		return nil, false, fmt.Errorf("get metric definition request failed: %v", err)
+	}
+
+	if respCode == http.StatusNotFound {
+		o11y.AddHttpAttrs4Ok(span, respCode)
+		o11y.Warn(ctx, fmt.Sprintf("metric %s not found", metricID))
+		return nil, false, nil
+	}
+
+	if respCode != http.StatusOK {
+		logger.Errorf("get metric definition failed: %v", result)
+		var baseError rest.BaseError
+		if err = sonic.Unmarshal(result, &baseError); err != nil {
+			o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal BaseError failed")
+			o11y.Error(ctx, fmt.Sprintf("Unmarshal BaseError failed: %v", err))
+			return nil, false, err
+		}
+		httpErr := &rest.HTTPError{HTTPCode: respCode, BaseError: baseError}
+		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		o11y.Error(ctx, fmt.Sprintf("Get metric definition failed: %v", httpErr))
+		return nil, false, httpErr
+	}
+
+	if result == nil {
+		o11y.AddHttpAttrs4Ok(span, respCode)
+		o11y.Warn(ctx, "Http response body is null")
+		return nil, false, nil
+	}
+
+	var response struct {
+		Entries []*interfaces.MetricDefinition `json:"entries"`
+	}
+	if err = sonic.Unmarshal(result, &response); err != nil {
+		logger.Errorf("unmarshal metric definition failed: %v\n", err)
+		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal metric definition failed")
+		o11y.Error(ctx, fmt.Sprintf("Unmarshal metric definition failed: %v", err))
+		return nil, false, err
+	}
+
+	if len(response.Entries) == 0 {
+		return nil, false, nil
+	}
+
+	o11y.AddHttpAttrs4Ok(span, respCode)
+	return response.Entries[0], true, nil
+}
+
 func (oma *ontologyManagerAccess) GetRelationTypePathsBaseOnSource(ctx context.Context, knID string,
 	branch string, query interfaces.PathsQueryBaseOnSource) ([]interfaces.RelationTypePath, error) {
 
@@ -283,7 +367,18 @@ func (oma *ontologyManagerAccess) GetRelationTypePathsBaseOnSource(ctx context.C
 				if err != nil {
 					return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 				}
-				response.TypePaths[i].TypeEdges[j].RelationType.MappingRules = inDirectMapping
+				response.TypePaths[i].TypeEdges[j].RelationType.MappingRules = &inDirectMapping
+			case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
+				var fcj interfaces.FilteredCrossJoinMapping
+				jsonData, err := json.Marshal(response.TypePaths[i].TypeEdges[j].RelationType.MappingRules)
+				if err != nil {
+					return nil, fmt.Errorf("derived Config Marshal error: %s", err.Error())
+				}
+				err = json.Unmarshal(jsonData, &fcj)
+				if err != nil {
+					return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
+				}
+				response.TypePaths[i].TypeEdges[j].RelationType.MappingRules = &fcj
 			}
 		}
 	}
@@ -425,7 +520,18 @@ func (oma *ontologyManagerAccess) GetRelationType(ctx context.Context, knID stri
 		if err != nil {
 			return emptyRelationType, false, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 		}
-		response.RelationTypes[0].MappingRules = inDirectMapping
+		response.RelationTypes[0].MappingRules = &inDirectMapping
+	case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
+		var fcj interfaces.FilteredCrossJoinMapping
+		jsonData, err := json.Marshal(response.RelationTypes[0].MappingRules)
+		if err != nil {
+			return emptyRelationType, false, fmt.Errorf("derived Config Marshal error: %s", err.Error())
+		}
+		err = json.Unmarshal(jsonData, &fcj)
+		if err != nil {
+			return emptyRelationType, false, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
+		}
+		response.RelationTypes[0].MappingRules = &fcj
 	}
 
 	// 添加成功时的 trace 属性
@@ -549,7 +655,18 @@ func (oma *ontologyManagerAccess) ListRelationTypes(ctx context.Context, knID st
 			if err != nil {
 				return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 			}
-			response.RelationTypes[i].MappingRules = inDirectMapping
+			response.RelationTypes[i].MappingRules = &inDirectMapping
+		case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
+			var fcj interfaces.FilteredCrossJoinMapping
+			jsonData, err := json.Marshal(response.RelationTypes[i].MappingRules)
+			if err != nil {
+				return nil, fmt.Errorf("derived Config Marshal error: %s", err.Error())
+			}
+			err = json.Unmarshal(jsonData, &fcj)
+			if err != nil {
+				return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
+			}
+			response.RelationTypes[i].MappingRules = &fcj
 		}
 	}
 

@@ -9,6 +9,10 @@ generate_config_yaml() {
     local cfg_namespace="kweaver"
     local cfg_lang="en_US.UTF-8"
     local cfg_tz="Asia/Shanghai"
+    local cfg_access_host=""
+    local cfg_access_port=""
+    local cfg_access_scheme=""
+    local cfg_access_path=""
     if [[ -f "${out}" ]]; then
         local v
         v="$(awk '$1=="namespace:"{print $2; exit}' "${out}" 2>/dev/null | sed -e 's/^["'\'']//; s/["'\'']$//' || true)"
@@ -17,20 +21,40 @@ generate_config_yaml() {
         if [[ -n "${v}" ]]; then cfg_lang="${v}"; fi
         v="$(awk '$1=="env:"{in=1; next} in && $1=="timezone:"{print $2; exit} in && $0~/^[^ ]/{in=0}' "${out}" 2>/dev/null | sed -e 's/^["'\'']//; s/["'\'']$//' || true)"
         if [[ -n "${v}" ]]; then cfg_tz="${v}"; fi
+        # Preserve existing accessAddress fields using get_access_address_field helper
+        v="$(get_access_address_field "host")"
+        if [[ -n "${v}" ]]; then cfg_access_host="${v}"; fi
+        v="$(get_access_address_field "port")"
+        if [[ -n "${v}" ]]; then cfg_access_port="${v}"; fi
+        v="$(get_access_address_field "scheme")"
+        if [[ -n "${v}" ]]; then cfg_access_scheme="${v}"; fi
+        v="$(get_access_address_field "path")"
+        if [[ -n "${v}" ]]; then cfg_access_path="${v}"; fi
     fi
 
     local node_ip
-    # Try to get the first non-loopback IP address
-    node_ip="$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^127\.' | head -1 | tr -d '\n' || true)"
-    # If no valid IP found, try alternative methods
-    if [[ -z "${node_ip}" ]] || [[ "${node_ip}" == "127.0.0.1" ]]; then
-        # Try to get IP from ip command (more reliable)
-        node_ip="$(ip addr show 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '^127\.' | head -1 || true)"
+    # Only auto-detect IP if not already configured
+    if [[ -n "${cfg_access_host}" ]]; then
+        node_ip="${cfg_access_host}"
+    else
+        # Try to get the first non-loopback IP address
+        node_ip="$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^127\.' | head -1 | tr -d '\n' || true)"
+        # If no valid IP found, try alternative methods
+        if [[ -z "${node_ip}" ]] || [[ "${node_ip}" == "127.0.0.1" ]]; then
+            # Try to get IP from ip command (more reliable)
+            # BSD grep (macOS) has no -P; match deploy.sh _detect_node_ip fallback.
+            node_ip="$(ip addr show 2>/dev/null | grep -oE 'inet [0-9]+(\.[0-9]+){3}' | awk '{print $2}' | grep -v '^127\.' | head -1 || true)"
+        fi
+        # Final fallback
+        if [[ -z "${node_ip}" ]]; then
+            node_ip="10.x.x.x"
+        fi
     fi
-    # Final fallback
-    if [[ -z "${node_ip}" ]]; then
-        node_ip="10.x.x.x"
-    fi
+    
+    # Use existing values or defaults for other accessAddress fields
+    local access_port="${cfg_access_port:-${INGRESS_NGINX_HTTPS_PORT:-443}}"
+    local access_scheme="${cfg_access_scheme:-https}"
+    local access_path="${cfg_access_path:-/}"
 
     # Storage (local-path)
     local storage_class_name="${STORAGE_STORAGE_CLASS_NAME}"
@@ -52,10 +76,10 @@ STORAGE_EOF
     local mariadb_ns="${MARIADB_NAMESPACE}"
     local mariadb_host="mariadb-proton-mariadb.${mariadb_ns}.svc.cluster.local"
     # Use values from environment or config.yaml if set
-    local mariadb_user="${MARIADB_USER:-adp}"
+    local mariadb_user="${MARIADB_USER:-kweaver}"
     local mariadb_password="${MARIADB_PASSWORD}"
     local mariadb_root_password="${MARIADB_ROOT_PASSWORD}"
-    local mariadb_database="${MARIADB_DATABASE:-adp}"
+    local mariadb_database="${MARIADB_DATABASE:-kweaver}"
     local mariadb_configured=false
 
     # Try to find MariaDB secret by label first (more reliable than hardcoded name)
@@ -551,6 +575,7 @@ DEP_EOF
 )
     fi
 
+
     cat > "${out}" <<EOF
 namespace: ${cfg_namespace}
 env:
@@ -561,9 +586,9 @@ image:
 ${storage_section}
 accessAddress:
   host: ${node_ip}
-  port: 443
-  scheme: https
-  path: /
+  port: ${access_port}
+  scheme: ${access_scheme}
+  path: ${access_path}
 ${dep_services_section}
 EOF
 

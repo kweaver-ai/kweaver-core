@@ -11,9 +11,6 @@ type SwitchFields struct {
 	// 是否禁用业务域，默认false；开启后业务域相关逻辑全部失效
 	DisableBizDomain bool `yaml:"disable_biz_domain"`
 
-	// 是否禁用业务域初始化，默认false
-	DisableBizDomainInit bool `yaml:"disable_biz_domain_init"`
-
 	// 是否禁用审计日志初始化，默认false
 	DisableAuditInit bool `yaml:"disable_audit_init"`
 
@@ -47,6 +44,9 @@ type MockSwitchFields struct {
 
 	// 是否使用Mock BizDomain（本地开发时建议设置为true）
 	MockBizDomain bool `yaml:"mock_biz_domain"`
+
+	// 是否使用 Mock UserManagerModule（本地开发时建议设置为true）
+	MockUserManagerModule bool `yaml:"mock_user_manager_module"`
 
 	// Mock Hydra 返回的用户 ID
 	MockUserID string `yaml:"mock_user_id"`

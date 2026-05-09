@@ -10,7 +10,11 @@ from .memory_config import MemoryConfig
 from .local_dev_config import LocalDevConfig
 from .outer_llm_config import OuterLLMConfig
 from .feature_config import FeaturesConfig
-from .observability_config import O11yConfig, DialogLoggingConfig
+from .observability_config import (
+    O11yConfig,
+    DialogLoggingConfig,
+    LLMMessageLoggingConfig,
+)
 
 __all__ = [
     "AppConfig",
@@ -25,4 +29,5 @@ __all__ = [
     "FeaturesConfig",
     "O11yConfig",
     "DialogLoggingConfig",
+    "LLMMessageLoggingConfig",
 ]

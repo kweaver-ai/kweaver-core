@@ -8,3 +8,6 @@
 *.pyc
 *.log
 .nocalhost/config.yaml
+# 豁免 app/logs 模块目录（被根 .gitignore 的 logs/ 规则误拦截）
+!app/logs/
+!app/logs/*.py

@@ -49,8 +49,17 @@ type Config struct {
 	SandboxControlPlane      SandboxControlPlaneConfig `yaml:"sandbox-control-plane"`
 	MFModelAPI               PrivateBaseConfig         `yaml:"mf-model-api"`
 	MFModelManager           PrivateBaseConfig         `yaml:"mf-model-manager"`
+	VegaBackend              PrivateBaseConfig         `yaml:"vega-backend"`
 	AIGenerationConfig       AIGenerationConfig        `yaml:"ai_generation_config"`
 	OSSGatewayBackendConfig  OSSGatewayBackendConfig   `yaml:"oss-gateway-backend"`
+	SkillIndexBuildConfig    SkillIndexBuildConfig     `yaml:"skill_index_build"`
+}
+
+type SkillIndexBuildConfig struct {
+	EnablePeriodicFullScan   bool   `yaml:"enable_periodic_full_scan" default:"false"`
+	PeriodicFullScanInterval string `yaml:"periodic_full_scan_interval" default:"168h"`
+	EnableTaskCleanup        bool   `yaml:"enable_task_cleanup" default:"false"`
+	TaskRetention            string `yaml:"task_retention" default:"720h"`
 }
 
 // OSSGatewayBackendConfig OSS 网关后端配置

@@ -53,9 +53,6 @@ type TableConnector interface {
 	// ExecuteQuery 执行单表查询语句
 	ExecuteQuery(ctx context.Context, resource *interfaces.Resource,
 		params *interfaces.ResourceDataQueryParams) (*interfaces.QueryResult, error)
-
-	// ExecuteJoinQuery 执行多表 JOIN 查询；单表时 resources 长度 1、joins 为空
-	ExecuteJoinQuery(ctx context.Context, catalog *interfaces.Catalog, params *interfaces.JoinQueryParams) (*interfaces.QueryResult, error)
 }
 
 // FileConnector defines the interface for file/document storage connectors.
@@ -70,9 +67,8 @@ type FilesetConnector interface {
 	Connector
 	// ListFilesets lists file and folder objects for discovery (typically one level per parent).
 	ListFilesets(ctx context.Context) ([]*interfaces.FilesetMeta, error)
-	// GetObjectDownloadInfo returns vendor-specific download instructions (e.g. presigned URL + headers).
-	// docID is the source object id (e.g. AnyShare gns id).
-	GetObjectDownloadInfo(ctx context.Context, resourceName, docID string) (map[string]any, error)
+	// ExecuteQuery executes a query on the fileset
+	ExecuteQuery(ctx context.Context, resource *interfaces.Resource, params *interfaces.ResourceDataQueryParams) (*interfaces.QueryResult, error)
 }
 
 // TopicConnector defines the interface for message queue connectors.
@@ -106,9 +102,8 @@ type IndexConnector interface {
 	CheckExist(ctx context.Context, name string) (bool, error)
 	CreateDocuments(ctx context.Context, name string, documents []map[string]any) ([]string, error)
 	GetDocument(ctx context.Context, name string, docID string) (map[string]any, error)
-	UpdateDocument(ctx context.Context, name string, docID string, document map[string]any) error
 	DeleteDocument(ctx context.Context, name string, docID string) error
-	UpdateDocuments(ctx context.Context, name string, updateRequests []map[string]any) error
+	UpsertDocuments(ctx context.Context, name string, updateRequests []map[string]any) ([]string, error)
 	DeleteDocuments(ctx context.Context, name string, docIDs string) error
 	DeleteDocumentsByQuery(ctx context.Context, name string, params *interfaces.ResourceDataQueryParams, schemaDefinition []*interfaces.Property) error
 }

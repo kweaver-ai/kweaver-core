@@ -271,6 +271,10 @@ export AGENT_EXECUTOR_CONFIG_PATH=/path/to/your/config/dir
 - `single_profile_file_path`: profile日志文件路径
 - `single_trajectory_file_path`: trajectory日志文件路径
 
+### 15. llm_message_logging相关
+- `enabled`: 是否启用LLM消息日志
+- `log_dir`: 日志输出目录（按agent_run_id分文件）
+
 ## 与原版本的区别
 
 | 特性 | 原版本 (config_class.py) | v2版本 (config_v2) |

@@ -10,6 +10,8 @@
 
 **响应格式:** JSON
 
+**支持厂商:** 阿里云 OSS、华为云 OBS、ECEPH、火山云 TOS
+
 ---
 
 ## 响应规范
@@ -79,7 +81,7 @@
 
 | 参数名       | 类型    | 必填 | 说明                                       |
 |-------------|---------|------|-------------------------------------------|
-| vendor_type | string  | 否   | 厂商类型过滤 (OSS/OBS/ECEPH)               |
+| vendor_type | string  | 否   | 厂商类型过滤 (OSS/OBS/ECEPH/TOS)           |
 | enabled     | boolean | 否   | 启用状态过滤 (true/false)                  |
 | is_default  | boolean | 否   | 默认存储过滤 (true/false)                  |
 | page        | int     | 否   | 页码，从1开始，默认1                        |
@@ -159,7 +161,7 @@
 
 **接口地址:** `POST /storages`
 
-**请求体:**
+**请求体示例 (阿里云 OSS):**
 ```json
 {
   "storage_name": "阿里云存储1",
@@ -174,17 +176,34 @@
 }
 ```
 
+**请求体示例 (火山云 TOS):**
+```json
+{
+  "storage_name": "火山云TOS",
+  "vendor_type": "TOS",
+  "endpoint": "https://tos-s3-cn-beijing.volces.com",
+  "bucket_name": "my-bucket",
+  "access_key_id": "AKxxxxxxxxx",
+  "access_key_secret": "your-secret",
+  "region": "cn-beijing",
+  "is_default": false,
+  "internal_endpoint": ""
+}
+```
+
+**注意:** 火山云 TOS 的 endpoint 只填写域名部分，不包含 bucket 名称。系统会自动使用 VirtualHostStyle 访问方式。
+
 **字段说明:**
 
 | 字段名            | 类型    | 必填 | 说明                                        |
 |------------------|---------|------|-------------------------------------------|
 | storage_name     | string  | 是   | 存储配置的显示名称                                 |
-| vendor_type      | string  | 是   | 厂商类型 (OSS/OBS/ECEPH)                      |
+| vendor_type      | string  | 是   | 厂商类型 (OSS/OBS/ECEPH/TOS)                  |
 | endpoint         | string  | 是   | 服务端点 URL (必须以 http:// 或 https:// 开头)      |
 | bucket_name      | string  | 是   | 存储桶名称                                     |
 | access_key_id    | string  | 是   | 访问密钥 ID,对于私有化部署的ECEPH，该字段对应用户的账户名         |
 | access_key_secret| string  | 是   | 访问密钥                                      |
-| region           | string  | 条件 | 区域标识符 (OSS/OBS必填，ECEPH可选)                 |
+| region           | string  | 条件 | 区域标识符 (OSS/OBS/TOS必填，ECEPH可选)            |
 | is_default       | boolean | 否   | 是否设为默认存储（全局只能有一个默认存储，如果系统已存在其他默认存储，创建会失败） |
 | internal_endpoint| string  | 否   | 内网访问端点                                    |
 

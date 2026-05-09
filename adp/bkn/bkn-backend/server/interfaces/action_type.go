@@ -5,7 +5,9 @@
 
 package interfaces
 
-import "bkn-backend/common/condition"
+import (
+	cond "bkn-backend/common/condition"
+)
 
 const (
 	// 行动资源类型
@@ -33,36 +35,36 @@ var (
 
 	// 行动条件操作符
 	ActionCondOperationMap = map[string]struct{}{
-		condition.OperationAnd:        {},
-		condition.OperationOr:         {},
-		condition.OperationEq:         {},
-		condition.OperationNotEq:      {},
-		condition.OperationGt:         {},
-		condition.OperationGte:        {},
-		condition.OperationLt:         {},
-		condition.OperationLte:        {},
-		condition.OperationIn:         {},
-		condition.OperationNotIn:      {},
-		condition.OperationEmpty:      {},
-		condition.OperationNotEmpty:   {},
-		condition.OperationTrue:       {},
-		condition.OperationFalse:      {},
-		condition.OperationRange:      {},
-		condition.OperationOutRange:   {},
-		condition.OperationBefore:     {},
-		condition.OperationBetween:    {},
-		condition.OperationExist:      {},
-		condition.OperationNotExist:   {},
-		condition.OperationLike:       {},
-		condition.OperationNotLike:    {},
-		condition.OperationPrefix:     {},
-		condition.OperationNotPrefix:  {},
-		condition.OperationNull:       {},
-		condition.OperationNotNull:    {},
-		condition.OperationRegex:      {},
-		condition.OperationContain:    {},
-		condition.OperationNotContain: {},
-		condition.OperationCurrent:    {},
+		cond.OperationAnd:        {},
+		cond.OperationOr:         {},
+		cond.OperationEq:         {},
+		cond.OperationNotEq:      {},
+		cond.OperationGt:         {},
+		cond.OperationGte:        {},
+		cond.OperationLt:         {},
+		cond.OperationLte:        {},
+		cond.OperationIn:         {},
+		cond.OperationNotIn:      {},
+		cond.OperationEmpty:      {},
+		cond.OperationNotEmpty:   {},
+		cond.OperationTrue:       {},
+		cond.OperationFalse:      {},
+		cond.OperationRange:      {},
+		cond.OperationOutRange:   {},
+		cond.OperationBefore:     {},
+		cond.OperationBetween:    {},
+		cond.OperationExist:      {},
+		cond.OperationNotExist:   {},
+		cond.OperationLike:       {},
+		cond.OperationNotLike:    {},
+		cond.OperationPrefix:     {},
+		cond.OperationNotPrefix:  {},
+		cond.OperationNull:       {},
+		cond.OperationNotNull:    {},
+		cond.OperationRegex:      {},
+		cond.OperationContain:    {},
+		cond.OperationNotContain: {},
+		cond.OperationCurrent:    {},
 	}
 )
 
@@ -72,7 +74,7 @@ type ActionTypeWithKeyField struct {
 	ActionType   string           `json:"action_type" mapstructure:"action_type"`
 	ObjectTypeID string           `json:"object_type_id" mapstructure:"object_type_id"`
 	ObjectType   SimpleObjectType `json:"object_type,omitempty" mapstructure:"object_type"` // 翻译绑定的对象类
-	Condition    *CondCfg         `json:"condition,omitempty" mapstructure:"condition"`
+	Condition    *ActionCondCfg   `json:"cond,omitempty" mapstructure:"cond"`
 	Affect       *ActionAffect    `json:"affect" mapstructure:"affect"`
 	ActionSource ActionSource     `json:"action_source" mapstructure:"action_source"`
 	Parameters   []Parameter      `json:"parameters" mapstructure:"parameters"`
@@ -110,19 +112,17 @@ type ActionSource struct {
 	ToolName string `json:"tool_name,omitempty" mapstructure:"tool_name"`
 }
 
-type CondCfg struct {
-	ObjectTypeID string     `json:"object_type_id,omitempty" mapstructure:"object_type_id"` // 行动条件需要标记是哪个行动类的
-	Field        string     `json:"field,omitempty" mapstructure:"field"`
-	Operation    string     `json:"operation,omitempty" mapstructure:"operation"`
-	SubConds     []*CondCfg `json:"sub_conditions,omitempty" mapstructure:"sub_conditions"`
-	ValueOptCfg  `mapstructure:",squash"`
+type ActionCondCfg struct {
+	ObjectTypeID string `json:"object_type_id,omitempty" mapstructure:"object_type_id"` // 行动条件需要标记是哪个行动类的
 
-	// NameField *ViewField `json:"-" mapstructure:"-"`
-}
+	Field            string           `json:"field,omitempty" mapstructure:"field"`
+	Operation        string           `json:"operation,omitempty" mapstructure:"operation"`
+	SubConds         []*ActionCondCfg `json:"sub_conditions,omitempty" mapstructure:"sub_conditions"`
+	cond.ValueOptCfg `mapstructure:",squash"`
 
-type ValueOptCfg struct {
-	ValueFrom string `json:"value_from,omitempty" mapstructure:"value_from"`
-	Value     any    `json:"value,omitempty" mapstructure:"value"`
+	RemainCfg map[string]any `json:",omitempty" mapstructure:",remain,squash"`
+
+	NameField *ViewField `json:"-" mapstructure:"-"`
 }
 
 type ActionAffect struct {
@@ -143,7 +143,6 @@ type ActionTypesQueryParams struct {
 	Tag           string
 	Branch        string
 	KNID          string
-	GroupID       string
 	ObjectTypeIDs []string
 	ActionType    string
 }

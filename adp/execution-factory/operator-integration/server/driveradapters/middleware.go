@@ -150,7 +150,7 @@ func byteToInterface(byt []byte) interface{} {
 func middlewareBusinessDomain(isPublic, isBuiltin bool, businessDomainService interfaces.IBusinessDomainService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
-		businessDomain := c.GetHeader(string(interfaces.HeaderXBusinessDomain))
+		businessDomain := businessDomainService.GetBusinessDomainFromHeader(c)
 		// 初始化默认值
 		// 1. 外部接口：如果不传递，默认bd_public
 		if isPublic {

@@ -26,6 +26,42 @@ var (
 	}
 )
 
+// 连接器类型常量定义
+const (
+	ConnectorTypeMySQL      string = "mysql"
+	ConnectorTypeMariaDB    string = "mariadb"
+	ConnectorTypePostgreSQL string = "postgresql"
+	ConnectorTypeOpenSearch string = "opensearch"
+	ConnectorTypeOracle     string = "oracle"
+	ConnectorTypeAnyShare   string = "anyshare"
+)
+
+// 当前统一查询接口支持的连接器类型列表
+// 注意：系统支持更多连接器类型，但当前统一查询接口仅支持以下类型
+var SupportedConnectorTypesForQuery = map[string]bool{
+	ConnectorTypeMySQL:      true,
+	ConnectorTypeMariaDB:    true,
+	ConnectorTypePostgreSQL: true,
+	ConnectorTypeOpenSearch: true,
+}
+
+// GetSupportedConnectorTypesForQuery 返回当前统一查询接口支持的连接器类型列表
+// 注意：系统支持更多连接器类型，但当前统一查询接口仅支持以下类型
+func GetSupportedConnectorTypesForQuery() []string {
+	return []string{
+		ConnectorTypeMySQL,
+		ConnectorTypeMariaDB,
+		ConnectorTypePostgreSQL,
+		ConnectorTypeOpenSearch,
+	}
+}
+
+// IsConnectorTypeSupportedForQuery 检查给定的连接器类型是否被当前统一查询接口支持
+// 注意：系统支持更多连接器类型，但当前统一查询接口仅支持部分类型
+func IsConnectorTypeSupportedForQuery(connectorType string) bool {
+	return SupportedConnectorTypesForQuery[connectorType]
+}
+
 // ConnectorFieldConfig 定义连接器配置字段的元数据（兼容 JSON Schema properties）
 type ConnectorFieldConfig struct {
 	Name        string `json:"name"`        // 字段显示名

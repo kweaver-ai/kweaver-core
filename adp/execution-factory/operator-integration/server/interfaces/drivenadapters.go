@@ -537,9 +537,10 @@ type BusinessDomainManagement interface {
 // ExecuteCodeReq 执行代码请求
 type ExecuteCodeReq struct {
 	Code                  string            `json:"code" validate:"required"`                                    // 执行代码
-	Event                 map[string]any    `json:"event" validate:"required"`                                   // 事件
+	Event                 map[string]any    `json:"event,omitempty"`                                             // 事件
 	Language              string            `json:"language" default:"python"`                                   // 执行语言
 	Timeout               int               `json:"timeout,omitempty"`                                           // 超时时间，单位秒
+	WorkingDirectory      string            `json:"working_directory,omitempty"`                                 // 工作目录，相对于 workspace 根目录
 	Dependencies          []*DependencyInfo `json:"dependencies,omitempty"`                                      // 依赖资源
 	PythonPackageIndexURL string            `json:"python_package_index_url" default:"https://pypi.org/simple/"` // 安装源URL
 }
@@ -672,6 +673,45 @@ type InstallDependenciesReq struct {
 	PythonPackageIndexURL string `json:"python_package_index_url,omitempty"` // Python第三方库索引URL
 }
 
+// UploadSkillArchiveReq 上传 Skill 压缩包请求
+type UploadSkillArchiveReq struct {
+	WorkDir  string `json:"work_dir"`  // 会话工作目录
+	FileName string `json:"file_name"` // 压缩包文件名
+	Content  []byte `json:"content"`   // 压缩包内容
+}
+
+// UploadSkillArchiveResp 上传 Skill 压缩包响应
+type UploadSkillArchiveResp struct {
+	SessionID          string `json:"session_id"`
+	Mode               string `json:"mode,omitempty"`
+	WorkDir            string `json:"work_dir"`
+	FileName           string `json:"file_name"`
+	UploadedPath       string `json:"uploaded_path"`
+	Size               int64  `json:"size"`
+	ExtractedFileCount int    `json:"extracted_file_count,omitempty"`
+	SkippedFileCount   int    `json:"skipped_file_count,omitempty"`
+	Mocked             bool   `json:"mocked"`
+}
+
+// ExecuteShellReq 执行 shell 请求
+type ExecuteShellReq struct {
+	WorkDir string `json:"work_dir"` // 会话工作目录
+	Command string `json:"command"`  // shell 命令
+	Timeout int    `json:"timeout"`  // 超时时间，单位秒
+}
+
+// ExecuteShellResp 执行 shell 响应
+type ExecuteShellResp struct {
+	SessionID     string `json:"session_id"`
+	WorkDir       string `json:"work_dir"`
+	Command       string `json:"command"`
+	ExitCode      int    `json:"exit_code"`
+	Stdout        string `json:"stdout"`
+	Stderr        string `json:"stderr"`
+	ExecutionTime int64  `json:"execution_time"`
+	Mocked        bool   `json:"mocked"`
+}
+
 // SandBoxControlPlane 沙箱控制服务接口
 type SandBoxControlPlane interface {
 	// 获取模版详情
@@ -688,6 +728,10 @@ type SandBoxControlPlane interface {
 	ExecuteCodeSync(ctx context.Context, sessionID string, req *ExecuteCodeReq) (*ExecuteCodeResp, error)
 	// 增量安装 Python 依赖
 	InstallPythonDependencies(ctx context.Context, sessionID string, req *InstallDependenciesReq) (detail *SessionDetail, err error)
+	// 上传 Skill 压缩包
+	UploadSkillArchive(ctx context.Context, sessionID string, req *UploadSkillArchiveReq) (*UploadSkillArchiveResp, error)
+	// 执行 shell 命令
+	ExecuteShell(ctx context.Context, sessionID string, req *ExecuteShellReq) (*ExecuteShellResp, error)
 }
 
 // ChatCompletionReq 聊天完成请求
@@ -748,6 +792,8 @@ type MFModelAPIClient interface {
 	ChatCompletion(ctx context.Context, req *ChatCompletionReq) (resp *ChatCompletionResp, err error)
 	// 调用模型流式返回
 	StreamChatCompletion(ctx context.Context, req *ChatCompletionReq) (chan string, chan error, error)
+	// 获取 embedding 向量
+	Embeddings(ctx context.Context, req *EmbeddingReq) (resp *EmbeddingResp, err error)
 }
 
 // GetPromptResp 获取提示词响应
@@ -759,10 +805,109 @@ type GetPromptResp struct {
 	Messages   string `json:"messages"`    // 提示词内容
 }
 
+const (
+	SmallModelTypeEmbedding = "embedding"
+)
+
+type EmbeddingModel struct {
+	ModelID      string `json:"model_id"`
+	ModelName    string `json:"model_name"`
+	ModelType    string `json:"model_type"`
+	EmbeddingDim int    `json:"embedding_dim"`
+	BatchSize    int    `json:"batch_size"`
+	MaxTokens    int    `json:"max_tokens"`
+}
+
+type EmbeddingReq struct {
+	Model string   `json:"model"`
+	Input []string `json:"input"`
+}
+
+type EmbeddingData struct {
+	Object    string    `json:"object"`
+	Embedding []float32 `json:"embedding"`
+	Index     int       `json:"index"`
+}
+
+type EmbeddingResp struct {
+	Data []EmbeddingData `json:"data"`
+}
+
 // MFModelManager 模型管理接口
 type MFModelManager interface {
 	// 获取提示词
 	GetPromptByPromptID(ctx context.Context, promptID string) (resp *GetPromptResp, err error)
+	// 获取 embedding 模型信息
+	GetEmbeddingModel(ctx context.Context, modelName string, modelType string) (resp *EmbeddingModel, err error)
+}
+
+type VegaPropertyFeature struct {
+	Name        string         `json:"name"`
+	DisplayName string         `json:"display_name"`
+	FeatureType string         `json:"feature_type"`
+	Description string         `json:"description"`
+	RefProperty string         `json:"ref_property"`
+	IsDefault   bool           `json:"is_default"`
+	IsNative    bool           `json:"is_native"`
+	Config      map[string]any `json:"config,omitempty"`
+}
+
+type VegaProperty struct {
+	Name         string                `json:"name"`
+	Type         string                `json:"type"`
+	DisplayName  string                `json:"display_name"`
+	OriginalName string                `json:"original_name"`
+	Description  string                `json:"description"`
+	Features     []VegaPropertyFeature `json:"features,omitempty"`
+}
+
+type VegaCatalogRequest struct {
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Tags        []string `json:"tags"`
+	Description string   `json:"description"`
+}
+
+type VegaCatalog struct {
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Tags        []string `json:"tags"`
+	Description string   `json:"description"`
+	Type        string   `json:"type"`
+}
+
+type VegaResourceRequest struct {
+	ID               string         `json:"id"`
+	CatalogID        string         `json:"catalog_id"`
+	Name             string         `json:"name"`
+	Tags             []string       `json:"tags"`
+	Description      string         `json:"description"`
+	Category         string         `json:"category"`
+	Status           string         `json:"status"`
+	SourceIdentifier string         `json:"source_identifier"`
+	SchemaDefinition []VegaProperty `json:"schema_definition"`
+}
+
+type VegaResource struct {
+	ID               string         `json:"id"`
+	CatalogID        string         `json:"catalog_id"`
+	Name             string         `json:"name"`
+	Tags             []string       `json:"tags"`
+	Description      string         `json:"description"`
+	Category         string         `json:"category"`
+	Status           string         `json:"status"`
+	SourceIdentifier string         `json:"source_identifier"`
+	SchemaDefinition []VegaProperty `json:"schema_definition,omitempty"`
+}
+
+type VegaBackendClient interface {
+	GetCatalogByID(ctx context.Context, id string) (*VegaCatalog, error)
+	CreateCatalog(ctx context.Context, req *VegaCatalogRequest) (*VegaCatalog, error)
+	GetResourceByID(ctx context.Context, id string) (*VegaResource, error)
+	CreateResource(ctx context.Context, req *VegaResourceRequest) (*VegaResource, error)
+	WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error
+	UpdateDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error
+	DeleteDatasetDocumentByID(ctx context.Context, datasetID string, docID string) error
 }
 
 // OssObject OSS 对象结构体

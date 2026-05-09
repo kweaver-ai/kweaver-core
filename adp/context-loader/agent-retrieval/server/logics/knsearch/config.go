@@ -14,7 +14,7 @@ func DefaultConceptRetrievalConfig() *interfaces.KnSearchConceptRetrievalConfig 
 	return &interfaces.KnSearchConceptRetrievalConfig{
 		TopK:                   10,
 		IncludeSampleData:      boolPtr(false),
-		SchemaBrief:            boolPtr(true),
+		SchemaBrief:            boolPtr(false),
 		EnableCoarseRecall:     boolPtr(true),
 		CoarseObjectLimit:      2000,
 		CoarseRelationLimit:    300,
@@ -82,6 +82,9 @@ func MergeRetrievalConfig(userConfig *interfaces.KnSearchRetrievalConfig) *inter
 }
 
 func mergeConceptRetrievalConfig(base, user *interfaces.KnSearchConceptRetrievalConfig) {
+	if len(user.ConceptGroups) > 0 {
+		base.ConceptGroups = normalizeConceptGroups(user.ConceptGroups)
+	}
 	if user.TopK > 0 {
 		base.TopK = user.TopK
 	}

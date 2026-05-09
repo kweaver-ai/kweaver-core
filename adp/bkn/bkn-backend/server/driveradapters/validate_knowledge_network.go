@@ -43,12 +43,6 @@ func ValidateKN(ctx context.Context, kn *interfaces.KN) error {
 	// 去掉tag前后空格以及数组去重
 	kn.Tags = libCommon.TagSliceTransform(kn.Tags)
 
-	// 校验comment合法性
-	err = validateObjectComment(ctx, kn.Comment)
-	if err != nil {
-		return err
-	}
-
 	// 校验分支非空
 	if kn.Branch == "" {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_NullParameter_Branch).

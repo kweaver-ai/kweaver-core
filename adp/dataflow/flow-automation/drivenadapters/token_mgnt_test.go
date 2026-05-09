@@ -7,7 +7,7 @@ import (
 
 	. "github.com/agiledragon/gomonkey/v2"
 	"github.com/go-playground/assert/v2"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -56,11 +56,6 @@ paths:
           schema:
             type: string
           in: query
-        - name: group_id
-          description: 按概念分组过滤
-          schema:
-            type: string
-          in: query
         - name: action_type
           description: 行动类型
           schema:

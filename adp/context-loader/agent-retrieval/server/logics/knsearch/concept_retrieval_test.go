@@ -8,6 +8,23 @@ import (
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/interfaces"
 )
 
+func sameStringSet(got, want []string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	seen := make(map[string]int, len(got))
+	for _, v := range got {
+		seen[v]++
+	}
+	for _, v := range want {
+		if seen[v] == 0 {
+			return false
+		}
+		seen[v]--
+	}
+	return true
+}
+
 func TestConceptRetrieval_MainFlow(t *testing.T) {
 	// 准备基础测试数据
 	mockDetail := createMockNetworkDetail(5, 5, 2)
@@ -110,9 +127,9 @@ func TestConceptRetrieval_MainFlow(t *testing.T) {
 			}
 
 			svc := &localSearchImpl{
-				logger:          &mockLogger{},
-				bknBackend: mockManager,
-				rerankClient:    mockRerank,
+				logger:       &mockLogger{},
+				bknBackend:   mockManager,
+				rerankClient: mockRerank,
 			}
 
 			res, err := svc.conceptRetrieval(context.Background(), tt.req, tt.config)
@@ -136,7 +153,7 @@ func TestConceptRetrieval_NoRelations_ObjectTopByScore(t *testing.T) {
 
 	mockManager := &mockBknBackend{networkDetail: detail}
 	svc := &localSearchImpl{
-		logger:          &mockLogger{},
+		logger:     &mockLogger{},
 		bknBackend: mockManager,
 	}
 
@@ -178,7 +195,7 @@ func TestConceptRetrieval_ObjectFallback_FillByScore(t *testing.T) {
 
 	mockManager := &mockBknBackend{networkDetail: detail}
 	svc := &localSearchImpl{
-		logger:          &mockLogger{},
+		logger:     &mockLogger{},
 		bknBackend: mockManager,
 	}
 
@@ -201,6 +218,190 @@ func TestConceptRetrieval_ObjectFallback_FillByScore(t *testing.T) {
 		if !found[id] {
 			t.Fatalf("Expected %s to be included by fallback scoring", id)
 		}
+	}
+}
+
+// TestConceptRetrieval_GroupScopeDelegatesToBkn 验证 concept_groups 非空时，
+// ContextLoader 直接调用 BKN 的 typed search API，并将分组参数透传下去；
+// 同时不应再触发 GetKnowledgeNetworkDetail 与本地按组过滤。
+func TestConceptRetrieval_GroupScopeDelegatesToBkn(t *testing.T) {
+	cfg := DefaultConceptRetrievalConfig()
+	cfg.EnableCoarseRecall = boolPtr(false)
+	cfg.TopK = 10
+	cfg.ConceptGroups = []string{"supply_chain"}
+
+	mockManager := &mockBknBackend{
+		objectTypesResp: &interfaces.ObjectTypeConcepts{
+			Entries: []*interfaces.ObjectType{
+				{ID: "obj_0", Name: "对象0"},
+			},
+		},
+		relationTypesResp: &interfaces.RelationTypeConcepts{
+			Entries: []*interfaces.RelationType{
+				{ID: "rel_0", Name: "关系0", SourceObjectTypeID: "obj_0", TargetObjectTypeID: "obj_0"},
+			},
+		},
+		actionTypesResp: &interfaces.ActionTypeConcepts{
+			Entries: []*interfaces.ActionType{
+				{ID: "action_0", Name: "动作0", ObjectTypeID: "obj_0"},
+			},
+		},
+	}
+	svc := &localSearchImpl{
+		logger:     &mockLogger{},
+		bknBackend: mockManager,
+	}
+
+	req := &interfaces.KnSearchLocalRequest{KnID: "129", Query: "query"}
+	res, err := svc.conceptRetrieval(context.Background(), req, cfg)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if mockManager.networkCalls != 0 {
+		t.Fatalf("GetKnowledgeNetworkDetail called %d times, want 0 when concept_groups is set",
+			mockManager.networkCalls)
+	}
+
+	want := []string{"supply_chain"}
+	if mockManager.objectTypesReq == nil {
+		t.Fatal("expected SearchObjectTypes to be invoked")
+	}
+	if !stringSlicesEqual(mockManager.objectTypesReq.ConceptGroups, want) {
+		t.Fatalf("object_types ConceptGroups=%v, want %v",
+			mockManager.objectTypesReq.ConceptGroups, want)
+	}
+	if mockManager.relationTypesReq == nil {
+		t.Fatal("expected SearchRelationTypes to be invoked")
+	}
+	if !stringSlicesEqual(mockManager.relationTypesReq.ConceptGroups, want) {
+		t.Fatalf("relation_types ConceptGroups=%v, want %v",
+			mockManager.relationTypesReq.ConceptGroups, want)
+	}
+	if mockManager.actionTypesReq == nil {
+		t.Fatal("expected SearchActionTypes to be invoked")
+	}
+	if !stringSlicesEqual(mockManager.actionTypesReq.ConceptGroups, want) {
+		t.Fatalf("action_types ConceptGroups=%v, want %v",
+			mockManager.actionTypesReq.ConceptGroups, want)
+	}
+
+	if got := len(res.ObjectTypes); got != 1 || res.ObjectTypes[0].ConceptID != "obj_0" {
+		t.Fatalf("ObjectTypes=%v, want [obj_0]", res.ObjectTypes)
+	}
+	if got := len(res.RelationTypes); got != 1 || res.RelationTypes[0].ConceptID != "rel_0" {
+		t.Fatalf("RelationTypes=%v, want [rel_0]", res.RelationTypes)
+	}
+	if got := len(res.ActionTypes); got != 1 || res.ActionTypes[0].ID != "action_0" {
+		t.Fatalf("ActionTypes=%v, want [action_0]", res.ActionTypes)
+	}
+}
+
+func TestConceptRetrieval_GroupScopeCompletesReferencedObjects(t *testing.T) {
+	cfg := DefaultConceptRetrievalConfig()
+	cfg.EnableCoarseRecall = boolPtr(false)
+	cfg.TopK = 10
+	cfg.ConceptGroups = []string{"supply_chain"}
+
+	mockManager := &mockBknBackend{
+		objectTypesResp: &interfaces.ObjectTypeConcepts{
+			Entries: []*interfaces.ObjectType{
+				{ID: "obj_query", Name: "Query matched object"},
+			},
+		},
+		relationTypesResp: &interfaces.RelationTypeConcepts{
+			Entries: []*interfaces.RelationType{
+				{ID: "rel_supply", Name: "Supply relation", SourceObjectTypeID: "obj_source", TargetObjectTypeID: "obj_target"},
+			},
+		},
+		actionTypesResp: &interfaces.ActionTypeConcepts{
+			Entries: []*interfaces.ActionType{
+				{ID: "action_restock", Name: "Restock", ObjectTypeID: "obj_action"},
+			},
+		},
+		objectDetailResp: []*interfaces.ObjectType{
+			{ID: "obj_source", Name: "Source object"},
+			{ID: "obj_target", Name: "Target object"},
+			{ID: "obj_action", Name: "Action object"},
+		},
+	}
+	svc := &localSearchImpl{
+		logger:     &mockLogger{},
+		bknBackend: mockManager,
+	}
+
+	req := &interfaces.KnSearchLocalRequest{KnID: "129", Query: "query"}
+	res, err := svc.conceptRetrieval(context.Background(), req, cfg)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if mockManager.objectDetailCalls != 1 {
+		t.Fatalf("GetObjectTypeDetail calls=%d, want 1", mockManager.objectDetailCalls)
+	}
+	if mockManager.objectDetailKnID != "129" {
+		t.Fatalf("GetObjectTypeDetail knID=%q, want 129", mockManager.objectDetailKnID)
+	}
+	wantIDs := []string{"obj_source", "obj_target", "obj_action"}
+	if !sameStringSet(mockManager.objectDetailIDs, wantIDs) {
+		t.Fatalf("GetObjectTypeDetail ids=%v, want set %v", mockManager.objectDetailIDs, wantIDs)
+	}
+
+	gotObjects := map[string]bool{}
+	for _, obj := range res.ObjectTypes {
+		gotObjects[obj.ConceptID] = true
+	}
+	for _, id := range wantIDs {
+		if !gotObjects[id] {
+			t.Fatalf("expected enriched object %s in response, got objects %#v", id, res.ObjectTypes)
+		}
+	}
+
+	if len(res.RelationTypes) != 1 {
+		t.Fatalf("RelationTypes len=%d, want 1", len(res.RelationTypes))
+	}
+	if len(res.ActionTypes) != 1 {
+		t.Fatalf("ActionTypes len=%d, want 1", len(res.ActionTypes))
+	}
+	if res.ActionTypes[0].ObjectTypeName != "Action object" {
+		t.Fatalf("Action object type name=%q, want Action object", res.ActionTypes[0].ObjectTypeName)
+	}
+}
+
+// TestConceptRetrieval_UnknownConceptGroupPropagatesError 验证当 BKN 对未知
+// concept_groups 返回错误时（线上行为：5xx + "all concept group not found"），
+// ContextLoader 直接向上透传，而不是吞错并返回空桶。这个语义对调用方区分
+// "分组不存在" 与 "分组合法但无概念" 至关重要。
+func TestConceptRetrieval_UnknownConceptGroupPropagatesError(t *testing.T) {
+	cfg := DefaultConceptRetrievalConfig()
+	cfg.EnableCoarseRecall = boolPtr(false)
+	cfg.ConceptGroups = []string{"missing_group"}
+
+	bknErr := errors.New("BknBackend.ObjectType.InternalError: all concept group not found")
+	mockManager := &mockBknBackend{
+		objectTypesError: bknErr,
+	}
+	svc := &localSearchImpl{
+		logger:     &mockLogger{},
+		bknBackend: mockManager,
+	}
+
+	req := &interfaces.KnSearchLocalRequest{KnID: "129", Query: "query"}
+	res, err := svc.conceptRetrieval(context.Background(), req, cfg)
+	if err == nil {
+		t.Fatal("expected BKN error to be propagated, got nil")
+	}
+	if res != nil {
+		t.Fatalf("expected nil result on propagated error, got %#v", res)
+	}
+	if mockManager.networkCalls != 0 {
+		t.Fatalf("GetKnowledgeNetworkDetail called %d times, want 0", mockManager.networkCalls)
+	}
+	if mockManager.relationTypesReq != nil {
+		t.Fatal("SearchRelationTypes should not be invoked after object-types error")
+	}
+	if mockManager.actionTypesReq != nil {
+		t.Fatal("SearchActionTypes should not be invoked after object-types error")
 	}
 }
 
@@ -227,7 +428,7 @@ func TestConceptRetrieval_CoarseRecall(t *testing.T) {
 	}
 
 	svc := &localSearchImpl{
-		logger:          &mockLogger{},
+		logger:     &mockLogger{},
 		bknBackend: mockManager,
 	}
 

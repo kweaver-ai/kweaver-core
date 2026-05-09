@@ -9,7 +9,8 @@ from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from datetime import datetime, timezone
 
 from src.infrastructure.container_scheduler.k8s_scheduler import K8sScheduler
-from src.infrastructure.container_scheduler.base import ContainerConfig
+from src.infrastructure.container_scheduler.base import ContainerConfig, ControlPlaneOwnerContext
+from kubernetes.client.rest import ApiException
 
 
 class TestK8sScheduler:
@@ -126,6 +127,68 @@ class TestK8sScheduler:
         # 验证参数
         call_args = mock_core_v1.create_namespaced_pod.call_args
         assert call_args[1]["namespace"] == "test-namespace"
+
+    @pytest.mark.asyncio
+    async def test_create_pod_sets_owner_references_and_annotations(self, scheduler, mock_core_v1):
+        """测试创建 Pod 时写入 ownerReferences 和 control plane annotations。"""
+        config = ContainerConfig(
+            image="python:3.11",
+            name="test-session",
+            cpu_limit="1",
+            memory_limit="512Mi",
+            disk_limit="1Gi",
+            env_vars={},
+            labels={"session_id": "sess-123", "template_id": "python-basic"},
+            workspace_path="/workspace",
+            owner_context=ControlPlaneOwnerContext(
+                pod_name="control-plane-0",
+                pod_uid="cp-uid-123",
+            ),
+        )
+
+        mock_pod = Mock()
+        mock_pod.metadata = Mock()
+        mock_pod.metadata.name = "sandbox-test-session"
+        mock_core_v1.create_namespaced_pod.return_value = mock_pod
+
+        await scheduler.create_container(config)
+
+        pod_spec = mock_core_v1.create_namespaced_pod.call_args.kwargs["body"]
+        owner_references = pod_spec.metadata.owner_references
+        assert owner_references is not None
+        assert len(owner_references) == 1
+        assert owner_references[0].name == "control-plane-0"
+        assert owner_references[0].uid == "cp-uid-123"
+        assert pod_spec.metadata.annotations["control-plane-pod-name"] == "control-plane-0"
+        assert pod_spec.metadata.annotations["control-plane-pod-uid"] == "cp-uid-123"
+
+    @pytest.mark.asyncio
+    async def test_create_pod_retries_after_terminating_pod_conflict(
+        self,
+        scheduler,
+        mock_core_v1,
+        basic_config,
+    ):
+        """测试旧 Pod 正在删除时会等待并重试同名创建。"""
+        stale_pod = Mock()
+        stale_pod.metadata = Mock()
+        stale_pod.metadata.deletion_timestamp = datetime.now(timezone.utc)
+
+        created_pod = Mock()
+        created_pod.metadata = Mock()
+        created_pod.metadata.name = "sandbox-test-session-abc123"
+
+        conflict_error = ApiException(status=409, reason="AlreadyExists")
+        deleted_error = ApiException(status=404, reason="NotFound")
+        mock_core_v1.create_namespaced_pod.side_effect = [conflict_error, created_pod]
+        mock_core_v1.read_namespaced_pod.side_effect = [stale_pod, deleted_error]
+
+        with patch("src.infrastructure.container_scheduler.k8s_scheduler.asyncio.sleep", new=AsyncMock()):
+            pod_name = await scheduler.create_container(basic_config)
+
+        assert pod_name == "sandbox-test-session-abc123"
+        assert mock_core_v1.create_namespaced_pod.call_count == 2
+        assert mock_core_v1.read_namespaced_pod.call_count == 2
 
     @pytest.mark.asyncio
     async def test_create_pod_with_s3_workspace(self, scheduler, mock_core_v1):
@@ -609,6 +672,11 @@ class TestK8sSchedulerExtended:
         assert container.resources is not None
         assert container.resources.requests is not None
         assert container.resources.limits is not None
+        assert container.resources.requests["cpu"] == "0"
+        assert container.resources.requests["memory"] == "0"
+        assert container.resources.limits["cpu"] == "2"
+        assert container.resources.limits["memory"] == "1Gi"
+        assert container.resources.limits["ephemeral-storage"] == "10Gi"
 
     def test_build_executor_container_with_dependencies(self, scheduler):
         """测试构建带依赖安装的 executor 容器"""
@@ -633,4 +701,3 @@ class TestK8sSchedulerExtended:
         # 应该有启动命令
         assert container.command is not None
         assert "pip3 install" in container.command[2]
-

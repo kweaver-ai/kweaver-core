@@ -30,6 +30,7 @@ import (
 	"ontology-query/drivenadapters/ontology_manager"
 	"ontology-query/drivenadapters/opensearch"
 	"ontology-query/drivenadapters/uniquery"
+	"ontology-query/drivenadapters/vega_backend"
 	"ontology-query/driveradapters"
 	"ontology-query/logics"
 )
@@ -120,6 +121,7 @@ func main() {
 	logics.SetOntologyManagerAccess(ontology_manager.NewOntologyManagerAccess(appSetting))
 	logics.SetOpenSearchAccess(opensearch.NewOpenSearchAccess(appSetting))
 	logics.SetUniqueryAccess(uniquery.NewUniqueryAccess(appSetting))
+	logics.SetVegaBackendAccess(vega_backend.NewVegaBackendAccess(appSetting))
 
 	server := &mgrService{
 		appSetting:  appSetting,

@@ -8,20 +8,29 @@
 
 ---
 
-## 🏗 子项目
+## 🏗 仓库结构
 
-KWeaver 是一个由多个子项目组成的开源生态。请根据你想贡献的组件，导航到相应的仓库：
+KWeaver Core 是一个 **monorepo**（[`kweaver-ai/kweaver-core`](https://github.com/kweaver-ai/kweaver-core)），平台后端各模块统一存放于此。请根据要修改的组件，进入对应目录：
 
-| 子项目 | 描述 | 仓库地址 |
+| 模块 | 路径 | 描述 |
 | --- | --- | --- |
-| **AI Store** | AI 应用与组件市场 | [kweaver-ai/dip](https://github.com/kweaver-ai/dip) |
-| **Studio** | DIP Studio - 可视化开发与管理界面 | [kweaver-ai/studio](https://github.com/kweaver-ai/studio) |
-| **Decision Agent** | 决策智能体 | [kweaver-ai/decision-agent](https://github.com/kweaver-ai/decision-agent) |
-| **ADP** | AI Data Platform（智能数据平台）- 包含本体引擎、ContextLoader 和 VEGA 数据虚拟化引擎 | [kweaver-ai/adp](https://github.com/kweaver-ai/adp) |
-| **Operator Hub** | 算子平台 - 负责算子管理与编排 | [kweaver-ai/operator-hub](https://github.com/kweaver-ai/operator-hub) |
-| **Sandbox** | 沙箱运行环境 | [kweaver-ai/sandbox](https://github.com/kweaver-ai/sandbox) |
+| **AI Data Platform（ADP）** | [`adp/`](../adp) | 本体引擎（`adp/bkn`）、Context Loader（`adp/context-loader`）、Dataflow（`adp/dataflow`）、Execution Factory（`adp/execution-factory`）、VEGA 数据虚拟化（`adp/vega`） |
+| **Decision Agent** | [`decision-agent/`](../decision-agent) | `agent-backend/` 下的 Agent Executor / Factory / Memory |
+| **Trace AI** | [`trace-ai/`](../trace-ai) | Agent 可观测与 OpenTelemetry Collector Chart |
+| **Infra** | [`infra/`](../infra) | `mf-model-manager`（模型注册）、`oss-gateway-backend`、`sandbox` 运行时 |
+| **BKN 示例** | [`bkn/`](../bkn) | 业务知识网络示例（如 `smart_home_supply_chain`） |
+| **示例** | [`examples/`](../examples) | 端到端 CLI 示例（数据库 / CSV / Action） |
+| **文档与站点** | [`help/`](../help)、[`website/`](../website) | 中英双语产品文档与对外 docs 站点 |
+| **部署** | [`deploy/`](../deploy) | Kubernetes 一键 `deploy.sh`（K8s + KWeaver Core Charts） |
 
-> **说明**：每个子项目都有自己的 README 和贡献指南。请参阅具体仓库获取详细的设置和开发说明。
+与本后端配套的对外 CLI / SDK 在独立仓库维护：
+
+| 仓库 | 用途 |
+| --- | --- |
+| [`kweaver-ai/kweaver-sdk`](https://github.com/kweaver-ai/kweaver-sdk) | `kweaver` CLI + TypeScript / Python SDK + Agent Skills（`kweaver-core`、`create-bkn`） |
+| [`kweaver-ai/kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin) | `kweaver-admin` 平台管理员 CLI + Agent Skill |
+
+> **说明**：每个模块都有自己的 README（通常还包括 `AGENTS.md` / `CLAUDE.md`），里面给出本模块语言对应的构建、测试与开发循环命令，请在动手前先看。
 
 ---
 
@@ -46,11 +55,12 @@ KWeaver 是一个由多个子项目组成的开源生态。请根据你想贡献
 请在提交 Bug 时提供以下信息：
 
 - **版本号 / 环境**：
-  - Go 版本（如 Go 1.23.0）
-  - 操作系统（Windows/Linux/macOS）
-  - 数据库版本（MariaDB 11.4+ / DM8）
-  - OpenSearch 版本（如适用）
-  - 受影响的模块（如 ADP、Decision Agent、DIP Studio）
+  - KWeaver Core 版本（`git describe --tags` 或 `VERSION` 文件，如 `v0.6.0`）
+  - 受影响的模块（如 `adp/bkn`、`decision-agent/agent-backend/agent-executor`、`infra/sandbox`）
+  - 运行时（Java / Go / Python / Node 及版本，如 JDK 17、Go 1.23、Python 3.11）
+  - 操作系统（Linux 发行版与内核 / macOS / Windows）
+  - 集群形态（单机 K3s / kubeadm / 托管 K8s）以及安装方式（`deploy.sh kweaver-core install [--minimum]`）
+  - 涉及的存储/中间件（MariaDB / DM8、OpenSearch、Redis、Kafka）
 
 - **复现步骤**: 清晰、逐步的复现说明
 
@@ -64,9 +74,11 @@ KWeaver 是一个由多个子项目组成的开源生态。请根据你想贡献
 
 ```markdown
 **环境:**
-- Go: 1.23.0
+- KWeaver Core: v0.6.0
+- 模块: adp/bkn
+- 运行时: JDK 17
 - 操作系统: Linux Ubuntu 22.04
-- 模块: ADP
+- 集群: 单机 K3s（deploy.sh kweaver-core install）
 - 数据库: MariaDB 11.4
 
 **复现步骤:**
@@ -137,13 +149,30 @@ Fork 本仓库到你的 GitHub 账户。
 git checkout -b feature/my-feature
 # 或
 git checkout -b fix/bug-description
+# 或（模块作用域 + 关联 Issue：第二段常以「编号-简述」开头）
+git checkout -b feature/agent-web/123-add-login
+git checkout -b fix/bkn-backend/456-query-timeout
 ```
 
 **分支命名规范：**
 
-分支名称会在每次 Pull Request 时由 CI 自动校验。
+分支名称会在每次 Pull Request 时由 CI 自动校验（与 `.github/workflows/lint-branch-name.yml` 一致）。
 
-格式：`<类型>/<描述>` 或 `<类型>/<Issue编号>-<描述>`（关联 Issue 时）
+**格式（类型前缀之后最多两段路径）**：
+
+- `<类型>/<描述>`，例如 `feature/add-oauth-support`
+- `<类型>/<Issue编号>-<描述>`（关联 Issue 时常用），例如 `fix/123-memory-leak`
+- `<类型>/<模块>/<描述>`（可选，用于按子模块或目录划分），其中**描述**里可含 Issue 编号，例如 `feature/agent-web/123-add-login`、`fix/bkn-backend/456-query-timeout`
+
+**不要**使用类型前缀之后**三层及以上**路径，例如 `feature/foo/bar/baz` 会校验失败（CI 要求类型后至多 2 个 path 段）。
+
+**示例（含模块与 Issue）**：
+
+| 分支名 | 说明 |
+| --- | --- |
+| `feature/studio/789-export-pipeline` | 功能 + 子模块 `studio`，Issue `#789` |
+| `fix/ontology-query/404-id-not-exist` | 修复 + 子模块 `ontology-query`，Issue `#404` |
+| `docs/rules/120-contributing-branch` | 文档 + 目录 `rules`，Issue `#120` |
 
 | 分支类型 | 命名格式 | 说明 | 示例 |
 | --- | --- | --- | --- |
@@ -159,11 +188,11 @@ git checkout -b fix/bug-description
 | 构建分支 | `build/*` | 构建系统或依赖 | `build/update-go-module` |
 | 样式分支 | `style/*` | 代码样式 / 格式化 | `style/fix-linter-warnings` |
 | 回滚分支 | `revert/*` | 回滚之前的更改 | `revert/rollback-auth-change` |
-| 发布分支 | `release/x.x.x` | 发布准备 | `release/1.2.0` |
+| 发布分支 | `release/x.y.z`（或带预发布后缀） | 发布准备 | `release/1.2.0`、`release/1.2.0-rc.1` |
 
 规则：
-- 如果分支关联了 Issue，将 Issue 编号放在最前面：`<类型>/<N>-<描述>`（如 `fix/123-memory-leak`）
-- `<描述>` 必须为小写，使用连字符（`-`）、点（`.`）或下划线（`_`）作为分隔符
+- 若关联 Issue，常见写法是 `<类型>/<N>-<描述>`（如 `fix/123-memory-leak`）；也可在「模块/描述」两段式里带上编号（如 `feature/agent-web/123-add-login`）
+- 每一段（`/` 之间的部分）须为小写字母或数字开头，其余字符为连字符（`-`）、点（`.`）或下划线（`_`）等（与 CI 一致）
 - 分支名必须以有效的类型前缀开头，后跟 `/`
 - Bot 分支（`dependabot/*`、`renovate/*`）自动豁免
 
@@ -181,14 +210,11 @@ git checkout -b fix/bug-description
 - 为新功能添加单元测试
 - 确保现有测试仍然通过
 - 争取良好的测试覆盖率
-
-```bash
-# 运行测试
-go test ./...
-
-# 运行测试并查看覆盖率
-go test -cover ./...
-```
+- 使用模块本身使用的测试框架。各模块 README / `AGENTS.md` 给出了规范命令，例如：
+  - Java（Maven）模块：`mvn test`
+  - Go 模块：`go test ./...`
+  - Python 模块：`pytest`
+  - Node / TypeScript 模块：`npm test`
 
 ### 5. 更新文档
 
@@ -501,44 +527,56 @@ git push origin feature/my-feature
 
 ### 环境要求
 
-- Go 1.23.0 或更高版本
-- MariaDB 11.4+ 或 DM8
-- OpenSearch 2.x（可选，用于完整功能）
-- Git
+KWeaver Core 是多语言项目，**只需安装你要修改的模块所需的工具链**：
+
+- **Git**（必备）
+- **Java**（JDK 17+）+ Maven —— ADP 与 decision-agent 大多数后端模块
+- **Go**（1.23+）—— `infra/oss-gateway-backend`、若干 CLI 与小型服务
+- **Python**（3.11+）—— `infra/mf-model-manager` 等模型/数据组件
+- **Node.js** —— kweaver 相关 CLI 需 **22+**（以 [npm 上 `kweaver-sdk`](https://www.npmjs.com/package/@kweaver-ai/kweaver-sdk) 的 `engines` 为准）；`website/` 以各包 `package.json` 的 `engines` 为准（如 >= 20）
+- **Docker** + 一套 Kubernetes（单机 K3s / kubeadm / Docker Desktop）—— 端到端验证
+- **MariaDB 11.4+**（或 DM8）、**OpenSearch 2.x**、**Redis**、**Kafka** —— 仅在调试相关服务时需要，通常由 `deploy.sh` 提供
+
+各模块 `README.md` / `AGENTS.md` 中列出了该模块的精确依赖、构建命令与开发循环，**动手前请先看**。
 
 ### 本地开发
 
-1. **克隆你的 Fork：**
+1. **克隆你 Fork 的 `kweaver-core`：**
 
-```bash
-git clone https://github.com/YOUR_USERNAME/kweaver.git
-cd kweaver
-```
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/kweaver-core.git
+   cd kweaver-core
+   ```
 
-1. **添加上游远程仓库：**
+2. **添加上游远程仓库：**
 
-```bash
-git remote add upstream https://github.com/kweaver-ai/kweaver-core.git
-```
+   ```bash
+   git remote add upstream https://github.com/kweaver-ai/kweaver-core.git
+   ```
 
-1. **设置开发环境：**
+3. **进入要修改的模块，按其 README 操作。** 例如：
 
-```bash
-# 导航到你要工作的模块
-cd <module-directory>/server
+   ```bash
+   # Java 模块（Maven）
+   cd adp/bkn/bkn-backend && mvn -DskipTests package
 
-# 下载依赖
-go mod download
+   # Go 模块
+   cd infra/oss-gateway-backend && make build && make test
 
-# 运行服务
-go run main.go
-```
+   # Python 模块
+   cd infra/mf-model-manager && pip install -r requirements.txt && pytest
 
-1. **运行测试：**
+   # 文档站点
+   cd website && npm install && npm run start
+   ```
 
-```bash
-go test ./...
-```
+4. **（可选）拉起完整集群** 做端到端测试，使用 `deploy/`（详见 [`help/zh/install.md`](../help/zh/install.md)）：
+
+   ```bash
+   cd deploy
+   ./deploy.sh kweaver-core install --minimum    # 快速体验
+   # 完整安装：./deploy.sh kweaver-core install
+   ```
 
 ---
 
@@ -546,12 +584,11 @@ go test ./...
 
 **请不要通过公共 GitHub Issues 报告安全漏洞。**
 
-相反，请通过以下方式报告：
+请通过 GitHub 内置的安全公告私密通道报告：
 
-- 邮箱: [安全联系邮箱]
-- 内部安全报告系统
+- [报告漏洞 — kweaver-ai/kweaver-core](https://github.com/kweaver-ai/kweaver-core/security/advisories/new)
 
-我们将确认收到并与你合作解决问题。
+我们会确认收到并与你协同修复。请在报告中包含：复现步骤、受影响版本（`git describe --tags`）以及你观察到的影响。
 
 ---
 

@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
 """单元测试 - input_handler_pkg/build_skills 模块"""
 
+import importlib
+
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
+
+
+def get_build_skills_module():
+    return importlib.import_module(
+        "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills"
+    )
 
 
 class TestBuildSkills:
@@ -26,20 +34,16 @@ class TestBuildSkills:
     @pytest.mark.asyncio
     async def test_build_skills_basic(self, mock_agent_core):
         """测试基本skills构建"""
-        with patch(
-            "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.span_set_attrs"
-        ):
-            with patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.get_user_account_id",
-                return_value="user123",
-            ):
-                with patch(
-                    "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.process_skills",
+        module = get_build_skills_module()
+
+        with patch.object(module, "span_set_attrs"):
+            with patch.object(module, "get_user_account_id", return_value="user123"):
+                with patch.object(
+                    module,
+                    "process_skills",
                     new_callable=AsyncMock,
                 ):
-                    from app.logic.agent_core_logic_v2.input_handler_pkg.build_skills import (
-                        build_skills,
-                    )
+                    build_skills = module.build_skills
 
                     await build_skills(
                         mock_agent_core,
@@ -54,34 +58,24 @@ class TestBuildSkills:
         """测试带临时文件的skills构建"""
         temp_files = {"test_file": {"filename": "test.txt", "content": "content"}}
 
-        with patch(
-            "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.span_set_attrs"
-        ):
-            with patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.get_user_account_id",
-                return_value="user123",
-            ):
-                with patch(
-                    "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.process_skills",
+        module = get_build_skills_module()
+
+        with patch.object(module, "span_set_attrs"):
+            with patch.object(module, "get_user_account_id", return_value="user123"):
+                with patch.object(
+                    module,
+                    "process_skills",
                     new_callable=AsyncMock,
                 ):
-                    with patch(
-                        "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.ToolSkillVo"
-                    ):
-                        with patch(
-                            "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.SkillInputVo"
-                        ):
-                            with patch(
-                                "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.BuiltinIds"
-                            ) as mock_builtin_ids:
+                    with patch.object(module, "ToolSkillVo"):
+                        with patch.object(module, "SkillInputVo"):
+                            with patch.object(module, "BuiltinIds") as mock_builtin_ids:
                                 mock_builtin_ids.get_tool_id.return_value = "tool123"
                                 mock_builtin_ids.get_tool_box_id.return_value = (
                                     "toolbox123"
                                 )
 
-                                from app.logic.agent_core_logic_v2.input_handler_pkg.build_skills import (
-                                    build_skills,
-                                )
+                                build_skills = module.build_skills
 
                                 await build_skills(
                                     mock_agent_core,
@@ -99,34 +93,24 @@ class TestBuildSkills:
         """测试启用内存的skills构建"""
         mock_agent_core.agent_config.memory = {"is_enabled": True}
 
-        with patch(
-            "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.span_set_attrs"
-        ):
-            with patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.get_user_account_id",
-                return_value="user123",
-            ):
-                with patch(
-                    "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.process_skills",
+        module = get_build_skills_module()
+
+        with patch.object(module, "span_set_attrs"):
+            with patch.object(module, "get_user_account_id", return_value="user123"):
+                with patch.object(
+                    module,
+                    "process_skills",
                     new_callable=AsyncMock,
                 ):
-                    with patch(
-                        "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.ToolSkillVo"
-                    ):
-                        with patch(
-                            "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.SkillInputVo"
-                        ):
-                            with patch(
-                                "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.BuiltinIds"
-                            ) as mock_builtin_ids:
+                    with patch.object(module, "ToolSkillVo"):
+                        with patch.object(module, "SkillInputVo"):
+                            with patch.object(module, "BuiltinIds") as mock_builtin_ids:
                                 mock_builtin_ids.get_tool_id.return_value = "tool123"
                                 mock_builtin_ids.get_tool_box_id.return_value = (
                                     "toolbox123"
                                 )
 
-                                from app.logic.agent_core_logic_v2.input_handler_pkg.build_skills import (
-                                    build_skills,
-                                )
+                                build_skills = module.build_skills
 
                                 await build_skills(
                                     mock_agent_core,
@@ -146,29 +130,23 @@ class TestBuildSkills:
         """测试skills为None的情况"""
         mock_agent_core.agent_config.skills = None
 
-        with patch(
-            "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.span_set_attrs"
-        ):
-            with patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.get_user_account_id",
-                return_value="user123",
-            ):
-                with patch(
-                    "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.process_skills",
+        module = get_build_skills_module()
+
+        with patch.object(module, "span_set_attrs"):
+            with patch.object(module, "get_user_account_id", return_value="user123"):
+                with patch.object(
+                    module,
+                    "process_skills",
                     new_callable=AsyncMock,
                 ):
-                    with patch(
-                        "app.logic.agent_core_logic_v2.input_handler_pkg.build_skills.SkillVo"
-                    ) as mock_skill_vo:
+                    with patch.object(module, "SkillVo") as mock_skill_vo:
                         mock_skill_instance = MagicMock()
                         mock_skill_instance.tools = []
                         mock_skill_instance.agents = []
                         mock_skill_instance.mcps = []
                         mock_skill_vo.return_value = mock_skill_instance
 
-                        from app.logic.agent_core_logic_v2.input_handler_pkg.build_skills import (
-                            build_skills,
-                        )
+                        build_skills = module.build_skills
 
                         await build_skills(
                             mock_agent_core,

@@ -69,11 +69,6 @@ Description = "Invalid Condition Value"
 Solution = "Please check whether the parameter is correct."
 ErrorLink = "None"
 
-[BknBackend.LengthExceeded.Comment]
-Description = "The Length Of Comment Exceeds The Limit"
-Solution = "Please check whether the parameter is correct."
-ErrorLink = "None"
-
 [BknBackend.NullParameter.ConditionName]
 Description = "Condition Name Is Empty"
 Solution = "Please check whether the parameter is correct."

@@ -16,14 +16,6 @@ install-dolphin2-edit:
 	cd /Users/Zhuanz/Work/as/dip_ws/dolphin-language-versions/dolphin-language-5002_bak && uv pip install -e . -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn
 
 
-install-proton-mq-python:
-	uv add ../proton-mq-python/
-
-install-TelemetrySDK-Python: install-proton-mq-python
-	uv pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade  -r ../TelemetrySDK-Python/pytest_requirements.txt; \
-    uv pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade  -r ../TelemetrySDK-Python/requirements.txt; \
-	uv add ../TelemetrySDK-Python/
-
 # 运行应用
 run:
 	PYTHONUNBUFFERED=1 uv run python main.py
@@ -59,28 +51,28 @@ dev-setup: uv-sync
 # 测试相关
 test:
 	@echo "🧪 运行测试..."
-	uv run pytest test/ -v
+	uv run python -m pytest test/ -v
 
 test-unit:
 	@echo "🧪 运行单元测试..."
-	uv run pytest test/unit/ -v
+	uv run python -m pytest test/unit/ -v
 
 test-integration:
 	@echo "🧪 运行集成测试..."
-	uv run pytest test/integration/ -v
+	uv run python -m pytest test/integration/ -v
 
 test-integration-filter:
 	@echo "🧪 运行过滤集成测试..."
 	@echo "使用方法: make test-integration-filter FILTER=<pattern>"
 	@echo "示例: make test-integration-filter FILTER=poem"
-	uv run pytest test/integration/ -v -k "$(FILTER)"
+	uv run python -m pytest test/integration/ -v -k "$(FILTER)"
 
 test-legacy:
 	uv run python run_tests.py --legacy
 
 test-verbose:
 	@echo "🧪 详细模式运行测试..."
-	uv run pytest test/ -v -s
+	uv run python -m pytest test/ -v -s
 
 # 代码质量检查
 lint:
@@ -116,8 +108,6 @@ help:
 	@echo ""
 	@echo "🔧 安装:"
 	@echo "  install-dolphin-local      - 安装本地 Dolphin SDK（相对路径）"
-	@echo "  install-proton-mq-python-local - 安装本地 Proton MQ（相对路径）"
-	@echo "  install-TelemetrySDK-Python - 安装本地 Telemetry SDK（相对路径）"
 	@echo "  dev-setup            - 设置开发环境"
 	@echo ""
 	@echo "  clean                - 清理构建产物和缓存"

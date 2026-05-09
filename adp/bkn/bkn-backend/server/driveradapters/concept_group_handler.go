@@ -111,8 +111,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -134,6 +133,8 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		rest.ReplyError(c, httpErr)
 		return
 	}
+	cg.KNID = knID
+	cg.Branch = branch
 
 	// 记录接口调用参数： c.Request.RequestURI, body
 	o11y.Info(ctx, fmt.Sprintf("创建概念分组请求参数: [%s,%v]", c.Request.RequestURI, cg))
@@ -147,9 +148,6 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		rest.ReplyError(c, httpErr)
 		return
 	}
-	cg.KNID = knID
-	// request来的cg的branch都用url里的branch
-	cg.Branch = branch
 
 	// 1. 校验 概念分组必要创建参数的合法性, 非空、长度、是枚举值
 	err = ValidateConceptGroup(ctx, &cg)
@@ -269,7 +267,7 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
 		return
 	}
 
@@ -285,6 +283,11 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 	if len(conceptGroups) == 0 {
 		rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
 		return
+	}
+
+	for _, cg := range conceptGroups {
+		cg.KNID = knID
+		cg.Branch = branch
 	}
 
 	for _, cg := range conceptGroups {
@@ -369,8 +372,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -397,6 +399,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		return
 	}
 	cg.CGID = cgID
+	cg.KNID = knID
 	cg.Branch = branch // 分组的 branch 从query参数中取
 
 	// 记录接口调用参数： c.Request.RequestURI, body
@@ -414,8 +417,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	}
 
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
 
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -463,8 +465,6 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		}
 	}
 	cg.IfNameModify = ifNameModify
-	cg.KNID = knID
-	cg.Branch = branch
 
 	//根据id修改信息
 	err = r.cgs.UpdateConceptGroup(ctx, nil, &cg, strictMode)
@@ -528,8 +528,7 @@ func (r *restHandler) DeleteConceptGroup(c *gin.Context) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -552,8 +551,7 @@ func (r *restHandler) DeleteConceptGroup(c *gin.Context) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
 
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -641,8 +639,7 @@ func (r *restHandler) ListConceptGroups(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -767,8 +764,7 @@ func (r *restHandler) GetConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -895,8 +891,7 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -918,8 +913,7 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
 
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -1041,8 +1035,7 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -1064,8 +1057,7 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
 
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)

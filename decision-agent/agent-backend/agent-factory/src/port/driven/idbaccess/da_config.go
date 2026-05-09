@@ -5,7 +5,6 @@ import (
 	"database/sql"
 
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent_config/agentconfigreq"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 )
 
@@ -40,8 +39,6 @@ type IDataAgentConfigRepo interface {
 
 	// GetByIDsAndCreatedBy 根据ID列表和创建者获取agent
 	GetByIDsAndCreatedBy(ctx context.Context, ids []string, createdBy string) (pos []*dapo.DataAgentPo, err error)
-
-	ListForBenchmark(ctx context.Context, req *agentconfigreq.ListForBenchmarkReq) (pos []*dapo.ListForBenchmarkPo, count int64, err error)
 
 	// GetAllIDs 获取所有未删除的agent ID列表
 	GetAllIDs(ctx context.Context) (ids []string, err error)

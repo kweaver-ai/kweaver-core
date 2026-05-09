@@ -44,7 +44,7 @@ func NewPermissionServiceImpl(appSetting *common.AppSetting) interfaces.Permissi
 	}
 }
 
-func (ps *PermissionServiceImpl) CheckPermission(ctx context.Context, resource interfaces.Resource, ops []string) error {
+func (ps *PermissionServiceImpl) CheckPermission(ctx context.Context, resource interfaces.PermissionResource, ops []string) error {
 	accountInfo := interfaces.AccountInfo{}
 	if ctx.Value(interfaces.ACCOUNT_INFO_KEY) != nil {
 		accountInfo = ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo)
@@ -55,7 +55,7 @@ func (ps *PermissionServiceImpl) CheckPermission(ctx context.Context, resource i
 	}
 
 	ok, err := ps.pa.CheckPermission(ctx, interfaces.PermissionCheck{
-		Accessor: interfaces.Accessor{
+		Accessor: interfaces.PermissionAccessor{
 			ID:   accountInfo.ID,
 			Type: accountInfo.Type,
 		},
@@ -74,7 +74,7 @@ func (ps *PermissionServiceImpl) CheckPermission(ctx context.Context, resource i
 }
 
 // 添加资源权限（新建决策）
-func (ps *PermissionServiceImpl) CreateResources(ctx context.Context, resources []interfaces.Resource, ops []string) error {
+func (ps *PermissionServiceImpl) CreateResources(ctx context.Context, resources []interfaces.PermissionResource, ops []string) error {
 	if len(resources) == 0 {
 		return nil
 	}
@@ -88,9 +88,9 @@ func (ps *PermissionServiceImpl) CreateResources(ctx context.Context, resources 
 			WithErrorDetails("Access denied: missing account ID or type")
 	}
 
-	allowOps := []interfaces.Operation{}
+	allowOps := []interfaces.PermissionOperation{}
 	for _, op := range ops {
-		allowOps = append(allowOps, interfaces.Operation{
+		allowOps = append(allowOps, interfaces.PermissionOperation{
 			Operation: op,
 		})
 	}
@@ -98,14 +98,14 @@ func (ps *PermissionServiceImpl) CreateResources(ctx context.Context, resources 
 	policies := []interfaces.PermissionPolicy{}
 	for _, resource := range resources {
 		policies = append(policies, interfaces.PermissionPolicy{
-			Accessor: interfaces.Accessor{
+			Accessor: interfaces.PermissionAccessor{
 				Type: accountInfo.Type,
 				ID:   accountInfo.ID,
 			},
 			Resource: resource,
 			Operations: interfaces.PermissionPolicyOps{
 				Allow: allowOps,
-				Deny:  []interfaces.Operation{},
+				Deny:  []interfaces.PermissionOperation{},
 			},
 		})
 	}
@@ -125,9 +125,9 @@ func (ps *PermissionServiceImpl) DeleteResources(ctx context.Context, resourceTy
 	}
 
 	// 清除资源策略
-	resources := []interfaces.Resource{}
+	resources := []interfaces.PermissionResource{}
 	for _, id := range ids {
-		resources = append(resources, interfaces.Resource{
+		resources = append(resources, interfaces.PermissionResource{
 			Type: resourceType,
 			ID:   id,
 		})
@@ -143,10 +143,10 @@ func (ps *PermissionServiceImpl) DeleteResources(ctx context.Context, resourceTy
 
 // 过滤资源列表
 func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceType string, ids []string,
-	ops []string, allowOperation bool, fullOps []string) (map[string]interfaces.ResourceOps, error) {
+	ops []string, allowOperation bool, fullOps []string) (map[string]interfaces.PermissionResourceOps, error) {
 
 	if len(ids) == 0 {
-		return map[string]interfaces.ResourceOps{}, nil
+		return map[string]interfaces.PermissionResourceOps{}, nil
 	}
 
 	accountInfo := interfaces.AccountInfo{}
@@ -158,16 +158,16 @@ func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceTy
 			WithErrorDetails("Access denied: missing account ID or type")
 	}
 
-	resources := []interfaces.Resource{}
+	resources := []interfaces.PermissionResource{}
 	for _, id := range ids {
-		resources = append(resources, interfaces.Resource{
+		resources = append(resources, interfaces.PermissionResource{
 			ID:   id,
 			Type: resourceType,
 		})
 	}
 
-	matchResouces, err := ps.pa.FilterResources(ctx, interfaces.ResourcesFilter{
-		Accessor: interfaces.Accessor{
+	matchResouces, err := ps.pa.FilterResources(ctx, interfaces.PermissionResourcesFilter{
+		Accessor: interfaces.PermissionAccessor{
 			ID:   accountInfo.ID,
 			Type: accountInfo.Type,
 		},
@@ -176,11 +176,11 @@ func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceTy
 		AllowOperation: allowOperation,
 	})
 	if err != nil {
-		return map[string]interfaces.ResourceOps{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		return map[string]interfaces.PermissionResourceOps{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			ferrors.StreamDataPipeline_InternalError_FilterResourcesFailed).WithErrorDetails(err)
 	}
 
-	idMap := map[string]interfaces.ResourceOps{}
+	idMap := map[string]interfaces.PermissionResourceOps{}
 	for _, resourceOps := range matchResouces {
 		idMap[resourceOps.ResourceID] = resourceOps
 	}
@@ -189,7 +189,7 @@ func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceTy
 }
 
 // 更新资源名称
-func (ps *PermissionServiceImpl) UpdateResource(ctx context.Context, resource interfaces.Resource) error {
+func (ps *PermissionServiceImpl) UpdateResource(ctx context.Context, resource interfaces.PermissionResource) error {
 	bytes, err := sonic.Marshal(resource)
 	if err != nil {
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
@@ -206,9 +206,10 @@ func (ps *PermissionServiceImpl) UpdateResource(ctx context.Context, resource in
 }
 
 // 获取资源操作
-func (ps *PermissionServiceImpl) GetResourceOps(ctx context.Context, resourceType string, ids []string) (map[string]interfaces.ResourceOps, error) {
+func (ps *PermissionServiceImpl) GetResourcesOperations(ctx context.Context,
+	resourceType string, ids []string, fullOps []string) (map[string]interfaces.PermissionResourceOps, error) {
 	if len(ids) == 0 {
-		return map[string]interfaces.ResourceOps{}, nil
+		return map[string]interfaces.PermissionResourceOps{}, nil
 	}
 
 	accountInfo := interfaces.AccountInfo{}
@@ -216,34 +217,29 @@ func (ps *PermissionServiceImpl) GetResourceOps(ctx context.Context, resourceTyp
 		accountInfo = ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo)
 	}
 	if accountInfo.ID == "" || accountInfo.Type == "" {
-		return nil, rest.NewHTTPError(ctx, http.StatusForbidden, rest.PublicError_Forbidden).
-			WithErrorDetails("Access denied: missing account ID or type")
+		return map[string]interfaces.PermissionResourceOps{}, rest.NewHTTPError(ctx, http.StatusForbidden,
+			rest.PublicError_Forbidden).WithErrorDetails("Access denied: missing account ID or type")
 	}
 
-	resources := []interfaces.Resource{}
+	resources := []interfaces.PermissionResource{}
 	for _, id := range ids {
-		resources = append(resources, interfaces.Resource{
+		resources = append(resources, interfaces.PermissionResource{
 			ID:   id,
 			Type: resourceType,
 		})
 	}
 
-	matchResouces, err := ps.pa.GetResourceOps(ctx, interfaces.ResourcesFilter{
-		Accessor: interfaces.Accessor{
+	ops, err := ps.pa.GetResourcesOperations(ctx, interfaces.PermissionResourcesFilter{
+		Accessor: interfaces.PermissionAccessor{
 			ID:   accountInfo.ID,
 			Type: accountInfo.Type,
 		},
 		Resources: resources,
 	})
 	if err != nil {
-		return map[string]interfaces.ResourceOps{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		return map[string]interfaces.PermissionResourceOps{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			rest.PublicError_InternalServerError).WithErrorDetails(err)
 	}
 
-	idMap := map[string]interfaces.ResourceOps{}
-	for _, resourceOps := range matchResouces {
-		idMap[resourceOps.ResourceID] = interfaces.ResourceOps(resourceOps)
-	}
-
-	return idMap, nil
+	return ops, nil
 }

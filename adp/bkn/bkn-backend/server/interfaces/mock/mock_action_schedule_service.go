@@ -21,6 +21,7 @@ import (
 type MockActionScheduleService struct {
 	ctrl     *gomock.Controller
 	recorder *MockActionScheduleServiceMockRecorder
+	isgomock struct{}
 }
 
 // MockActionScheduleServiceMockRecorder is the mock recorder for MockActionScheduleService.
@@ -50,7 +51,7 @@ func (m *MockActionScheduleService) CalculateNextRunTime(cronExpr string, from i
 }
 
 // CalculateNextRunTime indicates an expected call of CalculateNextRunTime.
-func (mr *MockActionScheduleServiceMockRecorder) CalculateNextRunTime(cronExpr, from interface{}) *gomock.Call {
+func (mr *MockActionScheduleServiceMockRecorder) CalculateNextRunTime(cronExpr, from any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CalculateNextRunTime", reflect.TypeOf((*MockActionScheduleService)(nil).CalculateNextRunTime), cronExpr, from)
 }
@@ -65,7 +66,7 @@ func (m *MockActionScheduleService) CreateSchedule(ctx context.Context, schedule
 }
 
 // CreateSchedule indicates an expected call of CreateSchedule.
-func (mr *MockActionScheduleServiceMockRecorder) CreateSchedule(ctx, schedule interface{}) *gomock.Call {
+func (mr *MockActionScheduleServiceMockRecorder) CreateSchedule(ctx, schedule any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSchedule", reflect.TypeOf((*MockActionScheduleService)(nil).CreateSchedule), ctx, schedule)
 }
@@ -79,7 +80,7 @@ func (m *MockActionScheduleService) DeleteSchedules(ctx context.Context, knID, b
 }
 
 // DeleteSchedules indicates an expected call of DeleteSchedules.
-func (mr *MockActionScheduleServiceMockRecorder) DeleteSchedules(ctx, knID, branch, scheduleIDs interface{}) *gomock.Call {
+func (mr *MockActionScheduleServiceMockRecorder) DeleteSchedules(ctx, knID, branch, scheduleIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSchedules", reflect.TypeOf((*MockActionScheduleService)(nil).DeleteSchedules), ctx, knID, branch, scheduleIDs)
 }
@@ -94,7 +95,7 @@ func (m *MockActionScheduleService) GetSchedule(ctx context.Context, scheduleID 
 }
 
 // GetSchedule indicates an expected call of GetSchedule.
-func (mr *MockActionScheduleServiceMockRecorder) GetSchedule(ctx, scheduleID interface{}) *gomock.Call {
+func (mr *MockActionScheduleServiceMockRecorder) GetSchedule(ctx, scheduleID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedule", reflect.TypeOf((*MockActionScheduleService)(nil).GetSchedule), ctx, scheduleID)
 }
@@ -109,7 +110,7 @@ func (m *MockActionScheduleService) GetSchedules(ctx context.Context, scheduleID
 }
 
 // GetSchedules indicates an expected call of GetSchedules.
-func (mr *MockActionScheduleServiceMockRecorder) GetSchedules(ctx, scheduleIDs interface{}) *gomock.Call {
+func (mr *MockActionScheduleServiceMockRecorder) GetSchedules(ctx, scheduleIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedules", reflect.TypeOf((*MockActionScheduleService)(nil).GetSchedules), ctx, scheduleIDs)
 }
@@ -125,7 +126,7 @@ func (m *MockActionScheduleService) ListSchedules(ctx context.Context, queryPara
 }
 
 // ListSchedules indicates an expected call of ListSchedules.
-func (mr *MockActionScheduleServiceMockRecorder) ListSchedules(ctx, queryParams interface{}) *gomock.Call {
+func (mr *MockActionScheduleServiceMockRecorder) ListSchedules(ctx, queryParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedules", reflect.TypeOf((*MockActionScheduleService)(nil).ListSchedules), ctx, queryParams)
 }
@@ -139,7 +140,7 @@ func (m *MockActionScheduleService) UpdateSchedule(ctx context.Context, schedule
 }
 
 // UpdateSchedule indicates an expected call of UpdateSchedule.
-func (mr *MockActionScheduleServiceMockRecorder) UpdateSchedule(ctx, scheduleID, req interface{}) *gomock.Call {
+func (mr *MockActionScheduleServiceMockRecorder) UpdateSchedule(ctx, scheduleID, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchedule", reflect.TypeOf((*MockActionScheduleService)(nil).UpdateSchedule), ctx, scheduleID, req)
 }
@@ -153,7 +154,7 @@ func (m *MockActionScheduleService) UpdateScheduleStatus(ctx context.Context, sc
 }
 
 // UpdateScheduleStatus indicates an expected call of UpdateScheduleStatus.
-func (mr *MockActionScheduleServiceMockRecorder) UpdateScheduleStatus(ctx, scheduleID, status interface{}) *gomock.Call {
+func (mr *MockActionScheduleServiceMockRecorder) UpdateScheduleStatus(ctx, scheduleID, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduleStatus", reflect.TypeOf((*MockActionScheduleService)(nil).UpdateScheduleStatus), ctx, scheduleID, status)
 }
@@ -167,7 +168,7 @@ func (m *MockActionScheduleService) ValidateCronExpression(cronExpr string) erro
 }
 
 // ValidateCronExpression indicates an expected call of ValidateCronExpression.
-func (mr *MockActionScheduleServiceMockRecorder) ValidateCronExpression(cronExpr interface{}) *gomock.Call {
+func (mr *MockActionScheduleServiceMockRecorder) ValidateCronExpression(cronExpr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateCronExpression", reflect.TypeOf((*MockActionScheduleService)(nil).ValidateCronExpression), cronExpr)
 }
@@ -176,6 +177,7 @@ func (mr *MockActionScheduleServiceMockRecorder) ValidateCronExpression(cronExpr
 type MockScheduleExecutor struct {
 	ctrl     *gomock.Controller
 	recorder *MockScheduleExecutorMockRecorder
+	isgomock struct{}
 }
 
 // MockScheduleExecutorMockRecorder is the mock recorder for MockScheduleExecutor.
@@ -205,7 +207,7 @@ func (m *MockScheduleExecutor) ExecuteSchedule(ctx context.Context, schedule *in
 }
 
 // ExecuteSchedule indicates an expected call of ExecuteSchedule.
-func (mr *MockScheduleExecutorMockRecorder) ExecuteSchedule(ctx, schedule interface{}) *gomock.Call {
+func (mr *MockScheduleExecutorMockRecorder) ExecuteSchedule(ctx, schedule any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteSchedule", reflect.TypeOf((*MockScheduleExecutor)(nil).ExecuteSchedule), ctx, schedule)
 }

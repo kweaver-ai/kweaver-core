@@ -1,5 +1,7 @@
 """单元测试 - config/config_v2/models/observability_config 模块"""
 
+import pytest
+
 
 class TestO11yConfig:
     """测试 O11yConfig 数据类"""
@@ -26,12 +28,17 @@ class TestO11yConfig:
         """测试从字典创建（所有字段）"""
         from app.config.config_v2.models.observability_config import O11yConfig
 
-        data = {"log_enabled": True, "trace_enabled": True}
+        data = {
+            "log_enabled": True,
+            "trace_enabled": True,
+            "trace_endpoint": "http://otelcol-contrib:4318",
+        }
 
         config = O11yConfig.from_dict(data)
 
         assert config.log_enabled is True
         assert config.trace_enabled is True
+        assert config.trace_endpoint == "http://otelcol-contrib:4318"
 
     def test_from_dict_with_defaults(self):
         """测试从字典创建（默认值）"""
@@ -43,22 +50,95 @@ class TestO11yConfig:
         assert config.trace_enabled is False
 
     def test_from_dict_log_only(self):
-        """测试只启用日志"""
+        """测试只启用日志时要求带 trace_endpoint"""
         from app.config.config_v2.models.observability_config import O11yConfig
 
-        config = O11yConfig.from_dict({"log_enabled": True})
+        config = O11yConfig.from_dict(
+            {"log_enabled": True, "trace_endpoint": "http://otelcol-contrib:4318"}
+        )
 
         assert config.log_enabled is True
         assert config.trace_enabled is False
+        assert config.trace_endpoint == "http://otelcol-contrib:4318"
 
     def test_from_dict_trace_only(self):
-        """测试只启用追踪"""
+        """测试只启用追踪时要求带 trace_endpoint"""
         from app.config.config_v2.models.observability_config import O11yConfig
 
-        config = O11yConfig.from_dict({"trace_enabled": True})
+        config = O11yConfig.from_dict(
+            {"trace_enabled": True, "trace_endpoint": "http://otelcol-contrib:4318"}
+        )
 
         assert config.log_enabled is False
         assert config.trace_enabled is True
+        assert config.trace_endpoint == "http://otelcol-contrib:4318"
+
+    def test_from_dict_raises_when_log_enabled_without_trace_endpoint(self):
+        """测试启用日志但未配置 trace_endpoint 时抛异常"""
+        from app.config.config_v2.models.observability_config import O11yConfig
+
+        with pytest.raises(
+            ValueError,
+            match="o11y.trace_endpoint is required when o11y.log_enabled or o11y.trace_enabled is true",
+        ):
+            O11yConfig.from_dict({"log_enabled": True, "trace_endpoint": "   "})
+
+    def test_from_dict_raises_when_trace_enabled_without_trace_endpoint(self):
+        """测试启用追踪但未配置 trace_endpoint 时抛异常"""
+        from app.config.config_v2.models.observability_config import O11yConfig
+
+        with pytest.raises(
+            ValueError,
+            match="o11y.trace_endpoint is required when o11y.log_enabled or o11y.trace_enabled is true",
+        ):
+            O11yConfig.from_dict({"trace_enabled": True, "trace_endpoint": ""})
+
+    def test_from_dict_reads_otel_fields_from_yaml(self):
+        """测试从 YAML 读取统一 OTel 字段"""
+        from app.config.config_v2.models.observability_config import O11yConfig
+
+        config = O11yConfig.from_dict(
+            {
+                "service_name": "agent-executor",
+                "service_version": "1.0.1",
+                "environment": "staging",
+                "log_enabled": True,
+                "log_level": "warning",
+                "trace_enabled": True,
+                "trace_endpoint": "http://otelcol-contrib:4318",
+                "trace_sampling_rate": 0.25,
+            }
+        )
+
+        assert config.service_name == "agent-executor"
+        assert config.service_version == "1.0.1"
+        assert config.environment == "staging"
+        assert config.log_enabled is True
+        assert config.log_level == "warning"
+        assert config.trace_enabled is True
+        assert config.dolphin_trace_enabled is True
+        assert config.trace_endpoint == "http://otelcol-contrib:4318"
+        assert config.dolphin_trace_url == "http://otelcol-contrib:4318"
+        assert config.trace_sampling_rate == pytest.approx(0.25)
+
+    def test_from_dict_does_not_read_trace_env_vars(self, monkeypatch):
+        """测试不再从 TRACE 环境变量读取配置"""
+        monkeypatch.setenv("TRACE_ENABLE", "true")
+        monkeypatch.setenv("TRACE_URL", "http://env-only:4318")
+
+        from app.config.config_v2.models.observability_config import O11yConfig
+
+        config = O11yConfig.from_dict(
+            {
+                "trace_enabled": False,
+                "trace_endpoint": "http://yaml-only:4318",
+            }
+        )
+
+        assert config.trace_enabled is False
+        assert config.dolphin_trace_enabled is False
+        assert config.trace_endpoint == "http://yaml-only:4318"
+        assert config.dolphin_trace_url == "http://yaml-only:4318"
 
 
 class TestDialogLoggingConfig:

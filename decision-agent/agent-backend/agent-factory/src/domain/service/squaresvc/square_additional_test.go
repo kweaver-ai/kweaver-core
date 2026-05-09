@@ -53,14 +53,6 @@ func (f *fakeUserMgmt) GetUserInfoByUserID(context.Context, []string, []string) 
 	return f.infos, nil
 }
 
-func (f *fakeUserMgmt) GetUserIDByAccount(context.Context, string) (bool, string, error) {
-	return false, "", nil
-}
-
-func (f *fakeUserMgmt) IsSuperAdmin(context.Context, string) (bool, error) {
-	return false, nil
-}
-
 func TestSquareSvc_NewSquareService_Construct(t *testing.T) {
 	t.Parallel()
 

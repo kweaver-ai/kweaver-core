@@ -21,6 +21,7 @@ from .models import (
     FeaturesConfig,
     O11yConfig,
     DialogLoggingConfig,
+    LLMMessageLoggingConfig,
 )
 
 
@@ -40,6 +41,7 @@ class ConfigState:
         self.features: Optional[FeaturesConfig] = None
         self.o11y: Optional[O11yConfig] = None
         self.dialog_logging: Optional[DialogLoggingConfig] = None
+        self.llm_message_logging: Optional[LLMMessageLoggingConfig] = None
 
 
 class ConfigInitializer:
@@ -63,6 +65,9 @@ class ConfigInitializer:
         state.o11y = O11yConfig.from_dict(config.get("o11y", {}))
         state.dialog_logging = DialogLoggingConfig.from_dict(
             config.get("dialog_logging", {})
+        )
+        state.llm_message_logging = LLMMessageLoggingConfig.from_dict(
+            config.get("llm_message_logging", {})
         )
 
         # 后处理：设置APP_ROOT

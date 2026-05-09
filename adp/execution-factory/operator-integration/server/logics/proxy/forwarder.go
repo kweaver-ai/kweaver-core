@@ -63,7 +63,6 @@ func (f *forwarder) ForwardStream(ctx context.Context, req *interfaces.HTTPReque
 	// 获取响应写入器
 	headerWriter, ok := common.GetResponseWriterFromCtx(ctx)
 	if !ok {
-		headerWriter.WriteHeader(http.StatusInternalServerError)
 		err := fmt.Errorf("response writer not found in context")
 		f.logger.WithContext(ctx).Warnf("failed to forward stream, err: %v", err)
 		err = myErr.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())

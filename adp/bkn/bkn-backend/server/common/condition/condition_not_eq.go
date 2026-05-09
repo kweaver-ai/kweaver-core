@@ -28,7 +28,7 @@ func NewNotEqCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewF
 
 	return &NotEqCond{
 		mCfg:             cfg,
-		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
+		mFilterFieldName: getFilterFieldName(cfg.Field, fieldsMap, false),
 	}, nil
 
 }
@@ -87,7 +87,7 @@ func (cond *NotEqCond) Convert2SQL(ctx context.Context) (string, error) {
 // convertNotEqCondToDatasetFilterCondition converts NotEqCond to dataset filter condition format
 func convertNotEqCondToDatasetFilterCondition(cfg *CondCfg) (map[string]any, error) {
 	return map[string]any{
-		"field":      cfg.Name,
+		"field":      cfg.Field,
 		"operation":  "!=",
 		"value":      cfg.Value,
 		"value_from": "const",

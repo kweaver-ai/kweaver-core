@@ -152,35 +152,6 @@ func Test_validateDataTagName(t *testing.T) {
 	})
 }
 
-func Test_validateObjectComment(t *testing.T) {
-	Convey("Test validateObjectComment\n", t, func() {
-		ctx := context.Background()
-
-		Convey("Success with valid comment\n", func() {
-			comment := "This is a valid comment"
-			err := validateObjectComment(ctx, comment)
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Success with empty comment\n", func() {
-			err := validateObjectComment(ctx, "")
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Failed with comment too long\n", func() {
-			longComment := ""
-			for i := 0; i < interfaces.COMMENT_MAX_LENGTH+1; i++ {
-				longComment += "a"
-			}
-			err := validateObjectComment(ctx, longComment)
-			So(err, ShouldNotBeNil)
-			httpErr := err.(*rest.HTTPError)
-			So(httpErr.HTTPCode, ShouldEqual, http.StatusBadRequest)
-			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_LengthExceeded_Comment)
-		})
-	})
-}
-
 func Test_validatePaginationQueryParameters(t *testing.T) {
 	Convey("Test validatePaginationQueryParameters\n", t, func() {
 		ctx := context.Background()
@@ -362,7 +333,7 @@ func Test_validateCond(t *testing.T) {
 				SubConds: []*cond.CondCfg{
 					{
 						Operation: cond.OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: cond.ValueOptCfg{
 							Value: "value1",
 						},
@@ -376,7 +347,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with empty operation\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: "",
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -390,7 +361,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with invalid operation\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: "invalid_operation",
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -404,7 +375,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with empty name for eq operation\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationEq,
-				Name:      "",
+				Field:     "",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -418,7 +389,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with array value for eq operation\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{"value1", "value2"},
 				},
@@ -433,7 +404,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with non-array value for in operation\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -447,7 +418,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with empty array for in operation\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{},
 				},
@@ -461,7 +432,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with invalid range array length\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationRange,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{1},
 				},
@@ -475,7 +446,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with invalid regex\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationRegex,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "[invalid regex",
 				},
@@ -492,7 +463,7 @@ func Test_validateCond(t *testing.T) {
 				SubConds: []*cond.CondCfg{
 					{
 						Operation: cond.OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: cond.ValueOptCfg{
 							Value: "value1",
 						},
@@ -509,7 +480,7 @@ func Test_validateCond(t *testing.T) {
 				SubConds: []*cond.CondCfg{
 					{
 						Operation: cond.OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: cond.ValueOptCfg{
 							Value: "value1",
 						},
@@ -525,7 +496,7 @@ func Test_validateCond(t *testing.T) {
 			for i := 0; i < cond.MaxSubCondition+1; i++ {
 				subConds[i] = &cond.CondCfg{
 					Operation: cond.OperationEq,
-					Name:      "field1",
+					Field:     "field1",
 					ValueOptCfg: cond.ValueOptCfg{
 						Value: "value1",
 					},
@@ -544,7 +515,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Success with OperationMultiMatch without name\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationMultiMatch,
-				Name:      "",
+				Field:     "",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -556,7 +527,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with Like operation having non-string value\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationLike,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: 123,
 				},
@@ -570,7 +541,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with NotLike operation having non-string value\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationNotLike,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: 123,
 				},
@@ -584,7 +555,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with Prefix operation having non-string value\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationPrefix,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: 123,
 				},
@@ -598,7 +569,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with NotPrefix operation having non-string value\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationNotPrefix,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: 123,
 				},
@@ -612,7 +583,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Success with Like operation having string value\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationLike,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -624,7 +595,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with NotIn operation having non-array value\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationNotIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -638,7 +609,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with NotIn operation having empty array\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationNotIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{},
 				},
@@ -652,7 +623,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with OutRange operation having non-array value\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationOutRange,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -666,7 +637,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with OutRange operation having wrong array length\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationOutRange,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{1},
 				},
@@ -680,7 +651,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with Before operation having non-array value\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationBefore,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -694,7 +665,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with Before operation having wrong array length\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationBefore,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{1},
 				},
@@ -708,7 +679,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with Between operation having non-array value\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationBetween,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "value1",
 				},
@@ -722,7 +693,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Failed with Between operation having wrong array length\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationBetween,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{1},
 				},
@@ -736,7 +707,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Success with Range operation having correct array length\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationRange,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{1, 2},
 				},
@@ -748,7 +719,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Success with OutRange operation having correct array length\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationOutRange,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{1, 2},
 				},
@@ -760,7 +731,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Success with Before operation having correct array length\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationBefore,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{1, 2},
 				},
@@ -772,7 +743,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Success with Between operation having correct array length\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationBetween,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: []any{1, 2},
 				},
@@ -784,7 +755,7 @@ func Test_validateCond(t *testing.T) {
 		Convey("Success with valid regex\n", func() {
 			cfg := &cond.CondCfg{
 				Operation: cond.OperationRegex,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: cond.ValueOptCfg{
 					Value: "^test.*",
 				},
@@ -802,7 +773,7 @@ func Test_validateCond(t *testing.T) {
 			for _, op := range operations {
 				cfg := &cond.CondCfg{
 					Operation: op,
-					Name:      "field1",
+					Field:     "field1",
 					ValueOptCfg: cond.ValueOptCfg{
 						Value: "value1",
 					},

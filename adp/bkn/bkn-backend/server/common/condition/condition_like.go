@@ -36,7 +36,7 @@ func NewLikeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewFi
 	return &LikeCond{
 		mCfg:             cfg,
 		mValue:           val,
-		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
+		mFilterFieldName: getFilterFieldName(cfg.Field, fieldsMap, false),
 	}, nil
 }
 
@@ -69,7 +69,7 @@ func (cond *LikeCond) Convert2SQL(ctx context.Context) (string, error) {
 // convertLikeCondToDatasetFilterCondition converts LikeCond to dataset filter condition format
 func convertLikeCondToDatasetFilterCondition(cfg *CondCfg) (map[string]any, error) {
 	return map[string]any{
-		"field":      cfg.Name,
+		"field":      cfg.Field,
 		"operation":  "like",
 		"value":      cfg.Value,
 		"value_from": "const",

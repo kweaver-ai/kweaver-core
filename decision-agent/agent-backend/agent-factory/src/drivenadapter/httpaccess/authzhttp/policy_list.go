@@ -7,7 +7,6 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpreq"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpres"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/httphelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 	"github.com/pkg/errors"
@@ -21,12 +20,7 @@ func (a *authZHttpAcc) ListPolicy(ctx context.Context, req *authzhttpreq.ListPol
 	opt := httphelper.WithToken(userToken)
 	c := httphelper.NewHTTPClient(opt)
 
-	var respByte []byte
-	if cenvhelper.IsAaronLocalDev() {
-		respByte = a.getListPolicyMockData()
-	} else {
-		respByte, err = c.GetExpect2xxByte(ctx, url)
-	}
+	respByte, err := c.GetExpect2xxByte(ctx, url)
 
 	if err != nil {
 		chelper.RecordErrLogWithPos(a.logger, err, "authZHttpAcc.ListPolicy http get")

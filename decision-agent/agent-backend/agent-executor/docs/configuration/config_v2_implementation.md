@@ -171,9 +171,8 @@ python app/config/config_v2/test_config_v2.py
 | MEMORY_LIMIT | memory.limit | 记忆召回条数 |
 | LOCAL_DEV | local_dev.enabled | 本地开发模式 |
 | IS_USE_EXPLORE_BLOCK_V2 | features.use_explore_block_v2 | 特性开关 |
-| O11Y_LOG_ENABLED | o11y.log_enabled | O11Y日志开关 |
 
-完整映射请参考配置文件示例。
+O11Y 相关配置已统一收口到 `agent-executor.yaml` 的 `o11y` 配置段，不再通过环境变量映射。
 
 ## 与原版本的对比
 

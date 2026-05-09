@@ -133,8 +133,7 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -175,6 +174,7 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 
 	// request来的actionTypes的branch都用url里的branch
 	for i := range actionTypes {
+		actionTypes[i].KNID = knID
 		actionTypes[i].Branch = branch
 	}
 
@@ -267,7 +267,7 @@ func (r *restHandler) ValidateActionTypesForKN(c *gin.Context, visitor hydra.Vis
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
 		return
 	}
 
@@ -283,6 +283,12 @@ func (r *restHandler) ValidateActionTypesForKN(c *gin.Context, visitor hydra.Vis
 	if len(actionTypes) == 0 {
 		rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
 		return
+	}
+
+	// request来的actionTypes的branch都用url里的branch
+	for i := range actionTypes {
+		actionTypes[i].KNID = knID
+		actionTypes[i].Branch = branch
 	}
 
 	if err = ValidateActionTypes(ctx, knID, actionTypes, strictMode); err != nil {
@@ -367,8 +373,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -395,6 +400,8 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	actionType.ATID = atID
+	actionType.KNID = knID
+	actionType.Branch = branch
 
 	// 记录接口调用参数： c.Request.RequestURI, body
 	o11y.Info(ctx, fmt.Sprintf("修改行动类请求参数: [%s, %v]", c.Request.RequestURI, actionType))
@@ -409,10 +416,8 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_ActionType_ActionTypeNotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ActionType_ActionTypeNotFound)
 
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -460,7 +465,6 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		}
 	}
 	actionType.IfNameModify = ifNameModify
-	actionType.KNID = knID
 
 	//根据id修改信息
 	err = r.ats.UpdateActionType(ctx, nil, &actionType, strictMode)
@@ -524,8 +528,7 @@ func (r *restHandler) DeleteActionTypes(c *gin.Context) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -553,8 +556,7 @@ func (r *restHandler) DeleteActionTypes(c *gin.Context) {
 			return
 		}
 		if !exist {
-			httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-				berrors.BknBackend_ActionType_ActionTypeNotFound)
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ActionType_ActionTypeNotFound)
 
 			// 设置 trace 的错误信息的 attributes
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -648,8 +650,7 @@ func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -659,7 +660,6 @@ func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	// 获取分页参数
 	namePattern := c.Query("name_pattern")
 	tag := c.Query("tag")
-	groupID := c.Query("group_id")
 	objectTypeID := c.Query("object_type_id")
 	actionType := c.Query("action_type")
 	offset := c.DefaultQuery("offset", interfaces.DEFAULT_OFFEST)
@@ -692,7 +692,6 @@ func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		Tag:         tag,
 		Branch:      branch,
 		KNID:        knID,
-		GroupID:     groupID,
 		ActionType:  actionType,
 	}
 	if objectTypeID != "" {
@@ -785,8 +784,7 @@ func (r *restHandler) GetActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -880,8 +878,7 @@ func (r *restHandler) SearchActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)

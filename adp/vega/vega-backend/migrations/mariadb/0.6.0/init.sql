@@ -94,7 +94,7 @@
 --   }
 -- ]
 -- ==========================================
-USE adp;
+USE kweaver;
 -- ==========================================
 -- 1. t_catalog 主表
 -- ==========================================
@@ -355,6 +355,8 @@ CREATE TABLE IF NOT EXISTS t_discover_task (
     -- 主键与关联信息
     f_id                      VARCHAR(40) NOT NULL DEFAULT '' COMMENT '任务唯一标识',
     f_catalog_id              VARCHAR(40) NOT NULL DEFAULT '' COMMENT '所属catalog ID',
+    f_scheduled_id            VARCHAR(40) NOT NULL DEFAULT '' COMMENT '定时发现任务表ID',
+    f_strategies              VARCHAR(100) NOT NULL DEFAULT '' COMMENT '策略',
     f_trigger_type            VARCHAR(20) NOT NULL DEFAULT 'manual' COMMENT '触发类型: manual(立即执行), scheduled(定时驱动)',
 
     -- 任务状态
@@ -411,3 +413,38 @@ CREATE TABLE IF NOT EXISTS t_build_task (
     INDEX idx_status (f_status),
     INDEX idx_create_time (f_create_time)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT='构建任务表';
+
+
+-- ==========================================
+-- 9. t_scheduled_discover_task 定时发现任务表
+-- ==========================================
+CREATE TABLE IF NOT EXISTS t_scheduled_discover_task (
+    -- 主键与关联信息
+    f_id                      VARCHAR(40) NOT NULL DEFAULT '' COMMENT '任务唯一标识',
+    f_catalog_id              VARCHAR(40) NOT NULL DEFAULT '' COMMENT '所属catalog ID',
+    f_cron_expr               VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'Cron表达式',
+    -- 时间配置
+    f_start_time              BIGINT(20) NOT NULL DEFAULT 0 COMMENT '开始时间（Unix毫秒时间戳）',
+    f_end_time                BIGINT(20) NOT NULL DEFAULT 0 COMMENT '结束时间（Unix毫秒时间戳），0表示无结束时间',
+
+    -- 任务状态
+    f_enabled                 TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否启用: 0-禁用, 1-启用',
+    f_strategies              VARCHAR(100) NOT NULL DEFAULT '' COMMENT '策略',
+
+    f_last_run                BIGINT(20) NOT NULL DEFAULT 0 COMMENT '最后执行时间（Unix毫秒时间戳）',
+    f_next_run                BIGINT(20) NOT NULL DEFAULT 0 COMMENT '下次执行时间（Unix毫秒时间戳）',
+
+    -- 审计字段
+    f_creator_id              VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建者id',
+    f_creator_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '创建者类型',
+    f_create_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间',
+    f_updater_id              VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新者id',
+    f_updater_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '更新者类型',
+    f_update_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '更新时间',
+
+    -- 索引
+    PRIMARY KEY (f_id),
+    INDEX idx_catalog_id (f_catalog_id),
+    INDEX idx_enabled (f_enabled),
+    INDEX idx_next_run (f_next_run)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT='定时发现任务表，记录定时资源发现任务的配置和执行状态';

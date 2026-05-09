@@ -74,9 +74,5 @@ func ValidateRiskType(ctx context.Context, riskType *interfaces.RiskType) error 
 	}
 	riskType.Tags = libCommon.TagSliceTransform(riskType.Tags)
 
-	if err = validateObjectComment(ctx, riskType.Comment); err != nil {
-		return err
-	}
-
 	return nil
 }

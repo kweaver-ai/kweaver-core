@@ -1,8 +1,15 @@
 openapi: 3.0.3
 info:
-  title: 语义检索服务
+  title: Schema Search Legacy 接口
   version: 1.0.0
-  description: 基于业务知识网络的语义检索接口
+  description: |
+    `kn_schema_search` 是 legacy HTTP 契约。
+
+    该接口保持当前实现与输出形态不变，仍使用历史 `concepts[]` 返回结构，
+    不参与本次 `search_schema + kn_search` 的 shared logic 收敛。
+
+    新接入方应优先使用 `search_schema`；需要继续沿用历史概念输出结构的场景，
+    才使用该 legacy 接口。
 servers:
   - url: http://agent-retrieval:30779
 security:
@@ -12,8 +19,10 @@ paths:
     post:
       tags:
         - SemanticSearch
-      summary: kn_schema_search
-      description: 基于用户查询意图，返回业务知识网络中相关的概念信息
+      summary: kn_schema_search（legacy）
+      description: |
+        基于用户查询意图，返回业务知识网络中相关的概念信息。
+        该接口保持历史 `concepts[]` 输出结构，不与 `search_schema` 共用收敛后的 shared logic。
       parameters:
         - name: x-account-id
           in: header

@@ -55,7 +55,7 @@ ORDER BY nspname`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list schemas: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var schemas []string
 	for rows.Next() {
@@ -100,7 +100,7 @@ func (c *PostgresqlConnector) ListTables(ctx context.Context) ([]*interfaces.Tab
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tables []*interfaces.TableMeta
 	for rows.Next() {
@@ -213,14 +213,14 @@ ORDER BY ordinal_position`
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	pkSet, err := c.fetchPrimaryKeyColumns(ctx, table.Schema, table.Name)
 	if err != nil {
 		return err
 	}
 
-	var columns []interfaces.ColumnMeta
+	var columns []interfaces.TableColumnMeta
 	for rows.Next() {
 		var name, dataType, udtName, isNullable sql.NullString
 		var colDefault, collation sql.NullString
@@ -243,7 +243,7 @@ ORDER BY ordinal_position`
 			orig = udtName.String
 		}
 
-		columns = append(columns, interfaces.ColumnMeta{
+		columns = append(columns, interfaces.TableColumnMeta{
 			Name:              name.String,
 			Type:              MapType(udtName.String, dataType.String),
 			OrigType:          orig,
@@ -286,7 +286,7 @@ ORDER BY kcu.ordinal_position`
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	out := make(map[string]bool)
 	for rows.Next() {
@@ -320,9 +320,9 @@ ORDER BY i.relname, k.n`
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	indexMap := make(map[string]*interfaces.IndexInfo)
+	indexMap := make(map[string]*interfaces.TableIndexMeta)
 	for rows.Next() {
 		var indexName, columnName string
 		var unique, primary bool
@@ -333,7 +333,7 @@ ORDER BY i.relname, k.n`
 		if idx, ok := indexMap[indexName]; ok {
 			idx.Columns = append(idx.Columns, columnName)
 		} else {
-			indexMap[indexName] = &interfaces.IndexInfo{
+			indexMap[indexName] = &interfaces.TableIndexMeta{
 				Name:    indexName,
 				Columns: []string{columnName},
 				Unique:  unique,
@@ -342,7 +342,7 @@ ORDER BY i.relname, k.n`
 		}
 	}
 
-	var indices []interfaces.IndexInfo
+	var indices []interfaces.TableIndexMeta
 	for _, idx := range indexMap {
 		indices = append(indices, *idx)
 	}
@@ -373,9 +373,9 @@ ORDER BY c.conname, u1.ord1`
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	fkMap := make(map[string]*interfaces.ForeignKeyInfo)
+	fkMap := make(map[string]*interfaces.TableForeignKeyMeta)
 	for rows.Next() {
 		var cname, col, refCol, refSchema, refTable string
 		if err := rows.Scan(&cname, &col, &refCol, &refSchema, &refTable); err != nil {
@@ -386,7 +386,7 @@ ORDER BY c.conname, u1.ord1`
 			fk.Columns = append(fk.Columns, col)
 			fk.RefColumns = append(fk.RefColumns, refCol)
 		} else {
-			fkMap[cname] = &interfaces.ForeignKeyInfo{
+			fkMap[cname] = &interfaces.TableForeignKeyMeta{
 				Name:       cname,
 				Columns:    []string{col},
 				RefTable:   refFull,
@@ -395,7 +395,7 @@ ORDER BY c.conname, u1.ord1`
 		}
 	}
 
-	var fks []interfaces.ForeignKeyInfo
+	var fks []interfaces.TableForeignKeyMeta
 	for _, fk := range fkMap {
 		fks = append(fks, *fk)
 	}
@@ -423,7 +423,7 @@ WHERE name IN ('server_version','server_version_num','TimeZone','max_connections
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var k, v string
 		if err := rows.Scan(&k, &v); err != nil {

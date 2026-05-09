@@ -195,6 +195,13 @@ Related docs:
 - [Public API docs guide](agent-backend/agent-factory/docs/api/README.md)
 - [Agent Factory README](agent-backend/agent-factory/README.md)
 
+## Agent Factory API Chat Integration Guide
+
+For the complete API Chat integration guide, use the docs in the Agent Factory `docs/` root:
+
+- English: [agent-backend/agent-factory/docs/api-chat-integration.md](agent-backend/agent-factory/docs/api-chat-integration.md)
+- 中文: [agent-backend/agent-factory/docs/api-chat-integration.zh.md](agent-backend/agent-factory/docs/api-chat-integration.zh.md)
+
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE.txt) file for details.

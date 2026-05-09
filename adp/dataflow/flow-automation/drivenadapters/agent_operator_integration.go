@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	otelHttp "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/http"
-	traceLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	otelHttp "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/http"
+	traceLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/log"
 )
 
 //go:generate mockgen -package mock_drivenadapters -source ../drivenadapters/agent_operator_integration.go -destination ../tests/mock_drivenadapters/agent_operator_integration_mock.go

@@ -11,7 +11,6 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp/umtypes"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	"github.com/pkg/errors"
 )
@@ -154,28 +153,9 @@ func (svc *releaseSvc) genPmsControlResp(ctx context.Context, pos []*dapo.Releas
 
 	ret := umtypes.NewOsnInfoMapS()
 
-	if cenvhelper.IsLocalDev() {
-		// 本地开发环境模拟数据
-		for _, userID := range arg.UserIDs {
-			ret.UserNameMap[userID] = userID + "_name"
-		}
-
-		for _, departmentID := range arg.DepartmentIDs {
-			ret.DepartmentNameMap[departmentID] = departmentID + "_name"
-		}
-
-		for _, groupID := range arg.GroupIDs {
-			ret.GroupNameMap[groupID] = groupID + "_name"
-		}
-
-		for _, appID := range arg.AppIDs {
-			ret.AppNameMap[appID] = appID + "_name"
-		}
-	} else {
-		ret, err = svc.umHttp.GetOsnNames(ctx, arg)
-		if err != nil {
-			return
-		}
+	ret, err = svc.umHttp.GetOsnNames(ctx, arg)
+	if err != nil {
+		return
 	}
 
 	unknownUserName := locale.GetI18nByCtx(ctx, locale.UnknownUser)

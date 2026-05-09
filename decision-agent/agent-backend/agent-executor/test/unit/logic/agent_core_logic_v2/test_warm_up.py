@@ -97,6 +97,9 @@ class TestWarmUpHandler:
                 "app.logic.agent_core_logic_v2.warm_up.get_user_account_type",
                 return_value=None,
             ),
+            patch(
+                "app.logic.agent_core_logic_v2.warm_up.StandLogger.error"
+            ) as mock_standard_error,
             patch("app.logic.agent_core_logic_v2.warm_up.o11y_logger") as mock_logger,
         ):
             mock_run_dolphin.return_value = failing_generator()
@@ -104,6 +107,7 @@ class TestWarmUpHandler:
             # Should not raise exception, should log error
             await handler.warnup(headers)
 
+            mock_standard_error.assert_called_once()
             mock_logger().error.assert_called_once()
 
     async def test_warnup_with_span(self):
@@ -236,6 +240,57 @@ class TestWarmUpHandler:
 
             # Generator should be fully consumed
             assert call_count[0] == 5
+
+    async def test_warnup_injects_self_config_into_context_variables(self):
+        """Warmup should provide self_config for downstream skill processing."""
+        from app.logic.agent_core_logic_v2.warm_up import WarmUpHandler
+
+        mock_agent_core = MagicMock()
+        mock_agent_config = MagicMock()
+        mock_agent_config.agent_run_id = "run_with_self_config"
+        mock_agent_config.agent_id = "agent_with_self_config"
+        mock_agent_config.model_dump.return_value = {
+            "agent_id": "agent_with_self_config",
+            "skills": {"tools": [{"tool_id": "doc_qa"}]},
+        }
+        mock_agent_core.agent_config = mock_agent_config
+
+        handler = WarmUpHandler(mock_agent_core)
+        captured_context = {}
+
+        async def mock_generator():
+            yield {}
+
+        def capture_run_dolphin(
+            agent_core, agent_config, context_vars, hdr, is_debug, temp_files
+        ):
+            captured_context["variables"] = context_vars
+            return mock_generator()
+
+        with (
+            patch("app.logic.agent_core_logic_v2.warm_up.span_set_attrs"),
+            patch(
+                "app.logic.agent_core_logic_v2.warm_up.run_dolphin",
+                side_effect=capture_run_dolphin,
+            ),
+            patch(
+                "app.logic.agent_core_logic_v2.warm_up.get_user_account_id",
+                return_value="user_123",
+            ),
+            patch(
+                "app.logic.agent_core_logic_v2.warm_up.get_user_account_type",
+                return_value="enterprise",
+            ),
+            patch("app.logic.agent_core_logic_v2.warm_up.set_user_account_id"),
+            patch("app.logic.agent_core_logic_v2.warm_up.set_user_account_type"),
+        ):
+            await handler.warnup({"x-user-id": "user_123"})
+
+        assert captured_context["variables"]["self_config"] == (
+            mock_agent_config.model_dump.return_value
+        )
+        assert "history" not in captured_context["variables"]
+        assert "header" not in captured_context["variables"]
 
 
 @pytest.mark.asyncio

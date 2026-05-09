@@ -27,7 +27,7 @@ func TestNewMatchPhraseCond(t *testing.T) {
 		Convey("invalid value_from should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatchPhrase,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
 					Value:     "value1",
@@ -42,7 +42,7 @@ func TestNewMatchPhraseCond(t *testing.T) {
 		Convey("AllField should use default fields", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatchPhrase,
-				Name:      AllField,
+				Field:     AllField,
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -60,7 +60,7 @@ func TestNewMatchPhraseCond(t *testing.T) {
 		Convey("specific field should use that field", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatchPhrase,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -90,7 +90,7 @@ func TestMatchPhraseCond_Convert(t *testing.T) {
 		Convey("string value should be quoted", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatchPhrase,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -114,7 +114,7 @@ func TestMatchPhraseCond_Convert(t *testing.T) {
 		Convey("AllField should include multiple fields", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatchPhrase,
-				Name:      AllField,
+				Field:     AllField,
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -150,7 +150,7 @@ func TestMatchPhraseCond_Convert2SQL(t *testing.T) {
 		Convey("should return empty string", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatchPhrase,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",

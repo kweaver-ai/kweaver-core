@@ -71,6 +71,11 @@ service:
     maxTimeout: 300 # 单位秒
     maxClients: 50 # 单位秒
     clientLifetime: 600 # 单位秒
+  skillIndexBuild:
+    enablePeriodicFullScan: false
+    periodicFullScanInterval: 168h # 7天
+    enableTaskCleanup: false
+    taskRetention: 720h # 30天
 
 # 认证开关
 auth:
@@ -95,7 +100,7 @@ depServices:
     connTimeout: 30
     readTimeout: 30
     writeTimeout: 30
-    database: adp
+    database: kweaver
     dbCharset: utf8mb4
     system_id: ""
   hydra:
@@ -183,6 +188,10 @@ depServices:
     storageID: ""
     internalRequest: false
     expires: 3600
+  vega-backend:
+    privateHost: vega-backend-svc
+    privatePort: 13014
+    privateProtocol: http
 
 env:
   language: en_US.UTF-8

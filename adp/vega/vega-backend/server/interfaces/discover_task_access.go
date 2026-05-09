@@ -27,4 +27,7 @@ type DiscoverTaskAccess interface {
 
 	// CheckExistByStatuses checks if DiscoverTasks exists by catalog ID and statuses.
 	CheckExistByStatuses(ctx context.Context, catalogID string, statuses []string) (bool, error)
+
+	// Delete deletes a DiscoverTask by ID. Returns sql.ErrNoRows if no row was affected.
+	Delete(ctx context.Context, id string) error
 }

@@ -114,7 +114,7 @@ func Test_JobRestHandler_CreateJob(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("CheckKNExistByID failed\n", func() {
@@ -206,7 +206,7 @@ func Test_JobRestHandler_DeleteJobs(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("Job not found\n", func() {
@@ -219,7 +219,7 @@ func Test_JobRestHandler_DeleteJobs(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusBadRequest)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 	})
 }
@@ -266,7 +266,7 @@ func Test_JobRestHandler_ListJobs(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("Invalid pagination parameters\n", func() {
@@ -367,7 +367,7 @@ func Test_JobRestHandler_ListTasks(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("Job not found\n", func() {
@@ -378,7 +378,7 @@ func Test_JobRestHandler_ListTasks(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("GetJobByID failed\n", func() {

@@ -7,7 +7,6 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/entity/pubedeo"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp/dto/umarg"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp/umtypes"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iumacc"
@@ -30,16 +29,9 @@ func PublishedAgents(ctx context.Context, _pos []*dapo.PublishedJoinPo, umHttp i
 
 	ret := umtypes.NewOsnInfoMapS()
 
-	if cenvhelper.IsLocalDev() {
-		// 本地开发环境模拟数据
-		for _, userID := range arg.UserIDs {
-			ret.UserNameMap[userID] = userID + "_name"
-		}
-	} else {
-		ret, err = umHttp.GetOsnNames(ctx, arg)
-		if err != nil {
-			return
-		}
+	ret, err = umHttp.GetOsnNames(ctx, arg)
+	if err != nil {
+		return
 	}
 
 	unknownUserName := locale.GetI18nByCtx(ctx, locale.UnknownUser)

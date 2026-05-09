@@ -19,7 +19,7 @@ func TestLocalSearch_Service(t *testing.T) {
 		checkResult func(*testing.T, *interfaces.KnSearchLocalResponse, error)
 	}{
 		{
-			name: "Success - Full Flow",
+			name: "Success - Schema Only By Default",
 			req: &interfaces.KnSearchLocalRequest{
 				KnID:  "129",
 				Query: "test",
@@ -44,8 +44,11 @@ func TestLocalSearch_Service(t *testing.T) {
 				if len(res.ObjectTypes) == 0 {
 					t.Error("Expected object types")
 				}
-				if len(res.Nodes) == 0 {
-					t.Error("Expected nodes")
+				if len(res.Nodes) > 0 {
+					t.Error("Expected 0 nodes after shared logic convergence")
+				}
+				if res.Message != "" {
+					t.Error("Expected empty message after shared logic convergence")
 				}
 			},
 		},
@@ -70,6 +73,9 @@ func TestLocalSearch_Service(t *testing.T) {
 				if len(res.Nodes) > 0 {
 					t.Error("Expected 0 nodes in OnlySchema mode")
 				}
+				if res.Message != "" {
+					t.Error("Expected empty message in OnlySchema mode")
+				}
 			},
 		},
 		{
@@ -90,7 +96,7 @@ func TestLocalSearch_Service(t *testing.T) {
 			},
 		},
 		{
-			name: "Partial Success - Instance Retrieval Failed",
+			name: "Success - Legacy Instance Flags Do Not Restore Nodes",
 			req: &interfaces.KnSearchLocalRequest{
 				KnID:  "129",
 				Query: "test",
@@ -103,16 +109,14 @@ func TestLocalSearch_Service(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
-				// Should still return concepts
 				if len(res.ObjectTypes) == 0 {
 					t.Error("Expected object types")
 				}
-				// Nodes empty but message should indicate failure
 				if len(res.Nodes) > 0 {
 					t.Error("Expected 0 nodes")
 				}
-				if res.Message == "" {
-					t.Error("Expected error message")
+				if res.Message != "" {
+					t.Error("Expected empty message even when legacy instance retrieval would fail")
 				}
 			},
 		},
@@ -129,14 +133,17 @@ func TestLocalSearch_Service(t *testing.T) {
 			}
 
 			svc := &localSearchImpl{
-				logger:          &mockLogger{},
-				bknBackend: mockManager,
-				ontologyQuery:   mockQuery,
-				rerankClient:    mockRerank,
+				logger:        &mockLogger{},
+				bknBackend:    mockManager,
+				ontologyQuery: mockQuery,
+				rerankClient:  mockRerank,
 			}
 
 			res, err := svc.Search(context.Background(), tt.req)
 			tt.checkResult(t, res, err)
+			if mockQuery.callCount != 0 {
+				t.Fatalf("Expected QueryObjectInstances to not be called, got %d", mockQuery.callCount)
+			}
 		})
 	}
 }

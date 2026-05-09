@@ -122,7 +122,9 @@ func (cgs *conceptGroupService) CheckConceptGroupExistByName(ctx context.Context
 }
 
 // 创建概念分组
-func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *interfaces.ConceptGroup, mode string, strictMode bool) (string, error) {
+func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.Tx,
+	conceptGroup *interfaces.ConceptGroup, mode string, strictMode bool) (string, error) {
+
 	ctx, span := ar_trace.Tracer.Start(ctx, "Create concept group")
 	defer span.End()
 
@@ -141,11 +143,13 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 		conceptGroup.CGID = xid.New().String()
 	}
 	otIDs := []interfaces.ID{}
+	bknOtMap := map[string]*bknsdk.BknObjectType{}
 	for _, objectType := range conceptGroup.ObjectTypes {
 		objectType.KNID = conceptGroup.KNID
 		objectType.Branch = conceptGroup.Branch
 
 		otIDs = append(otIDs, interfaces.ID{ID: objectType.OTID})
+		bknOtMap[objectType.OTID] = logics.ToBKNObjectType(objectType)
 	}
 	for _, relationType := range conceptGroup.RelationTypes {
 		relationType.KNID = conceptGroup.KNID
@@ -167,7 +171,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 	conceptGroup.UpdateTime = currentTime
 
 	bknCG := logics.ToBKNConceptGroup(conceptGroup)
-	conceptGroup.BKNRawContent = bknsdk.SerializeConceptGroup(bknCG)
+	conceptGroup.BKNRawContent = bknsdk.SerializeConceptGroup(bknCG, bknOtMap)
 
 	if tx == nil {
 		// 0. 开始事务
@@ -469,6 +473,19 @@ func (cgs *conceptGroupService) ListConceptGroups(ctx context.Context,
 			return []*interfaces.ConceptGroup{}, 0, err
 		}
 		conceptGroup.Statistics = stats
+
+		otIDs, err := cgs.cga.GetConceptIDsByConceptGroupIDs(ctx, conceptGroup.KNID,
+			conceptGroup.Branch, []string{conceptGroup.CGID}, interfaces.MODULE_TYPE_OBJECT_TYPE)
+		if err != nil {
+			errStr := fmt.Sprintf("GetConceptIDsByConceptGroupIDs failed, kn_id:[%s],branch:[%s],cg_ids:[%s], error: %v",
+				conceptGroup.KNID, conceptGroup.Branch, conceptGroup.CGID, err)
+			logger.Errorf(errStr)
+			span.SetStatus(codes.Error, errStr)
+
+			return []*interfaces.ConceptGroup{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				berrors.BknBackend_ConceptGroup_InternalError).WithErrorDetails(err.Error())
+		}
+		conceptGroup.ObjectTypeIDs = otIDs
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -508,8 +525,7 @@ func (cgs *conceptGroupService) GetConceptGroupByID(ctx context.Context, knID st
 		span.SetStatus(codes.Error, errStr)
 		span.End()
 
-		return nil, rest.NewHTTPError(ctx, http.StatusNotFound,
-			berrors.BknBackend_ConceptGroup_ConceptGroupNotFound).
+		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound).
 			WithErrorDetails(errStr)
 	}
 
@@ -679,7 +695,8 @@ func (cgs *conceptGroupService) UpdateConceptGroup(ctx context.Context, tx *sql.
 	}
 
 	if strictMode {
-		if err := cgs.ValidateConceptGroups(ctx, conceptGroup.KNID, conceptGroup.Branch, []*interfaces.ConceptGroup{conceptGroup}, strictMode, nil, interfaces.ImportMode_Overwrite); err != nil {
+		if err := cgs.ValidateConceptGroups(ctx, conceptGroup.KNID, conceptGroup.Branch,
+			[]*interfaces.ConceptGroup{conceptGroup}, strictMode, nil, interfaces.ImportMode_Overwrite); err != nil {
 			return err
 		}
 	}
@@ -693,8 +710,42 @@ func (cgs *conceptGroupService) UpdateConceptGroup(ctx context.Context, tx *sql.
 	currentTime := time.Now().UnixMilli() // 概念分组的update_time是int类型
 	conceptGroup.UpdateTime = currentTime
 
+	otIDs, err := cgs.cga.GetConceptIDsByConceptGroupIDs(ctx, conceptGroup.KNID,
+		conceptGroup.Branch, []string{conceptGroup.CGID}, interfaces.MODULE_TYPE_OBJECT_TYPE)
+	if err != nil {
+		errStr := fmt.Sprintf("GetConceptIDsByConceptGroupIDs failed, kn_id:[%s],branch:[%s],cg_ids:[%s], error: %v",
+			conceptGroup.KNID, conceptGroup.Branch, conceptGroup.CGID, err)
+		logger.Errorf(errStr)
+		span.SetStatus(codes.Error, errStr)
+
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+			berrors.BknBackend_ConceptGroup_InternalError_GetConceptIDsByConceptGroupIDsFailed).
+			WithErrorDetails(err.Error())
+	}
+
+	// 对象类不为空时才找对应的关系类
+	if len(otIDs) > 0 {
+		objectTypes, _, err := cgs.ots.ListObjectTypes(ctx, nil, interfaces.ObjectTypesQueryParams{
+			PaginationQueryParameters: interfaces.PaginationQueryParameters{
+				Limit: -1, // 等于-1，把数据库中查询到的都返回
+			},
+			KNID:   conceptGroup.KNID,
+			Branch: conceptGroup.Branch,
+			OTIDS:  otIDs,
+		})
+		if err != nil {
+			return err
+		}
+		conceptGroup.ObjectTypes = objectTypes
+	}
+
+	bknOtMaps := map[string]*bknsdk.BknObjectType{}
+	for _, objectType := range conceptGroup.ObjectTypes {
+		bknOtMaps[objectType.OTID] = logics.ToBKNObjectType(objectType)
+	}
+
 	bknCG := logics.ToBKNConceptGroup(conceptGroup)
-	conceptGroup.BKNRawContent = bknsdk.SerializeConceptGroup(bknCG)
+	conceptGroup.BKNRawContent = bknsdk.SerializeConceptGroup(bknCG, bknOtMaps)
 
 	if tx == nil {
 		// 0. 开始事务

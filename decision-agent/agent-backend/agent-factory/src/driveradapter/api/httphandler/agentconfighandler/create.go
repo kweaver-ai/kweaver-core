@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/constant/auditconstant"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/constant/daconstant"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent_config/agentconfigreq"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent_config/agentconfigresp"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/apierr"
@@ -15,7 +16,10 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil/crest"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
+	"github.com/pkg/errors"
 )
+
+type createReqExtraCheck func(req *agentconfigreq.CreateReq) error
 
 // Create 创建agent
 // @Summary      创建agent
@@ -32,6 +36,10 @@ import (
 // @Router       /v3/agent [post]
 // @Security     BearerAuth
 func (h *daConfHTTPHandler) Create(c *gin.Context) {
+	h.create(c, nil)
+}
+
+func (h *daConfHTTPHandler) create(c *gin.Context, extraCheck createReqExtraCheck) {
 	// 1. 获取请求参数
 	var req agentconfigreq.CreateReq
 
@@ -56,6 +64,21 @@ func (h *daConfHTTPHandler) Create(c *gin.Context) {
 	}
 	// 1.1 设置is_private字段
 	setIsPrivate2Req(c, req.UpdateReq)
+
+	// 1.2 额外校验
+	if extraCheck != nil {
+		if err := extraCheck(&req); err != nil {
+			httpErr := capierr.New400Err(c, err.Error())
+			if !isPrivate {
+				audit.NewWarnLogWithError(audit.OPERATION, auditconstant.CREATE, audit.TransforOperator(*visitor),
+					auditconstant.GenerateAgentAuditObject("", req.Name), &httpErr.BaseError)
+			}
+
+			_ = c.Error(httpErr)
+
+			return
+		}
+	}
 
 	// 2. 验证请求参数
 	if err := req.ReqCheckWithCtx(c); err != nil {
@@ -100,4 +123,15 @@ func (h *daConfHTTPHandler) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, res)
+}
+
+func validateCreateReactReq(req *agentconfigreq.CreateReq) error {
+	if req.Config == nil {
+		return nil
+	}
+	if req.Config.Mode != cdaenum.AgentModeReact {
+		return errors.New(`config.mode must be "react"`)
+	}
+
+	return nil
 }

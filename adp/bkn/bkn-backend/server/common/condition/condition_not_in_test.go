@@ -27,7 +27,7 @@ func TestNewNotInCond(t *testing.T) {
 		Convey("invalid value_from should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
 					Value:     []any{"value1"},
@@ -42,7 +42,7 @@ func TestNewNotInCond(t *testing.T) {
 		Convey("non-slice value should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -57,7 +57,7 @@ func TestNewNotInCond(t *testing.T) {
 		Convey("mixed type array should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{"value1", 123},
@@ -72,7 +72,7 @@ func TestNewNotInCond(t *testing.T) {
 		Convey("valid string array should create NotInCond", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{"value1", "value2"},
@@ -101,7 +101,7 @@ func TestNotInCond_Convert(t *testing.T) {
 		Convey("string array should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{"value1", "value2"},
@@ -138,7 +138,7 @@ func TestNotInCond_Convert2SQL(t *testing.T) {
 		Convey("string array should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{"value1", "value2"},
@@ -159,7 +159,7 @@ func TestNotInCond_Convert2SQL(t *testing.T) {
 		Convey("numeric array should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotIn,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{1, 2, 3},

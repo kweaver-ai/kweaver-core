@@ -8,7 +8,10 @@ package condition
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+
+	"github.com/kweaver-ai/kweaver-go-lib/rest"
 )
 
 type KnnCond struct {
@@ -22,7 +25,7 @@ func NewKnnCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap m
 		return nil, fmt.Errorf("condition [knn] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
-	name := getFilterFieldName(cfg.Name, fieldsMap, true)
+	name := getFilterFieldName(cfg.Field, fieldsMap, true)
 	var field string
 	// 如果指定*查询，则把 * 换成 _vector
 	if name == AllField {
@@ -57,7 +60,9 @@ func (cond *KnnCond) Convert(ctx context.Context, vectorizer func(ctx context.Co
 	vector, err := vectorizer(ctx, []string{v})
 	if err != nil {
 		// 如果错误是因为 DefaultSmallModelEnabled 为 false，则忽略此 knn 条件，返回空字符串
-		if err.Error() == DEFAULT_SMALL_MODEL_ENABLED_FALSE_ERROR {
+		var httpErr *rest.HTTPError
+		if errors.As(err, &httpErr) && httpErr != nil &&
+			httpErr.BaseError.ErrorDetails == DEFAULT_SMALL_MODEL_ENABLED_FALSE_ERROR {
 			return "", nil
 		}
 		return "", fmt.Errorf("condition [knn]: vectorizer [%s] failed, error: %s", v, err.Error())
@@ -149,13 +154,19 @@ func convertKnnCondToDatasetFilterCondition(ctx context.Context, cfg *CondCfg,
 	v := fmt.Sprintf("%v", cfg.Value)
 	vectorResp, err := vectorizer(ctx, v)
 	if err != nil {
+		// 如果错误是因为 DefaultSmallModelEnabled 为 false，则忽略此 knn 条件，返回空字符串
+		var httpErr *rest.HTTPError
+		if errors.As(err, &httpErr) && httpErr != nil &&
+			httpErr.BaseError.ErrorDetails == DEFAULT_SMALL_MODEL_ENABLED_FALSE_ERROR {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("condition [knn]: vectorizer [%s] failed, error: %s", v, err.Error())
 	}
 	if len(vectorResp) == 0 {
 		return nil, fmt.Errorf("condition [knn]: vectorizer [%s] returned empty result", v)
 	}
 
-	name := getFilterFieldName(cfg.Name, fieldsMap, true)
+	name := getFilterFieldName(cfg.Field, fieldsMap, true)
 	var field string
 	// 如果指定*查询，则把 * 换成 _vector
 	if name == AllField {

@@ -13,8 +13,8 @@ Agent缓存管理 - upsert action处理
 
 from fastapi import Request
 
+from app.common.stand_log import StandLogger
 from app.domain.vo.agentvo import AgentConfigVo
-from app.utils.observability.observability_log import get_logger as o11y_logger
 
 from ..rdto.v1.res.agent_cache import AgentCacheManageRes
 from .common import (
@@ -56,7 +56,7 @@ async def handle_upsert(
 
     if cache_entity:
         # Cache存在，更新缓存数据并恢复TTL
-        o11y_logger().info(f"Agent缓存已存在，更新缓存数据: cache_id={cache_id_vo}")
+        StandLogger.info(f"Agent缓存已存在，更新缓存数据: cache_id={cache_id_vo}")
 
         # 更新缓存数据
         await cache_manager.update_cache_data(
@@ -69,7 +69,7 @@ async def handle_upsert(
         cache_entity = await cache_manager.cache_service.load(cache_id_vo)
         if cache_entity is None:
             # 缓存在更新过程中过期，创建新缓存
-            o11y_logger().warn(f"Agent缓存在更新过程中过期: cache_id={cache_id_vo}")
+            StandLogger.warn(f"Agent缓存在更新过程中过期: cache_id={cache_id_vo}")
             return await create_cache_and_build_response(
                 request=request,
                 account_id=account_id,
@@ -90,7 +90,7 @@ async def handle_upsert(
         )
 
     # 3. Cache不存在，创建新Cache并返回响应
-    o11y_logger().info(f"Agent缓存不存在，创建新Cache: agent_id={agent_id}")
+    StandLogger.info(f"Agent缓存不存在，创建新Cache: agent_id={agent_id}")
 
     return await create_cache_and_build_response(
         request=request,

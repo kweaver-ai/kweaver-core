@@ -30,9 +30,9 @@ func TestHandleGetActionInfo_IgnoresResponseFormatParam(t *testing.T) {
 		handler := handleGetActionInfo(svc)
 
 		req := newCallToolRequest(map[string]any{
-			"kn_id":               "kn-001",
-			"at_id":               "at-001",
-			"response_format":     "xml",
+			"kn_id":                "kn-001",
+			"at_id":                "at-001",
+			"response_format":      "xml",
 			"_instance_identities": []any{map[string]any{"id": "obj-001"}},
 		})
 

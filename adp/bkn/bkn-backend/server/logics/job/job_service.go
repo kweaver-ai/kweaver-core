@@ -135,6 +135,14 @@ func (js *jobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobInfo
 					WithErrorDetails(fmt.Sprintf("ObjectType %s has no primary key", objectType.OTName))
 			}
 
+			dsType := objectType.DataSource.Type
+			if dsType == "" {
+				dsType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
+			}
+			if dsType == interfaces.DATA_SOURCE_TYPE_RESOURCE {
+				continue
+			}
+
 			task_id := xid.New().String()
 
 			taskInfos[task_id] = &interfaces.TaskInfo{
@@ -177,6 +185,14 @@ func (js *jobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobInfo
 				continue
 			}
 
+			dsType := objectType.DataSource.Type
+			if dsType == "" {
+				dsType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
+			}
+			if dsType == interfaces.DATA_SOURCE_TYPE_RESOURCE {
+				continue
+			}
+
 			task_id := xid.New().String()
 
 			taskInfos[task_id] = &interfaces.TaskInfo{
@@ -199,7 +215,7 @@ func (js *jobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobInfo
 	if len(taskInfos) == 0 {
 		return "", rest.NewHTTPError(ctx, http.StatusBadRequest,
 			berrors.BknBackend_Job_NoneConceptType).
-			WithErrorDetails("JobConceptConfig is empty")
+			WithErrorDetails("JobConceptConfig is empty, or no indexable object types: resource-backed object types do not generate index build tasks")
 	}
 
 	tx, err := js.db.Begin()

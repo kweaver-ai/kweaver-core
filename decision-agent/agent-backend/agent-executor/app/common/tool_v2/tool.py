@@ -1,7 +1,8 @@
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING
 
 from dolphin.core.utils.tools import Tool
 from app.common.stand_log import StandLogger
+from app.common.config import Config
 from app.domain.vo.agentvo.agent_config_vos import SkillVo
 from app.utils.observability.trace_wrapper import internal_span
 from opentelemetry.trace import Span
@@ -10,6 +11,7 @@ from opentelemetry.trace import Span
 from .api_tool import APITool
 from .agent_tool import AgentTool
 from .mcp_tool import get_mcp_tools
+from .skill_contract_tools import build_builtin_skill_tools
 
 
 if TYPE_CHECKING:
@@ -18,7 +20,10 @@ if TYPE_CHECKING:
 
 @internal_span()
 async def build_tools(
-    ac: "AgentCoreV2", skills: SkillVo, span: Span = None
+    ac: "AgentCoreV2",
+    skills: SkillVo,
+    request_headers: Optional[Dict[str, str]] = None,
+    span: Span = None,
 ) -> Dict[str, Tool]:
     """
     skills样例:
@@ -120,5 +125,27 @@ async def build_tools(
                     )
 
             tools.update(mcp_tools)
+
+    # Inject the three built-in skill contract tools if enabled.
+    # These are appended last so that they always overwrite any user-defined
+    # tool with the same reserved name (builtin_skill_load, builtin_skill_read_file,
+    # builtin_skill_execute_script).
+    # request_headers are forwarded so each Tool instance captures them at
+    # construction time, avoiding set_headers() races on the shared singleton.
+    if Config.features.skill_enabled:
+        builtin_skill_tools = build_builtin_skill_tools(request_headers)
+        for name in builtin_skill_tools:
+            if name in tools:
+                StandLogger.warn(
+                    f"User-defined tool '{name}' is overridden by the built-in skill contract tool."
+                )
+        tools.update(builtin_skill_tools)
+        StandLogger.info_log(
+            f"[build_tools] Built-in skill contract tools registered: {list(builtin_skill_tools.keys())}"
+        )
+    else:
+        StandLogger.info_log(
+            "[build_tools] Built-in skill contract tools are disabled by configuration"
+        )
 
     return tools

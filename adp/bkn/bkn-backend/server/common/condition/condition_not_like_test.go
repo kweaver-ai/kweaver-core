@@ -35,7 +35,7 @@ func TestNewNotLikeCond(t *testing.T) {
 		Convey("non-string field should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
-				Name:      "field3",
+				Field:     "field3",
 				NameField: fieldsMap["field3"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -51,7 +51,7 @@ func TestNewNotLikeCond(t *testing.T) {
 		Convey("invalid value_from should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
@@ -67,7 +67,7 @@ func TestNewNotLikeCond(t *testing.T) {
 		Convey("non-string value should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -83,7 +83,7 @@ func TestNewNotLikeCond(t *testing.T) {
 		Convey("valid string field and value should create NotLikeCond", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -113,7 +113,7 @@ func TestNotLikeCond_Convert(t *testing.T) {
 		Convey("should create must_not regexp query", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -152,7 +152,7 @@ func TestNotLikeCond_Convert2SQL(t *testing.T) {
 		Convey("should create NOT LIKE query", func() {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,

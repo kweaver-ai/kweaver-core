@@ -21,5 +21,8 @@ func ValidateCatalogRequest(ctx context.Context, req *interfaces.CatalogRequest)
 	if err := validateDescription(ctx, req.Description); err != nil {
 		return err
 	}
+	if err := validateConnectorConfig(ctx, req.ConnectorCfg); err != nil {
+		return err
+	}
 	return nil
 }

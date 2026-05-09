@@ -28,9 +28,6 @@ from app.utils.observability.observability_log import get_logger as o11y_logger
 from .trace import span_set_attrs
 from app.domain.enum.common.user_account_header_key import (
     get_user_account_id,
-    get_user_account_type,
-    set_user_account_id,
-    set_user_account_type,
 )
 from .input_handler_pkg import (
     process_input,
@@ -228,17 +225,36 @@ class AgentCoreV2:
             else:
                 flags.set_flag(flags.EXPLORE_BLOCK_V2, False)
 
-            # 禁用dolphin sdk llm缓存
+            # 根据配置禁用dolphin sdk的llm cache
             if Config.features.disable_dolphin_sdk_llm_cache:
                 flags.set_flag(flags.DISABLE_LLM_CACHE, True)
             else:
                 flags.set_flag(flags.DISABLE_LLM_CACHE, False)
 
-            # 将认证信息添加到 context_variables 中
-            set_user_account_id(context_variables, get_user_account_id(headers) or "")
-            set_user_account_type(
-                context_variables, get_user_account_type(headers) or ""
-            )
+            # 认证信息当前仍通过 headers 传递给下游，不再镜像写入
+            # context_variables。保留注释便于后续回溯这段兼容逻辑。
+            # set_user_account_id(context_variables, get_user_account_id(headers) or "")
+            # set_user_account_type(
+            #     context_variables, get_user_account_type(headers) or ""
+            # )
+
+            llm_message_flag = getattr(flags, "LLM_MESSAGE_LOGGING", None)
+            llm_message_log_dir_flag = getattr(flags, "LLM_MESSAGE_LOG_DIR", None)
+
+            if llm_message_flag is not None and llm_message_log_dir_flag is not None:
+                if Config.llm_message_logging and Config.llm_message_logging.enabled:
+                    flags.set_flag(llm_message_flag, True)
+                    flags.set_param(
+                        llm_message_log_dir_flag,
+                        Config.llm_message_logging.log_dir,
+                    )
+                else:
+                    flags.set_flag(llm_message_flag, False)
+                    flags.set_param(llm_message_log_dir_flag, "")
+            elif Config.llm_message_logging and Config.llm_message_logging.enabled:
+                StandLogger.warn(
+                    "[agent_core_v2] Dolphin flags do not expose llm message logging; skipping flag configuration"
+                )
 
             # 获取输出变量
             output_vars = agent_config.output_vars or []
@@ -308,6 +324,7 @@ class AgentCoreV2:
                     user_id=get_user_account_id(headers) or "",
                 )
                 await ExceptionHandler.handle_exception(dolphin_except, res, headers)
+                StandLogger.error(f"agent run failed: {e}")
                 o11y_logger().error(f"agent run failed: {e}")
                 # 在yield前移除context键并添加 agent_run_id
                 res_with_run_id = self.remove_context_from_response(res)
@@ -316,6 +333,7 @@ class AgentCoreV2:
             except Exception as e:
                 # 处理其他异常
                 await ExceptionHandler.handle_exception(e, res, headers)
+                StandLogger.error(f"agent run failed: {e}")
                 o11y_logger().error(f"agent run failed: {e}")
                 # 在yield前移除context键并添加 agent_run_id
                 res_with_run_id = self.remove_context_from_response(res)
@@ -325,6 +343,7 @@ class AgentCoreV2:
         except Exception as e:
             # 处理整体异常
             await ExceptionHandler.handle_exception(e, res, headers)
+            StandLogger.error(f"agent run failed: {e}")
             o11y_logger().error(f"agent run failed: {e}")
             # 在yield前移除context键并添加 agent_run_id
             res_with_run_id = self.remove_context_from_response(res)

@@ -36,7 +36,7 @@ func TestNewCondition(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -57,7 +57,7 @@ func TestNewCondition(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -75,7 +75,7 @@ func TestNewCondition(t *testing.T) {
 		Convey("OperationEq should create EqCond", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -94,7 +94,7 @@ func TestNewCondition(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "nonexistent",
+						Field:     "nonexistent",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -130,7 +130,7 @@ func TestNewCondWithOpr(t *testing.T) {
 		Convey("field not in fieldsMap should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "nonexistent",
+				Field:     "nonexistent",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -145,7 +145,7 @@ func TestNewCondWithOpr(t *testing.T) {
 		Convey("binary type field should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "binary_field",
+				Field:     "binary_field",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -160,7 +160,7 @@ func TestNewCondWithOpr(t *testing.T) {
 		Convey("AllField should not check field existence", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatch,
-				Name:      AllField,
+				Field:     AllField,
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -190,7 +190,7 @@ func TestNewCondWithOpr(t *testing.T) {
 		Convey("unsupported operation should return error", func() {
 			cfg := &CondCfg{
 				Operation: "unsupported_op",
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -223,7 +223,7 @@ func TestNewCondWithOpr(t *testing.T) {
 			for _, tc := range testCases {
 				cfg := &CondCfg{
 					Operation: tc.operation,
-					Name:      tc.name,
+					Field:     tc.name,
 					ValueOptCfg: ValueOptCfg{
 						ValueFrom: ValueFrom_Const,
 						Value:     tc.value,

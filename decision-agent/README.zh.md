@@ -192,7 +192,14 @@ make validate-api-docs
 相关说明：
 
 - [对外文档使用说明](agent-backend/agent-factory/docs/api/README.md)
-- [Agent Factory README](agent-backend/agent-factory/README.md)
+- [Agent Factory README](agent-backend/agent-factory/README.zh.md)
+
+## Agent Factory API Chat 对接指南
+
+完整的 API Chat 对接说明请查看 Agent Factory `docs/` 根目录下的文档：
+
+- English: [agent-backend/agent-factory/docs/api-chat-integration.md](agent-backend/agent-factory/docs/api-chat-integration.md)
+- 中文: [agent-backend/agent-factory/docs/api-chat-integration.zh.md](agent-backend/agent-factory/docs/api-chat-integration.zh.md)
 
 ## 许可证
 

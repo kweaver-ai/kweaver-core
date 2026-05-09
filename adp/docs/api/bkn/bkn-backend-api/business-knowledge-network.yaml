@@ -586,6 +586,19 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Mapping"
+    FilteredCrossJoinMappingRule:
+      description: |
+        关系类型为 `filtered_cross_join`（分侧过滤全连接，FCJ）时的匹配规则。无数据视图与键映射；
+        `source_condition` / `target_condition` 为可选的实例过滤条件（结构与对象实例查询 Condition 一致，参见 ontology-query 等查询 API）。
+        两侧均可省略，或 `mapping_rules` 为 `{}`（表示两侧无额外过滤）。
+      type: object
+      properties:
+        source_condition:
+          description: 起点侧实例过滤条件；可省略表示该侧无约束
+          type: object
+        target_condition:
+          description: 终点侧实例过滤条件；可省略表示该侧无约束
+          type: object
     ActionCondition:
       description: 行动条件
       type: object
@@ -1160,13 +1173,15 @@ components:
           enum:
             - direct
             - data_view
+            - filtered_cross_join
           type: string
         mapping_rules:
           oneOf:
             - $ref: "#/components/schemas/m"
               type: array
             - $ref: "#/components/schemas/DataViewMappingRule"
-          description: "关联的匹配规则。直接关联时是一个map，标记的是起点对象匹配属性1: 终点对象匹配属性1；间接关联时参考DataViewMappingRule"
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: "关联的匹配规则。direct 为键映射；data_view 参考 DataViewMappingRule；filtered_cross_join（FCJ）参考 FilteredCrossJoinMappingRule（分侧条件）。直接关联时是一个 map，标记的是起点对象匹配属性1: 终点对象匹配属性1"
     UpdateRelationType:
       description: 关系类更新信息
       required:
@@ -1213,12 +1228,14 @@ components:
           enum:
             - direct
             - data_view
+            - filtered_cross_join
           type: string
         mapping_rules:
           oneOf:
             - $ref: "#/components/schemas/Object"
             - $ref: "#/components/schemas/DataViewMappingRule"
-          description: "关联的匹配规则。直接关联时是一个map，标记的是起点对象匹配属性1: 终点对象匹配属性1；间接关联时参考DataViewMappingRule"
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: "关联的匹配规则。direct 为键映射；data_view 参考 DataViewMappingRule；filtered_cross_join（FCJ）参考 FilteredCrossJoinMappingRule。直接关联时是一个 map，标记的是起点对象匹配属性1: 终点对象匹配属性1"
     ReqActionType:
       description: 行动类创建信息
       required:
@@ -1639,12 +1656,14 @@ components:
           enum:
             - direct
             - data_view
+            - filtered_cross_join
           type: string
         mapping_rules:
           oneOf:
             - $ref: "#/components/schemas/Object"
             - $ref: "#/components/schemas/DataViewMappingRule"
-          description: "关联的匹配规则。直接关联时是一个map，标记的是起点对象匹配属性1: 终点对象匹配属性1；间接关联时参考DataViewMappingRule"
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: "关联的匹配规则。direct 为键映射；data_view 参考 DataViewMappingRule；filtered_cross_join（FCJ）参考 FilteredCrossJoinMappingRule。直接关联时是一个 map，标记的是起点对象匹配属性1: 终点对象匹配属性1"
         creator:
           description: 创建人ID
           type: string

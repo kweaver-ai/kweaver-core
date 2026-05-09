@@ -34,6 +34,16 @@ definitions:
     x-enum-varnames:
     - RespErrorTypeAgentFactory
     - RespErrorTypeAgentExecutor
+  cdaenum.AgentMode:
+    enum:
+    - default
+    - dolphin
+    - react
+    type: string
+    x-enum-varnames:
+    - AgentModeDefault
+    - AgentModeDolphin
+    - AgentModeReact
   cdaenum.AvatarType:
     enum:
     - 1
@@ -570,6 +580,15 @@ definitions:
       question:
         description: 问题内容
         type: string
+    type: object
+  daconfvalobj.ReactConfig:
+    properties:
+      disable_history_in_a_conversation:
+        description: 是否禁用单次会话的历史记录
+        type: boolean
+      disable_llm_cache:
+        description: 是否禁用LLM缓存
+        type: boolean
     type: object
   daconfvalobj.RelatedQuestion:
     properties:
@@ -1237,6 +1256,10 @@ definitions:
         allOf:
         - $ref: '#/definitions/daconfvalobj.ConfigMetadata'
         description: 配置元数据
+      mode:
+        allOf:
+        - $ref: '#/definitions/cdaenum.AgentMode'
+        description: 配置模式
       opening_remark_config:
         allOf:
         - $ref: '#/definitions/daconfvalobj.OpeningRemarkConfig'
@@ -1264,6 +1287,10 @@ definitions:
         items:
           $ref: '#/definitions/daconfvalobj.PresetQuestion'
         type: array
+      react_config:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.ReactConfig'
+        description: ReAct 模式配置
       related_question:
         allOf:
         - $ref: '#/definitions/daconfvalobj.RelatedQuestion'
@@ -2304,325 +2331,7 @@ paths:
       summary: 管理对话session
       tags:
       - 对话session管理
-  /v1/observability/agent/{agent_id}/conversation/{conversation_id}/session:
-    post:
-      consumes:
-      - application/json
-      description: 获取指定对话的session列表，包含session的详细信息
-      parameters:
-      - description: agent_id
-        in: path
-        name: agent_id
-        required: true
-        type: string
-      - description: conversation_id
-        in: path
-        name: conversation_id
-        required: true
-        type: string
-      - description: 请求体
-        in: body
-        name: request
-        required: true
-        schema:
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功返回session列表
-          schema:
-            type: object
-        "400":
-          description: 失败
-          schema:
-            type: object
-        "404":
-          description: 失败
-          schema:
-            type: object
-        "500":
-          description: 失败
-          schema:
-            type: object
-      security:
-      - BearerAuth: []
-      summary: 获取指定对话的session列表
-      tags:
-      - 可观测性
-  /v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/detail:
-    post:
-      consumes:
-      - application/json
-      description: 获取指定session的详情信息，包含多个指标
-      parameters:
-      - description: agent_id
-        in: path
-        name: agent_id
-        required: true
-        type: string
-      - description: conversation_id
-        in: path
-        name: conversation_id
-        required: true
-        type: string
-      - description: session_id
-        in: path
-        name: session_id
-        required: true
-        type: string
-      - description: 请求体
-        in: body
-        name: request
-        required: true
-        schema:
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功返回session详情
-          schema:
-            type: object
-        "400":
-          description: 失败
-          schema:
-            type: object
-        "404":
-          description: 失败
-          schema:
-            type: object
-        "500":
-          description: 失败
-          schema:
-            type: object
-      security:
-      - BearerAuth: []
-      summary: 获取指定session的详情信息
-      tags:
-      - 可观测性
-  /v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run:
-    post:
-      consumes:
-      - application/json
-      description: 获取指定对话的session下的run列表，返回每个run的详情列表
-      parameters:
-      - description: agent_id
-        in: path
-        name: agent_id
-        required: true
-        type: string
-      - description: conversation_id
-        in: path
-        name: conversation_id
-        required: true
-        type: string
-      - description: session_id
-        in: path
-        name: session_id
-        required: true
-        type: string
-      - description: 请求体
-        in: body
-        name: request
-        required: true
-        schema:
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功返回run列表
-          schema:
-            type: object
-        "400":
-          description: 失败
-          schema:
-            type: object
-        "404":
-          description: 失败
-          schema:
-            type: object
-        "500":
-          description: 失败
-          schema:
-            type: object
-      security:
-      - BearerAuth: []
-      summary: 获取指定session下的run列表
-      tags:
-      - 可观测性
-  /v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run/{run_id}/detail:
-    post:
-      consumes:
-      - application/json
-      description: 获取指定run的详情信息，包含run的完整信息
-      parameters:
-      - description: agent_id
-        in: path
-        name: agent_id
-        required: true
-        type: string
-      - description: conversation_id
-        in: path
-        name: conversation_id
-        required: true
-        type: string
-      - description: session_id
-        in: path
-        name: session_id
-        required: true
-        type: string
-      - description: run_id
-        in: path
-        name: run_id
-        required: true
-        type: string
-      - description: 请求体
-        in: body
-        name: request
-        required: true
-        schema:
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功返回run详情
-          schema:
-            type: object
-        "400":
-          description: 失败
-          schema:
-            type: object
-        "404":
-          description: 失败
-          schema:
-            type: object
-        "500":
-          description: 失败
-          schema:
-            type: object
-      security:
-      - BearerAuth: []
-      summary: 获取指定run的详情信息
-      tags:
-      - 可观测性
-  /v1/observability/agent/{agent_id}/detail:
-    post:
-      consumes:
-      - application/json
-      description: 查询指定Agent的可观测信息，返回结果包含Agent的配置信息以及可观测性的指标，支持时间过滤
-      parameters:
-      - description: agent_id
-        in: path
-        name: agent_id
-        required: true
-        type: string
-      - description: 请求体
-        in: body
-        name: request
-        required: true
-        schema:
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功返回Agent可观测信息
-          schema:
-            type: object
-        "400":
-          description: 失败
-          schema:
-            type: object
-        "404":
-          description: 失败
-          schema:
-            type: object
-        "500":
-          description: 失败
-          schema:
-            type: object
-      security:
-      - BearerAuth: []
-      summary: 查询指定Agent的可观测信息
-      tags:
-      - 可观测性
-  /v1/observability/agent/{agent_key}/conversation:
-    post:
-      consumes:
-      - application/json
-      description: 查询Agent下的所有对话列表，支持分页和根据对话title模糊查询
-      parameters:
-      - description: agent_key
-        in: path
-        name: agent_key
-        required: true
-        type: string
-      - description: 请求体
-        in: body
-        name: request
-        required: true
-        schema:
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功返回对话列表
-          schema:
-            type: object
-        "400":
-          description: 失败
-          schema:
-            type: object
-        "404":
-          description: 失败
-          schema:
-            type: object
-        "500":
-          description: 失败
-          schema:
-            type: object
-      security:
-      - BearerAuth: []
-      summary: 查询Agent下的所有对话列表
-      tags:
-      - 可观测性
   /v3/agent:
-    get:
-      consumes:
-      - application/json
-      description: '- Agent列表（供模型工厂做 Agent 的 Benchmarch 使用） - 只提供`内部接口`'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            type: object
-        "400":
-          description: 失败
-          schema:
-            type: object
-        "401":
-          description: 失败
-          schema:
-            type: object
-        "403":
-          description: 失败
-          schema:
-            type: object
-        "500":
-          description: 失败
-          schema:
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Agent列表（benchmarch）
-      tags:
-      - agent-ignore
     post:
       consumes:
       - application/json
@@ -3900,6 +3609,47 @@ paths:
       summary: 获取dolphin模板列表
       tags:
       - 其他
+  /v3/agent/react:
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的 React 模式 Agent 配置。请求体与普通创建接口一致，但 config.mode 必须为 react。
+      parameters:
+      - description: React Agent 配置
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/swagger.AgentConfigCreateReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 成功
+          schema:
+            $ref: '#/definitions/swagger.AgentConfigCreateRes'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 创建react agent
+      tags:
+      - agent
+      - agent-internal
   /v3/agent/temp-zone/file-ext-map:
     get:
       consumes:

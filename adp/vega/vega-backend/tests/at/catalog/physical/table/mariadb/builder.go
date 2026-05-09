@@ -177,7 +177,7 @@ func (b *MariaDBPayloadBuilder) ResetTestDatabase(tableSuffix string, tableSize 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect to mysql: %w", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// 清理并创建测试数据库
 	_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", testDBName))

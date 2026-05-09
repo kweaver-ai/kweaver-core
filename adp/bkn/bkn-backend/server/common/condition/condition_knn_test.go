@@ -27,7 +27,7 @@ func TestNewKnnCond(t *testing.T) {
 		Convey("invalid value_from should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
 					Value:     "value1",
@@ -46,7 +46,7 @@ func TestNewKnnCond(t *testing.T) {
 		Convey("AllField should use _vector", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      AllField,
+				Field:     AllField,
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -67,7 +67,7 @@ func TestNewKnnCond(t *testing.T) {
 		Convey("specific field should be used", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -88,7 +88,7 @@ func TestNewKnnCond(t *testing.T) {
 		Convey("sub conditions should be processed", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -96,7 +96,7 @@ func TestNewKnnCond(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -119,7 +119,7 @@ func TestNewKnnCond(t *testing.T) {
 		Convey("nil sub condition should be skipped", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -155,7 +155,7 @@ func TestKnnCond_Convert(t *testing.T) {
 		Convey("should create knn query", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -193,7 +193,7 @@ func TestKnnCond_Convert(t *testing.T) {
 		Convey("vectorizer error should propagate", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -221,7 +221,7 @@ func TestKnnCond_Convert(t *testing.T) {
 		Convey("sub conditions should be included in filter", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -229,7 +229,7 @@ func TestKnnCond_Convert(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -267,7 +267,7 @@ func TestKnnCond_Convert(t *testing.T) {
 		Convey("sub condition error should propagate", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -275,7 +275,7 @@ func TestKnnCond_Convert(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationKNN,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -331,7 +331,7 @@ func TestKnnCond_Convert2SQL(t *testing.T) {
 		Convey("should return empty string", func() {
 			cfg := &CondCfg{
 				Operation: OperationKNN,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",

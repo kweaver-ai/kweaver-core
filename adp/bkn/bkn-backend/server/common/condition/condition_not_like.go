@@ -36,7 +36,7 @@ func NewNotLikeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*Vie
 	return &NotLikeCond{
 		mCfg:             cfg,
 		mValue:           val,
-		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
+		mFilterFieldName: getFilterFieldName(cfg.Field, fieldsMap, false),
 	}, nil
 }
 
@@ -76,7 +76,7 @@ func (cond *NotLikeCond) Convert2SQL(ctx context.Context) (string, error) {
 // convertNotLikeCondToDatasetFilterCondition converts NotLikeCond to dataset filter condition format
 func convertNotLikeCondToDatasetFilterCondition(cfg *CondCfg) (map[string]any, error) {
 	return map[string]any{
-		"field":      cfg.Name,
+		"field":      cfg.Field,
 		"operation":  "not_like",
 		"value":      cfg.Value,
 		"value_from": "const",

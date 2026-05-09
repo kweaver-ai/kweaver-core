@@ -20,7 +20,7 @@ Solution = "请检查参数是否正确。"
 ErrorLink = "暂无"
 
 [BknBackend.InvalidParameter.ID]
-Description = "对象ID参数无效"
+Description = "ID参数无效"
 Solution = "请检查参数是否正确。"
 ErrorLink = "暂无"
 
@@ -66,11 +66,6 @@ ErrorLink = "暂无"
 
 [BknBackend.InvalidParameter.ConditionValue]
 Description = "指定的过滤值无效"
-Solution = "请检查参数是否正确。"
-ErrorLink = "暂无"
-
-[BknBackend.LengthExceeded.Comment]
-Description = "备注长度超出限制"
 Solution = "请检查参数是否正确。"
 ErrorLink = "暂无"
 

@@ -104,8 +104,12 @@ gen-api-docs: gen-swag
 
 # 查看文档（需要先启动服务）
 view-swag:
-	@echo "Scalar: http://localhost:30777/scalar"
-	@open http://localhost:30777/scalar
+	@echo "Scalar: http://localhost:30777/scalar/index.html"
+	@open http://localhost:30777/scalar/index.html
+
+view-redoc:
+	@echo "Redoc: http://localhost:30777/redoc"
+	@open http://localhost:30777/redoc
 
 # 清理并重新生成 Swagger
 clean-swag:

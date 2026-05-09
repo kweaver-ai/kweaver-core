@@ -297,6 +297,12 @@ spec:
                 configMapKeyRef:
                   name: {{ .Release.Name }}-yaml
                   key: AUTHORIZATIONPRIVATEPORT
+            # 权限控制开关
+            - name: AUTH_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: AUTH_ENABLED
             # 可观测相关配置
             - name: LOG_ENABLED
               value: {{ .Values.observability.logEnabled | quote }}

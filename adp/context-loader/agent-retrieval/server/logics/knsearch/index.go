@@ -17,11 +17,11 @@ import (
 
 // localSearchImpl 本地检索实现体
 type localSearchImpl struct {
-	logger          interfaces.Logger
-	config          *config.Config
-	bknBackend      interfaces.BknBackendAccess
-	ontologyQuery   interfaces.DrivenOntologyQuery
-	rerankClient    interfaces.DrivenMFModelAPIClient
+	logger        interfaces.Logger
+	config        *config.Config
+	bknBackend    interfaces.BknBackendAccess
+	ontologyQuery interfaces.DrivenOntologyQuery
+	rerankClient  interfaces.DrivenMFModelAPIClient
 }
 
 var (
@@ -34,30 +34,25 @@ func NewLocalSearchService() interfaces.IKnSearchLocalService {
 	localSearchOnce.Do(func() {
 		configLoader := config.NewConfigLoader()
 		localSearchService = &localSearchImpl{
-			logger:          configLoader.GetLogger(),
-			config:          configLoader,
-			bknBackend:      drivenadapters.NewBknBackendAccess(),
-			ontologyQuery:   drivenadapters.NewOntologyQueryAccess(),
-			rerankClient:    drivenadapters.NewMFModelAPIClient(),
+			logger:        configLoader.GetLogger(),
+			config:        configLoader,
+			bknBackend:    drivenadapters.NewBknBackendAccess(),
+			ontologyQuery: drivenadapters.NewOntologyQueryAccess(),
+			rerankClient:  drivenadapters.NewMFModelAPIClient(),
 		}
 	})
 	return localSearchService
 }
 
-// useLocalSearch Feature Flag：仅用于区分本地实现与远程。请求入口统一为 KnSearch。
-// true：走包内本地逻辑（NewLocalSearchService）；false：走 DataRetrieval.KnSearch（远程）。
-const useLocalSearch = true
-
 // KnSearchService kn_search service
 type KnSearchService interface {
 	KnSearch(ctx context.Context, req *interfaces.KnSearchReq) (resp *interfaces.KnSearchResp, err error)
+	SearchSchema(ctx context.Context, req *interfaces.SearchSchemaReq) (resp *interfaces.SearchSchemaResp, err error)
 }
 
 type knSearchService struct {
-	Logger         interfaces.Logger
-	DataRetrieval  interfaces.DataRetrieval
-	LocalSearch    interfaces.IKnSearchLocalService
-	UseLocalSearch bool
+	Logger      interfaces.Logger
+	LocalSearch interfaces.IKnSearchLocalService
 }
 
 var (
@@ -72,10 +67,8 @@ func NewKnSearchService() KnSearchService {
 		logger := conf.GetLogger()
 
 		ksService = &knSearchService{
-			Logger:         logger,
-			DataRetrieval:  drivenadapters.NewDataRetrievalClient(),
-			LocalSearch:    NewLocalSearchService(),
-			UseLocalSearch: useLocalSearch,
+			Logger:      logger,
+			LocalSearch: NewLocalSearchService(),
 		}
 	})
 	return ksService
@@ -91,19 +84,13 @@ func (s *knSearchService) KnSearch(ctx context.Context, req *interfaces.KnSearch
 	}
 	req.SetKnIDs(knIDs)
 
-	if s.UseLocalSearch {
-		// 使用本地检索
-		s.Logger.WithContext(ctx).Info("[KnSearch] Using local search")
-		localReq := KnSearchReqToLocal(req)
-		localResp, err := s.LocalSearch.Search(ctx, localReq)
-		if err != nil {
-			s.Logger.WithContext(ctx).Errorf("[KnSearch] Local search failed: %v", err)
-			return nil, err
-		}
-		return KnSearchLocalResponseToResp(localResp), nil
+	// kn_search 已固定走本地实现，移除远端 data-retrieval 旁路分支。
+	s.Logger.WithContext(ctx).Info("[KnSearch] Using local search")
+	localReq := KnSearchReqToLocal(req)
+	localResp, err := s.LocalSearch.Search(ctx, localReq)
+	if err != nil {
+		s.Logger.WithContext(ctx).Errorf("[KnSearch] Local search failed: %v", err)
+		return nil, err
 	}
-
-	// 使用远程调用
-	resp, err = s.DataRetrieval.KnSearch(ctx, req)
-	return
+	return KnSearchLocalResponseToResp(localResp), nil
 }

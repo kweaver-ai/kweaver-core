@@ -35,6 +35,7 @@ type VectorProperty struct {
 type ObjectTypeTask struct {
 	appSetting *common.AppSetting
 	dva        interfaces.DataViewAccess
+	vba        interfaces.VegaBackendAccess
 	mfa        interfaces.ModelFactoryAccess
 	ja         interfaces.JobAccess
 	osa        interfaces.OpenSearchAccess
@@ -59,6 +60,7 @@ func NewObjectTypeTask(appSetting *common.AppSetting, taskInfo *interfaces.TaskI
 	return &ObjectTypeTask{
 		appSetting: appSetting,
 		dva:        logics.DVA,
+		vba:        logics.VBA,
 		mfa:        logics.MFA,
 		ja:         logics.JA,
 		osa:        logics.OSA,
@@ -89,11 +91,20 @@ func (ott *ObjectTypeTask) HandleObjectTypeTask(ctx context.Context, jobInfo *in
 	logger.Infof("开始处理 object type %s", objectType.OTID)
 
 	dataSource := objectType.DataSource
-	if dataSource == nil || dataSource.ID == "" {
-		return fmt.Errorf("object type [id:%s, name:%s] has no data source or data source ID is empty", objectType.OTID, objectType.OTName)
+	if dataSource == nil {
+		logger.Warnf("data source is nil for object type %s", objectType.OTID)
+		return nil
 	}
-	if dataSource.Type != "data_view" {
-		logger.Warnf("data source type %s is not data_view", dataSource.Type)
+	dsType := dataSource.Type
+	if dsType == "" {
+		dsType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
+	}
+	if dsType != interfaces.DATA_SOURCE_TYPE_DATA_VIEW && dsType != interfaces.DATA_SOURCE_TYPE_RESOURCE {
+		logger.Warnf("data source type %s is not data_view or resource", dataSource.Type)
+		return nil
+	}
+	if dsType == interfaces.DATA_SOURCE_TYPE_RESOURCE {
+		logger.Warnf("index build is not supported for resource-backed object type %s, skipping task", objectType.OTID)
 		return nil
 	}
 
@@ -174,6 +185,7 @@ func (ott *ObjectTypeTask) HandleObjectTypeTask(ctx context.Context, jobInfo *in
 		}
 	}
 
+	// data view 的任务路线
 	dataView, err := ott.dva.GetDataViewByID(ctx, dataSource.ID)
 	if err != nil {
 		return err

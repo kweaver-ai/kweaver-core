@@ -22,6 +22,7 @@ import (
 type MockKNAccess struct {
 	ctrl     *gomock.Controller
 	recorder *MockKNAccessMockRecorder
+	isgomock struct{}
 }
 
 // MockKNAccessMockRecorder is the mock recorder for MockKNAccess.
@@ -52,7 +53,7 @@ func (m *MockKNAccess) CheckKNExistByID(ctx context.Context, knID, branch string
 }
 
 // CheckKNExistByID indicates an expected call of CheckKNExistByID.
-func (mr *MockKNAccessMockRecorder) CheckKNExistByID(ctx, knID, branch interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) CheckKNExistByID(ctx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckKNExistByID", reflect.TypeOf((*MockKNAccess)(nil).CheckKNExistByID), ctx, knID, branch)
 }
@@ -68,7 +69,7 @@ func (m *MockKNAccess) CheckKNExistByName(ctx context.Context, knName, branch st
 }
 
 // CheckKNExistByName indicates an expected call of CheckKNExistByName.
-func (mr *MockKNAccessMockRecorder) CheckKNExistByName(ctx, knName, branch interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) CheckKNExistByName(ctx, knName, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckKNExistByName", reflect.TypeOf((*MockKNAccess)(nil).CheckKNExistByName), ctx, knName, branch)
 }
@@ -82,7 +83,7 @@ func (m *MockKNAccess) CreateKN(ctx context.Context, tx *sql.Tx, kn *interfaces.
 }
 
 // CreateKN indicates an expected call of CreateKN.
-func (mr *MockKNAccessMockRecorder) CreateKN(ctx, tx, kn interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) CreateKN(ctx, tx, kn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateKN", reflect.TypeOf((*MockKNAccess)(nil).CreateKN), ctx, tx, kn)
 }
@@ -97,7 +98,7 @@ func (m *MockKNAccess) DeleteKN(ctx context.Context, tx *sql.Tx, knID, branch st
 }
 
 // DeleteKN indicates an expected call of DeleteKN.
-func (mr *MockKNAccessMockRecorder) DeleteKN(ctx, tx, knID, branch interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) DeleteKN(ctx, tx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteKN", reflect.TypeOf((*MockKNAccess)(nil).DeleteKN), ctx, tx, knID, branch)
 }
@@ -112,7 +113,7 @@ func (m *MockKNAccess) GetAllKNs(ctx context.Context) (map[string]*interfaces.KN
 }
 
 // GetAllKNs indicates an expected call of GetAllKNs.
-func (mr *MockKNAccessMockRecorder) GetAllKNs(ctx interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) GetAllKNs(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllKNs", reflect.TypeOf((*MockKNAccess)(nil).GetAllKNs), ctx)
 }
@@ -127,7 +128,7 @@ func (m *MockKNAccess) GetKNByID(ctx context.Context, knID, branch string) (*int
 }
 
 // GetKNByID indicates an expected call of GetKNByID.
-func (mr *MockKNAccessMockRecorder) GetKNByID(ctx, knID, branch interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) GetKNByID(ctx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKNByID", reflect.TypeOf((*MockKNAccess)(nil).GetKNByID), ctx, knID, branch)
 }
@@ -142,7 +143,7 @@ func (m *MockKNAccess) GetKNsTotal(ctx context.Context, query interfaces.KNsQuer
 }
 
 // GetKNsTotal indicates an expected call of GetKNsTotal.
-func (mr *MockKNAccessMockRecorder) GetKNsTotal(ctx, query interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) GetKNsTotal(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKNsTotal", reflect.TypeOf((*MockKNAccess)(nil).GetKNsTotal), ctx, query)
 }
@@ -157,7 +158,7 @@ func (m *MockKNAccess) GetNeighborPathsBatch(ctx context.Context, otIDs []string
 }
 
 // GetNeighborPathsBatch indicates an expected call of GetNeighborPathsBatch.
-func (mr *MockKNAccessMockRecorder) GetNeighborPathsBatch(ctx, otIDs, query interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) GetNeighborPathsBatch(ctx, otIDs, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNeighborPathsBatch", reflect.TypeOf((*MockKNAccess)(nil).GetNeighborPathsBatch), ctx, otIDs, query)
 }
@@ -172,7 +173,7 @@ func (m *MockKNAccess) ListKNs(ctx context.Context, query interfaces.KNsQueryPar
 }
 
 // ListKNs indicates an expected call of ListKNs.
-func (mr *MockKNAccessMockRecorder) ListKNs(ctx, query interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) ListKNs(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListKNs", reflect.TypeOf((*MockKNAccess)(nil).ListKNs), ctx, query)
 }
@@ -187,7 +188,7 @@ func (m *MockKNAccess) ListKnSrcs(ctx context.Context, query interfaces.KNsQuery
 }
 
 // ListKnSrcs indicates an expected call of ListKnSrcs.
-func (mr *MockKNAccessMockRecorder) ListKnSrcs(ctx, query interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) ListKnSrcs(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListKnSrcs", reflect.TypeOf((*MockKNAccess)(nil).ListKnSrcs), ctx, query)
 }
@@ -201,7 +202,7 @@ func (m *MockKNAccess) UpdateKN(ctx context.Context, tx *sql.Tx, kn *interfaces.
 }
 
 // UpdateKN indicates an expected call of UpdateKN.
-func (mr *MockKNAccessMockRecorder) UpdateKN(ctx, tx, kn interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) UpdateKN(ctx, tx, kn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateKN", reflect.TypeOf((*MockKNAccess)(nil).UpdateKN), ctx, tx, kn)
 }
@@ -215,7 +216,7 @@ func (m *MockKNAccess) UpdateKNDetail(ctx context.Context, knID, branch, detail 
 }
 
 // UpdateKNDetail indicates an expected call of UpdateKNDetail.
-func (mr *MockKNAccessMockRecorder) UpdateKNDetail(ctx, knID, branch, detail interface{}) *gomock.Call {
+func (mr *MockKNAccessMockRecorder) UpdateKNDetail(ctx, knID, branch, detail any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateKNDetail", reflect.TypeOf((*MockKNAccess)(nil).UpdateKNDetail), ctx, knID, branch, detail)
 }

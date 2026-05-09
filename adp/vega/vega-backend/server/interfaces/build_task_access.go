@@ -7,20 +7,24 @@ package interfaces
 
 import "context"
 
+//go:generate mockgen -source ../interfaces/build_task_access.go -destination ../interfaces/mock/mock_build_task_access.go
+
 // BuildTaskAccess defines build task data access interface.
 type BuildTaskAccess interface {
 	// Create creates a new build task.
 	Create(ctx context.Context, buildTask *BuildTask) error
 	// GetByID retrieves a build task by ID.
 	GetByID(ctx context.Context, id string) (*BuildTask, error)
-	// GetByResourceID retrieves build tasks by resource ID.
-	GetByResourceID(ctx context.Context, resourceID string) ([]*BuildTask, error)
-	// CheckResourceHasUncompletedTasks checks if resource has uncompleted build tasks by resource ID.
-	CheckResourceHasUncompletedTasks(ctx context.Context, resourceID string) (bool, error)
+	// GetByResourceID retrieves a build task by resource ID.
+	GetByResourceID(ctx context.Context, resourceID string) (*BuildTask, error)
+	// GetByCatalogID retrieves build tasks by catalog ID.
+	GetByCatalogID(ctx context.Context, catalogID string) ([]*BuildTask, error)
+	// List retrieves build tasks with filters and pagination.
+	List(ctx context.Context, params BuildTasksQueryParams) ([]*BuildTask, int64, error)
 	// UpdateStatus updates a build task's status and other fields.
 	UpdateStatus(ctx context.Context, id string, updates map[string]interface{}) error
-	// GetUncompletedTasks retrieves uncompleted build tasks (pending and running) with limit.
-	GetUncompletedTasks(ctx context.Context, limit int) ([]*BuildTask, error)
-	// GetLastBuildTask retrieves the last completed build task with non-empty synced mark by resource ID.
-	GetLastBuildTask(ctx context.Context, resourceID string) (*BuildTask, error)
+	// GetStatus retrieves the status of a build task by ID.
+	GetStatus(ctx context.Context, id string) (string, error)
+	// Delete deletes a build task by ID.
+	Delete(ctx context.Context, id string) error
 }

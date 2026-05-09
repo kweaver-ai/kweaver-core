@@ -1,59 +1,16 @@
 
-# KWeaver Core releases list
-# Merged from: studio, bkn, vega, agentoperator, dataagent, decisionagent, flowautomation, sandboxruntime
-# Note: ISF releases are managed separately by isf.sh
-declare -a KWEAVER_CORE_RELEASES=(
-    # studio
-    "deploy-web"
-    "studio-web"
-    "business-system-frontend"
-    "business-system-service"
-    "mf-model-manager-nginx"
-    "mf-model-manager"
-    "mf-model-api"
-    # bkn
-    "bkn-backend"
-    "ontology-query"
-    # vega
-    "vega-backend"
-    "vega-web"
-    "data-connection"
-    "vega-gateway"
-    "vega-gateway-pro"
-    "mdl-data-model"
-    "mdl-uniquery"
-    "mdl-data-model-job"
-    # agentoperator
-    "agent-operator-integration"
-    "operator-web"
-    "agent-retrieval"
-    "data-retrieval"
-    # dataagent
-    "agent-backend"
-    "agent-web"
-    # flowautomation
-    "flow-web"
-    "dataflow"
-    "coderunner"
-    "doc-convert"
-    # sandboxruntime
-    "sandbox"
-    # ossgateway
-    "oss-gateway-backend"
-    # trace ai
-    "otelcol-contrib"
-    "agent-observability"
-)
-
 # Default kweaver-core namespace
-CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver-ai}"
+CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver}"
 
-# release name -> chart name mapping (when chart name differs from release name)
-declare -A CORE_CHART_NAME_MAP=(
-)
+# Set to true in parse_core_args when user passes --namespace/--namespace=… (overrides namespace: in YAML).
+CORE_NAMESPACE_FROM_CLI="${CORE_NAMESPACE_FROM_CLI:-false}"
 
 # Default local charts directory
 CORE_LOCAL_CHARTS_DIR="${CORE_LOCAL_CHARTS_DIR:-}"
+CORE_VERSION_MANIFEST_FILE="${CORE_VERSION_MANIFEST_FILE:-}"
+
+# Global --set values array
+declare -a CORE_SET_VALUES=()
 
 # Core SQL module directories to initialize before installing Core releases.
 declare -a CORE_SQL_MODULES=(
@@ -106,16 +63,26 @@ parse_core_args() {
                 CORE_LOCAL_CHARTS_DIR="$2"
                 shift 2
                 ;;
+            --version_file=*)
+                CORE_VERSION_MANIFEST_FILE="${1#*=}"
+                shift
+                ;;
+            --version_file)
+                CORE_VERSION_MANIFEST_FILE="$2"
+                shift 2
+                ;;
             --force-refresh)
                 FORCE_REFRESH_CHARTS="true"
                 shift
                 ;;
             --namespace=*)
                 CORE_NAMESPACE="${1#*=}"
+                CORE_NAMESPACE_FROM_CLI="true"
                 shift
                 ;;
             --namespace)
                 CORE_NAMESPACE="$2"
+                CORE_NAMESPACE_FROM_CLI="true"
                 shift 2
                 ;;
             --config=*)
@@ -126,13 +93,42 @@ parse_core_args() {
                 CONFIG_YAML_PATH="$2"
                 shift 2
                 ;;
-            --enable-isf=*)
-                ENABLE_ISF="${1#*=}"
+            --set=*)
+                CORE_SET_VALUES+=("${1#*=}")
                 shift
                 ;;
-            --enable-isf)
-                ENABLE_ISF="$2"
+            --set)
+                CORE_SET_VALUES+=("$2")
                 shift 2
+                ;;
+            --api_server_address=*)
+                API_SERVER_ADVERTISE_ADDRESS="${1#*=}"
+                shift
+                ;;
+            --api_server_address)
+                API_SERVER_ADVERTISE_ADDRESS="$2"
+                shift 2
+                ;;
+            --access_address=*)
+                KWEAVER_ACCESS_ADDRESS="${1#*=}"
+                shift
+                ;;
+            --access_address)
+                KWEAVER_ACCESS_ADDRESS="$2"
+                shift 2
+                ;;
+            --minimum|--min)
+                CORE_SET_VALUES+=("auth.enabled=false")
+                CORE_SET_VALUES+=("businessDomain.enabled=false")
+                shift
+                ;;
+            -y|--yes)
+                ASSUME_YES="true"
+                shift
+                ;;
+            --force-upgrade)
+                FORCE_UPGRADE="true"
+                shift
                 ;;
             *)
                 log_error "Unknown argument: $1"
@@ -140,6 +136,21 @@ parse_core_args() {
                 ;;
         esac
     done
+}
+
+# Target namespace: explicit --namespace overrides `namespace:` in CONFIG_YAML_PATH (avoids uninstall missing releases when YAML drifted from the cluster).
+_core_resolve_target_namespace() {
+    if [[ "${CORE_NAMESPACE_FROM_CLI:-false}" == true ]]; then
+        printf '%s' "${CORE_NAMESPACE}"
+        return 0
+    fi
+    local yaml_ns
+    yaml_ns="$(kweaver_values_namespace_from_config)"
+    if [[ -n "${yaml_ns}" ]]; then
+        printf '%s' "${yaml_ns}"
+    else
+        printf '%s' "${CORE_NAMESPACE}"
+    fi
 }
 
 # Resolve local charts directory for kweaver-core
@@ -160,23 +171,95 @@ _core_download_charts_dir() {
     ensure_charts_dir "$(resolve_shared_charts_dir)"
 }
 
+_core_auto_resolve_version_manifest() {
+    if [[ -n "${CORE_VERSION_MANIFEST_FILE:-}" ]]; then
+        return 0
+    fi
+
+    local embedded_manifest
+    if [[ -n "${HELM_CHART_VERSION:-}" ]]; then
+        embedded_manifest="$(resolve_embedded_release_manifest "kweaver-core" "${HELM_CHART_VERSION}")"
+    else
+        embedded_manifest="$(resolve_latest_embedded_release_manifest "kweaver-core")"
+    fi
+    if [[ -n "${embedded_manifest}" ]]; then
+        CORE_VERSION_MANIFEST_FILE="${embedded_manifest}"
+    fi
+}
+
+_core_require_version_manifest() {
+    _core_auto_resolve_version_manifest
+
+    if [[ -z "${CORE_VERSION_MANIFEST_FILE:-}" ]]; then
+        log_error "No release manifest found for kweaver-core. Provide --version or --version_file."
+        return 1
+    fi
+}
+
+_core_resolve_release_version() {
+    local release_name="$1"
+    _core_require_version_manifest || return 1
+    resolve_release_chart_version "${CORE_VERSION_MANIFEST_FILE:-}" "kweaver-core" "${HELM_CHART_VERSION:-}" "${release_name}" "${HELM_CHART_VERSION:-}"
+}
+
+_core_resolve_chart_name() {
+    local release_name="$1"
+    _core_require_version_manifest || return 1
+    resolve_release_chart_name "${CORE_VERSION_MANIFEST_FILE:-}" "kweaver-core" "${HELM_CHART_VERSION:-}" "${release_name}" "${release_name}"
+}
+
+_core_release_names() {
+    _core_require_version_manifest || return 1
+    get_release_manifest_release_names "${CORE_VERSION_MANIFEST_FILE}" "kweaver-core" "${HELM_CHART_VERSION:-}"
+}
+
+_core_resolve_isf_dependency_version() {
+    if [[ -z "${CORE_VERSION_MANIFEST_FILE:-}" ]]; then
+        return 0
+    fi
+
+    get_release_manifest_dependency_version_optional "${CORE_VERSION_MANIFEST_FILE}" "isf"
+}
+
+_core_resolve_isf_dependency_manifest() {
+    if [[ -z "${CORE_VERSION_MANIFEST_FILE:-}" ]]; then
+        return 0
+    fi
+
+    get_release_manifest_dependency_manifest_optional "${CORE_VERSION_MANIFEST_FILE}" "isf"
+}
+
 init_core_databases() {
+    local sql_base_dir
+    sql_base_dir="$(resolve_versioned_sql_dir "kweaver-core" "${HELM_CHART_VERSION:-}")"
+
     if ! is_rds_internal; then
-        warn_external_rds_sql_required "KWeaver Core" "${SCRIPT_DIR}/scripts/sql"
+        warn_external_rds_sql_required "KWeaver Core" "${sql_base_dir}"
         log_warn "Skipping automatic KWeaver Core database initialization (external RDS)"
+        return 0
+    fi
+
+    # Check if Core manifest has pre-stage data-migrator (0.6.0+)
+    # If so, skip SQL initialization - the data-migrator chart will handle it
+    _core_require_version_manifest || return 1
+    if should_skip_db_init_for_manifest "${CORE_VERSION_MANIFEST_FILE}"; then
+        log_info "Core manifest ${CORE_VERSION_MANIFEST_FILE} has pre-stage data-migrator (0.6.0+), skipping SQL initialization"
+        return 0
+    fi
+
+    local -a sql_modules=()
+    kweaver_mapfile_compat sql_modules list_versioned_sql_modules "kweaver-core" "${HELM_CHART_VERSION:-}"
+    if [[ ${#sql_modules[@]} -eq 0 ]]; then
+        log_info "Skipping KWeaver Core database initialization: no SQL module directories found in ${sql_base_dir}"
         return 0
     fi
 
     local module_name
     local sql_dir
-    for module_name in "${CORE_SQL_MODULES[@]}"; do
-        sql_dir="${SCRIPT_DIR}/scripts/sql/${module_name}"
-        if [[ ! -d "${sql_dir}" ]]; then
-            log_warn "Skipping ${module_name} database initialization: SQL directory not found (${sql_dir})"
-            continue
-        fi
+    for module_name in "${sql_modules[@]}"; do
+        sql_dir="${sql_base_dir}/${module_name}"
 
-        if ! init_module_database "${module_name}" "${sql_dir}"; then
+        if ! init_module_database_if_present "${module_name}" "${sql_dir}" "${module_name}"; then
             log_error "Failed to initialize database for module: ${module_name}"
             return 1
         fi
@@ -186,6 +269,7 @@ init_core_databases() {
 download_core() {
     log_info "Downloading KWeaver Core charts..."
     ensure_helm_available
+    _core_require_version_manifest || return 1
 
     HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
     HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
@@ -195,24 +279,53 @@ download_core() {
 
     ensure_helm_repo "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
 
-    if [[ "${ENABLE_ISF}" != "false" ]]; then
-        local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
-        ISF_LOCAL_CHARTS_DIR="${charts_dir}"
-        download_isf
-        ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+    # Check if ISF dependency is declared in manifest
+    local isf_dep_version=""
+    local isf_dep_manifest=""
+    if [[ -n "${CORE_VERSION_MANIFEST_FILE:-}" ]]; then
+        isf_dep_version="$(_core_resolve_isf_dependency_version)"
+        isf_dep_manifest="$(_core_resolve_isf_dependency_manifest)"
     fi
 
+    if [[ -n "${isf_dep_version}" ]]; then
+        if is_dependency_enabled "${CORE_VERSION_MANIFEST_FILE}" "isf" "${CORE_SET_VALUES[@]}"; then
+            log_info "ISF dependency found in manifest (version: ${isf_dep_version}), downloading ISF charts"
+            local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
+            local original_isf_manifest_file="${ISF_VERSION_MANIFEST_FILE:-}"
+            local original_chart_version="${HELM_CHART_VERSION:-}"
+            ISF_LOCAL_CHARTS_DIR="${charts_dir}"
+            HELM_CHART_VERSION="${isf_dep_version}"
+            ISF_VERSION_MANIFEST_FILE="${isf_dep_manifest}"
+
+            download_isf
+
+            ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+            ISF_VERSION_MANIFEST_FILE="${original_isf_manifest_file}"
+            HELM_CHART_VERSION="${original_chart_version}"
+        else
+            log_info "ISF in manifest but disabled for this profile (e.g. --minimum); skipping ISF chart download"
+        fi
+    else
+        log_info "No ISF dependency declared in manifest, skipping ISF download"
+    fi
+
+    local -a release_names=()
+    kweaver_mapfile_compat release_names _core_release_names
     local release_name
-    for release_name in "${KWEAVER_CORE_RELEASES[@]}"; do
-        download_chart_to_cache "${charts_dir}" "${HELM_CHART_REPO_NAME}" "${release_name}" "${HELM_CHART_VERSION}" "${FORCE_REFRESH_CHARTS:-false}"
+    local release_version
+    local chart_name
+    for release_name in "${release_names[@]}"; do
+        release_version="$(_core_resolve_release_version "${release_name}")"
+        chart_name="$(_core_resolve_chart_name "${release_name}")"
+        download_chart_to_cache "${charts_dir}" "${HELM_CHART_REPO_NAME}" "${chart_name}" "${release_version}" "${FORCE_REFRESH_CHARTS:-false}"
     done
 }
 
 # Find local chart tgz for a given release name
 _core_find_local_chart() {
     local charts_dir="$1"
-    local release_name="$2"
-    find_cached_chart_tgz "${charts_dir}" "${release_name}"
+    local chart_name="$2"
+    find_cached_chart_tgz "${charts_dir}" "${chart_name}"
 }
 
 # Install a single kweaver-core release from a local .tgz
@@ -220,27 +333,50 @@ _install_core_release_local() {
     local release_name="$1"
     local charts_dir="$2"
     local namespace="$3"
+    local requested_version
+    local chart_name
 
-    local chart_tgz
-    chart_tgz="$(_core_find_local_chart "${charts_dir}" "${release_name}")"
+    requested_version="$(_core_resolve_release_version "${release_name}")"
+    chart_name="$(_core_resolve_chart_name "${release_name}")"
+
+    local chart_tgz=""
+    if [[ -n "${requested_version}" ]]; then
+        chart_tgz="$(find_cached_chart_tgz_by_version "${charts_dir}" "${chart_name}" "${requested_version}" || true)"
+    fi
+    if [[ -z "${chart_tgz}" ]]; then
+        chart_tgz="$(_core_find_local_chart "${charts_dir}" "${chart_name}")"
+    fi
 
     if [[ -z "${chart_tgz}" ]]; then
-        log_error "✗ Local chart not found for ${release_name} in ${charts_dir}"
+        log_error "✗ Local chart not found for ${release_name} (${chart_name}) in ${charts_dir}"
         return 1
     fi
 
     local target_version
-    target_version=$(get_local_chart_version "${chart_tgz}")
-    if should_skip_upgrade_same_chart_version "${release_name}" "${namespace}" "${release_name}" "${target_version}"; then
+    target_version="${requested_version}"
+    if [[ -z "${target_version}" ]]; then
+        target_version="$(get_local_chart_version "${chart_tgz}")"
+    fi
+    if should_skip_upgrade_same_chart_version "${release_name}" "${namespace}" "${chart_name}" "${target_version}"; then
         return 0
     fi
 
     log_info "Installing ${release_name} from local chart: $(basename "${chart_tgz}")..."
 
-    if helm upgrade --install "${release_name}" "${chart_tgz}" \
-            --namespace "${namespace}" \
-            -f "${CONFIG_YAML_PATH}" \
-            --wait --timeout=600s; then
+    local -a helm_args=(
+        "upgrade" "--install" "${release_name}" "${chart_tgz}"
+        "--namespace" "${namespace}"
+        "-f" "${CONFIG_YAML_PATH}"
+        "--wait" "--timeout=600s"
+    )
+
+    # Add all --set values
+    local set_value
+    for set_value in "${CORE_SET_VALUES[@]}"; do
+        helm_args+=("--set" "${set_value}")
+    done
+
+    if helm "${helm_args[@]}"; then
         log_info "✓ ${release_name} installed successfully"
     else
         log_error "✗ Failed to install ${release_name}"
@@ -254,12 +390,8 @@ _install_core_release_repo() {
     local namespace="$2"
     local helm_repo_name="$3"
     local release_version="$4"
-
-    # Resolve actual chart name (may differ from release name)
-    local chart_name="${release_name}"
-    if [[ -n "${CORE_CHART_NAME_MAP[${release_name}]+_}" ]]; then
-        chart_name="${CORE_CHART_NAME_MAP[${release_name}]}"
-    fi
+    local chart_name
+    chart_name="$(_core_resolve_chart_name "${release_name}")"
 
     local chart_ref="${helm_repo_name}/${chart_name}"
 
@@ -295,6 +427,12 @@ _install_core_release_repo() {
 
     helm_args+=("--devel")
 
+    # Add all --set values
+    local set_value
+    for set_value in "${CORE_SET_VALUES[@]}"; do
+        helm_args+=("--set" "${set_value}")
+    done
+
     if helm "${helm_args[@]}"; then
         log_info "✓ ${release_name} installed successfully"
     else
@@ -303,18 +441,68 @@ _install_core_release_repo() {
     fi
 }
 
+# Inject default --set values for kweaver-core if user did not override them.
+# Currently: businessDomain.enabled defaults to false at install time.
+_core_apply_default_set_values() {
+    if ! get_set_value "businessDomain.enabled" "${CORE_SET_VALUES[@]}" >/dev/null 2>&1; then
+        CORE_SET_VALUES+=("businessDomain.enabled=false")
+        log_info "Default applied: --set businessDomain.enabled=false (override with --set businessDomain.enabled=true)"
+    fi
+
+    # Lightweight resource overrides for resource-constrained environments (mac kind / k3s).
+    # All four envs are empty by default → k8s/kubeadm path stays at chart defaults
+    # (most app charts ship limits=4-8Gi which is over-provisioned for dev).
+    # Defaults are layered upstream:
+    #   - mac dev: see deploy/dev/lib/mac_common.sh (mac_common_init)
+    #   - k3s    : see kweaver_apply_k3s_lightweight_defaults in common.sh
+    # Apply uniformly to every Core release; per-release tuning (e.g. larger limit for
+    # ontology-query) can be added later if a service consistently OOMs at install time.
+    local _core_resource_set
+    _core_resource_set=0
+    if [[ -n "${KWEAVER_CORE_REQ_CPU:-}" ]]; then
+        CORE_SET_VALUES+=("resources.requests.cpu=${KWEAVER_CORE_REQ_CPU}")
+        _core_resource_set=1
+    fi
+    if [[ -n "${KWEAVER_CORE_REQ_MEM:-}" ]]; then
+        CORE_SET_VALUES+=("resources.requests.memory=${KWEAVER_CORE_REQ_MEM}")
+        _core_resource_set=1
+    fi
+    if [[ -n "${KWEAVER_CORE_LIM_CPU:-}" ]]; then
+        CORE_SET_VALUES+=("resources.limits.cpu=${KWEAVER_CORE_LIM_CPU}")
+        _core_resource_set=1
+    fi
+    if [[ -n "${KWEAVER_CORE_LIM_MEM:-}" ]]; then
+        CORE_SET_VALUES+=("resources.limits.memory=${KWEAVER_CORE_LIM_MEM}")
+        _core_resource_set=1
+    fi
+    if [[ "${_core_resource_set}" == "1" ]]; then
+        log_info "Core resource overrides applied (uniform): req cpu=${KWEAVER_CORE_REQ_CPU:-<chart>} mem=${KWEAVER_CORE_REQ_MEM:-<chart>} / lim cpu=${KWEAVER_CORE_LIM_CPU:-<chart>} mem=${KWEAVER_CORE_LIM_MEM:-<chart>}"
+    fi
+}
+
 # Install KWeaver Core services via Helm
 install_core() {
     log_info "Installing KWeaver Core services via Helm..."
+    _core_require_version_manifest || return 1
+    _core_apply_default_set_values
 
     if ! ensure_platform_prerequisites; then
         log_error "Failed to ensure platform prerequisites for KWeaver Core"
         return 1
     fi
 
+    # macOS kind / BYOK: platform bootstrap is skipped, so ensure_data_services is not run above.
+    # Install the same bundled data layer as `deploy.sh data-services install` unless opted out.
+    if [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" == "true" ]] && [[ "${KWEAVER_SKIP_DATA_SERVICES_BUNDLE:-false}" != "true" ]]; then
+        log_info "Bring-your-own cluster: ensuring bundled data services before Core (skip with KWEAVER_SKIP_DATA_SERVICES_BUNDLE=true)"
+        if ! ensure_data_services; then
+            log_error "Failed to ensure data services before KWeaver Core"
+            return 1
+        fi
+    fi
+
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-${CORE_NAMESPACE}}"
+    namespace="$(_core_resolve_target_namespace)"
 
     kubectl create namespace "${namespace}" 2>/dev/null || true
 
@@ -328,6 +516,9 @@ install_core() {
     else
         log_info "No explicit local Core charts directory provided, using Helm repo."
         log_info "  Version:   ${HELM_CHART_VERSION}"
+        if [[ -n "${CORE_VERSION_MANIFEST_FILE:-}" ]]; then
+            log_info "  Version Manifest: ${CORE_VERSION_MANIFEST_FILE}"
+        fi
         log_info "  Helm Repo: ${HELM_CHART_REPO_NAME:-kweaver} -> ${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
         HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
         HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
@@ -336,21 +527,47 @@ install_core() {
 
     log_info "Target namespace: ${namespace}"
 
-    # Check if ISF should be enabled (default: install ISF)
-    if [[ "${ENABLE_ISF}" == "false" ]]; then
-        log_info "ISF installation disabled via --enable-isf=false"
-    else
-        log_info "Installing ISF services (default, use --enable-isf=false to skip)"
+    # Check if ISF dependency is declared in manifest and should be enabled
+    local isf_dep_version=""
+    local isf_dep_manifest=""
+    local should_install_isf=false
+    
+    if [[ -n "${CORE_VERSION_MANIFEST_FILE:-}" ]]; then
+        isf_dep_version="$(_core_resolve_isf_dependency_version)"
+        isf_dep_manifest="$(_core_resolve_isf_dependency_manifest)"
+        
+        if [[ -n "${isf_dep_version}" ]]; then
+            # Check if dependency should be enabled based on --set values
+            if is_dependency_enabled "${CORE_VERSION_MANIFEST_FILE}" "isf" "${CORE_SET_VALUES[@]}"; then
+                should_install_isf=true
+                log_info "ISF dependency enabled (version: ${isf_dep_version})"
+            else
+                log_info "ISF dependency disabled by --set values"
+            fi
+        fi
+    fi
+
+    if [[ "${should_install_isf}" == "true" ]]; then
+        log_info "Installing ISF services..."
         local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
+        local original_isf_manifest_file="${ISF_VERSION_MANIFEST_FILE:-}"
+        local original_chart_version="${HELM_CHART_VERSION:-}"
         if [[ "${use_local}" == "true" ]]; then
             ISF_LOCAL_CHARTS_DIR="${charts_dir}"
         fi
+        HELM_CHART_VERSION="${isf_dep_version}"
+        ISF_VERSION_MANIFEST_FILE="${isf_dep_manifest}"
+        
         if ! install_isf; then
             ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+            ISF_VERSION_MANIFEST_FILE="${original_isf_manifest_file}"
+            HELM_CHART_VERSION="${original_chart_version}"
             log_error "Failed to install ISF services"
             return 1
         fi
         ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+        ISF_VERSION_MANIFEST_FILE="${original_isf_manifest_file}"
+        HELM_CHART_VERSION="${original_chart_version}"
     fi
 
     if ! init_core_databases; then
@@ -358,15 +575,41 @@ install_core() {
         return 1
     fi
 
-    for release_name in "${KWEAVER_CORE_RELEASES[@]}"; do
+    local -a release_names=()
+    kweaver_mapfile_compat release_names _core_release_names
+    local release_version
+    for release_name in "${release_names[@]}"; do
+        release_version="$(_core_resolve_release_version "${release_name}")"
         if [[ "${use_local}" == "true" ]]; then
             _install_core_release_local "${release_name}" "${charts_dir}" "${namespace}"
         else
-            _install_core_release_repo "${release_name}" "${namespace}" "${HELM_CHART_REPO_NAME}" "${HELM_CHART_VERSION}"
+            _install_core_release_repo "${release_name}" "${namespace}" "${HELM_CHART_REPO_NAME}" "${release_version}"
         fi
     done
 
     log_info "KWeaver Core services installation completed."
+
+    log_info "Context Loader toolset import: run ./onboard.sh after kweaver auth (uses kweaver call impex), or set IMPORT_CONTEXT_LOADER_TOOLSET=false to skip that step in onboard."
+
+    local _host _port _scheme
+    _host="$(_read_access_address_field "host" 2>/dev/null || true)"
+    _port="$(_read_access_address_field "port" 2>/dev/null || true)"
+    _scheme="$(_read_access_address_field "scheme" 2>/dev/null || true)"
+    _host="${_host:-localhost}"
+    _port="${_port:-443}"
+    _scheme="${_scheme:-https}"
+
+    echo ""
+    echo "============================================"
+    echo "  Verify your installation:"
+    echo ""
+    if [[ "${_port}" == "443" || "${_port}" == "80" ]]; then
+        echo "    curl -k ${_scheme}://${_host}/api/v1/health"
+    else
+        echo "    curl -k ${_scheme}://${_host}:${_port}/api/v1/health"
+    fi
+    echo ""
+    echo "============================================"
 }
 
 # Uninstall KWeaver Core services
@@ -374,18 +617,31 @@ uninstall_core() {
     log_info "Uninstalling KWeaver Core services..."
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-${CORE_NAMESPACE}}"
+    namespace="$(_core_resolve_target_namespace)"
+    log_info "Helm target namespace: ${namespace}"
 
-    for ((i=${#KWEAVER_CORE_RELEASES[@]}-1; i>=0; i--)); do
-        local release_name="${KWEAVER_CORE_RELEASES[$i]}"
+    local -a release_names=()
+    kweaver_mapfile_compat release_names _core_release_names
+    for ((i=${#release_names[@]}-1; i>=0; i--)); do
+        local release_name="${release_names[$i]}"
         log_info "Uninstalling ${release_name}..."
-        if helm uninstall "${release_name}" -n "${namespace}" 2>/dev/null; then
+        local helm_err
+        if helm_err=$(helm uninstall "${release_name}" -n "${namespace}" 2>&1); then
             log_info "✓ ${release_name} uninstalled"
         else
-            log_warn "⚠ ${release_name} not found or already uninstalled"
+            # Do not confuse "wrong namespace / no Helm metadata" with a silent no-op:
+            log_warn "⚠ ${release_name} uninstall skipped: ${helm_err}"
         fi
     done
+
+    # Clean up sandbox session pods created at runtime by sandbox-control-plane.
+    # These pods are scheduled via K8s API and are not owned by any Helm release,
+    # so `helm uninstall` cannot reclaim them.
+    log_warn "Deleting sandbox session pods (label: sandbox-type=execution)"
+    kubectl delete pod -n "${namespace}" -l sandbox-type=execution --ignore-not-found >/dev/null 2>&1 || true
+
+    log_info "Deleting leftover Core Jobs in ${namespace} (e.g. data-migrator / chart hooks)"
+    kweaver_delete_jobs_name_match_ere_in_ns "${namespace}" 'migrator|data-migrator|mdl-data-model-job'
 
     log_info "KWeaver Core services uninstallation completed."
 }
@@ -395,13 +651,14 @@ show_core_status() {
     log_info "KWeaver Core services status:"
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-${CORE_NAMESPACE}}"
+    namespace="$(_core_resolve_target_namespace)"
 
     log_info "Namespace: ${namespace}"
     log_info ""
 
-    for release_name in "${KWEAVER_CORE_RELEASES[@]}"; do
+    local -a release_names=()
+    kweaver_mapfile_compat release_names _core_release_names
+    for release_name in "${release_names[@]}"; do
         if helm status "${release_name}" -n "${namespace}" >/dev/null 2>&1; then
             local status
             status=$(helm status "${release_name}" -n "${namespace}" -o json 2>/dev/null \

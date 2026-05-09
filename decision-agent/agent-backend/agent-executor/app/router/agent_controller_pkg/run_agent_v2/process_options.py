@@ -1,4 +1,5 @@
 from app.domain.vo.agentvo import AgentConfigVo, AgentInputVo, AgentRunOptionsVo
+from app.common.stand_log import StandLogger
 from app.utils.observability.trace_wrapper import internal_span
 from opentelemetry.trace import Span
 
@@ -19,10 +20,6 @@ def process_options(
         agent_input: Agent输入
         span: OpenTelemetry追踪Span（可选）
     """
-    if span and span.is_recording():
-        span.set_attribute("session_id", agent_config.agent_run_id)
-        span.set_attribute("agent_id", agent_config.agent_id)
-
     """处理agent运行选项"""
     if not options:
         return
@@ -60,16 +57,9 @@ def process_options(
         agent_config.agent_id = options.agent_id
 
     if options.conversation_id:
-        from app.utils.observability.observability_log import get_logger as o11y_logger
-
-        o11y_logger().info(
-            f"[process_options] Setting conversation_id from options: {options.conversation_id}"
-        )
         agent_config.conversation_id = options.conversation_id
     else:
-        from app.utils.observability.observability_log import get_logger as o11y_logger
-
-        o11y_logger().warn(
+        StandLogger.warn(
             f"[process_options] No conversation_id in options, will use auto-generated value: {agent_config.conversation_id}"
         )
 
@@ -78,3 +68,9 @@ def process_options(
         # # 兼容老的
         # agent_config.session_id = options.agent_run_id
     # new add 2025年10月19日16:52:53 --end--
+
+    if span and span.is_recording():
+        if agent_config.agent_run_id is not None:
+            span.set_attribute("session_id", agent_config.agent_run_id)
+        if agent_config.agent_id is not None:
+            span.set_attribute("agent_id", agent_config.agent_id)

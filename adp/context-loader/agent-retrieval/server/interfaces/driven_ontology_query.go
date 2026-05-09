@@ -18,13 +18,13 @@ const (
 
 // QueryObjectInstancesReq Request object for querying detailed object instances
 type QueryObjectInstancesReq struct {
-	KnID               string       `form:"kn_id"`                          // Knowledge Network ID
-	OtID               string       `form:"ot_id"`                          // Object Type ID
-	IncludeTypeInfo    bool         `form:"include_type_info"`              // Whether to include object type info
-	IncludeLogicParams bool         `form:"include_logic_params"`           // Include calculation parameters for logic properties, default false
-	Cond               *KnCondition `json:"condition"`                      // Retrieval conditions
+	KnID               string       `form:"kn_id"`                                         // Knowledge Network ID
+	OtID               string       `form:"ot_id"`                                         // Object Type ID
+	IncludeTypeInfo    bool         `form:"include_type_info"`                             // Whether to include object type info
+	IncludeLogicParams bool         `form:"include_logic_params"`                          // Include calculation parameters for logic properties, default false
+	Cond               *KnCondition `json:"condition"`                                     // Retrieval conditions
 	Limit              int          `json:"limit" validate:"min=1,max=10000" default:"10"` // Quantity limit, default 10, range 1-10000
-	Properties         []string     `json:"properties"`                     // 指定返回的对象属性字段列表，默认返回所有属性
+	Properties         []string     `json:"properties"`                                    // 指定返回的对象属性字段列表，默认返回所有属性
 }
 
 type QueryObjectInstancesResp struct {

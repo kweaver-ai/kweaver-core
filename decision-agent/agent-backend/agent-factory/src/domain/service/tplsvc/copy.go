@@ -148,6 +148,10 @@ func (s *dataAgentTplSvc) copyPo(ctx context.Context, tx *sql.Tx, newPo *dapo.Da
 
 	newPo.CreatedType = daenum.AgentTplCreatedTypeCopyFromTpl
 
+	// 清空发布时间和发布人
+	newPo.SetPublishedAt(0)
+	newPo.SetPublishedBy("")
+
 	// 保存到数据库
 	err = s.agentTplRepo.Create(ctx, tx, newPo)
 	if err != nil {

@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"vega-backend/common"
+	taskAccess "vega-backend/drivenadapters/build_task"
 	resourceAccess "vega-backend/drivenadapters/resource"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
@@ -42,6 +43,7 @@ type resourceService struct {
 	ps         interfaces.PermissionService
 	ra         interfaces.ResourceAccess
 	ums        interfaces.UserMgmtService
+	bta        interfaces.BuildTaskAccess
 }
 
 // NewResourceService creates a new ResourceService.
@@ -54,6 +56,7 @@ func NewResourceService(appSetting *common.AppSetting) interfaces.ResourceServic
 			ps:         permission.NewPermissionService(appSetting),
 			ra:         resourceAccess.NewResourceAccess(appSetting),
 			ums:        user_mgmt.NewUserMgmtService(appSetting),
+			bta:        taskAccess.NewBuildTaskAccess(appSetting),
 		}
 	})
 	return rService
@@ -79,6 +82,24 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 		accountInfo = v.(interfaces.AccountInfo)
 	}
 
+	// 检查catalog是否存在
+	exists, err := rs.cs.CheckExistByID(ctx, req.CatalogID)
+	if err != nil {
+		span.SetStatus(codes.Error, "Check catalog exist failed")
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+	if !exists {
+		span.SetStatus(codes.Error, "Catalog not found")
+		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
+	}
+
+	now := time.Now().UnixMilli()
+	id := req.ID
+	if id == "" {
+		id = xid.New().String()
+	}
+
 	var logicType string
 	switch req.Category {
 	case interfaces.ResourceCategoryLogicView:
@@ -91,22 +112,9 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 			return nil, err
 		}
 		req.SchemaDefinition = viewFields
+		req.SourceIdentifier = fmt.Sprintf("%s.%s", req.CatalogID, id)
 	}
 
-	// 检查catalog是否存在
-	exists, err := rs.cs.CheckExistByID(ctx, req.CatalogID)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
-	}
-
-	now := time.Now().UnixMilli()
-	id := req.ID
-	if id == "" {
-		id = xid.New().String()
-	}
 	resource := &interfaces.Resource{
 		ID:               id,
 		CatalogID:        req.CatalogID,
@@ -550,8 +558,28 @@ func (rs *resourceService) DeleteByIDs(ctx context.Context, ids []string) error 
 
 	for _, resource := range resources {
 		switch resource.Category {
+		case interfaces.ResourceCategoryTable:
+			// Check if dataset has build tasks
+			buildTask, err := rs.bta.GetByResourceID(ctx, resource.ID)
+			if err != nil {
+				span.SetStatus(codes.Error, "Get build task failed")
+				return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
+					WithErrorDetails(err.Error())
+			} else if buildTask != nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_Exist).
+					WithErrorDetails("Cannot delete dataset, please delete build task first")
+			}
+			if resource.LocalIndexName != "" {
+				// 删除本地索引
+				err := rs.ds.Delete(ctx, resource.LocalIndexName)
+				if err != nil {
+					logger.Errorf("Delete local index failed: %v", err)
+					// 索引删除失败不影响资源删除，只记录错误
+				}
+			}
 		case interfaces.ResourceCategoryDataset:
-			if err := rs.ds.Delete(ctx, resource); err != nil {
+			// Delete dataset
+			if err := rs.ds.Delete(ctx, resource.ID); err != nil {
 				logger.Errorf("Delete dataset failed: %v", err)
 				// 数据集删除失败不影响资源删除，只记录错误
 			}
@@ -736,3 +764,4 @@ func (rs *resourceService) CheckExistByCategories(ctx context.Context, catalogID
 
 	return rs.ra.CheckExistByCategories(ctx, catalogID, categories)
 }
+

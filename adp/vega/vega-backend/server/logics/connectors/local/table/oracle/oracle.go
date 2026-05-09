@@ -13,10 +13,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
-	_ "github.com/sijms/go-ora/v2"
 	"vega-backend/interfaces"
 	"vega-backend/logics/connectors"
+
+	"github.com/mitchellh/mapstructure"
+	_ "github.com/sijms/go-ora/v2"
 )
 
 type oracleConfig struct {
@@ -97,12 +98,12 @@ func NewOracleConnector() connectors.TableConnector {
 
 // GetType returns the data source type.
 func (c *OracleConnector) GetType() string {
-	return "oracle"
+	return interfaces.ConnectorTypeOracle
 }
 
 // GetName returns the connector name.
 func (c *OracleConnector) GetName() string {
-	return "oracle"
+	return interfaces.ConnectorTypeOracle
 }
 
 // GetMode returns the connector mode.
@@ -196,7 +197,7 @@ func (c *OracleConnector) Connect(ctx context.Context) error {
 	}
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return err
 	}
 
@@ -250,7 +251,7 @@ func (c *OracleConnector) validateSchemas(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to list schemas: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	existingSchemas := make(map[string]bool)
 	for rows.Next() {
@@ -287,7 +288,7 @@ func (c *OracleConnector) ListSchemas(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list schemas: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var schemas []string
 	for rows.Next() {
@@ -346,7 +347,7 @@ func (c *OracleConnector) ListTables(ctx context.Context) ([]*interfaces.TableMe
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tables []*interfaces.TableMeta
 	for rows.Next() {
@@ -482,9 +483,9 @@ func (c *OracleConnector) fetchColumns(ctx context.Context, table *interfaces.Ta
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	var columns []interfaces.ColumnMeta
+	var columns []interfaces.TableColumnMeta
 
 	for rows.Next() {
 		var name, dataType, isNullable, columnDefault, description, charset sql.NullString
@@ -505,7 +506,7 @@ func (c *OracleConnector) fetchColumns(ctx context.Context, table *interfaces.Ta
 			return err
 		}
 
-		col := interfaces.ColumnMeta{
+		col := interfaces.TableColumnMeta{
 			Name:            name.String,
 			Type:            MapType(dataType.String),
 			OrigType:        dataType.String,
@@ -543,9 +544,9 @@ func (c *OracleConnector) fetchIndexes(ctx context.Context, table *interfaces.Ta
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	indexMap := make(map[string]*interfaces.IndexInfo)
+	indexMap := make(map[string]*interfaces.TableIndexMeta)
 
 	for rows.Next() {
 		var indexName, columnName, uniqueness sql.NullString
@@ -564,7 +565,7 @@ func (c *OracleConnector) fetchIndexes(ctx context.Context, table *interfaces.Ta
 		if idx, ok := indexMap[name]; ok {
 			idx.Columns = append(idx.Columns, columnName.String)
 		} else {
-			indexMap[name] = &interfaces.IndexInfo{
+			indexMap[name] = &interfaces.TableIndexMeta{
 				Name:    name,
 				Columns: []string{columnName.String},
 				Unique:  uniqueness.String == "UNIQUE",
@@ -573,7 +574,7 @@ func (c *OracleConnector) fetchIndexes(ctx context.Context, table *interfaces.Ta
 		}
 	}
 
-	var indexes []interfaces.IndexInfo
+	var indexes []interfaces.TableIndexMeta
 	for _, idx := range indexMap {
 		indexes = append(indexes, *idx)
 	}
@@ -602,9 +603,9 @@ func (c *OracleConnector) fetchForeignKeys(ctx context.Context, table *interface
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	fkMap := make(map[string]*interfaces.ForeignKeyInfo)
+	fkMap := make(map[string]*interfaces.TableForeignKeyMeta)
 
 	for rows.Next() {
 		var constraintName, columnName, refTableName, refColumnName sql.NullString
@@ -623,7 +624,7 @@ func (c *OracleConnector) fetchForeignKeys(ctx context.Context, table *interface
 			fk.Columns = append(fk.Columns, columnName.String)
 			fk.RefColumns = append(fk.RefColumns, refColumnName.String)
 		} else {
-			fkMap[name] = &interfaces.ForeignKeyInfo{
+			fkMap[name] = &interfaces.TableForeignKeyMeta{
 				Name:       name,
 				Columns:    []string{columnName.String},
 				RefTable:   refTableName.String,
@@ -632,7 +633,7 @@ func (c *OracleConnector) fetchForeignKeys(ctx context.Context, table *interface
 		}
 	}
 
-	var fks []interfaces.ForeignKeyInfo
+	var fks []interfaces.TableForeignKeyMeta
 	for _, fk := range fkMap {
 		fks = append(fks, *fk)
 	}
@@ -643,11 +644,6 @@ func (c *OracleConnector) fetchForeignKeys(ctx context.Context, table *interface
 func (c *OracleConnector) ExecuteQuery(ctx context.Context, resource *interfaces.Resource,
 	params *interfaces.ResourceDataQueryParams) (*interfaces.QueryResult, error) {
 	return nil, nil
-}
-
-// ExecuteJoinQuery 执行多表 JOIN 查询；Oracle 暂未实现
-func (c *OracleConnector) ExecuteJoinQuery(ctx context.Context, catalog *interfaces.Catalog, params *interfaces.JoinQueryParams) (*interfaces.QueryResult, error) {
-	return nil, fmt.Errorf("ExecuteJoinQuery not implemented for Oracle connector")
 }
 
 // GetMetadata returns the metadata for the catalog.
@@ -683,7 +679,7 @@ func (c *OracleConnector) GetMetadata(ctx context.Context) (map[string]any, erro
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	metadata := make(map[string]any)
 	for rows.Next() {

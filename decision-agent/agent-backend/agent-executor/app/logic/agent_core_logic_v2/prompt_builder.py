@@ -1,4 +1,5 @@
 from typing import Optional
+import json
 
 from opentelemetry.trace import Span
 
@@ -12,11 +13,50 @@ from app.domain.vo.agentvo import AgentConfigVo
 
 from .trace import span_set_attrs
 
+# Skill usage rules injected into every explore prompt so that the model
+# knows how to use the three built-in skill contract tools.
+# 注意:这些规则需要作为 Dolphin 注释格式(以 # 开头)或在块内部
+_SKILL_USAGE_RULES = """## Built-in Skill Capabilities
+
+You have access to three built-in tools for working with skills:
+
+### 1. builtin_skill_load(skill_id)
+- **Purpose**: Load a skill package and get its documentation
+- **When to use**: Always call this first when you have a skill_id
+- **Returns**: The full SKILL.md content plus lists of available scripts and reference files
+
+### 2. builtin_skill_read_file(skill_id, file_path)
+- **Purpose**: Read a specific file inside the skill package
+- **When to use**: Optional. Only call after you have obtained a file path from builtin_skill_load or from SKILL.md
+- **Note**: One file per call; cannot batch
+
+### 3. builtin_skill_execute_script(skill_id, script_path)
+- **Purpose**: Execute a script from the skill package
+- **When to use**: Optional. Only call after reading SKILL.md and deciding that script execution is needed
+- **Note**: Not all skills require script execution
+
+### Usage Guidelines
+1. If you have a skill_id, **always start with** `builtin_skill_load(skill_id)`
+2. After reading SKILL.md, decide independently whether to call `read_file`, `execute_script`, both, or neither
+3. Both `builtin_skill_read_file` and `builtin_skill_execute_script` are **optional steps**
+
+---
+"""
+
 
 class PromptBuilder:
     def __init__(self, agent_config: AgentConfigVo, temp_files: dict[str, list]):
         self.agent_config = agent_config
         self.temp_files = temp_files
+
+    @staticmethod
+    def _is_skill_enabled() -> bool:
+        """是否将 _SKILL_USAGE_RULES 拼接到系统提示词。
+
+        从配置文件的 features.skill_enabled 读取，
+        默认为 true，仅当配置为 false 时才不拼接。
+        """
+        return Config.features.skill_enabled
 
     @internal_span()
     async def build(self, span: Optional[Span] = None) -> str:
@@ -26,13 +66,20 @@ class PromptBuilder:
             agent_id=self.agent_config.agent_id,
         )
 
+        is_skill_enabled = self._is_skill_enabled()
+
         if self.agent_config.is_dolphin_mode:
+            # In dolphin_mode, do NOT directly append _SKILL_USAGE_RULES to dolphin_prompt
+            # because it's Markdown text (not valid Dolphin syntax) and will cause parse errors.
+            # The Skill Usage Rules will be automatically added by explore_block_v2.py
+            # through the system_prompt parameter when skill_enabled=true.
             dolphin_prompt = ""
 
             for pre_dolphin in self.agent_config.pre_dolphin:
                 if not pre_dolphin.get("enabled", False):
                     continue
 
+                # Skip temp-file processing block when the user has no uploaded files
                 # 如果开启了临时区，但是用户没有上次临时区文件，则不构造临时区文件处理 dophin
                 if pre_dolphin.get("key") == "temp_file_process" and not has_temp_files(
                     self.temp_files
@@ -54,6 +101,8 @@ class PromptBuilder:
             context_prompt = self.get_context_prompt()
             related_questions_prompt = self.get_related_questions_prompt()
 
+            # Append skill usage rules to the auto-generated explore system prompt
+            # 调整顺序：技能使用规则在前，用户的系统提示词在后
             explore_system_prompt = ""
             if self.agent_config.is_plan_mode():
                 explore_system_prompt = plan_mode_logic.get_system_prompt_with_plan(
@@ -61,11 +110,41 @@ class PromptBuilder:
                 )
                 self.agent_config.append_task_plan_agent()
             else:
-                explore_system_prompt = self.agent_config.system_prompt
+                # 确保 system_prompt 不为 None，避免 repr(None) 变成字符串 'None'
+                explore_system_prompt = self.agent_config.system_prompt or ""
 
-            # tool_names = await self.get_tool_names()
-            # explore_prompt = f"""/explore/(tools={repr(tool_names)}, system_prompt={repr(explore_system_prompt)}, history=True)$query -> answer\n"""
-            explore_prompt = f"""/explore/(system_prompt={repr(explore_system_prompt)}, history=True)$query -> answer\n"""
+            if is_skill_enabled:
+                # Dolphin 会将标记符替换为通用的 Tools Usage Guidelines
+                # 最终顺序：_SKILL_USAGE_RULES -> Tools Usage Guidelines -> 用户提示词
+                if explore_system_prompt and explore_system_prompt.strip():
+                    # 用户设置了有效的角色指令（非空且不只是空白字符）
+                    explore_system_prompt = (
+                        f"{_SKILL_USAGE_RULES}\n"
+                        f"{{__BUILTIN_SKILL_RULES__}}\n\n"
+                        f"{explore_system_prompt}"
+                    )
+                else:
+                    # 用户未设置角色指令或角色指令为空/空白
+                    explore_system_prompt = (
+                        f"{_SKILL_USAGE_RULES}\n{{__BUILTIN_SKILL_RULES__}}"
+                    )
+
+            history_enabled = (
+                not self.agent_config.react_disable_history_in_a_conversation()
+            )
+
+            disable_llm_cache = (
+                Config.features.disable_dolphin_sdk_llm_cache
+                or self.agent_config.react_disable_llm_cache()
+            )
+
+            # no_cache: 是否禁用缓存（布尔值）
+            # no_cache = disable_llm_cache
+
+            # 构造 explore dolphin 语句
+            # 使用 json.dumps 转义字符串，Dolphin SDK 会自动反转义 \n 为真正的换行符
+            escaped_system_prompt = json.dumps(explore_system_prompt, ensure_ascii=False)
+            explore_prompt = f"""/explore/(system_prompt={escaped_system_prompt}, history={history_enabled}, no_cache={disable_llm_cache})$query -> answer\n"""
 
             dolphin_prompt = (
                 memory_prompt

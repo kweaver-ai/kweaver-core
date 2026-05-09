@@ -23,11 +23,11 @@ func Test_ToADPNetWork(t *testing.T) {
 				ID:             "kn1",
 				Name:           "Test KN",
 				Tags:           []string{"tag1"},
-				Description:    "desc",
 				Branch:         "main",
 				BusinessDomain: "domain1",
 			},
-			RawContent: "raw",
+			Description: "desc",
+			RawContent:  "raw",
 		}
 
 		kn := ToADPNetWork(bknNet)
@@ -45,11 +45,13 @@ func Test_ToADPNetWork(t *testing.T) {
 func Test_ToBKNNetWork(t *testing.T) {
 	Convey("Test ToBKNNetWork\n", t, func() {
 		kn := &interfaces.KN{
-			KNID:           "kn1",
-			KNName:         "Test KN",
-			Tags:           []string{"tag1"},
-			Comment:        "desc",
-			BKNRawContent:  "raw",
+			KNID:   "kn1",
+			KNName: "Test KN",
+			CommonInfo: interfaces.CommonInfo{
+				Tags:          []string{"tag1"},
+				Comment:       "desc",
+				BKNRawContent: "raw",
+			},
 			Branch:         "main",
 			BusinessDomain: "domain1",
 		}
@@ -91,8 +93,11 @@ func Test_ToADPObjectType(t *testing.T) {
 		Convey("Full: DataSource, DataProperty with MappedField, LogicProperty with all fields\n", func() {
 			bknObj := &bknsdk.BknObjectType{
 				BknObjectTypeFrontmatter: bknsdk.BknObjectTypeFrontmatter{
-					ID: "ot1", Name: "OT1", Tags: []string{"t"}, Description: "d",
+					ID:   "ot1",
+					Name: "OT1",
+					Tags: []string{"t"},
 				},
+				Description:    "d",
 				DataSource:     &bknsdk.ResourceInfo{ID: "ds1", Type: "mysql", Name: "DS1"},
 				PrimaryKeys:    []string{"id"},
 				DisplayKey:     "name",
@@ -215,7 +220,7 @@ func Test_ToADPRelationType(t *testing.T) {
 		Convey("No MappingRules\n", func() {
 			bknRel := &bknsdk.BknRelationType{
 				BknRelationTypeFrontmatter: bknsdk.BknRelationTypeFrontmatter{ID: "rt1", Name: "RT1"},
-				Endpoint:                  bknsdk.Endpoint{Source: "ot1", Target: "ot2", Type: "direct"},
+				Endpoint:                   bknsdk.Endpoint{Source: "ot1", Target: "ot2", Type: "direct"},
 			}
 			adp := ToADPRelationType("kn1", "main", bknRel)
 			So(adp.RTID, ShouldEqual, "rt1")
@@ -226,7 +231,7 @@ func Test_ToADPRelationType(t *testing.T) {
 		Convey("DirectMappingRule\n", func() {
 			bknRel := &bknsdk.BknRelationType{
 				BknRelationTypeFrontmatter: bknsdk.BknRelationTypeFrontmatter{ID: "rt1"},
-				Endpoint:                  bknsdk.Endpoint{Source: "ot1", Target: "ot2"},
+				Endpoint:                   bknsdk.Endpoint{Source: "ot1", Target: "ot2"},
 				MappingRules: bknsdk.DirectMappingRule{
 					{SourceProperty: "src_p", TargetProperty: "tgt_p"},
 				},
@@ -242,7 +247,7 @@ func Test_ToADPRelationType(t *testing.T) {
 		Convey("InDirectMappingRule\n", func() {
 			bknRel := &bknsdk.BknRelationType{
 				BknRelationTypeFrontmatter: bknsdk.BknRelationTypeFrontmatter{ID: "rt1"},
-				Endpoint:                  bknsdk.Endpoint{Source: "ot1", Target: "ot2"},
+				Endpoint:                   bknsdk.Endpoint{Source: "ot1", Target: "ot2"},
 				MappingRules: &bknsdk.InDirectMappingRule{
 					BackingDataSource:  &bknsdk.ResourceInfo{ID: "ds1", Type: "mysql"},
 					SourceMappingRules: []bknsdk.MappingRule{{SourceProperty: "sp", TargetProperty: "tp"}},
@@ -250,7 +255,7 @@ func Test_ToADPRelationType(t *testing.T) {
 				},
 			}
 			adp := ToADPRelationType("kn1", "main", bknRel)
-			indirect, ok := adp.MappingRules.(interfaces.InDirectMapping)
+			indirect, ok := adp.MappingRules.(*interfaces.InDirectMapping)
 			So(ok, ShouldBeTrue)
 			So(indirect.BackingDataSource.ID, ShouldEqual, "ds1")
 			So(len(indirect.SourceMappingRules), ShouldEqual, 1)
@@ -291,7 +296,7 @@ func Test_ToBKNRelationType(t *testing.T) {
 			adpRel := &interfaces.RelationType{
 				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
 					RTID: "rt1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{ID: "ds1", Type: "mysql"},
 						SourceMappingRules: []interfaces.Mapping{
 							{SourceProp: interfaces.SimpleProperty{Name: "sp"}, TargetProp: interfaces.SimpleProperty{Name: "tp"}},
@@ -335,7 +340,7 @@ func Test_ToADPActionType(t *testing.T) {
 				},
 				BoundObject:  "ot1",
 				AffectObject: &bknsdk.ActionAffect{ObjectType: "ot2", Description: "aff"},
-				TriggerCondition: &bknsdk.CondCfg{
+				TriggerCondition: &bknsdk.ActionCondCfg{
 					ObjectTypeID: "ot1", Field: "status", Operation: "eq", Value: "active",
 				},
 				ActionSource: &bknsdk.ActionSource{Type: "tool", BoxID: "box1", ToolID: "tool1"},
@@ -379,7 +384,7 @@ func Test_ToBKNActionType(t *testing.T) {
 				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
 					ATID: "at1", ATName: "AT1",
 					Affect: &interfaces.ActionAffect{ObjectTypeID: "ot2", Comment: "aff"},
-					Condition: &interfaces.CondCfg{
+					Condition: &interfaces.ActionCondCfg{
 						ObjectTypeID: "ot1", Field: "status", Operation: "eq",
 					},
 					ActionSource: interfaces.ActionSource{Type: "tool", BoxID: "box1"},
@@ -419,8 +424,11 @@ func Test_ToADPConceptGroup(t *testing.T) {
 	Convey("Test ToADPConceptGroup\n", t, func() {
 		bknCG := &bknsdk.BknConceptGroup{
 			BknConceptGroupFrontmatter: bknsdk.BknConceptGroupFrontmatter{
-				ID: "cg1", Name: "CG1", Tags: []string{"t"}, Description: "d",
+				ID:   "cg1",
+				Name: "CG1",
+				Tags: []string{"t"},
 			},
+			Description: "d",
 		}
 		adp := ToADPConceptGroup("kn1", "main", bknCG)
 
@@ -445,7 +453,8 @@ func Test_ToBKNConceptGroup(t *testing.T) {
 
 		Convey("With ObjectTypes (including nil element)\n", func() {
 			adpCG := &interfaces.ConceptGroup{
-				CGID: "cg1",
+				CGID:          "cg1",
+				ObjectTypeIDs: []string{"ot1", "ot2"},
 				ObjectTypes: []*interfaces.ObjectType{
 					{ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTID: "ot1"}},
 					nil,
@@ -464,36 +473,36 @@ func Test_ToBKNConceptGroup(t *testing.T) {
 func Test_condCfgConverters(t *testing.T) {
 	Convey("Test toADPCondCfg / toBKNCondCfg\n", t, func() {
 		Convey("nil input returns nil\n", func() {
-			So(toADPCondCfg(nil), ShouldBeNil)
-			So(toBKNCondCfg(nil), ShouldBeNil)
+			So(toADPActionCondCfg(nil), ShouldBeNil)
+			So(toBKNActionCondCfg(nil), ShouldBeNil)
 		})
 
 		Convey("Single condition, no SubConds\n", func() {
-			bknCond := &bknsdk.CondCfg{
+			bknCond := &bknsdk.ActionCondCfg{
 				ObjectTypeID: "ot1", Field: "f1", Operation: "eq", Value: "v1", ValueFrom: "const",
 			}
-			adp := toADPCondCfg(bknCond)
+			adp := toADPActionCondCfg(bknCond)
 			So(adp.ObjectTypeID, ShouldEqual, "ot1")
 			So(adp.Field, ShouldEqual, "f1")
 			So(adp.ValueOptCfg.Value, ShouldEqual, "v1")
 			So(adp.SubConds, ShouldBeEmpty)
 
 			// round-trip
-			bknBack := toBKNCondCfg(adp)
+			bknBack := toBKNActionCondCfg(adp)
 			So(bknBack.ObjectTypeID, ShouldEqual, "ot1")
 			So(bknBack.Value, ShouldEqual, "v1")
 			So(bknBack.SubConds, ShouldBeEmpty)
 		})
 
 		Convey("Nested SubConds (recursive)\n", func() {
-			bknCond := &bknsdk.CondCfg{
+			bknCond := &bknsdk.ActionCondCfg{
 				ObjectTypeID: "root",
-				SubConds: []*bknsdk.CondCfg{
+				SubConds: []*bknsdk.ActionCondCfg{
 					{ObjectTypeID: "child1"},
-					{ObjectTypeID: "child2", SubConds: []*bknsdk.CondCfg{{ObjectTypeID: "grandchild"}}},
+					{ObjectTypeID: "child2", SubConds: []*bknsdk.ActionCondCfg{{ObjectTypeID: "grandchild"}}},
 				},
 			}
-			adp := toADPCondCfg(bknCond)
+			adp := toADPActionCondCfg(bknCond)
 			So(len(adp.SubConds), ShouldEqual, 2)
 			So(adp.SubConds[0].ObjectTypeID, ShouldEqual, "child1")
 			So(len(adp.SubConds[1].SubConds), ShouldEqual, 1)

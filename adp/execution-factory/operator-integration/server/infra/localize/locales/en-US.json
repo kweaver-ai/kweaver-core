@@ -177,7 +177,11 @@
         "FunctionAIGenerateModelFailed": "Model generate content failed, please check if the default model is available, or go to settings to configure a valid model",
         "SandboxControlPlaneFailed": "Sandbox control plane service failed, please check the error details",
         "PypiRepoUnavailable": "PyPI repository is unavailable, please check if the network connection is normal or try again later",
-        "PypiParserFailed": "Version inference feature requires the mirror source to support JSON API (such as PyPI official, Tsinghua source, etc.), please check if the mirror source configuration is correct"
+        "PypiParserFailed": "Version inference feature requires the mirror source to support JSON API (such as PyPI official, Tsinghua source, etc.), please check if the mirror source configuration is correct",
+        "SkillNameDuplicate": "Agent Skill “%s” already exists, please use another name",
+        "SkillStatusInvalid": "Agent Skill status is invalid, please check if the status is correct",
+        "SkillCategoryNotFound": "Agent Skill category not found",
+        "SkillUnSupportDelete": "Agent Skill not support delete, please contact administrator"
     },
     "sol": {
         "Common": "Contact administrator",

@@ -144,12 +144,14 @@ func Test_relationTypeService_GetRelationTypesByIDs(t *testing.T) {
 		rta := bmock.NewMockRelationTypeAccess(mockCtrl)
 		ps := bmock.NewMockPermissionService(mockCtrl)
 		ots := bmock.NewMockObjectTypeService(mockCtrl)
+		ums := bmock.NewMockUserMgmtService(mockCtrl)
 
 		service := &relationTypeService{
 			appSetting: appSetting,
 			rta:        rta,
 			ps:         ps,
 			ots:        ots,
+			ums:        ums,
 		}
 
 		Convey("Success getting relation types by IDs\n", func() {
@@ -174,6 +176,7 @@ func Test_relationTypeService_GetRelationTypesByIDs(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			rta.EXPECT().GetRelationTypesByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(rtArr, nil)
 			ots.EXPECT().GetObjectTypesMapByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(map[string]*interfaces.ObjectType{}, nil).AnyTimes()
+			ums.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 			result, err := service.GetRelationTypesByIDs(ctx, knID, branch, rtIDs)
 			So(err, ShouldBeNil)
@@ -301,6 +304,7 @@ func Test_relationTypeService_GetRelationTypesByIDs(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			rta.EXPECT().GetRelationTypesByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(rtArr, nil)
 			ots.EXPECT().GetObjectTypesMapByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(objectTypeMap, nil)
+			ums.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 			result, err := service.GetRelationTypesByIDs(ctx, knID, branch, rtIDs)
 			So(err, ShouldBeNil)
@@ -321,7 +325,7 @@ func Test_relationTypeService_GetRelationTypesByIDs(t *testing.T) {
 						Type:               interfaces.RELATION_TYPE_DATA_VIEW,
 						SourceObjectTypeID: "ot1",
 						TargetObjectTypeID: "ot2",
-						MappingRules: interfaces.InDirectMapping{
+						MappingRules: &interfaces.InDirectMapping{
 							BackingDataSource: &interfaces.ResourceInfo{
 								ID: "dv1",
 							},
@@ -388,17 +392,19 @@ func Test_relationTypeService_GetRelationTypesByIDs(t *testing.T) {
 				ps:         ps,
 				ots:        ots,
 				dva:        dva,
+				ums:        ums,
 			}
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			rta.EXPECT().GetRelationTypesByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(rtArr, nil)
 			ots.EXPECT().GetObjectTypesMapByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(objectTypeMap, nil)
 			dva.EXPECT().GetDataViewByID(gomock.Any(), gomock.Any()).Return(dataView, nil)
+			ums.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 			result, err := service.GetRelationTypesByIDs(ctx, knID, branch, rtIDs)
 			So(err, ShouldBeNil)
 			So(len(result), ShouldEqual, 1)
-			So(result[0].MappingRules.(interfaces.InDirectMapping).BackingDataSource.Name, ShouldEqual, "data_view1")
+			So(result[0].MappingRules.(*interfaces.InDirectMapping).BackingDataSource.Name, ShouldEqual, "data_view1")
 		})
 
 		Convey("Failed when GetDataViewByID returns error for DATA_VIEW type\n", func() {
@@ -413,7 +419,7 @@ func Test_relationTypeService_GetRelationTypesByIDs(t *testing.T) {
 						Type:               interfaces.RELATION_TYPE_DATA_VIEW,
 						SourceObjectTypeID: "ot1",
 						TargetObjectTypeID: "ot2",
-						MappingRules: interfaces.InDirectMapping{
+						MappingRules: &interfaces.InDirectMapping{
 							BackingDataSource: &interfaces.ResourceInfo{
 								ID: "dv1",
 							},
@@ -1468,7 +1474,7 @@ func Test_relationTypeService_GetTotal(t *testing.T) {
 				"value_from": "const",
 			}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				TotalCount: 10,
 			}, nil)
 
@@ -1477,10 +1483,10 @@ func Test_relationTypeService_GetTotal(t *testing.T) {
 			So(total, ShouldEqual, 10)
 		})
 
-		Convey("Failed when QueryDatasetData fails\n", func() {
+		Convey("Failed when QueryResourceData fails\n", func() {
 			filterCondition := map[string]any{}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_RelationType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_RelationType_InternalError))
 
 			total, err := service.GetTotal(ctx, filterCondition)
 			So(err, ShouldNotBeNil)
@@ -1513,7 +1519,7 @@ func Test_relationTypeService_GetTotalWithLargeRTIDs(t *testing.T) {
 			rtIDs := []string{"rt1", "rt2", "rt3"}
 
 			// Mock GetTotalWithRTIDs calls
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				TotalCount: 5,
 			}, nil).Times(1)
 
@@ -1535,7 +1541,7 @@ func Test_relationTypeService_GetTotalWithLargeRTIDs(t *testing.T) {
 			filterCondition := map[string]any{}
 			rtIDs := []string{"rt1"}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_RelationType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_RelationType_InternalError))
 
 			total, err := service.GetTotalWithLargeRTIDs(ctx, filterCondition, rtIDs)
 			So(err, ShouldNotBeNil)
@@ -1567,7 +1573,7 @@ func Test_relationTypeService_GetTotalWithRTIDs(t *testing.T) {
 			}
 			rtIDs := []string{"rt1", "rt2"}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				TotalCount: 2,
 			}, nil)
 
@@ -1580,7 +1586,7 @@ func Test_relationTypeService_GetTotalWithRTIDs(t *testing.T) {
 			filterCondition := map[string]any{}
 			rtIDs := []string{"rt1"}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_RelationType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_RelationType_InternalError))
 
 			total, err := service.GetTotalWithRTIDs(ctx, filterCondition, rtIDs)
 			So(err, ShouldNotBeNil)
@@ -1619,7 +1625,7 @@ func Test_relationTypeService_SearchRelationTypes(t *testing.T) {
 			}
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				Entries:     []map[string]any{},
 				TotalCount:  0,
 				SearchAfter: nil,
@@ -1641,7 +1647,7 @@ func Test_relationTypeService_SearchRelationTypes(t *testing.T) {
 					Operation: "and",
 					SubConds: []*cond.CondCfg{
 						{
-							Name:      "name",
+							Field:     "name",
 							Operation: cond.OperationEq,
 							ValueOptCfg: cond.ValueOptCfg{
 								ValueFrom: "const",
@@ -1655,7 +1661,7 @@ func Test_relationTypeService_SearchRelationTypes(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			cga.EXPECT().GetConceptGroupsTotal(gomock.Any(), gomock.Any()).Return(1, nil)
 			cga.EXPECT().GetRelationTypeIDsFromConceptGroupRelation(gomock.Any(), gomock.Any()).Return([]string{"rt1"}, nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				Entries:     []map[string]any{},
 				TotalCount:  0,
 				SearchAfter: nil,
@@ -1724,7 +1730,7 @@ func Test_relationTypeService_SearchRelationTypes(t *testing.T) {
 			}
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				Entries:     []map[string]any{},
 				TotalCount:  0,
 				SearchAfter: nil,
@@ -1921,7 +1927,7 @@ func Test_relationTypeService_validateDependency(t *testing.T) {
 					RTID:   "rt1",
 					RTName: "rt1",
 					Type:   interfaces.RELATION_TYPE_DATA_VIEW,
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "dv1",
 						},
@@ -1945,7 +1951,7 @@ func Test_relationTypeService_validateDependency(t *testing.T) {
 					RTID:   "rt1",
 					RTName: "rt1",
 					Type:   interfaces.RELATION_TYPE_DATA_VIEW,
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "dv1",
 						},
@@ -1968,7 +1974,7 @@ func Test_relationTypeService_validateDependency(t *testing.T) {
 					RTName:             "rt1",
 					Type:               interfaces.RELATION_TYPE_DATA_VIEW,
 					SourceObjectTypeID: "ot1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "dv1",
 						},
@@ -2213,10 +2219,10 @@ func Test_relationTypeService_SearchRelationTypes_extraCases(t *testing.T) {
 			So(len(result.Entries), ShouldEqual, 0)
 		})
 
-		Convey("Failed when QueryDatasetData returns error\n", func() {
+		Convey("Failed when QueryResourceData returns error\n", func() {
 			query := &interfaces.ConceptsQuery{KNID: "kn1", Branch: interfaces.MAIN_BRANCH, Limit: 10}
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_RelationType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_RelationType_InternalError))
 			result, err := service.SearchRelationTypes(ctx, query)
 			So(err, ShouldNotBeNil)
 			So(len(result.Entries), ShouldEqual, 0)
@@ -2245,12 +2251,12 @@ func Test_relationTypeService_SearchRelationTypes_extraCases(t *testing.T) {
 				NeedTotal: true,
 			}
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			// NeedTotal block: QueryDatasetData with Limit=1, NeedTotal=true
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			// NeedTotal block: QueryResourceData with Limit=1, NeedTotal=true
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{}, TotalCount: 5,
 			}, nil)
-			// Main loop: QueryDatasetData returns empty → break
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			// Main loop: QueryResourceData returns empty → break
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{},
 			}, nil)
 			result, err := service.SearchRelationTypes(ctx, query)
@@ -2266,7 +2272,7 @@ func Test_relationTypeService_SearchRelationTypes_extraCases(t *testing.T) {
 				"_score":  float64(0.95),
 			}
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{entry},
 			}, nil)
 			result, err := service.SearchRelationTypes(ctx, query)

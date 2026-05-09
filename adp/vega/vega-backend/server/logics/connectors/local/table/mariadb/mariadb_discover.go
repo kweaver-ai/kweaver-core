@@ -28,7 +28,7 @@ func (c *MariaDBConnector) ListDatabases(ctx context.Context) ([]string, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list databases: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var databases []string
 	for rows.Next() {
@@ -81,7 +81,7 @@ func (c *MariaDBConnector) ListTables(ctx context.Context) ([]*interfaces.TableM
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tables []*interfaces.TableMeta
 	for rows.Next() {
@@ -292,9 +292,9 @@ func (c *MariaDBConnector) fetchColumns(ctx context.Context, table *interfaces.T
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	var columns []interfaces.ColumnMeta
+	var columns []interfaces.TableColumnMeta
 	var pkColumns []string
 
 	for rows.Next() {
@@ -321,7 +321,7 @@ func (c *MariaDBConnector) fetchColumns(ctx context.Context, table *interfaces.T
 			return err
 		}
 
-		col := interfaces.ColumnMeta{
+		col := interfaces.TableColumnMeta{
 			Name:              name.String,
 			Type:              MapType(columnType.String), // 使用 COLUMN_TYPE 以正确识别 unsigned（如 "int unsigned"）
 			OrigType:          columnType.String,
@@ -370,9 +370,9 @@ func (c *MariaDBConnector) fetchIndexes(ctx context.Context, table *interfaces.T
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	indexMap := make(map[string]*interfaces.IndexInfo)
+	indexMap := make(map[string]*interfaces.TableIndexMeta)
 
 	for rows.Next() {
 		var indexName, columnName sql.NullString
@@ -391,7 +391,7 @@ func (c *MariaDBConnector) fetchIndexes(ctx context.Context, table *interfaces.T
 		if idx, ok := indexMap[name]; ok {
 			idx.Columns = append(idx.Columns, columnName.String)
 		} else {
-			indexMap[name] = &interfaces.IndexInfo{
+			indexMap[name] = &interfaces.TableIndexMeta{
 				Name:    name,
 				Columns: []string{columnName.String},
 				Unique:  nonUnique.Int64 == 0,
@@ -400,7 +400,7 @@ func (c *MariaDBConnector) fetchIndexes(ctx context.Context, table *interfaces.T
 		}
 	}
 
-	var indices []interfaces.IndexInfo
+	var indices []interfaces.TableIndexMeta
 	for _, idx := range indexMap {
 		indices = append(indices, *idx)
 	}
@@ -429,9 +429,9 @@ func (c *MariaDBConnector) fetchForeignKeys(ctx context.Context, table *interfac
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	fkMap := make(map[string]*interfaces.ForeignKeyInfo)
+	fkMap := make(map[string]*interfaces.TableForeignKeyMeta)
 
 	for rows.Next() {
 		var constraintName, columnName, refTableName, refColumnName sql.NullString
@@ -450,7 +450,7 @@ func (c *MariaDBConnector) fetchForeignKeys(ctx context.Context, table *interfac
 			fk.Columns = append(fk.Columns, columnName.String)
 			fk.RefColumns = append(fk.RefColumns, refColumnName.String)
 		} else {
-			fkMap[name] = &interfaces.ForeignKeyInfo{
+			fkMap[name] = &interfaces.TableForeignKeyMeta{
 				Name:       name,
 				Columns:    []string{columnName.String},
 				RefTable:   refTableName.String,
@@ -461,7 +461,7 @@ func (c *MariaDBConnector) fetchForeignKeys(ctx context.Context, table *interfac
 
 	// Note: Handling OnDelete/OnUpdate requires joining with REFERENTIAL_CONSTRAINTS, skipping for simplicity unless requested.
 
-	var fks []interfaces.ForeignKeyInfo
+	var fks []interfaces.TableForeignKeyMeta
 	for _, fk := range fkMap {
 		fks = append(fks, *fk)
 	}
@@ -509,7 +509,7 @@ func (c *MariaDBConnector) GetMetadata(ctx context.Context) (map[string]any, err
 		// But for now, we return error to be safe
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	metadata := make(map[string]any)
 	for rows.Next() {

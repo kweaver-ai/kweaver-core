@@ -1,23 +1,30 @@
 """单元测试 - infra/common/util/redis_cache/json_serializer 模块"""
 
-import pytest
+import importlib.util
 import sys
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from pathlib import Path
 
-# Add app directory to path
-sys.path.insert(
-    0, "/Users/guochenguang/project/decision-agent/agent-backend/agent-executor/app"
+import pytest
+
+
+SERIALIZER_PATH = (
+    Path(__file__).resolve().parents[6]
+    / "app"
+    / "infra"
+    / "common"
+    / "util"
+    / "redis_cache"
+    / "json_serializer.py"
 )
-
-# Direct import to avoid __init__.py issues
-import importlib.util
 
 spec = importlib.util.spec_from_file_location(
     "json_serializer",
-    "/Users/guochenguang/project/decision-agent/agent-backend/agent-executor/app/infra/common/util/redis_cache/json_serializer.py",
+    SERIALIZER_PATH,
 )
+assert spec is not None and spec.loader is not None
 json_serializer_module = importlib.util.module_from_spec(spec)
 sys.modules["json_serializer"] = json_serializer_module
 spec.loader.exec_module(json_serializer_module)

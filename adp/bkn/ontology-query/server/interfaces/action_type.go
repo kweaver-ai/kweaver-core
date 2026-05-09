@@ -10,6 +10,7 @@ import cond "ontology-query/common/condition"
 // 行动查询请求体
 type ActionQuery struct {
 	InstanceIdentities []map[string]any `json:"_instance_identities,omitempty"`
+	DynamicParams      map[string]any   `json:"dynamic_params,omitempty"`
 
 	KNID         string `json:"-"`
 	Branch       string `json:"-"`

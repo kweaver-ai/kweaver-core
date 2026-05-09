@@ -48,6 +48,11 @@ Description = "连接器类型名称已存在"
 Solution = "请使用其他名称"
 ErrorLink = "暂无"
 
+[VegaBackend.ConnectorType.TypeMismatch]
+Description = "请求体中的连接器类型与路径不一致"
+Solution = "省略请求体中的 type 字段，或使其与路径参数保持一致"
+ErrorLink = "暂无"
+
 [VegaBackend.ConnectorType.InternalError]
 Description = "连接器类型内部错误"
 Solution = "请联系管理员"

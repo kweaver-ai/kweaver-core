@@ -46,9 +46,9 @@ func Test_BuildViewSort(t *testing.T) {
 			So(len(result), ShouldEqual, 3) // _score desc + 2个主键 asc
 			So(result[0].Field, ShouldEqual, interfaces.SORT_FIELD_SCORE)
 			So(result[0].Direction, ShouldEqual, interfaces.DESC_DIRECTION)
-			So(result[1].Field, ShouldEqual, "id_field")
+			So(result[1].Field, ShouldEqual, "id")
 			So(result[1].Direction, ShouldEqual, interfaces.ASC_DIRECTION)
-			So(result[2].Field, ShouldEqual, "name_field")
+			So(result[2].Field, ShouldEqual, "name")
 			So(result[2].Direction, ShouldEqual, interfaces.ASC_DIRECTION)
 		})
 
@@ -1132,7 +1132,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"target_id": "456",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1164,7 +1164,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"target_id": "456",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1196,7 +1196,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"target_id": "456",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1223,7 +1223,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"id": "123",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1255,7 +1255,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"id": "123",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1287,7 +1287,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				// id缺失
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1650,5 +1650,17 @@ func Test_EvaluateDataAgainstCondition(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(result, ShouldBeFalse)
 		})
+	})
+}
+
+func TestCondCfgToFilterMap(t *testing.T) {
+	Convey("nil cond returns nil map", t, func() {
+		So(CondCfgToFilterMap(nil), ShouldBeNil)
+	})
+	Convey("serializes simple cond", t, func() {
+		c := &cond.CondCfg{Name: "f1", Operation: "==", ValueOptCfg: cond.ValueOptCfg{ValueFrom: "const", Value: "v"}}
+		m := CondCfgToFilterMap(c)
+		So(m, ShouldNotBeNil)
+		So(m["field"], ShouldEqual, "f1")
 	})
 }

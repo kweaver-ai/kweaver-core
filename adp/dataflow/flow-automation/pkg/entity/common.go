@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/store"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/store"
 )
 
 // Accessor 访问者

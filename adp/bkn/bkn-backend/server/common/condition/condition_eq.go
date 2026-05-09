@@ -28,7 +28,7 @@ func NewEqCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewFiel
 
 	return &EqCond{
 		mCfg:             cfg,
-		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
+		mFilterFieldName: getFilterFieldName(cfg.Field, fieldsMap, false),
 	}, nil
 
 }
@@ -67,7 +67,7 @@ func (cond *EqCond) Convert2SQL(ctx context.Context) (string, error) {
 // convertEqCondToDatasetFilterCondition converts EqCond to dataset filter condition format
 func convertEqCondToDatasetFilterCondition(cfg *CondCfg) (map[string]any, error) {
 	return map[string]any{
-		"field":      cfg.Name,
+		"field":      cfg.Field,
 		"operation":  "==",
 		"value":      cfg.Value,
 		"value_from": "const",

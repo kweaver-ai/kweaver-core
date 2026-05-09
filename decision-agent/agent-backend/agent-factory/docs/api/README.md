@@ -1,55 +1,118 @@
-# Agent Factory API 文档
+# Agent Factory API Documentation
 
-这个目录只保留对外可查看的最终 OpenAPI 文档产物。
+This directory contains the final OpenAPI documentation artifacts for external viewing.
 
-## 目录里的文件
+**Language versions:**
+- [中文](README.zh.md)
+
+## Files in This Directory
 
 - `agent-factory.json`
-  - OpenAPI 3 JSON 版本，适合工具接入
+  - OpenAPI 3 JSON version, suitable for tool integration
 - `agent-factory.yaml`
-  - OpenAPI 3 YAML 版本，适合人工阅读和分发
+  - OpenAPI 3 YAML version, suitable for manual reading and distribution
 - `agent-factory.html`
-  - 可直接打开的静态文档页面
+  - Scalar-style static documentation page, suitable for Try it Out
+- `agent-factory-redoc.html`
+  - Redoc-style static documentation page, suitable for read-only display
 - `favicon.png`
-  - 静态文档页面图标
+  - Icon for static documentation pages
 
-## 如何生成
+## How to Generate
 
-在 `agent-backend/agent-factory` 目录下执行：
+Execute in the `agent-backend/agent-factory` directory:
 
 ```bash
 make gen-api-docs
 ```
 
-## 如何校验
+## How to Validate
 
 ```bash
 make validate-api-docs
 ```
 
-这个命令会同时检查：
+This command will simultaneously check:
 
-- OpenAPI 结构是否合法
-- 路径数、接口数是否符合预期
-- 这里的公共文档是否与运行时副本一致
+- Whether the OpenAPI structure is valid
+- Whether the number of paths and endpoints meets expectations
+- Whether runtime HTML still only depends on local embed resources
+- Whether JSON / YAML / favicon are consistent with runtime copies
 
-## 如何查看
+## APIChat Path Description
 
-### 直接查看静态页面
+- Recommended to use `/api/agent-factory/v1/api/chat/completion`
+  - Specify the target agent via `agent_key` in the body
+- `/api/agent-factory/v1/app/{app_key}/api/chat/completion`
+  - Deprecated, retained only for backward compatibility
+  - New integrations should migrate to the main entry without `app_key`
 
-直接打开当前目录下的 `agent-factory.html`。
+The static templates used by `GetAPIDoc` are also maintained in `src/static/agent-api.json` and `src/static/agent-api.yaml` following the recommended paths above.
 
-### 启动服务后查看
+## v3 Agent Config Mode Description
 
-启动 Agent Factory 后访问：
+The `config` of `/api/agent-factory/v3/agent` now uses `mode` as the primary mode field:
 
-- `http://127.0.0.1:30777/swagger/index.html`
-- `http://127.0.0.1:30777/swagger/doc.json`
-- `http://127.0.0.1:30777/swagger/doc.yaml`
+- `default`
+  - Uses `system_prompt`, `plan_mode`
+- `dolphin`
+  - Uses `dolphin`
+  - `is_dolphin_mode` is retained for backward compatibility with old requests
+  - Added `is_use_tool_id_in_dolphin`
+- `react`
+  - Uses `system_prompt`, `react_config`, `plan_mode`
 
-## 深入维护说明
+External documentation and detail responses uniformly use `react_config`.
 
-如果你需要了解生成链路、overlay、baseline 或 Swagger 中间产物，请查看：
+## React Agent Dedicated Creation Endpoint
+
+Added a React Agent dedicated creation endpoint:
+
+- `/api/agent-factory/v3/agent/react`
+  - Request body is consistent with `/api/agent-factory/v3/agent`
+  - Only used for creating ReAct mode agents
+  - Handler layer will additionally validate `config.mode`, returning `400` if it's not `react`
+
+## How to View
+
+### View Static Pages Directly
+
+Open any page directly in the current directory:
+
+- `agent-factory.html`
+- `agent-factory-redoc.html`
+
+These pages load frontend documentation JS resources from `https://cdn.jsdmirror.com/`.
+
+Applicable scenarios:
+
+- Need to distribute a single HTML file directly to others for viewing
+- Want to avoid including the `ui/` local resource directory
+
+Note:
+
+- Network access to the CDN is required on first open
+- The OpenAPI documentation content within the page is still embedded in the HTML file itself
+
+### View After Starting Service
+
+After starting Agent Factory, visit:
+
+- `http://127.0.0.1:30777/scalar`
+- `http://127.0.0.1:30777/redoc`
+- `http://127.0.0.1:30777/scalar/doc.json`
+- `http://127.0.0.1:30777/scalar/doc.yaml`
+
+This set of runtime pages continues to use service-embedded local UI resources and does not depend on external CDNs.
+
+Recommended approach:
+
+- Need to send requests, Try it Out: Use Scalar page
+- Need better read-only documentation display: Use Redoc page
+
+## In-Depth Maintenance Guide
+
+If you need to understand the generation pipeline, overlay, baseline, or Swagger intermediate artifacts, please refer to:
 
 - `../../cmd/openapi-docs/README.simple.md`
 - `../../cmd/openapi-docs/docs/OPENAPI_AUTOMATION_GUIDE.md`

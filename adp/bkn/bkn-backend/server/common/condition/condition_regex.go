@@ -44,7 +44,7 @@ func NewRegexCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewF
 		mCfg:             cfg,
 		mValue:           val,
 		mRegexp:          regexp,
-		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
+		mFilterFieldName: getFilterFieldName(cfg.Field, fieldsMap, false),
 	}, nil
 }
 
@@ -66,7 +66,7 @@ func (cond *RegexCond) Convert2SQL(ctx context.Context) (string, error) {
 // convertRegexCondToDatasetFilterCondition converts RegexCond to dataset filter condition format
 func convertRegexCondToDatasetFilterCondition(cfg *CondCfg) (map[string]any, error) {
 	return map[string]any{
-		"field":      cfg.Name,
+		"field":      cfg.Field,
 		"operation":  "regex",
 		"value":      cfg.Value,
 		"value_from": "const",

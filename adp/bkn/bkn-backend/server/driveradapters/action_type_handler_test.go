@@ -128,7 +128,7 @@ func Test_ActionTypeRestHandler_CreateActionTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("CheckKNExistByID failed\n", func() {
@@ -257,7 +257,7 @@ func Test_ActionTypeRestHandler_UpdateActionType(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ActionType not found\n", func() {
@@ -270,7 +270,7 @@ func Test_ActionTypeRestHandler_UpdateActionType(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("UpdateActionTypeByIn - Success\n", func() {
@@ -337,7 +337,7 @@ func Test_ActionTypeRestHandler_DeleteActionTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ActionType not found\n", func() {
@@ -349,7 +349,7 @@ func Test_ActionTypeRestHandler_DeleteActionTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 	})
 }
@@ -396,7 +396,7 @@ func Test_ActionTypeRestHandler_ListActionTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 	})
@@ -460,7 +460,7 @@ func Test_ActionTypeRestHandler_GetActionTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("GetActionTypesByIDs failed\n", func() {
@@ -549,7 +549,7 @@ func Test_ActionTypeRestHandler_SearchActionTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("SearchActionTypes failed\n", func() {

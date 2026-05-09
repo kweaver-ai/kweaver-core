@@ -22,10 +22,28 @@ render_sandbox_platform_enable() {
     '
 }
 
+render_factory_manifest() {
+  helm template agent-factory "${chart_dir}"
+}
+
+render_switch_field_keys() {
+  render_factory_manifest | awk '
+    /^    switch_fields:/ { in_block=1; next }
+    in_block && /^      [a-z_]+:/ {
+      key=$1
+      sub(":", "", key)
+      print key
+      next
+    }
+    in_block && /^    [^ ]/ { exit }
+  '
+}
+
 enabled_true_value="$(render_disable_biz_domain true)"
 enabled_false_value="$(render_disable_biz_domain false)"
 sandbox_enabled_true_value="$(render_sandbox_platform_enable true)"
 sandbox_enabled_false_value="$(render_sandbox_platform_enable false)"
+switch_field_keys="$(render_switch_field_keys)"
 
 if [[ "${enabled_true_value}" != "false" ]]; then
   echo "Expected disable_biz_domain=false when businessDomain.enabled=true, got ${enabled_true_value}"
@@ -44,6 +62,12 @@ fi
 
 if [[ "${sandbox_enabled_false_value}" != "false" ]]; then
   echo "Expected sandbox_platform.enable=false when depServices.sandboxPlatform.enable=false, got ${sandbox_enabled_false_value}"
+  exit 1
+fi
+
+if [[ "${switch_field_keys}" != $'keep_legacy_app_path\ndisable_pms_check\ndisable_biz_domain\ndisable_audit_init\nmock' ]]; then
+  echo "Expected switch_fields keys to match current contract, got:"
+  printf '%s\n' "${switch_field_keys}"
   exit 1
 fi
 

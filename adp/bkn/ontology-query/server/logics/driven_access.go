@@ -16,6 +16,7 @@ var (
 	OMA interfaces.OntologyManagerAccess
 	OSA interfaces.OpenSearchAccess
 	UA  interfaces.UniqueryAccess
+	VBA interfaces.VegaBackendAccess
 )
 
 func SetAuthAccess(aa interfaces.AuthAccess) {
@@ -40,4 +41,8 @@ func SetOpenSearchAccess(osa interfaces.OpenSearchAccess) {
 
 func SetUniqueryAccess(ua interfaces.UniqueryAccess) {
 	UA = ua
+}
+
+func SetVegaBackendAccess(v interfaces.VegaBackendAccess) {
+	VBA = v
 }

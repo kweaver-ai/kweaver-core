@@ -21,6 +21,7 @@ type ConceptGroup struct {
 	KNID       string `json:"kn_id" mapstructure:"kn_id"`
 	Branch     string `json:"branch" mapstructure:"branch"`
 
+	ObjectTypeIDs []string        `json:"object_type_ids,omitempty" mapstructure:"object_type_ids"`
 	ObjectTypes   []*ObjectType   `json:"object_types,omitempty" mapstructure:"object_types"`
 	RelationTypes []*RelationType `json:"relation_types,omitempty" mapstructure:"relation_types"`
 	ActionTypes   []*ActionType   `json:"action_types,omitempty" mapstructure:"action_types"`

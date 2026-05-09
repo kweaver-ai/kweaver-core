@@ -75,11 +75,14 @@ func BuildArtifactsFromFiles(ctx context.Context, opts BuildOptions) (*BuildArti
 	}
 
 	return &BuildArtifacts{
-		GeneratedDoc:  generatedDoc,
-		FinalDoc:      finalDoc,
-		CompareReport: compareReport,
-		JSON:          finalJSON,
-		YAML:          finalYAML,
-		HTML:          []byte(RenderScalarStaticHTML(finalJSON)),
+		GeneratedDoc:     generatedDoc,
+		FinalDoc:         finalDoc,
+		CompareReport:    compareReport,
+		JSON:             finalJSON,
+		YAML:             finalYAML,
+		PublicHTML:       []byte(RenderPublicScalarStaticHTML(finalJSON)),
+		PublicRedocHTML:  []byte(RenderPublicRedocStaticHTML(finalJSON)),
+		RuntimeHTML:      []byte(RenderRuntimeScalarStaticHTML(finalJSON)),
+		RuntimeRedocHTML: []byte(RenderRuntimeRedocStaticHTML(finalJSON)),
 	}, nil
 }

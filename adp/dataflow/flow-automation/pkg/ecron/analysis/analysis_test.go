@@ -8,9 +8,9 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/mock"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/mock"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/utils"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/robfig/cron/v3"
 	uuid "github.com/satori/go.uuid"

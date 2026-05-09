@@ -7,6 +7,7 @@
 import time
 from typing import Dict, TYPE_CHECKING
 
+from app.common.stand_log import StandLogger
 from app.domain.vo.agent_cache import AgentCacheIdVO
 from app.domain.vo.agentvo import AgentConfigVo
 
@@ -67,5 +68,6 @@ async def update_cache_data(
         await manager.cache_service.save(cache_entity)
 
     except Exception as e:
+        StandLogger.error(f"agent cache update data failed: {e}")
         o11y_logger().error(f"agent cache update data failed: {e}")
         raise e

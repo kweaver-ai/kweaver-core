@@ -92,7 +92,6 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-
 	bknNetwork.Branch = branch
 	bknNetwork.BusinessDomain = businessDomain
 
@@ -111,6 +110,10 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 	for _, bknAct := range bknNetwork.ActionTypes {
 		act := logics.ToADPActionType(kn.KNID, kn.Branch, bknAct)
 		kn.ActionTypes = append(kn.ActionTypes, act)
+	}
+	for _, bknRisk := range bknNetwork.RiskTypes {
+		risk := logics.ToADPRiskType(kn.KNID, kn.Branch, bknRisk)
+		kn.RiskTypes = append(kn.RiskTypes, risk)
 	}
 	for _, bknCG := range bknNetwork.ConceptGroups {
 		cg := logics.ToADPConceptGroup(kn.KNID, kn.Branch, bknCG)

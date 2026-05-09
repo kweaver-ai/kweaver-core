@@ -464,7 +464,7 @@ func Test_conceptGroupService_ListConceptGroups(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			cga.EXPECT().ListConceptGroups(gomock.Any(), gomock.Any()).Return(cgArr, nil)
 			ums.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
-			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil)
+			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]string{}, nil)
 
 			cgs, total, err := service.ListConceptGroups(ctx, query)
 			So(err, ShouldBeNil)
@@ -1055,6 +1055,7 @@ func Test_conceptGroupService_UpdateConceptGroup(t *testing.T) {
 
 			smock.ExpectBegin()
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, []string{"cg1"}, interfaces.MODULE_TYPE_OBJECT_TYPE).Return([]string{}, nil)
 			cga.EXPECT().UpdateConceptGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), interfaces.BKN_DATASET_ID, gomock.Any()).Return(nil)
 			smock.ExpectCommit()
@@ -1087,6 +1088,7 @@ func Test_conceptGroupService_UpdateConceptGroup(t *testing.T) {
 
 			smock.ExpectBegin()
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, []string{"cg1"}, interfaces.MODULE_TYPE_OBJECT_TYPE).Return([]string{}, nil)
 			cga.EXPECT().UpdateConceptGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ConceptGroup_InternalError))
 			smock.ExpectRollback()
 
@@ -1104,6 +1106,7 @@ func Test_conceptGroupService_UpdateConceptGroup(t *testing.T) {
 
 			smock.ExpectBegin()
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, []string{"cg1"}, interfaces.MODULE_TYPE_OBJECT_TYPE).Return([]string{}, nil)
 			cga.EXPECT().UpdateConceptGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), interfaces.BKN_DATASET_ID, gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ConceptGroup_InternalError))
 			smock.ExpectRollback()
@@ -1526,6 +1529,7 @@ func Test_conceptGroupService_CreateConceptGroup(t *testing.T) {
 			// handleConceptGroupImportMode runs in CreateConceptGroup and again in UpdateConceptGroup → ValidateConceptGroups
 			cga.EXPECT().CheckConceptGroupExistByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("cg1", true, nil).Times(2)
 			cga.EXPECT().CheckConceptGroupExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("cg1", true, nil).Times(2)
+			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, []string{"cg1"}, interfaces.MODULE_TYPE_OBJECT_TYPE).Return([]string{}, nil)
 			cga.EXPECT().UpdateConceptGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), interfaces.BKN_DATASET_ID, gomock.Any()).Return(nil).AnyTimes()
 			smock.ExpectCommit()

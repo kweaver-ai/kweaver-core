@@ -76,7 +76,7 @@ powershell -c "irm astral.sh/uv/install.sh | iex"
 # 1. 复制配置文件
 cp agent-executor.yaml.example agent-executor.yaml
 
-# 2. 自动同步环境并安装所有依赖（包括特殊依赖）
+# 2. 自动同步环境并安装所有依赖
 make uv-sync
 
 # 4. 根据需要修改配置
@@ -106,7 +106,7 @@ powershell -c "irm astral.sh/uv/install.sh | iex"
 # 1. 复制配置文件
 cp agent-executor.yaml.example agent-executor.yaml
 
-# 2. 自动同步环境并安装所有依赖（包括特殊依赖）
+# 2. 自动同步环境并安装所有依赖
 make uv-sync
 
 # 4. 根据需要修改配置
@@ -128,33 +128,6 @@ git checkout MISSION
 uv pip install .
 ```
 
-### 特殊依赖安装
-
-#### proton-mq-python 依赖安装
-安装proton-mq-python需要将项目中的mq-sdk-lib 下的文件放在对应架构的开发环境的/usr/lib 目录下。
-
-```bash
-git clone https://devops.aishu.cn/AISHUDevOps/ONE-Architecture/_git/proton-mq-python
-cd /proton-mq-python
-uv pip install .
-```
-
-#### telemetrysdk-python 依赖安装
-**注意：** 这个依赖需要手动安装，请使用以下命令：
-
-```bash
-git clone https://devops.aishu.cn/AISHUDevOps/ONE-Architecture/_git/TelemetrySDK-Python
-cd /TelemetrySDK-Python
-uv pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade --no-cache-dir -r pytest_requirements.txt
-uv pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade --no-cache-dir -r requirements.txt
-uv pip install .
-```
-
-或者使用Makefile命令：
-```bash
-make install-TelemetrySDK-Python
-```
-
 ## 开启 DEBUG 模式
 开启后会影响日志打印级别， 默认为 INFO级别，开启后为 DEBUG级别， 同时会影响配置文件的加载，详见config.py
 **tip: ** : 只允许在开发环境开启 {ip} 为依赖服务所在服务器IP
@@ -163,10 +136,19 @@ export AGENT_EXECUTOR_DEBUG=true
 export AGENT_EXECUTOR_DIPHOST={ip}
 ```
 ## 开启可观测性
-export O11Y_LOG_ENABLED=true
-export O11Y_LOG_EXPORTER=console
-export O11Y_TRACE_ENABLED=true
-export O11Y_TRACE_PROVIDER=console
+通过 `agent-executor.yaml` 中的 `o11y` 配置开启，例如：
+
+```yaml
+o11y:
+  service_name: "agent-executor"
+  service_version: "1.0.0"
+  environment: "production"
+  log_enabled: true
+  log_level: "info"
+  trace_enabled: true
+  trace_endpoint: "otelcol-contrib:4318"
+  trace_sampling_rate: 1.0
+```
 
 
 ## 依赖服务配置

@@ -51,9 +51,9 @@ func (aqa *asynqAccess) CreateServer(ctx context.Context) *asynq.Server {
 	return asynq.NewServer(redisOpt, asynq.Config{
 		Concurrency: 10,
 		Queues: map[string]int{
-			"high":    6,
-			"default": 3,
-			"low":     1,
+			interfaces.HighQueue:    6,
+			interfaces.DefaultQueue: 3,
+			interfaces.LowQueue:     1,
 		},
 		ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
 			logger.Errorf("Task %s failed: %v", task.Type(), err)

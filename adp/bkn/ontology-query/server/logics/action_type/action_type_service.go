@@ -89,6 +89,12 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 		return resps, rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_ObjectType_ObjectTypeNotFound)
 	}
 
+	if missing := logics.MissingActionInputDynamicParamNames(&actionType, query.DynamicParams); len(missing) > 0 {
+		return resps, rest.NewHTTPError(ctx, http.StatusBadRequest,
+			oerrors.OntologyQuery_ActionType_InvalidParameter_DynamicParams).
+			WithErrorDetails(fmt.Sprintf("当前请求查询的行动类[%s]所需的动态参数未完整传入，缺少参数 %v，请在请求的 dynamic_params 中填充", actionType.ATName, missing))
+	}
+
 	// 2. 检查是否绑定了对象类
 	isObjectTypeBound := actionType.ObjectTypeID != ""
 	var objectType interfaces.ObjectType
@@ -113,7 +119,7 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 		if len(query.InstanceIdentities) == 0 {
 			// Case 4: 未绑定对象类 + 无 identities → 构造一个临时的虚拟实例
 			logger.Infof("No identities provided, creating virtual instance for action type %s", actionType.ATID)
-			virtualAction, err := buildActionFromInstanceData(map[string]any{}, &actionType)
+			virtualAction, err := buildActionFromInstanceData(map[string]any{}, &actionType, query.DynamicParams)
 			if err != nil {
 				logger.Errorf("Error building virtual action: %v", err)
 				return resps, rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_InternalError_UnMarshalDataFailed).
@@ -136,7 +142,7 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 			logger.Infof("Constructing instances from identities for action type %s", actionType.ATID)
 			actions := []interfaces.ActionParam{}
 			for _, identity := range query.InstanceIdentities {
-				action, err := buildActionFromInstanceData(identity, &actionType)
+				action, err := buildActionFromInstanceData(identity, &actionType, query.DynamicParams)
 				if err != nil {
 					logger.Errorf("Error building action from instance data: %v", err)
 					return resps, rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_InternalError_UnMarshalDataFailed).
@@ -207,7 +213,7 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 				}
 
 				// 满足条件，构造行动数据
-				action, err := buildActionFromInstanceData(instanceIdentity, &actionType)
+				action, err := buildActionFromInstanceData(instanceIdentity, &actionType, query.DynamicParams)
 				if err != nil {
 					logger.Errorf("Error building action from instance data: %v", err)
 					return resps, rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_InternalError_UnMarshalDataFailed).
@@ -285,7 +291,8 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 							actionType.ATName, param.Name, err.Error()))
 				}
 			case interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT:
-				dynamicParamsJson, err = sjson.Set(dynamicParamsJson, param.Name, nil)
+				val := logics.ActionDynamicParamGetValue(query.DynamicParams, param.Name)
+				dynamicParamsJson, err = sjson.Set(dynamicParamsJson, param.Name, val)
 				if err != nil {
 					return resps, rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_InternalError_UnMarshalDataFailed).
 						WithErrorDetails(fmt.Sprintf("Error setting action type[%s]'s dynamic parameter path %s: %v",
@@ -351,7 +358,7 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 
 // buildActionFromInstanceData builds action data from instance data
 func buildActionFromInstanceData(instanceData map[string]any,
-	actionType *interfaces.ActionType) (interfaces.ActionParam, error) {
+	actionType *interfaces.ActionType, requestDynamicParams map[string]any) (interfaces.ActionParam, error) {
 
 	var action interfaces.ActionParam
 
@@ -373,7 +380,8 @@ func buildActionFromInstanceData(instanceData map[string]any,
 					actionType.ATName, param.Name, err)
 			}
 		case interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT:
-			dynamicParamsJson, err = sjson.Set(dynamicParamsJson, param.Name, nil)
+			val := logics.ActionDynamicParamGetValue(requestDynamicParams, param.Name)
+			dynamicParamsJson, err = sjson.Set(dynamicParamsJson, param.Name, val)
 			if err != nil {
 				return action, fmt.Errorf("error setting action type[%s]'s dynamic parameter path %s: %v",
 					actionType.ATName, param.Name, err)

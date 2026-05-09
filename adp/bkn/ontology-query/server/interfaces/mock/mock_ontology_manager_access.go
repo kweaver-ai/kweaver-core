@@ -115,7 +115,7 @@ func (m *MockOntologyManagerAccess) GetRiskTypesByIDs(ctx context.Context, knID,
 }
 
 // GetRiskTypesByIDs indicates an expected call of GetRiskTypesByIDs.
-func (mr *MockOntologyManagerAccessMockRecorder) GetRiskTypesByIDs(ctx, knID, branch, riskTypeIDs interface{}) *gomock.Call {
+func (mr *MockOntologyManagerAccessMockRecorder) GetRiskTypesByIDs(ctx, knID, branch, riskTypeIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRiskTypesByIDs", reflect.TypeOf((*MockOntologyManagerAccess)(nil).GetRiskTypesByIDs), ctx, knID, branch, riskTypeIDs)
 }
@@ -133,4 +133,20 @@ func (m *MockOntologyManagerAccess) ListRelationTypes(ctx context.Context, knID,
 func (mr *MockOntologyManagerAccessMockRecorder) ListRelationTypes(ctx, knID, branch, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRelationTypes", reflect.TypeOf((*MockOntologyManagerAccess)(nil).ListRelationTypes), ctx, knID, branch, query)
+}
+
+// GetMetricDefinition mocks base method.
+func (m *MockOntologyManagerAccess) GetMetricDefinition(ctx context.Context, knID, branch, metricID string) (*interfaces.MetricDefinition, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetricDefinition", ctx, knID, branch, metricID)
+	ret0, _ := ret[0].(*interfaces.MetricDefinition)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetMetricDefinition indicates an expected call of GetMetricDefinition.
+func (mr *MockOntologyManagerAccessMockRecorder) GetMetricDefinition(ctx, knID, branch, metricID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricDefinition", reflect.TypeOf((*MockOntologyManagerAccess)(nil).GetMetricDefinition), ctx, knID, branch, metricID)
 }

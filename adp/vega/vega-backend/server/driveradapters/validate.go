@@ -25,7 +25,7 @@ func validateID(ctx context.Context, ID string) error {
 		return nil
 	}
 
-	// 非内置视图校验数据视图 id，只包含小写英文字母和数字和下划线(_)和连字符(-)，且不能以下划线开头，不能超过40个字符
+	// 非内置视图校验逻辑视图 id，只包含小写英文字母和数字和下划线(_)和连字符(-)，且不能以下划线开头，不能超过40个字符
 	re := regexp2.MustCompile(interfaces.RegexPattern_NonBuiltin_ViewID, regexp2.RE2)
 	match, err := re.MatchString(ID)
 	if err != nil || !match {
@@ -122,7 +122,7 @@ func validatePaginationQueryParams(ctx context.Context, offset, limit, sort, dir
 			WithErrorDetails(err.Error())
 	}
 
-	if !(limit == interfaces.NO_LIMIT || (lim >= interfaces.MIN_LIMIT && lim <= interfaces.MAX_LIMIT)) {
+	if limit != interfaces.NO_LIMIT && (lim < interfaces.MIN_LIMIT || lim > interfaces.MAX_LIMIT) {
 		return pageParams, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Limit).
 			WithErrorDetails(fmt.Sprintf("The number per page does not equal %s is not in the range of [%d,%d]", interfaces.NO_LIMIT, interfaces.MIN_LIMIT, interfaces.MAX_LIMIT))
 	}
@@ -148,4 +148,41 @@ func validatePaginationQueryParams(ctx context.Context, offset, limit, sort, dir
 		Sort:      supportedSortTypes[sort],
 		Direction: direction,
 	}, nil
+}
+
+// ConnectorConfig 合法性校验
+func validateConnectorConfig(ctx context.Context, cfg interfaces.ConnectorConfig) error {
+	// Check for duplicate elements in databases
+	if dbValue, exists := cfg["databases"]; exists {
+		if dbArray, ok := dbValue.([]any); ok {
+			if err := checkDuplicateElements(ctx, dbArray, "databases"); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Check for duplicate elements in schemas
+	if schemaValue, exists := cfg["schemas"]; exists {
+		if schemaArray, ok := schemaValue.([]any); ok {
+			if err := checkDuplicateElements(ctx, schemaArray, "schemas"); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// 检查数组中是否存在重复元素
+func checkDuplicateElements(ctx context.Context, arr []any, fieldName string) error {
+	seen := make(map[string]bool)
+	for _, item := range arr {
+		strItem := fmt.Sprintf("%v", item)
+		if seen[strItem] {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InvalidParameter_ConnectorConfig).
+				WithErrorDetails(fmt.Sprintf("duplicate element found in '%s': %s", fieldName, strItem))
+		}
+		seen[strItem] = true
+	}
+	return nil
 }

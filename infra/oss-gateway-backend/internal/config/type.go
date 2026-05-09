@@ -20,7 +20,7 @@ type DatabaseConfig struct {
 	Port     string `envconfig:"RDSPORT"     default:"3306"`
 	User     string `envconfig:"RDSUSER"     default:"root"`
 	Password string `envconfig:"RDSPASS"     default:""`
-	DBName   string `envconfig:"RDSDBNAME"   default:"adp"`
+	DBName   string `envconfig:"RDSDBNAME"   default:"kweaver"`
 	TYPE     string `envconfig:"DB_TYPE"     default:"MYSQL"`
 	SystemID string `envconfig:"DB_SYSTEMID" default:""`
 

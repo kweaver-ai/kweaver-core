@@ -3,6 +3,31 @@ Description = "任务不存在"
 Solution = "请检查任务ID"
 ErrorLink = "暂无"
 
+[VegaBackend.BuildTask.NotFound]
+Description = "构建任务不存在"
+Solution = "请检查构建任务ID是否存在"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InvalidParameter.ResourceID]
+Description = "资源ID无效"
+Solution = "请检查 resource_id 是否提供且存在"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InvalidParameter.Mode]
+Description = "构建任务模式无效"
+Solution = "mode 必须为 streaming / batch 之一"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InvalidStateTransition]
+Description = "构建任务状态转移非法"
+Solution = "检查当前状态；start 要求 status 为 init 或 stopped；stop 要求 status 为 running"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.HasRunningExecution]
+Description = "构建任务正在运行，无法删除"
+Solution = "请先停止任务再删除"
+ErrorLink = "暂无"
+
 [VegaBackend.BuildTask.InternalError.CreateFailed]
 Description = "创建构建任务失败"
 Solution = "请联系管理员"
@@ -16,4 +41,54 @@ ErrorLink = "暂无"
 [VegaBackend.BuildTask.Exist]
 Description = "构建任务已存在"
 Solution = "请检查资源是否已存在构建任务"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.Running]
+Description = "构建任务正在运行"
+Solution = "请等待任务完成或停止后再操作"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InvalidStatus]
+Description = "无效的构建任务状态"
+Solution = "请检查状态值"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InvalidExecuteType]
+Description = "无效的构建任务执行类型"
+Solution = "请检查执行类型值"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InternalError.UpdateFailed]
+Description = "更新构建任务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InternalError.DeleteFailed]
+Description = "删除构建任务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.NotFound]
+Description = "采集任务不存在"
+Solution = "请检查采集任务 ID 是否存在"
+ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.InvalidStatus]
+Description = "采集任务状态无效"
+Solution = "status 必须为 pending / running / completed / failed 之一"
+ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.HasRunningExecution]
+Description = "采集任务处于 pending 或 running 状态，无法删除"
+Solution = "请等待任务完成或失败后再删除"
+ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.InternalError.GetFailed]
+Description = "获取采集任务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.InternalError.DeleteFailed]
+Description = "删除采集任务失败"
+Solution = "请联系管理员"
 ErrorLink = "暂无"

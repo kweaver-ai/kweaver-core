@@ -128,7 +128,7 @@ func validateViewFields(ctx context.Context, viewFields []*interfaces.ViewProper
 		if _, ok := nameMap[field.Name]; !ok {
 			nameMap[field.Name] = struct{}{}
 		} else {
-			errDetails := fmt.Sprintf("Data view field '%s' name '%s' already exists", field.Name, field.Name)
+			errDetails := fmt.Sprintf("Logic view field '%s' name '%s' already exists", field.Name, field.Name)
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_Duplicated_FieldName).
 				WithDescription(map[string]any{"FieldName": field.Name}).
 				WithErrorDetails(errDetails)
@@ -137,7 +137,7 @@ func validateViewFields(ctx context.Context, viewFields []*interfaces.ViewProper
 		if _, ok := displayNameMap[field.DisplayName]; !ok {
 			displayNameMap[field.DisplayName] = struct{}{}
 		} else {
-			errDetails := fmt.Sprintf("Data view field '%s' display name '%s' already exists", field.Name, field.DisplayName)
+			errDetails := fmt.Sprintf("Logic view field '%s' display name '%s' already exists", field.Name, field.DisplayName)
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_Duplicated_FieldDisplayName).
 				WithDescription(map[string]any{"FieldName": field.Name, "DisplayName": field.DisplayName}).
 				WithErrorDetails(errDetails)
@@ -174,7 +174,7 @@ func validateFeatures(ctx context.Context, fieldsMap map[string]*interfaces.View
 		if _, ok := featureNameMap[f.FeatureName]; !ok {
 			featureNameMap[f.FeatureName] = struct{}{}
 		} else {
-			errDetails := fmt.Sprintf("Data view field feature '%s' name '%s' already exists", f.FeatureName, f.FeatureName)
+			errDetails := fmt.Sprintf("Logic view field feature '%s' name '%s' already exists", f.FeatureName, f.FeatureName)
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_Duplicated_FieldFeatureName).
 				WithDescription(map[string]any{"FieldFeatureName": f.FeatureName}).
 				WithErrorDetails(errDetails)

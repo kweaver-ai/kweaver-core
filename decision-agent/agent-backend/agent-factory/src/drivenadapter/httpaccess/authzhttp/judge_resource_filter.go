@@ -7,7 +7,6 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpreq"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpres"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/httphelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
@@ -45,18 +44,6 @@ func (a *authZHttpAcc) FilterCanUseAgentIDs(ctx context.Context, uid string, age
 	if global.GConfig.SwitchFields.DisablePmsCheck {
 		filteredAgentIDs = make([]string, len(agentIDs))
 		copy(filteredAgentIDs, agentIDs)
-
-		return
-	}
-
-	if cenvhelper.IsAaronLocalDev() {
-		filteredAgentIDs = make([]string, len(agentIDs))
-
-		if len(agentIDs) == 0 {
-			return
-		}
-
-		filteredAgentIDs = agentIDs[:len(agentIDs)-1]
 
 		return
 	}

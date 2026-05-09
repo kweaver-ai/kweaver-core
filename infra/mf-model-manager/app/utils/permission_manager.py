@@ -23,6 +23,8 @@ class PermissionManager:
 
     async def add_permission(self, user_id: str, resource_id: str, resource_name: str, resource_type: str,
                              user_name: str, role: str) -> bool:
+        if not base_config.AUTH_ENABLED:
+            return True
         # admin用户无需授权
         if user_id == "266c6a42-6131-4d62-8f39-853e7093701c":
             return True
@@ -96,6 +98,8 @@ class PermissionManager:
 
     async def check_single_permission(self, user_id: str, resource_id: str, operations: str,
                                       resource_type: str, role: str) -> bool:
+        if not base_config.AUTH_ENABLED:
+            return True
         """校验用户对资源的权限"""
         payload = {
             "method": "GET",
@@ -127,6 +131,9 @@ class PermissionManager:
 
     async def get_permission_ids(self, user_id: str, operation: str,
                                  resource_type: str, resource_name: str, role: str) -> list:
+        if not base_config.AUTH_ENABLED:
+            all_ids = small_model_dao.get_all_ids()
+            return [m['f_model_id'] for m in all_ids]
         """获取资源列表"""
         payload = {
             "method": "GET",
@@ -156,7 +163,7 @@ class PermissionManager:
             "method": "GET",
             "accessor": {
                 "id": user_id,
-                "type": "user"
+                "type": role
             },
             "resources": resources,
             "operation": [
@@ -180,6 +187,8 @@ class PermissionManager:
         return operation_ids
 
     async def delete_permission(self, resource_type: str, resource_ids: list) -> bool:
+        if not base_config.AUTH_ENABLED:
+            return True
         """删除权限"""
         session = await self.get_session()
         resources = [{"id": resource_id, "type": resource_type} for resource_id in resource_ids]

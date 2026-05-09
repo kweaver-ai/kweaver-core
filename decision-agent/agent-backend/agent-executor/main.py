@@ -64,6 +64,26 @@ class ASGIExceptionFilter(logging.Filter):
 
 
 def main():
+    # ============ UTF-8 编码配置（解决 Windows emoji 显示问题）============
+    import os
+    import sys
+    
+    # 设置 Python 使用 UTF-8 编码
+    os.environ['PYTHONUTF8'] = '1'
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    
+    # 重新配置 sys.stdout 和 sys.stderr 使用 UTF-8
+    if sys.platform == 'win32':
+        try:
+            # Windows 控制台使用 UTF-8
+            import io
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+            print("[UTF-8] Console encoding configured for Windows")
+        except Exception as e:
+            print(f"[UTF-8] Warning: Could not configure console encoding: {e}")
+    # ===================================================================
+    
     # 设置 asyncio 异常处理器
     try:
         loop = asyncio.get_event_loop()

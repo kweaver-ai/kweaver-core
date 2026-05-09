@@ -13,7 +13,8 @@ import "context"
 //go:generate mockgen -source ../interfaces/discover_task_service.go -destination ../interfaces/mock/mock_discover_task_service.go
 type DiscoverTaskService interface {
 	// Create creates a new DiscoverTask and sends message to Kafka.
-	Create(ctx context.Context, catalogID string) (string, error)
+	// taskType is optional, defaults to DiscoverTaskTriggerManual if not provided.
+	Create(ctx context.Context, catalogID string, taskType ...string) (string, error)
 	// GetByID retrieves a DiscoverTask by ID.
 	GetByID(ctx context.Context, id string) (*DiscoverTask, error)
 	// List lists DiscoverTasks for a catalog.
@@ -25,4 +26,9 @@ type DiscoverTaskService interface {
 
 	// CheckExistByStatuses  checks if DiscoverTasks exists by catalog ID and statuses.
 	CheckExistByStatuses(ctx context.Context, catalogID string, statuses []string) (bool, error)
+
+	// Delete atomically deletes discover tasks by IDs.
+	// Pre-validates: any pending/running id returns 409 (cannot be skipped); any missing id returns 404
+	// unless ignoreMissing=true. Duplicate ids in the input are de-duplicated.
+	Delete(ctx context.Context, ids []string, ignoreMissing bool) error
 }

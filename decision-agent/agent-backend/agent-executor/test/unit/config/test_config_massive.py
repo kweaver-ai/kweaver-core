@@ -168,11 +168,15 @@ class TestO11yConfigMassive:
         assert config.log_enabled is False
 
     def test_from_dict_log_enabled(self):
-        config = O11yConfig.from_dict({"log_enabled": True})
+        config = O11yConfig.from_dict(
+            {"log_enabled": True, "trace_endpoint": "http://otelcol-contrib:4318"}
+        )
         assert config.log_enabled is True
 
     def test_from_dict_trace_enabled(self):
-        config = O11yConfig.from_dict({"trace_enabled": True})
+        config = O11yConfig.from_dict(
+            {"trace_enabled": True, "trace_endpoint": "http://otelcol-contrib:4318"}
+        )
         assert config.trace_enabled is True
 
 
@@ -316,6 +320,18 @@ class TestServiceEndpointMassive:
 class TestServicesConfigMassive:
     """Massive tests for ServicesConfig"""
 
+    DEPRECATED_SERVICE_NAMES = (
+        "kn_data_query",
+        "kn_knowledge_data",
+        "data_connection",
+        "search_engine",
+        "ecosearch",
+        "ecoindex_public",
+        "ecoindex_private",
+        "docset_private",
+        "datahub",
+    )
+
     def test_init_creates_defaults(self):
         config = ServicesConfig()
         assert config.mf_model_api is not None
@@ -346,50 +362,10 @@ class TestServicesConfigMassive:
         assert config.agent_memory.host == "agent-memory"
         assert config.agent_memory.port == "30790"
 
-    def test_kn_data_query_default(self):
+    def test_deprecated_services_are_absent(self):
         config = ServicesConfig()
-        assert config.kn_data_query.host == "kn-data-query"
-        assert config.kn_data_query.port == "6480"
-
-    def test_kn_knowledge_data_default(self):
-        config = ServicesConfig()
-        assert config.kn_knowledge_data.host == "kn-knowledge-data"
-        assert config.kn_knowledge_data.port == "6475"
-
-    def test_data_connection_default(self):
-        config = ServicesConfig()
-        assert config.data_connection.host == "data-connection"
-        assert config.data_connection.port == "8098"
-
-    def test_search_engine_default(self):
-        config = ServicesConfig()
-        assert config.search_engine.host == "kn-search-engine"
-        assert config.search_engine.port == "6479"
-
-    def test_ecosearch_default(self):
-        config = ServicesConfig()
-        assert config.ecosearch.host == "ecosearch"
-        assert config.ecosearch.port == "32126"
-
-    def test_ecoindex_public_default(self):
-        config = ServicesConfig()
-        assert config.ecoindex_public.host == "ecoindex-public"
-        assert config.ecoindex_public.port == "32129"
-
-    def test_ecoindex_private_default(self):
-        config = ServicesConfig()
-        assert config.ecoindex_private.host == "ecoindex-private"
-        assert config.ecoindex_private.port == "32130"
-
-    def test_docset_private_default(self):
-        config = ServicesConfig()
-        assert config.docset_private.host == "docset-private"
-        assert config.docset_private.port == "32597"
-
-    def test_datahub_default(self):
-        config = ServicesConfig()
-        assert config.datahub.host == "datahubcentral-private"
-        assert config.datahub.port == ""
+        for service_name in self.DEPRECATED_SERVICE_NAMES:
+            assert not hasattr(config, service_name)
 
     def test_from_dict_empty(self):
         config = ServicesConfig.from_dict({})

@@ -46,9 +46,6 @@ type httpServer struct {
 	agentHandler ihandlerportdriver.IHTTPRouter
 	// conversation 会话管理
 	conversationHandler ihandlerportdriver.IHTTPRouter
-	// temparea 临时区域
-	// observability 可观测性
-	observabilityHandler ihandlerportdriver.IHTTPRouter
 	// session 会话
 	sessionHandler ihandlerportdriver.IHTTPRouter
 }

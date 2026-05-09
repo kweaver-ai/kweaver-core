@@ -27,7 +27,7 @@ func TestNewMatchCond(t *testing.T) {
 		Convey("invalid value_from should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatch,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
 					Value:     "value1",
@@ -42,7 +42,7 @@ func TestNewMatchCond(t *testing.T) {
 		Convey("AllField should use default fields", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatch,
-				Name:      AllField,
+				Field:     AllField,
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -60,7 +60,7 @@ func TestNewMatchCond(t *testing.T) {
 		Convey("specific field should use that field", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatch,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -90,7 +90,7 @@ func TestMatchCond_Convert(t *testing.T) {
 		Convey("string value should be quoted", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatch,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -114,7 +114,7 @@ func TestMatchCond_Convert(t *testing.T) {
 		Convey("numeric value should not be quoted", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatch,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     123,
@@ -137,7 +137,7 @@ func TestMatchCond_Convert(t *testing.T) {
 		Convey("AllField should include multiple fields", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatch,
-				Name:      AllField,
+				Field:     AllField,
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -172,7 +172,7 @@ func TestMatchCond_Convert2SQL(t *testing.T) {
 		Convey("should return empty string", func() {
 			cfg := &CondCfg{
 				Operation: OperationMatch,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",

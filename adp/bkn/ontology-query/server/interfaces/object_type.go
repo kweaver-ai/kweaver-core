@@ -10,6 +10,9 @@ import (
 )
 
 const (
+	// 对象类数据来源（与 bkn-backend 一致）
+	DATA_SOURCE_TYPE_DATA_VIEW = "data_view"
+	DATA_SOURCE_TYPE_RESOURCE  = "resource"
 
 	// 逻辑属性类型
 	LOGIC_PROPERTY_TYPE_METRIC   = "metric"

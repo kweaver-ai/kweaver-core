@@ -37,16 +37,21 @@ func (c *OutRangeCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 	}
 	field, ok := fieldsMap[cfg.Name]
 	if !ok {
-		return nil, fmt.Errorf("condition [out_range] left field '%s' not found", cfg.Name)
+		// 如果字段未在Schema中定义，创建一个临时的Property对象
+		field = &interfaces.Property{
+			Name:         cfg.Name,
+			OriginalName: cfg.Name,
+		}
 	}
-	if !interfaces.DataType_IsDate(field.Type) && !interfaces.DataType_IsNumber(field.Type) {
+	// 对于未在Schema中定义的字段，跳过类型检查
+	if ok && !interfaces.DataType_IsDate(field.Type) && !interfaces.DataType_IsNumber(field.Type) {
 		return nil, fmt.Errorf("condition [out_range] left field is not a date/number field: %s:%s", cfg.Name, field.Type)
 	}
 
-	if cfg.ValueOptCfg.ValueFrom != interfaces.ValueFrom_Const {
+	if cfg.ValueFrom != interfaces.ValueFrom_Const {
 		return nil, fmt.Errorf("condition [out_range] does not support value_from type '%s'", cfg.ValueFrom)
 	}
-	val, ok := cfg.ValueOptCfg.Value.([]any)
+	val, ok := cfg.Value.([]any)
 	if !ok {
 		return nil, fmt.Errorf("condition [out_range] right value should be an array")
 	}

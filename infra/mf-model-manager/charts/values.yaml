@@ -25,7 +25,7 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-body-size: "500M"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
   paths:
-    - /api/model-manager
+    - /api/mf-model-manager
 
 env:
   devicecode: ""
@@ -41,7 +41,7 @@ depServices:
     user: 'username'
     password: 'password'
     type: ""
-    database: "adp"
+    database: "kweaver"
     maxConnections: 5
   opensearch:
     read: "opensearch-read"
@@ -109,6 +109,10 @@ resources:
   limits:
     cpu: 4
     memory: 8Gi
+auth:
+  # 是否开启权限控制。false=关闭（所有接口放行，不过滤数据）；true=开启（走完整鉴权与资源权限逻辑）
+  enabled: "true"
+
 observability:
     logEnabled: "false"
     traceEnabled: "false"

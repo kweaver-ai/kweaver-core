@@ -1,0 +1,17 @@
+id,name,department_id,role,level,hire_date,manager_id,salary_cny
+emp_001,Zhang Wei,dept_01,Engineering Manager,M2,2018-03-15,,380000
+emp_002,Li Na,dept_01,Senior Engineer,P6,2019-07-22,emp_001,280000
+emp_003,Wang Fang,dept_01,Engineer,P5,2021-04-10,emp_001,200000
+emp_004,Chen Jian,dept_01,Engineer,P5,2022-01-18,emp_001,195000
+emp_005,Liu Yang,dept_01,Senior Engineer,P6,2020-09-01,emp_001,265000
+emp_006,Zhao Min,dept_02,Product Director,M3,2017-06-20,,420000
+emp_007,Sun Hua,dept_02,Senior Product Manager,P6,2019-11-05,emp_006,300000
+emp_008,Zhou Xin,dept_02,Product Manager,P5,2021-08-30,emp_006,220000
+emp_009,Wu Lei,dept_03,Sales Director,M3,2016-04-12,,450000
+emp_010,Zheng Yan,dept_03,Senior Account Manager,P6,2018-10-28,emp_009,310000
+emp_011,Ma Tao,dept_03,Account Manager,P5,2020-03-17,emp_009,240000
+emp_012,He Jing,dept_03,Account Manager,P5,2021-12-06,emp_009,230000
+emp_013,Gao Peng,dept_04,Operations Manager,M2,2019-02-25,,360000
+emp_014,Lin Mei,dept_04,Senior Operations Specialist,P5,2020-07-14,emp_013,210000
+emp_015,Xu Bo,dept_05,Finance Manager,M2,2018-08-08,,340000
+emp_016,Song Qian,dept_05,Senior Accountant,P5,2020-05-19,emp_015,205000

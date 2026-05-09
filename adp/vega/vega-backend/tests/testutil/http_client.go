@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type HTTPClient struct {
 	BaseURL string
 	Client  *http.Client
 	Headers map[string]string // 包含X-Account-ID等公共头
+	mu      sync.RWMutex      // 保护Headers的并发访问
 }
 
 // HTTPResponse HTTP响应封装
@@ -54,7 +56,7 @@ func (c *HTTPClient) CheckHealth() error {
 	if err != nil {
 		return fmt.Errorf("健康检查失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("健康检查返回状态码 %d", resp.StatusCode)
@@ -109,9 +111,11 @@ func (c *HTTPClient) doRequest(method, path string, payload any) HTTPResponse {
 	}
 
 	// 设置公共头
+	c.mu.RLock()
 	for k, v := range c.Headers {
 		req.Header.Set(k, v)
 	}
+	c.mu.RUnlock()
 
 	// 发送请求
 	resp, err := c.Client.Do(req)
@@ -121,7 +125,7 @@ func (c *HTTPClient) doRequest(method, path string, payload any) HTTPResponse {
 			Error:      &ErrorResponse{ErrorCode: "network_error", ErrorDetails: err.Error()},
 		}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return c.parseResponse(resp)
 }
@@ -174,10 +178,14 @@ func (c *HTTPClient) parseResponse(resp *http.Response) HTTPResponse {
 
 // SetHeader 设置自定义请求头
 func (c *HTTPClient) SetHeader(key, value string) {
+	c.mu.Lock()
 	c.Headers[key] = value
+	c.mu.Unlock()
 }
 
 // RemoveHeader 移除请求头
 func (c *HTTPClient) RemoveHeader(key string) {
+	c.mu.Lock()
 	delete(c.Headers, key)
+	c.mu.Unlock()
 }

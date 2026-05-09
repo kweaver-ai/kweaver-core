@@ -45,9 +45,14 @@ class TestHandleUpsert:
                 mock_manager.cache_service.get_ttl = AsyncMock(return_value=3600)
                 mock_manager.update_cache_data = AsyncMock()
 
-                with patch(
-                    "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.get_cache_data_for_debug_mode",
-                    return_value={},
+                with (
+                    patch(
+                        "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.get_cache_data_for_debug_mode",
+                        return_value={},
+                    ),
+                    patch(
+                        "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.StandLogger.info"
+                    ) as mock_standard_info,
                 ):
                     from app.router.agent_controller_pkg.agent_cache_manage.action_upsert import (
                         handle_upsert,
@@ -65,6 +70,7 @@ class TestHandleUpsert:
                     assert result is not None
                     assert result.cache_id == "test_cache_id"
                     mock_manager.update_cache_data.assert_called_once()
+                    mock_standard_info.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_handle_upsert_cache_not_exists(
@@ -90,10 +96,15 @@ class TestHandleUpsert:
                 mock_manager.cache_service.load = AsyncMock(return_value=None)
                 mock_manager.cache_service.get_ttl = AsyncMock(return_value=3600)
 
-                with patch(
-                    "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.create_cache_and_build_response",
-                    new_callable=AsyncMock,
-                ) as mock_create:
+                with (
+                    patch(
+                        "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.create_cache_and_build_response",
+                        new_callable=AsyncMock,
+                    ) as mock_create,
+                    patch(
+                        "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.StandLogger.info"
+                    ) as mock_standard_info,
+                ):
                     mock_response = MagicMock()
                     mock_response.cache_id = "test_cache_id"
                     mock_create.return_value = mock_response
@@ -113,6 +124,7 @@ class TestHandleUpsert:
 
                     assert result is not None
                     mock_create.assert_called_once()
+                    mock_standard_info.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_handle_upsert_cache_expired_during_update(
@@ -140,10 +152,18 @@ class TestHandleUpsert:
                 )
                 mock_manager.update_cache_data = AsyncMock()
 
-                with patch(
-                    "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.create_cache_and_build_response",
-                    new_callable=AsyncMock,
-                ) as mock_create:
+                with (
+                    patch(
+                        "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.create_cache_and_build_response",
+                        new_callable=AsyncMock,
+                    ) as mock_create,
+                    patch(
+                        "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.StandLogger.info"
+                    ) as mock_standard_info,
+                    patch(
+                        "app.router.agent_controller_pkg.agent_cache_manage.action_upsert.StandLogger.warn"
+                    ) as mock_standard_warn,
+                ):
                     mock_response = MagicMock()
                     mock_response.cache_id = "new_cache_id"
                     mock_create.return_value = mock_response
@@ -163,3 +183,5 @@ class TestHandleUpsert:
 
                     assert result is not None
                     mock_create.assert_called_once()
+                    mock_standard_info.assert_called_once()
+                    mock_standard_warn.assert_called_once()

@@ -353,14 +353,15 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentsByQuery(ctx context.Context,
 	return nil
 }
 
-func (vba *vegaBackendAccess) QueryDatasetData(ctx context.Context, datasetID string, params *interfaces.DatasetQueryParams) (*interfaces.DatasetQueryResponse, error) {
+// 从 vega resource中获取数据
+func (vba *vegaBackendAccess) QueryResourceData(ctx context.Context, resourceID string, params *interfaces.ResourceDataQueryParams) (*interfaces.DatasetQueryResponse, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Query dataset data",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
-	span.SetAttributes(attr.Key("dataset_id").String(datasetID))
+	span.SetAttributes(attr.Key("dataset_id").String(resourceID))
 
-	httpUrl := fmt.Sprintf("%s/resources/%s/data", vba.baseUrl, url.PathEscape(datasetID))
+	httpUrl := fmt.Sprintf("%s/resources/%s/data", vba.baseUrl, url.PathEscape(resourceID))
 	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodPost,

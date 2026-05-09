@@ -55,6 +55,8 @@ func (r *restPrivateHandler) RegisterRouter(engine *gin.RouterGroup) {
 
 	// 临时升级接口 - 仅在从旧版本升级到5.0.0.3时使用
 	engine.GET("/upgrade/v5003/migrate-history", r.UpgradeHandler.MigrateHistoryData)
+	// V0.6.0 -> V0.7.0升级接口
+	engine.POST("/upgrade/v070/migrate-history", r.UpgradeHandler.UpgradeSkillV070)
 	// 函数沙箱执行
 	engine.POST("/function/exec/:version", middlewareBusinessDomain(true, false, r.businessDomainService), r.UnifiedProxyHandler.FunctionExecuteProxy)
 }

@@ -38,17 +38,21 @@ func (c *GteCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 	}
 	field, ok := fieldsMap[cfg.Name]
 	if !ok {
-		return nil, fmt.Errorf("condition [gte] left field '%s' not found", cfg.Name)
+		// 如果字段未在Schema中定义，创建一个临时的Property对象
+		field = &interfaces.Property{
+			Name:         cfg.Name,
+			OriginalName: cfg.Name,
+		}
 	}
 
-	if IsSlice(cfg.ValueOptCfg.Value) {
+	if IsSlice(cfg.Value) {
 		return nil, fmt.Errorf("condition [gte] only supports single value")
 	}
 
 	cond := &GteCond{
 		Cfg:    cfg,
 		Lfield: field,
-		Value:  cfg.ValueOptCfg.Value,
+		Value:  cfg.Value,
 	}
 
 	if cfg.ValueFrom == interfaces.ValueFrom_Field {

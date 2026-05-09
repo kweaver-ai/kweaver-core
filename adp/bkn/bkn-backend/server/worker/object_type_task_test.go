@@ -84,6 +84,7 @@ func TestObjectTypeTask_HandleObjectTypeTask(t *testing.T) {
 		}
 
 		dva := bmock.NewMockDataViewAccess(mockCtrl)
+		vba := bmock.NewMockVegaBackendAccess(mockCtrl)
 		mfa := bmock.NewMockModelFactoryAccess(mockCtrl)
 		ja := bmock.NewMockJobAccess(mockCtrl)
 		osa := bmock.NewMockOpenSearchAccess(mockCtrl)
@@ -127,6 +128,7 @@ func TestObjectTypeTask_HandleObjectTypeTask(t *testing.T) {
 
 		task := NewObjectTypeTask(appSetting, taskInfo, objectType)
 		task.dva = dva
+		task.vba = vba
 		task.mfa = mfa
 		task.ja = ja
 		task.osa = osa
@@ -165,6 +167,39 @@ func TestObjectTypeTask_HandleObjectTypeTask(t *testing.T) {
 			}, nil)
 
 			err := task.HandleObjectTypeTask(ctx, jobInfo, taskInfo, objectType)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Resource data source skips index build and returns nil", func() {
+			resObjectType := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:        "ot1",
+					OTName:      "object_type1",
+					PrimaryKeys: []string{"pk1"},
+					DataSource: &interfaces.ResourceInfo{
+						Type: interfaces.DATA_SOURCE_TYPE_RESOURCE,
+						ID:   "res1",
+					},
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name: "pk1",
+							Type: "string",
+							MappedField: &interfaces.Field{
+								Name: "field1",
+								Type: "string",
+							},
+						},
+					},
+				},
+			}
+			resTask := NewObjectTypeTask(appSetting, taskInfo, resObjectType)
+			resTask.dva = dva
+			resTask.vba = vba
+			resTask.mfa = mfa
+			resTask.ja = ja
+			resTask.osa = osa
+
+			err := resTask.HandleObjectTypeTask(ctx, jobInfo, taskInfo, resObjectType)
 			So(err, ShouldBeNil)
 		})
 

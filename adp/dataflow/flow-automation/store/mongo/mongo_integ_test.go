@@ -5,8 +5,8 @@ package mongo
 // 	"testing"
 // 	"time"
 
-// 	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity/entity"
-// 	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/mod"
+// 	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity/entity"
+// 	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/mod"
 // 	"github.com/stretchr/testify/assert"
 // )
 

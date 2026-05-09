@@ -13,6 +13,7 @@ import (
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces/model"
 	"github.com/kweaver-ai/proton-rds-sdk-go/sqlx"
+	"github.com/pkg/errors"
 )
 
 type skillRepositoryDB struct {
@@ -117,18 +118,29 @@ func (s *skillRepositoryDB) UpdateSkill(ctx context.Context, tx *sql.Tx, skill *
 	return err
 }
 
-func (s *skillRepositoryDB) UpdateSkillStatus(ctx context.Context, tx *sql.Tx, skillID string, status string, updateUser string) error {
+func (s *skillRepositoryDB) UpdateSkillStatus(ctx context.Context, tx *sql.Tx, skillID string, status string, updateUser string) (err error) {
 	orm := s.orm
 	if tx != nil {
 		orm = s.orm.WithTx(tx)
 	}
-	updateData := map[string]interface{}{
+	row, err := orm.Update(tbSkillRepository).SetData(map[string]interface{}{
 		"f_status":      status,
 		"f_update_time": time.Now().UnixNano(),
 		"f_update_user": updateUser,
+	}).WhereEq("f_skill_id", skillID).Execute(ctx)
+	if err != nil {
+		err = errors.Wrap(err, "update skill status error")
+		return
 	}
-	_, err := orm.Update(tbSkillRepository).SetData(updateData).WhereEq("f_skill_id", skillID).Execute(ctx)
-	return err
+	ok, err := checkAffected(row)
+	if err != nil {
+		err = errors.Wrap(err, "update skill status check affected error")
+		return
+	}
+	if !ok {
+		err = errors.New("update skill status error, no affected rows")
+	}
+	return
 }
 
 func (s *skillRepositoryDB) UpdateSkillDeleted(ctx context.Context, tx *sql.Tx, skillID string, isDeleted bool, updateUser string) error {
@@ -177,6 +189,30 @@ func (s *skillRepositoryDB) SelectSkillListPage(ctx context.Context, tx *sql.Tx,
 			query = query.Offset(offset)
 		}
 	}
+	skills = []*model.SkillRepositoryDB{}
+	err = query.Get(ctx, &skills)
+	return skills, err
+}
+
+func (s *skillRepositoryDB) SelectSkillBuildPage(ctx context.Context, tx *sql.Tx, cursorUpdateTime int64, cursorSkillID string, limit int) (skills []*model.SkillRepositoryDB, err error) {
+	orm := s.orm
+	if tx != nil {
+		orm = s.orm.WithTx(tx)
+	}
+	query := orm.Select().From(tbSkillRepository)
+	if cursorUpdateTime > 0 || cursorSkillID != "" {
+		query = query.Or(func(w *ormhelper.WhereBuilder) {
+			w.Gt("f_update_time", cursorUpdateTime)
+			w.And(func(sub *ormhelper.WhereBuilder) {
+				sub.Eq("f_update_time", cursorUpdateTime)
+				sub.Gt("f_skill_id", cursorSkillID)
+			})
+		})
+	}
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	query = query.OrderByAsc("f_update_time").OrderByAsc("f_skill_id")
 	skills = []*model.SkillRepositoryDB{}
 	err = query.Get(ctx, &skills)
 	return skills, err

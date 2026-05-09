@@ -5,9 +5,12 @@
 
 package interfaces
 
+import cond "bkn-backend/common/condition"
+
 const (
-	RELATION_TYPE_DIRECT    = "direct"
-	RELATION_TYPE_DATA_VIEW = "data_view"
+	RELATION_TYPE_DIRECT              = "direct"
+	RELATION_TYPE_DATA_VIEW           = "data_view"
+	RELATION_TYPE_FILTERED_CROSS_JOIN = "filtered_cross_join"
 )
 
 var (
@@ -50,6 +53,12 @@ type RelationType struct {
 	Score  *float64  `json:"_score,omitempty"` // opensearch检索的得分，在概念搜索时使用
 }
 
+// 直接映射的一个mapping
+type Mapping struct {
+	SourceProp SimpleProperty `json:"source_property" mapstructure:"source_property"`
+	TargetProp SimpleProperty `json:"target_property" mapstructure:"target_property"`
+}
+
 // 非直接映射
 type InDirectMapping struct {
 	BackingDataSource  *ResourceInfo `json:"backing_data_source" mapstructure:"backing_data_source"`
@@ -57,10 +66,10 @@ type InDirectMapping struct {
 	TargetMappingRules []Mapping     `json:"target_mapping_rules" mapstructure:"target_mapping_rules"`
 }
 
-// 直接映射的一个mapping
-type Mapping struct {
-	SourceProp SimpleProperty `json:"source_property" mapstructure:"source_property"`
-	TargetProp SimpleProperty `json:"target_property" mapstructure:"target_property"`
+// FilteredCrossJoinMapping rules for relation type filtered_cross_join (per-side conditions, no key mapping).
+type FilteredCrossJoinMapping struct {
+	SourceCondition *cond.CondCfg `json:"source_condition" mapstructure:"source_condition"`
+	TargetCondition *cond.CondCfg `json:"target_condition" mapstructure:"target_condition"`
 }
 
 // 对象类的分页查询
@@ -70,7 +79,6 @@ type RelationTypesQueryParams struct {
 	Tag                 string
 	Branch              string
 	KNID                string
-	GroupID             string
 	SourceObjectTypeIDs []string
 	TargetObjectTypeIDs []string
 	BoundObjectTypeIDs  []string

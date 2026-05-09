@@ -47,16 +47,16 @@ service:
   streamDiffFrequency: 5
 
   # 是否保留老的APP路径
-  keep_legacy_app_path: true
+  keep_legacy_app_path: false
 
   # ========== 开发环境控制开关（生产环境建议设置为 false）==========
   disablePmsCheck: false
-  disableBizDomainInit: false
   disableAuditInit: false
   mockMqClient: false
   mockSandboxPlatform: false
   mockHydra: false
   mockAuthz: false
+  mockUserManagerModule: false
   mockBizDomain: false
   # ========================================
 
@@ -81,6 +81,9 @@ service:
 
 # 业务域开关
 businessDomain:
+  enabled: true
+
+auth:
   enabled: true
 
 env:
@@ -110,7 +113,7 @@ depServices:
     portRead: 3330
     user: anyshare
     password: xxx
-    database: adp
+    database: kweaver
     maxConnections: 30
     maxReadConnections: 30
     dbCharset: utf8mb4
@@ -291,54 +294,16 @@ resources:
     cpu: 4
     memory: 8Gi
 
-observability:
-  logEnabled: true
-  traceEnabled: false
-  metricEnabled: false
-  logExporter: http
-  traceProvider: http
-  metricProvider: http
-  logLoadInternal: 1
-  logLoadMaxLog: 10
-  traceMaxQueueSize: 50000
-  metricIntervalSecond: 60
-  httpLogFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
-  httpTraceFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
-  httpMetricFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
-  grpcTraceFeedIngesterUrl: feed-ingester-service:30013
-  grpcTraceJobId: dip-o11y-trace-grpc
-
-# OpenTelemetry 配置 (新增)
-opentelemetry:
-  service_name: "agent-factory"
-  service_version: "1.0.0"
-  trace:
-    enabled: false
-    exporter: "console"
-    http_endpoint: "http://localhost:4318/v1/traces"
-    sampling_rate: 1.0
-  log:
-    enabled: false
-    exporter: "console"
-    http_endpoint: "http://localhost:4318/v1/logs"
-    level: "info"
-  metric:
-    enabled: false
-    exporter: "console"
-    http_endpoint: "http://localhost:4318/v1/metrics"
-    export_interval: 10
-
-# 新版 OTel Collector 配置
+# OpenTelemetry 公共配置
+# 注意：仅保留各服务共享的公共项；service_name/service_version 在各自 ConfigMap 中固定。
 otel:
-  service_name: "agent-factory"
-  service_version: "1.0.0"
   environment: "production"
   otlp_endpoint: "otelcol-contrib:4318"
   trace:
-    enabled: false
+    enabled: true
     sampling_rate: 1.0
   log:
-    enabled: false
+    enabled: true
     level: "info"
 
 # ========== Agent Executor 配置 ==========
@@ -357,18 +322,9 @@ agentExecutor:
   enableDolphinAgentOutputVariablesCtrl: false
   isSkillAgentNeedProgress: false
   enableTraceAiEvidence: false
+  skillEnabled: true  # 是否开启 Skill 功能
   rps:
     limit: 100
-  telemetry:
-    log:
-      enabled: false
-      endpoint: ""
-    metric:
-      enabled: false
-      endpoint: ""
-    trace:
-      enabled: false
-      endpoint: ""
 
 # ========== Agent Memory 配置 ==========
 agentMemory:
@@ -383,13 +339,3 @@ agentMemory:
   rerank:
     model: ""
     url: ""
-  telemetry:
-    log:
-      enabled: false
-      endpoint: ""
-    metric:
-      enabled: false
-      endpoint: ""
-    trace:
-      enabled: false
-      endpoint: ""

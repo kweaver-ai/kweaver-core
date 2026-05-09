@@ -56,60 +56,6 @@ func (mr *MockHydraMockRecorder) Introspect(ctx, token any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Introspect", reflect.TypeOf((*MockHydra)(nil).Introspect), ctx, token)
 }
 
-// MockDataRetrieval is a mock of DataRetrieval interface.
-type MockDataRetrieval struct {
-	ctrl     *gomock.Controller
-	recorder *MockDataRetrievalMockRecorder
-	isgomock struct{}
-}
-
-// MockDataRetrievalMockRecorder is the mock recorder for MockDataRetrieval.
-type MockDataRetrievalMockRecorder struct {
-	mock *MockDataRetrieval
-}
-
-// NewMockDataRetrieval creates a new mock instance.
-func NewMockDataRetrieval(ctrl *gomock.Controller) *MockDataRetrieval {
-	mock := &MockDataRetrieval{ctrl: ctrl}
-	mock.recorder = &MockDataRetrievalMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockDataRetrieval) EXPECT() *MockDataRetrievalMockRecorder {
-	return m.recorder
-}
-
-// KnSearch mocks base method.
-func (m *MockDataRetrieval) KnSearch(ctx context.Context, req *interfaces.KnSearchReq) (*interfaces.KnSearchResp, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KnSearch", ctx, req)
-	ret0, _ := ret[0].(*interfaces.KnSearchResp)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// KnSearch indicates an expected call of KnSearch.
-func (mr *MockDataRetrievalMockRecorder) KnSearch(ctx, req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KnSearch", reflect.TypeOf((*MockDataRetrieval)(nil).KnSearch), ctx, req)
-}
-
-// KnowledgeRerank mocks base method.
-func (m *MockDataRetrieval) KnowledgeRerank(ctx context.Context, req *interfaces.KnowledgeRerankReq) ([]*interfaces.ConceptResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KnowledgeRerank", ctx, req)
-	ret0, _ := ret[0].([]*interfaces.ConceptResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// KnowledgeRerank indicates an expected call of KnowledgeRerank.
-func (mr *MockDataRetrievalMockRecorder) KnowledgeRerank(ctx, req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KnowledgeRerank", reflect.TypeOf((*MockDataRetrieval)(nil).KnowledgeRerank), ctx, req)
-}
-
 // MockDrivenMFModelAPIClient is a mock of DrivenMFModelAPIClient interface.
 type MockDrivenMFModelAPIClient struct {
 	ctrl     *gomock.Controller

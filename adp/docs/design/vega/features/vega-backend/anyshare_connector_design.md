@@ -27,7 +27,7 @@
       - [3.4.2.1 获取知识库信息](#3421-获取知识库信息)
       - [3.4.2.2 根据路径获取对象信息](#3422-根据路径获取对象信息)
       - [3.4.2.3 获取文档详细信息](#3423-获取文档详细信息)
-      - [3.4.2.4 获取文档下载信息](#3424-获取文档下载信息)
+      - [3.4.2.4 文档搜索](#3424-文档搜索)
 - [4. 实现计划](#4-实现计划)
   - [4.1 第一阶段：连接器核心功能](#41-第一阶段连接器核心功能)
   - [4.2 第二阶段：数据源核心功能](#42-第二阶段数据源核心功能)
@@ -47,7 +47,7 @@ AnyShare是文档管理系统，包含知识库和文档库等模块，用于企
    - 包括知识库信息获取、指定路径采集
 
 3. **支持fileSet类型resource查询**
-   - 为实现查询功能，需支持fileSet下载地址获取
+   - 支持根据关键字模糊查询文档结果列表
 
 ### 1.3 非功能需求
 1. 遵循Vega系统连接器规范
@@ -65,7 +65,7 @@ AnyShare连接器与MariaDB连接器的主要区别如下：
 | 连接方式 | JDBC | HTTPS |
 | 认证方式 | 用户名/密码 | Token或AppID/AppSecret |
 | 数据模型 | Table | Folder |
-| 数据获取 | SQL查询 | API调用+获取下载地址 |
+| 数据获取 | SQL查询 | API调用+关键字搜索 |
 | 数据类型 | 结构化数据 | 文档文件 |
 
 ## 2. 逻辑架构
@@ -112,7 +112,7 @@ AnyShare连接器采用分层架构设计，包括以下层次：
 
 3. **查询流程**
    ```
-   获取文件夹ID -> 调用下载API -> 获取下载地址 -> 返回下载地址
+   获取文件夹ID -> 根据关键字调用搜索API -> 获取文档结果列表及总数 -> 返回查询结果
    ```
 
 ### 2.3 核心概念映射
@@ -175,7 +175,7 @@ type AnyShareConnector struct {
 - `ListFilesets(ctx)`: 发现资源，根据配置返回知识库列表或指定路径对应的文件夹
 
 #### 3.2.4 查询方法
-- `GetObjectDownloadInfo(ctx, resourceName, docID)`: 获取文件或文件夹的下载信息
+- `SearchFiles(ctx, docID, keyword, rows, start)`: 根据关键字在指定文件夹中模糊查询文档
 
 ### 3.3 核心功能模块
 
@@ -617,10 +617,10 @@ type pathInfoDTO struct {
 }
 ```
 
-##### 4. 获取文档下载信息
+##### 4. 文档搜索
 
 **接口详情**：
-- URL: `{protocol}://{host}:{port}/api/open-doc/v1/file-download`
+- URL: `{protocol}://{host}:{port}/api/ecosearch/v1/file-search`
 - Method: POST
 - Authentication: Bearer Token
 - Content-Type: application/json
@@ -628,82 +628,106 @@ type pathInfoDTO struct {
 **请求体**：
 ```json
 {
-  "doc": [
-    {"id": "gns://..."}
-  ],
-  "name": "下载文件名"
+  "keyword": "搜索关键字",
+  "model": "phrase",
+  "range": ["gns://.../*"],
+  "rows": 20,
+  "start": 0,
+  "type": "doc",
+  "quick_search": true
 }
 ```
 
 **请求参数**：
 
-| 参数名 | 类型   | 必填 | 说明                     |
-|--------|--------|------|--------------------------|
-| doc    | array  | 是   | 文档对象数组，包含id字段 |
-| name   | string | 是   | 下载时的打包名称       |
+| 参数名      | 类型    | 必填 | 说明               |
+|-------------|---------|------|------------------|
+| keyword     | string  | 是   | 搜索关键字            |
+| model       | string  | 是   | 搜索模型，phrase表示短语搜索 |
+| range       | array   | 是   | 搜索范围，使用doc_id/*格式 |
+| rows        | integer | 是   | 返回结果数量，最大值为100   |
+| start       | integer | 是   | 起始位置（分页使用）       |
+| type        | string  | 是   | 资源类型，doc表示文档     |
+| quick_search| boolean | 是   | 是否快速搜索           |
 
 **说明**：
-- 用于获取文档或文件夹的下载地址
-- doc_id为gns://...格式的完整路径
+- 用于在指定文件夹中根据关键字模糊查询文档
+- range参数使用doc_id/*格式，表示在该文件夹及其子文件夹中搜索
 - 需要Bearer Token认证
 
 **返回值示例**：
 ```json
 {
-  "download_url": "https://...",
-  "expires_in": 3600
+  "files": [
+    {
+      "id": "gns://...",
+      "name": "文档名称.docx",
+      "path": "文档库/文件夹/文档名称.docx",
+      "size": 12345,
+      "type": "file"
+    }
+  ],
+  "hits": 100
 }
 ```
 
+**说明**：
+- files：文档结果列表
+- hits：匹配的总数，仅在第一页（start=0）时返回，后续页不返回该字段
+
 **实现方法**：
 ```go
-// GetObjectDownloadInfo returns download info for a given file or folder.
-func (c *AnyShareConnector) GetObjectDownloadInfo(ctx context.Context, resourceName, docID string) (map[string]any, error) {
+// SearchFiles searches files based on query parameters.
+func (c *AnyShareConnector) SearchFiles(ctx context.Context, docID, keyword string, rows, start int) ([]map[string]any, int64, error) {
 	if err := c.Connect(ctx); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if docID == "" {
-		return nil, fmt.Errorf("empty doc id")
+		return nil, 0, fmt.Errorf("empty doc id")
 	}
-	u := fmt.Sprintf("%s/api/open-doc/v1/file-download", c.baseURL)
-	// 当前 docID 为 gns://... 的形式，name为下载文件时的打包名称
+	u := fmt.Sprintf("%s/api/ecosearch/v1/file-search", c.baseURL)
 	payload := map[string]interface{}{
-		"doc": []map[string]string{
-			{"id": docID},
-		},
-		"name": resourceName,
+		"keyword":      keyword,
+		"model":        "phrase",
+		"range":        []string{fmt.Sprintf("%s/*", docID)},
+		"rows":         rows,
+		"start":        start,
+		"type":         "doc",
+		"quick_search": true,
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", c.authHeader)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer resp.Body.Close()
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("file-download http %d: %s", resp.StatusCode, truncateForLog(raw))
+		return nil, 0, fmt.Errorf("file-search http %d: %s", resp.StatusCode, truncateForLog(raw))
 	}
-	var m map[string]any
-	if err := json.Unmarshal(raw, &m); err != nil {
-		return nil, fmt.Errorf("file-download decode: %w", err)
+
+	var result struct {
+		Files []map[string]any `json:"files"`
+		Hits  int64            `json:"hits"`
 	}
-	if msg, ok := m["message"].(string); ok && msg != "" {
-		return nil, fmt.Errorf("file-download: %s", msg)
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, 0, fmt.Errorf("file-search decode: %w", err)
 	}
-	return m, nil
+
+	return result.Files, result.Hits, nil
 }
 ```
 
@@ -714,7 +738,7 @@ func (c *AnyShareConnector) GetObjectDownloadInfo(ctx context.Context, resourceN
 2. 实现认证模块
 3. 实现知识库信息获取
 4. 实现fileset列表获取
-5. 实现文件夹查询
+5. 实现文档搜索功能
 
 ### 4.2 第二阶段：数据源核心功能
 1. 扩展anyshare catalog

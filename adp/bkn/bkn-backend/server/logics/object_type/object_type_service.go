@@ -73,19 +73,38 @@ func NewObjectTypeService(appSetting *common.AppSetting) interfaces.ObjectTypeSe
 	return otService
 }
 
-// validateObjectTypeStrictExternalDeps checks data view, vector embedding models, and logic property metric/operator references.
+// validateObjectTypeStrictExternalDeps checks backing data view or vega resource, vector embedding models, and logic property metric/operator references.
 func (ots *objectTypeService) validateObjectTypeStrictExternalDeps(ctx context.Context, objectType *interfaces.ObjectType) error {
 	if objectType.DataSource != nil && objectType.DataSource.ID != "" {
-		dataView, err := ots.dva.GetDataViewByID(ctx, objectType.DataSource.ID)
-		if err != nil {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest,
-				berrors.BknBackend_ObjectType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("对象类[%s]的数据视图[%s]获取失败: %s", objectType.OTName, objectType.DataSource.ID, err.Error()))
+		dsType := objectType.DataSource.Type
+		if dsType == "" {
+			dsType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
 		}
-		if dataView == nil {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest,
-				berrors.BknBackend_ObjectType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("对象类[%s]的数据视图[%s]不存在", objectType.OTName, objectType.DataSource.ID))
+		switch dsType {
+		case interfaces.DATA_SOURCE_TYPE_RESOURCE:
+			res, err := ots.vba.GetResourceByID(ctx, objectType.DataSource.ID)
+			if err != nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest,
+					berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]的资源[%s]获取失败: %s", objectType.OTName, objectType.DataSource.ID, err.Error()))
+			}
+			if res == nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest,
+					berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]的资源[%s]不存在", objectType.OTName, objectType.DataSource.ID))
+			}
+		default:
+			dataView, err := ots.dva.GetDataViewByID(ctx, objectType.DataSource.ID)
+			if err != nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest,
+					berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]的数据视图[%s]获取失败: %s", objectType.OTName, objectType.DataSource.ID, err.Error()))
+			}
+			if dataView == nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest,
+					berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]的数据视图[%s]不存在", objectType.OTName, objectType.DataSource.ID))
+			}
 		}
 	}
 	if objectType.DataProperties != nil {
@@ -655,6 +674,19 @@ func (ots *objectTypeService) GetObjectTypesByIDs(ctx context.Context, tx *sql.T
 		}
 		// 给对象类加上分组信息
 		objectType.ConceptGroups = otGroups[objectType.OTID]
+	}
+
+	accountInfos := make([]*interfaces.AccountInfo, 0, len(objectTypes)*2)
+	for _, objectType := range objectTypes {
+		accountInfos = append(accountInfos, &objectType.Creator, &objectType.Updater)
+	}
+
+	err = ots.ums.GetAccountNames(ctx, accountInfos)
+	if err != nil {
+		span.SetStatus(codes.Error, "GetAccountNames error")
+
+		return []*interfaces.ObjectType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+			berrors.BknBackend_ObjectType_InternalError).WithErrorDetails(err.Error())
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -1551,8 +1583,9 @@ func (ots *objectTypeService) SearchObjectTypes(ctx context.Context,
 				cgCnt, len(query.ConceptGroups))
 			logger.Errorf(errStr)
 
-			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
-				berrors.BknBackend_ObjectType_InternalError).
+			// 所有概念分组都不存在，报404，概念分组不存在
+			return response, rest.NewHTTPError(ctx, http.StatusNotFound,
+				berrors.BknBackend_ConceptGroup_ConceptGroupNotFound).
 				WithErrorDetails(errStr)
 		}
 
@@ -1587,13 +1620,13 @@ func (ots *objectTypeService) SearchObjectTypes(ctx context.Context,
 	if query.NeedTotal {
 		if len(otIDMap) == 0 {
 			// 查询总数
-			params := &interfaces.DatasetQueryParams{
+			params := &interfaces.ResourceDataQueryParams{
 				FilterCondition: filterCondition,
 				Offset:          0,
 				Limit:           1, // 查询1条数据，获取total
 				NeedTotal:       true,
 			}
-			datasetResp, err := ots.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+			datasetResp, err := ots.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 			if err != nil {
 				logger.Errorf("QueryDatasetData error: %s", err.Error())
 				span.SetStatus(codes.Error, "业务知识网络对象类检索查询总数失败")
@@ -1623,16 +1656,16 @@ func (ots *objectTypeService) SearchObjectTypes(ctx context.Context,
 
 	for {
 		// 调用 dataset 查询
-		params := &interfaces.DatasetQueryParams{
+		params := &interfaces.ResourceDataQueryParams{
 			FilterCondition: filterCondition,
 			Limit:           limit,
 			NeedTotal:       false,
 			SearchAfter:     query.SearchAfter,
 			Sort:            query.Sort,
 		}
-		datasetResp, err := ots.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+		datasetResp, err := ots.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 		if err != nil {
-			logger.Errorf("QueryDatasetData error: %s", err.Error())
+			logger.Errorf("QueryResourceData error: %s", err.Error())
 			span.SetStatus(codes.Error, "业务知识网络对象类检索查询失败")
 			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ObjectType_InternalError).
@@ -1726,25 +1759,51 @@ func (ots *objectTypeService) SearchObjectTypes(ctx context.Context,
 // 提取出来的处理对象类型详情的函数
 func (ots *objectTypeService) processObjectTypeDetails(ctx context.Context, objectType *interfaces.ObjectType) error {
 
-	// 查视图组装 ops. 不需要组装,因为保存的时候会保存进去
+	// 查视图或 vega Resource 组装 ops. 不需要组装,因为保存的时候会保存进去
 	if objectType.DataSource != nil && objectType.DataSource.ID != "" {
-		dataView, err := ots.dva.GetDataViewByID(ctx, objectType.DataSource.ID)
-		if err != nil || dataView == nil {
-			o11y.Warn(ctx, fmt.Sprintf("Object type [%s]'s Data view %s not found, error: %v",
-				objectType.OTID, objectType.DataSource.ID, err))
-		} else {
-			objectType.DataSource.Name = dataView.ViewName
-			// 视图不为空，则把支持的操作符返回
-			for j, prop := range objectType.DataProperties {
-				// 不为空时，才翻译字段显示名。为空则不翻译
-				if prop.MappedField != nil {
-					if field, exists := dataView.FieldsMap[prop.MappedField.Name]; exists {
-						objectType.DataProperties[j].MappedField.DisplayName = field.DisplayName
-						objectType.DataProperties[j].MappedField.Type = field.Type
+		dsType := objectType.DataSource.Type
+		if dsType == "" {
+			dsType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
+		}
+		switch dsType {
+		case interfaces.DATA_SOURCE_TYPE_RESOURCE:
+			res, err := ots.vba.GetResourceByID(ctx, objectType.DataSource.ID)
+			if err != nil || res == nil {
+				o11y.Warn(ctx, fmt.Sprintf("Object type [%s]'s vega Resource %s not found, error: %v",
+					objectType.OTID, objectType.DataSource.ID, err))
+			} else {
+				objectType.DataSource.Name = res.Name
+				fieldsMap := logics.VegaResourceSchemaToFieldsMap(res)
+				dslView := &interfaces.DataView{QueryType: interfaces.VIEW_QueryType_DSL}
+				for j, prop := range objectType.DataProperties {
+					if prop.MappedField != nil {
+						if field, exists := fieldsMap[prop.MappedField.Name]; exists {
+							objectType.DataProperties[j].MappedField.DisplayName = field.DisplayName
+							objectType.DataProperties[j].MappedField.Type = field.Type
+						}
 					}
+					objectType.DataProperties[j].ConditionOperations = ots.processConditionOperations(objectType, prop, dslView)
 				}
-				// 字符串类型的属性支持的操作符返回
-				objectType.DataProperties[j].ConditionOperations = ots.processConditionOperations(objectType, prop, dataView)
+			}
+		default:
+			dataView, err := ots.dva.GetDataViewByID(ctx, objectType.DataSource.ID)
+			if err != nil || dataView == nil {
+				o11y.Warn(ctx, fmt.Sprintf("Object type [%s]'s Data view %s not found, error: %v",
+					objectType.OTID, objectType.DataSource.ID, err))
+			} else {
+				objectType.DataSource.Name = dataView.ViewName
+				// 视图不为空，则把支持的操作符返回
+				for j, prop := range objectType.DataProperties {
+					// 不为空时，才翻译字段显示名。为空则不翻译
+					if prop.MappedField != nil {
+						if field, exists := dataView.FieldsMap[prop.MappedField.Name]; exists {
+							objectType.DataProperties[j].MappedField.DisplayName = field.DisplayName
+							objectType.DataProperties[j].MappedField.Type = field.Type
+						}
+					}
+					// 字符串类型的属性支持的操作符返回
+					objectType.DataProperties[j].ConditionOperations = ots.processConditionOperations(objectType, prop, dataView)
+				}
 			}
 		}
 
@@ -1821,13 +1880,13 @@ func (ots *objectTypeService) GetTotal(ctx context.Context, filterCondition map[
 	ctx, span := ar_trace.Tracer.Start(ctx, "logic layer: search object type total ")
 	defer span.End()
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           1, // 查询1条数据，获取total
 		NeedTotal:       true,
 	}
-	datasetResp, err := ots.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	datasetResp, err := ots.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		span.SetStatus(codes.Error, "Search total documents count failed")
 		return total, rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_ObjectType_InternalError).

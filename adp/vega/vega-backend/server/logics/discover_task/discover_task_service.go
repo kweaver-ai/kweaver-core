@@ -8,6 +8,8 @@ package discover_task
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -16,12 +18,15 @@ import (
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
 	asynq_access "vega-backend/drivenadapters/asynq"
 	discovertaskaccess "vega-backend/drivenadapters/discover_task"
+	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 )
 
@@ -58,7 +63,7 @@ func NewDiscoverTaskService(appSetting *common.AppSetting) interfaces.DiscoverTa
 // 返回值:
 //   - string: 创建的任务ID
 //   - error: 错误信息，如果创建失败则返回错误
-func (dts *discoverTaskService) Create(ctx context.Context, catalogID string) (string, error) {
+func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, scheduledTask ...string) (string, error) {
 	// 使用分布式追踪系统创建一个span，用于追踪服务调用
 	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.Create",
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -70,11 +75,31 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string) (s
 		accountInfo = ai
 	}
 
+	// 处理可选的taskType参数
+	// 默认根据上下文判断：如果是从定时任务服务调用，则默认为scheduled，否则为manual
+	triggerType := interfaces.DiscoverTaskTriggerManual
+	scheduledId := ""
+	strategies := []string{}
+	if len(scheduledTask) > 0 && scheduledTask[0] != "" {
+		triggerType = scheduledTask[0]
+		if len(scheduledTask) > 1 {
+			scheduledId = scheduledTask[1]
+		}
+		if len(scheduledTask) > 2 && scheduledTask[2] != "" {
+			// 反序列化 strategies 字符串为 []string
+			if err := sonic.Unmarshal([]byte(scheduledTask[2]), &strategies); err != nil {
+				logger.Warnf("Failed to unmarshal strategies: %v", err)
+				strategies = []string{}
+			}
+		}
+	}
 	now := time.Now().UnixMilli()
 	task := &interfaces.DiscoverTask{
 		ID:          xid.New().String(),
 		CatalogID:   catalogID,
-		TriggerType: interfaces.DiscoverTaskTriggerManual,
+		ScheduleID: scheduledId,
+		Strategies:  strategies,
+		TriggerType: triggerType,
 		Status:      interfaces.DiscoverTaskStatusPending,
 		Progress:    0,
 		Message:     "",
@@ -101,7 +126,7 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string) (s
 	// 设置任务执行超时时间为 30 分钟
 	asynqTask := asynq.NewTask(interfaces.DiscoverTaskType, payload)
 	info, err := dts.client.Enqueue(asynqTask,
-		asynq.Queue("high"),
+		asynq.Queue(interfaces.HighQueue),
 		asynq.MaxRetry(3),
 		asynq.Timeout(30*time.Minute),
 		asynq.Deadline(time.Now().Add(12*time.Hour)),
@@ -115,6 +140,8 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string) (s
 	logger.Infof("Enqueued task: id=%s, type=%s, queue=%s", info.ID, info.Type, info.Queue)
 	return task.ID, nil
 }
+
+// CreateScheduled method removed - scheduled tasks are now managed by ScheduledDiscoverTaskService
 
 // GetByID retrieves a DiscoverTask by ID.
 func (dts *discoverTaskService) GetByID(ctx context.Context, id string) (*interfaces.DiscoverTask, error) {
@@ -159,4 +186,79 @@ func (dts *discoverTaskService) CheckExistByStatuses(ctx context.Context, catalo
 	defer span.End()
 
 	return dts.dta.CheckExistByStatuses(ctx, catalogID, statuses)
+}
+
+// Delete atomically deletes discover tasks by IDs after pre-validating existence and status.
+//
+// Behavior:
+//   - Input ids are de-duplicated.
+//   - Loads each id; if any task is in pending/running, returns 409 HasRunningExecution
+//     with {running_ids: [...]}. This check cannot be bypassed.
+//   - If any id is missing, returns 404 NotFound with {missing_ids: [...]} unless
+//     ignoreMissing=true (then missing ids are silently dropped from the delete set).
+//   - Deletes pass-through tasks one-by-one. Mid-loop errors return 500 (rare, bounded
+//     by pre-validation).
+func (dts *discoverTaskService) Delete(ctx context.Context, ids []string, ignoreMissing bool) error {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.Delete",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// Dedupe ids while preserving order.
+	seen := make(map[string]struct{}, len(ids))
+	uniqueIDs := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		uniqueIDs = append(uniqueIDs, id)
+	}
+
+	toDelete := make([]string, 0, len(uniqueIDs))
+	missingIDs := make([]string, 0)
+	runningIDs := make([]string, 0)
+
+	for _, id := range uniqueIDs {
+		task, err := dts.dta.GetByID(ctx, id)
+		if err != nil {
+			logger.Errorf("Get discover_task %s failed: %v", id, err)
+			o11y.Error(ctx, fmt.Sprintf("Get discover_task %s failed: %v", id, err))
+			span.SetStatus(codes.Error, "Get discover_task failed")
+			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverTask_InternalError_GetFailed).
+				WithErrorDetails(err.Error())
+		}
+		if task == nil {
+			missingIDs = append(missingIDs, id)
+			continue
+		}
+		if task.Status == interfaces.DiscoverTaskStatusPending || task.Status == interfaces.DiscoverTaskStatusRunning {
+			runningIDs = append(runningIDs, id)
+			continue
+		}
+		toDelete = append(toDelete, id)
+	}
+
+	if len(runningIDs) > 0 {
+		span.SetStatus(codes.Error, "Some tasks are pending or running")
+		return rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_DiscoverTask_HasRunningExecution).
+			WithErrorDetails(map[string]any{"running_ids": runningIDs})
+	}
+	if len(missingIDs) > 0 && !ignoreMissing {
+		span.SetStatus(codes.Error, "Some discover tasks not found")
+		return rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_DiscoverTask_NotFound).
+			WithErrorDetails(map[string]any{"missing_ids": missingIDs})
+	}
+
+	for _, id := range toDelete {
+		if err := dts.dta.Delete(ctx, id); err != nil {
+			logger.Errorf("Delete discover_task %s failed: %v", id, err)
+			o11y.Error(ctx, fmt.Sprintf("Delete discover_task %s failed: %v", id, err))
+			span.SetStatus(codes.Error, "Delete discover_task failed")
+			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverTask_InternalError_DeleteFailed).
+				WithErrorDetails(err.Error())
+		}
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
 }

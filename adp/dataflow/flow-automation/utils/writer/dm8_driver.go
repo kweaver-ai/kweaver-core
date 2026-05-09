@@ -8,7 +8,7 @@ import (
 
 	// DM8 and KDB drivers are now implemented in this package
 	"github.com/go-sql-driver/mysql"
-	dm "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/dialect/dm"
+	dm "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/dialect/dm"
 	"gorm.io/gorm"
 )
 

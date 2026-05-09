@@ -1,4 +1,42 @@
 # Changelog
+## 0.7.0
+
+### Features & Improvements
+
+- Add React Agent mode support in agent
+  - issue: https://github.com/kweaver-ai/kweaver-core/issues/171
+  - docs directory: decision-agent/agent-backend/agent-factory/docs/feature/03-agent-mode
+- Add LLM message logging functionality for debugging and monitoring
+  - Introduce `LLMMessageLoggingConfig` configuration class
+  - Support configurable message logging through agent-executor.yaml
+  - Update agent_core_v2.py to handle LLM message logging flags and parameters
+  - Note: This feature requires dolphin SDK adaptation to be functional
+- Add agent mode enum and refactor configuration structure for better extensibility
+- Update kweaver-dolphin dependency to v0.6.0
+
+### Bug Fixes
+
+- Fix issue where published fields were not cleared when copying agent templates
+
+### Refactoring & Cleanup
+
+- Simplify observability system and remove redundant components
+  - Restructure observability configuration with new structured models
+  - Remove deprecated observability handler and enable OpenTelemetry tracing
+  - Consolidate telemetry configurations across services
+  - Clean up environment variables and configmap templates
+- Remove benchmark-related code and optimize API documentation
+- Remove deprecated service configurations and disable_biz_domain_init configuration
+
+### Documentation
+
+- Enhance API documentation with Redoc support alongside Swagger
+- Update swagger router and documentation structure
+- Update API Chat page documentation and add API Chat API integration guides
+  - issue: https://github.com/kweaver-ai/kweaver-core/issues/173
+  - doc: decision-agent/agent-backend/agent-factory/docs/api-chat-integration.zh.md
+- Update API documentation and version information
+
 ## 0.6.0
 
 ### Features & Improvements

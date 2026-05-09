@@ -38,6 +38,7 @@ type knowledgeNetworkService struct {
 	omAccess   interfaces.OntologyManagerAccess
 	ots        interfaces.ObjectTypeService
 	uAccess    interfaces.UniqueryAccess
+	vba        interfaces.VegaBackendAccess
 }
 
 func NewKnowledgeNetworkService(appSetting *common.AppSetting) interfaces.KnowledgeNetworkService {
@@ -47,6 +48,7 @@ func NewKnowledgeNetworkService(appSetting *common.AppSetting) interfaces.Knowle
 			omAccess:   logics.OMA,
 			ots:        object_type.NewObjectTypeService(appSetting),
 			uAccess:    logics.UA,
+			vba:        logics.VBA,
 		}
 	})
 	return knService
@@ -483,11 +485,16 @@ func (kns *knowledgeNetworkService) expandObjectPathsBatch(ctx context.Context,
 		}
 
 		if depth >= len(typePath.TypeEdges) || len(currentLevel) == 0 {
-			// 到达路径终点，保存路径
+			// 到达路径终点，保存路径（跳过无任何边的路径，与 IncludeIncompletePath 分支一致）
 			totalPathsInThisBatch := 0
 			for _, current := range currentLevel {
-				paths = append(paths, current.Paths...)
-				totalPathsInThisBatch += len(current.Paths)
+				for _, path := range current.Paths {
+					if len(path.Relations) == 0 {
+						continue
+					}
+					paths = append(paths, path)
+					totalPathsInThisBatch++
+				}
 			}
 
 			if totalPathsInThisBatch > 0 {
@@ -578,12 +585,19 @@ func (kns *knowledgeNetworkService) expandObjectPathsBatch(ctx context.Context,
 				if !exists {
 					// 当前对象没有找到下一层对象
 					if query.IncludeIncompletePath {
-						// 如果需要包含不完整路径，将当前对象的路径添加到结果中
-						paths = append(paths, currentObj.Paths...)
-						if len(currentObj.Paths) > 0 {
-							logics.RecordGenerated(query.PathQuotaManager, typePath.ID, len(currentObj.Paths))
+						// Incomplete paths: only keep paths that already have at least one edge (same as batch branch above).
+						totalAdded := 0
+						for _, path := range currentObj.Paths {
+							if len(path.Relations) == 0 {
+								continue
+							}
+							paths = append(paths, path)
+							totalAdded += len(path.Relations)
+						}
+						if totalAdded > 0 {
+							logics.RecordGenerated(query.PathQuotaManager, typePath.ID, totalAdded)
 							logger.Debugf("添加不完整路径 - 路径ID: %d, 对象ID: %s, 新增路径: %d, 深度: %d",
-								typePath.ID, currentObj.ObjectID, len(currentObj.Paths), depth)
+								typePath.ID, currentObj.ObjectID, totalAdded, depth)
 						}
 					}
 					continue
@@ -657,11 +671,13 @@ func (kns *knowledgeNetworkService) expandObjectPathsBatch(ctx context.Context,
 						continue
 					}
 
-					// 记录下一层对象用于继续扩展
+					// 记录下一层对象用于继续扩展（必须带 ObjectType / ObjectUK，后续边如 filtered_cross_join 要再查实例）
 					nextLevel = append(nextLevel, interfaces.LevelObjectWithPath{
 						LevelObject: interfaces.LevelObject{
 							ObjectID:   nextObjectID,
+							ObjectUK:   uk,
 							ObjectData: nextObject,
+							ObjectType: nextObjects.ObjectType,
 							PathFrom:   currentObj.ObjectID,
 						},
 						Paths: newPaths, // 携带扩展后的路径
@@ -739,6 +755,15 @@ func (kns *knowledgeNetworkService) getNextObjectsBatchByRelation(ctx context.Co
 	}
 
 	result := make(map[string]interfaces.Objects)
+
+	if edge.RelationType.Type == interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN {
+		rules, ok := edge.RelationType.MappingRules.(*interfaces.FilteredCrossJoinMapping)
+		if !ok {
+			return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_ObjectType_InvalidParameter).
+				WithErrorDetails("relation type filtered_cross_join requires FilteredCrossJoinMapping rules")
+		}
+		return kns.expandFilteredCrossJoin(ctx, query, batch, edge, objectType, isForward, rules)
+	}
 
 	// // 按对象分批处理，避免单次查询过大
 	// batchSize := query.BatchSize
@@ -834,7 +859,7 @@ func (kns *knowledgeNetworkService) mapResultsToObjects(currentLevelObjects []in
 		for _, nextObj := range nextObjects.Datas {
 			// 获取该对象的视图数据（如果是间接映射）
 			var objectViewData []map[string]any
-			if _, isIndirect := edge.RelationType.MappingRules.(interfaces.InDirectMapping); isIndirect {
+			if _, isIndirect := edge.RelationType.MappingRules.(*interfaces.InDirectMapping); isIndirect {
 				objectViewData = viewDataMap[levelObj.ObjectID]
 			}
 
@@ -860,10 +885,14 @@ func (kns *knowledgeNetworkService) isObjectRelated(currentObjectData map[string
 		// 检查直接映射条件是否满足
 		return logics.CheckDirectMappingConditions(currentObjectData, nextObject, mappingRules, isForward)
 
-	case interfaces.InDirectMapping:
+	case *interfaces.InDirectMapping:
 		// 间接映射的检查逻辑
 		// 需要根据具体业务实现
 		return logics.CheckIndirectMappingConditionsWithViewData(currentObjectData, nextObject, mappingRules, isForward, viewData)
+
+	case *interfaces.FilteredCrossJoinMapping:
+		// Pairing is done in expandFilteredCrossJoin; this path is not used for that type.
+		return false
 	}
 
 	return false
@@ -887,7 +916,7 @@ func (kns *knowledgeNetworkService) buildBatchConditions(ctx context.Context,
 		switch edge.RelationType.MappingRules.(type) {
 		case []interfaces.Mapping:
 			directObjects = append(directObjects, levelObj)
-		case interfaces.InDirectMapping:
+		case *interfaces.InDirectMapping:
 			indirectObjects = append(indirectObjects, levelObj)
 		}
 	}
@@ -926,7 +955,7 @@ func (kns *knowledgeNetworkService) buildIndirectBatchConditions(ctx context.Con
 
 	var conditions []*cond.CondCfg
 	viewDataMap := make(map[string][]map[string]any)
-	mappingRules := edge.RelationType.MappingRules.(interfaces.InDirectMapping)
+	mappingRules := edge.RelationType.MappingRules.(*interfaces.InDirectMapping)
 
 	if mappingRules.BackingDataSource.ID == "" {
 		// 视图为空，返回异常，不请求
@@ -1000,7 +1029,7 @@ func (kns *knowledgeNetworkService) batchGetViewData(ctx context.Context,
 	query *interfaces.SubGraphQueryBaseOnSource,
 	edge *interfaces.TypeEdge,
 	currentLevelObjects []interfaces.LevelObject,
-	mappingRules interfaces.InDirectMapping, isForward bool) (map[string][]map[string]any, error) {
+	mappingRules *interfaces.InDirectMapping, isForward bool) (map[string][]map[string]any, error) {
 
 	result := make(map[string][]map[string]any)
 	batchSize := 50 // 视图查询的批次大小
@@ -1088,17 +1117,41 @@ func (kns *knowledgeNetworkService) batchGetViewData(ctx context.Context,
 		}
 		viewQuery.Sort = sort
 
-		// 执行视图查询
-		backingViewData, err := kns.uAccess.GetViewDataByID(ctx, mappingRules.BackingDataSource.ID, *viewQuery)
-		if err != nil {
-			return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
-				oerrors.OntologyQuery_ObjectType_InternalError_GetViewDataByIDFailed).WithErrorDetails(err.Error())
+		backingType := mappingRules.BackingDataSource.Type
+		if backingType == "" {
+			backingType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
+		}
+		var backingRows []map[string]any
+		if backingType == interfaces.DATA_SOURCE_TYPE_RESOURCE {
+			params := &interfaces.ResourceDataQueryParams{
+				NeedTotal:       viewQuery.NeedTotal,
+				Limit:           viewQuery.Limit,
+				Sort:            viewQuery.Sort,
+				SearchAfter:     viewQuery.SearchAfter,
+				FilterCondition: logics.CondCfgToFilterMap(viewQuery.Filters),
+			}
+			resp, err := kns.vba.QueryResourceData(ctx, mappingRules.BackingDataSource.ID, params)
+			if err != nil {
+				return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+					oerrors.OntologyQuery_ObjectType_InternalError_GetViewDataByIDFailed).WithErrorDetails(err.Error())
+			}
+			if resp == nil {
+				return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+					oerrors.OntologyQuery_ObjectType_InternalError_GetViewDataByIDFailed).WithErrorDetails("vega resource query returned nil")
+			}
+			backingRows = resp.Entries
+			logger.Debugf("relation [%s] from resource [%s] rows [%d]", edge.RelationType.RTName, mappingRules.BackingDataSource.ID, len(backingRows))
+		} else {
+			backingViewData, err := kns.uAccess.GetViewDataByID(ctx, mappingRules.BackingDataSource.ID, *viewQuery)
+			if err != nil {
+				return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+					oerrors.OntologyQuery_ObjectType_InternalError_GetViewDataByIDFailed).WithErrorDetails(err.Error())
+			}
+			backingRows = backingViewData.Datas
+			logger.Debugf("依据关系[%s]从视图[%s]中获取到的数据条数为[%d]", edge.RelationType.RTName, mappingRules.BackingDataSource.ID, len(backingRows))
 		}
 
-		logger.Debugf("依据关系[%s]从视图[%s]中获取到的数据条数为[%d]", edge.RelationType.RTName, mappingRules.BackingDataSource.ID, len(backingViewData.Datas))
-
-		// 将视图数据映射回各个对象
-		kns.mapViewDataToObjects(backingViewData.Datas, batchConditions, objectMapping, mappingRules, isForward, result)
+		kns.mapViewDataToObjects(backingRows, batchConditions, objectMapping, mappingRules, isForward, result)
 	}
 
 	return result, nil
@@ -1108,7 +1161,7 @@ func (kns *knowledgeNetworkService) batchGetViewData(ctx context.Context,
 func (kns *knowledgeNetworkService) mapViewDataToObjects(viewData []map[string]any,
 	batchConditions []*cond.CondCfg,
 	objectMapping map[int]string,
-	mappingRules interfaces.InDirectMapping,
+	mappingRules *interfaces.InDirectMapping,
 	isForward bool,
 	result map[string][]map[string]any) {
 
@@ -1412,9 +1465,12 @@ func (kns *knowledgeNetworkService) matchRelationsForPair(ctx context.Context,
 		// 直接关联：直接使用已有的 targetObjects 进行匹配，避免数据库查询
 		return kns.matchDirectRelations(sourceObjects, targetObjects, edge)
 
-	case interfaces.InDirectMapping:
+	case *interfaces.InDirectMapping:
 		// 间接关联：需要查询视图数据，但只匹配输入的目标对象
 		return kns.matchIndirectRelations(ctx, query, sourceObjects, targetObjects, edge)
+
+	case *interfaces.FilteredCrossJoinMapping:
+		return kns.matchFilteredCrossJoinRelations(ctx, sourceObjects, targetObjects, edge)
 	}
 
 	return []interfaces.Relation{}, nil
@@ -1466,7 +1522,7 @@ func (kns *knowledgeNetworkService) matchIndirectRelations(ctx context.Context,
 		objectViewData := viewDataMap[sourceObj.ObjectID]
 
 		for _, targetObj := range targetObjects {
-			mappingRules := edge.RelationType.MappingRules.(interfaces.InDirectMapping)
+			mappingRules := edge.RelationType.MappingRules.(*interfaces.InDirectMapping)
 			if logics.CheckIndirectMappingConditionsWithViewData(
 				sourceObj.ObjectData,
 				targetObj.ObjectData,
@@ -1504,7 +1560,7 @@ func (kns *knowledgeNetworkService) buildBatchConditionsForObjects(ctx context.C
 		switch edge.RelationType.MappingRules.(type) {
 		case []interfaces.Mapping:
 			directObjects = append(directObjects, levelObj)
-		case interfaces.InDirectMapping:
+		case *interfaces.InDirectMapping:
 			indirectObjects = append(indirectObjects, levelObj)
 		}
 	}

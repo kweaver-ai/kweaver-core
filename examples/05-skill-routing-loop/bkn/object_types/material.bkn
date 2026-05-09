@@ -1,0 +1,36 @@
+---
+type: object_type
+id: material
+name: Material
+tags: [example-05]
+---
+
+## ObjectType: Material
+
+Inventory item. The `bound_skill_id` FK points at the applicable Skill.
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| sku | SKU | string | Material code (PK) | sku |
+| name | Name | string | Display name | name |
+| current_stock | Current Stock | integer | Live inventory | current_stock |
+| safety_stock | Safety Stock | integer | Reorder threshold | safety_stock |
+| material_risk | Risk | string | Risk tier (critical/normal) | material_risk |
+| supplier_id | Supplier | string | FK to supplier | supplier_id |
+| bound_skill_id | Bound Skill | string | FK to skills (applicable_skill) | bound_skill_id |
+
+### Keys
+
+Primary Keys: sku
+Display Key: name
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| data_view | {{MATERIALS_DV_ID}} | {{MATERIALS_DV_NAME}} |

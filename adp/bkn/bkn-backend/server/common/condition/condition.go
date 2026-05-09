@@ -51,15 +51,15 @@ func NewCondWithOpr(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsM
 	// multi_match之外的才校验
 	if cfg.Operation != OperationMultiMatch {
 		// 判断除 * 之外的字段权限
-		if cfg.Name != AllField {
-			field, ok := fieldsMap[cfg.Name]
+		if cfg.Field != AllField {
+			field, ok := fieldsMap[cfg.Field]
 			if !ok {
-				return nil, fmt.Errorf("condition config field name '%s' must in view original fields", cfg.Name)
+				return nil, fmt.Errorf("condition config field name '%s' must in view original fields", cfg.Field)
 			}
 
 			// 如果字段类型是 binary 类型，则不支持过滤
 			if field.Type == dtype.DATATYPE_BINARY {
-				return nil, fmt.Errorf("condition config field '%s' is binary type, do not support filtering", cfg.Name)
+				return nil, fmt.Errorf("condition config field '%s' is binary type, do not support filtering", cfg.Field)
 			}
 
 			cfg.NameField = field

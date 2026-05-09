@@ -8,13 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	lock "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/lock"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
-	rds "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/store"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	lock "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/lock"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
+	rds "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/store"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils"
 )
 
 // tokenMgntMap key[ip:port:clientID:secret]

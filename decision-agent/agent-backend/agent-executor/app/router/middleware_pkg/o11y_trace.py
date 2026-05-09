@@ -8,8 +8,29 @@ from fastapi import Request, Response
 from opentelemetry import trace
 from opentelemetry.propagate import extract
 
-from app.utils.observability.sdk_available import TELEMETRY_SDK_AVAILABLE
+from app.common.stand_log import StandLogger
 from app.utils.observability.observability_log import get_logger as o11y_logger
+
+
+def _get_request_tracer():
+    """返回标准 OTel HTTP tracer。"""
+    return trace.get_tracer("agent-executor.http")
+
+
+def _should_skip_trace(path: str, config) -> bool:
+    """健康检查接口不进入 OTel 上报，避免污染链路列表。"""
+    if not path:
+        return False
+
+    configured_paths = {
+        f"{config.app.host_prefix}/health/alive",
+        f"{config.app.host_prefix}/health/ready",
+    }
+    return (
+        path in configured_paths
+        or path.endswith("/health/alive")
+        or path.endswith("/health/ready")
+    )
 
 
 async def o11y_trace(request: Request, call_next) -> Response:
@@ -38,19 +59,22 @@ async def o11y_trace(request: Request, call_next) -> Response:
     # 延迟导入 Config 避免循环依赖
     from app.common.config import Config
 
-    # 如果 SDK 不可用或追踪未启用，直接调用下一个中间件
-    if not TELEMETRY_SDK_AVAILABLE or not Config.o11y.trace_enabled:
+    request_path = request.url.path
+
+    # 如果追踪未启用，或者当前请求显式排除上报，直接调用下一个中间件
+    if not Config.o11y.trace_enabled or _should_skip_trace(request_path, Config):
         return await call_next(request)
 
-    from exporter.ar_trace.trace_exporter import tracer
+    tracer = _get_request_tracer()
 
     # 创建 span 并设置为当前上下文
     with tracer.start_as_current_span(
-        f"HTTP {request.method} {request.url.path}",
+        f"{request.method} {request_path}",
         context=ctx,
         kind=trace.SpanKind.SERVER,
         attributes={
             "http.method": request.method,
+            "http.route": request_path,
             "http.url": str(request.url),
             "http.client_ip": request.client.host,
         },
@@ -61,14 +85,12 @@ async def o11y_trace(request: Request, call_next) -> Response:
 
             # 添加响应状态码到 span
             span.set_attribute("http.status_code", response.status_code)
-            logger = o11y_logger()
-            if logger:
-                logger.info(f"http status {response.status_code}")
 
             return response
         except Exception as e:
             # 错误处理
             span.set_attribute("http.status_code", 500)
+            StandLogger.error(f"Error: {e}")
             logger = o11y_logger()
             if logger:
                 logger.error(f"Error: {e}")

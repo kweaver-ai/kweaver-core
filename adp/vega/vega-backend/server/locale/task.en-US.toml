@@ -3,6 +3,31 @@ Description = "Task not found"
 Solution = "Please check the parameters"
 ErrorLink = "No solution"
 
+[VegaBackend.BuildTask.NotFound]
+Description = "Build task not found"
+Solution = "Please check if the build task ID exists"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidParameter.ResourceID]
+Description = "Invalid resource ID"
+Solution = "Please check if the resource ID is provided and exists"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidParameter.Mode]
+Description = "Invalid build task mode"
+Solution = "Mode must be one of: streaming, batch"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidStateTransition]
+Description = "Invalid build task state transition"
+Solution = "Check current task status; start requires status in {init, stopped}; stop requires status == running"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.HasRunningExecution]
+Description = "Build task has running execution and cannot be deleted"
+Solution = "Stop the task before deleting it"
+ErrorLink = "No solution"
+
 [VegaBackend.BuildTask.InternalError.CreateFailed]
 Description = "Failed to create build task"
 Solution = "Please contact the administrator"
@@ -16,4 +41,54 @@ ErrorLink = "No solution"
 [VegaBackend.BuildTask.Exist]
 Description = "Build task already exists"
 Solution = "Please check if the resource already has a build task"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.Running]
+Description = "Build task is running"
+Solution = "Please wait for the task to complete or stop before operating"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidStatus]
+Description = "Invalid build task status"
+Solution = "Please check the status value"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidExecuteType]
+Description = "Invalid build task execute type"
+Solution = "Please check the execute type value"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InternalError.UpdateFailed]
+Description = "Failed to update build task"
+Solution = "Please contact the administrator"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InternalError.DeleteFailed]
+Description = "Failed to delete build task"
+Solution = "Please contact the administrator"
+ErrorLink = "No solution"
+
+[VegaBackend.DiscoverTask.NotFound]
+Description = "Discover task not found"
+Solution = "Please check if the discover task ID exists"
+ErrorLink = "No solution"
+
+[VegaBackend.DiscoverTask.InvalidStatus]
+Description = "Invalid discover task status"
+Solution = "Status must be one of: pending, running, completed, failed"
+ErrorLink = "No solution"
+
+[VegaBackend.DiscoverTask.HasRunningExecution]
+Description = "Discover task is pending or running and cannot be deleted"
+Solution = "Wait for the task to complete or fail before deleting"
+ErrorLink = "No solution"
+
+[VegaBackend.DiscoverTask.InternalError.GetFailed]
+Description = "Failed to get discover task"
+Solution = "Please contact the administrator"
+ErrorLink = "No solution"
+
+[VegaBackend.DiscoverTask.InternalError.DeleteFailed]
+Description = "Failed to delete discover task"
+Solution = "Please contact the administrator"
 ErrorLink = "No solution"

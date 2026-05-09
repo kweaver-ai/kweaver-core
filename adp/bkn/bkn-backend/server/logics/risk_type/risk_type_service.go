@@ -554,15 +554,15 @@ func (rts *riskTypeService) SearchRiskTypes(ctx context.Context, query *interfac
 	}
 
 	if query.NeedTotal {
-		params := &interfaces.DatasetQueryParams{
+		params := &interfaces.ResourceDataQueryParams{
 			FilterCondition: filterCondition,
 			Offset:          0,
 			Limit:           1,
 			NeedTotal:       true,
 		}
-		datasetResp, err := rts.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+		datasetResp, err := rts.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 		if err != nil {
-			logger.Errorf("QueryDatasetData error: %s", err.Error())
+			logger.Errorf("QueryResourceData error: %s", err.Error())
 			span.SetStatus(codes.Error, "风险类检索查询总数失败")
 			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_RiskType_InternalError).
@@ -579,16 +579,16 @@ func (rts *riskTypeService) SearchRiskTypes(ctx context.Context, query *interfac
 	}
 
 	for {
-		params := &interfaces.DatasetQueryParams{
+		params := &interfaces.ResourceDataQueryParams{
 			FilterCondition: filterCondition,
 			Offset:          offset,
 			Limit:           limit,
 			NeedTotal:       false,
 			Sort:            query.Sort,
 		}
-		datasetResp, err := rts.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+		datasetResp, err := rts.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 		if err != nil {
-			logger.Errorf("QueryDatasetData error: %s", err.Error())
+			logger.Errorf("QueryResourceData error: %s", err.Error())
 			span.SetStatus(codes.Error, "风险类检索查询失败")
 			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_RiskType_InternalError).

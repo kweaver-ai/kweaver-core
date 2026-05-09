@@ -69,11 +69,18 @@ features:
   enable_dolphin_agent_output_variables_ctrl: false
   is_skill_agent_need_progress: false
   enable_traceai_evidence: false
+  skill_enabled: true  # 是否开启 Skill 功能
 
 # 7. o11y 相关
 o11y:
+  service_name: "agent-executor"
+  service_version: "1.0.0"
+  environment: "production"
   log_enabled: false
+  log_level: "info"
   trace_enabled: false
+  trace_endpoint: ""
+  trace_sampling_rate: 1.0
 
 # 8. 对话日志相关配置
 dialog_logging:
@@ -81,6 +88,11 @@ dialog_logging:
   use_single_log_file: false
   single_profile_file_path: "./data/dialog_single_file_logs/profile.log"
   single_trajectory_file_path: "./data/dialog_single_file_logs/trajectory.log"
+
+# 9. LLM message 日志
+llm_message_logging:
+  enabled: false
+  log_dir: "./data/dolphin_llm_log"
 
 
 

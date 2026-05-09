@@ -87,6 +87,21 @@ func (mr *MockISkillRepositoryMockRecorder) InsertSkill(ctx, tx, skill any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertSkill", reflect.TypeOf((*MockISkillRepository)(nil).InsertSkill), ctx, tx, skill)
 }
 
+// SelectSkillBuildPage mocks base method.
+func (m *MockISkillRepository) SelectSkillBuildPage(ctx context.Context, tx *sql.Tx, cursorUpdateTime int64, cursorSkillID string, limit int) ([]*model.SkillRepositoryDB, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectSkillBuildPage", ctx, tx, cursorUpdateTime, cursorSkillID, limit)
+	ret0, _ := ret[0].([]*model.SkillRepositoryDB)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectSkillBuildPage indicates an expected call of SelectSkillBuildPage.
+func (mr *MockISkillRepositoryMockRecorder) SelectSkillBuildPage(ctx, tx, cursorUpdateTime, cursorSkillID, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectSkillBuildPage", reflect.TypeOf((*MockISkillRepository)(nil).SelectSkillBuildPage), ctx, tx, cursorUpdateTime, cursorSkillID, limit)
+}
+
 // SelectSkillByID mocks base method.
 func (m *MockISkillRepository) SelectSkillByID(ctx context.Context, tx *sql.Tx, skillID string) (*model.SkillRepositoryDB, error) {
 	m.ctrl.T.Helper()

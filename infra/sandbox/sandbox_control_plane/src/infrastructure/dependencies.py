@@ -99,6 +99,36 @@ class MockSessionRepository(ISessionRepository):
     async def count_by_node(self, runtime_node: str) -> int:
         return sum(1 for s in self._sessions.values() if getattr(s, 'node_id', None) == runtime_node)
 
+    async def find_sessions(
+        self,
+        status: str | None = None,
+        template_id: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ):
+        sessions = list(self._sessions.values())
+        if status is not None:
+            sessions = [
+                s for s in sessions
+                if getattr(getattr(s, "status", None), "value", getattr(s, "status", None)) == status
+            ]
+        if template_id is not None:
+            sessions = [s for s in sessions if s.template_id == template_id]
+        return sessions[offset:offset + limit]
+
+    async def count_sessions(
+        self,
+        status: str | None = None,
+        template_id: str | None = None,
+    ) -> int:
+        sessions = await self.find_sessions(
+            status=status,
+            template_id=template_id,
+            limit=len(self._sessions),
+            offset=0,
+        )
+        return len(sessions)
+
 
 class MockExecutionRepository(IExecutionRepository):
     """Mock 执行仓储（用于开发测试）"""
@@ -927,10 +957,117 @@ def _create_direct_session_repository(db_mgr):
                     model.f_updated_at = int(time.time() * 1000)
                     await db.commit()
 
+        async def find_sessions(
+            self,
+            status: str | None = None,
+            template_id: str | None = None,
+            limit: int = 50,
+            offset: int = 0,
+        ):
+            async with self._db_mgr.get_session() as session:
+                stmt = select(SessionModel)
+                if status is not None:
+                    stmt = stmt.where(SessionModel.f_status == status)
+                if template_id is not None:
+                    stmt = stmt.where(SessionModel.f_template_id == template_id)
+                stmt = (
+                    stmt.order_by(SessionModel.f_created_at.desc())
+                    .limit(limit)
+                    .offset(offset)
+                )
+                models_result = await session.execute(stmt)
+                return [model.to_entity() for model in models_result.scalars().all()]
+
+        async def count_sessions(
+            self,
+            status: str | None = None,
+            template_id: str | None = None,
+        ) -> int:
+            async with self._db_mgr.get_session() as session:
+                stmt = select(func.count()).select_from(SessionModel)
+                if status is not None:
+                    stmt = stmt.where(SessionModel.f_status == status)
+                if template_id is not None:
+                    stmt = stmt.where(SessionModel.f_template_id == template_id)
+                result = await session.execute(stmt)
+                return result.scalar() or 0
+
     return DirectSessionRepository(db_mgr)
 
 
-def _create_scheduler_for_state_sync(container_scheduler):
+def _create_direct_execution_repository(db_mgr):
+    """
+    创建直接使用数据库的执行仓储。
+
+    用于状态同步服务在 takeover 场景回写中断 execution 状态。
+    """
+    from src.infrastructure.persistence.models.execution_model import ExecutionModel
+    from src.domain.value_objects.execution_status import ExecutionStatus
+    from sqlalchemy import select
+
+    class DirectExecutionRepository:
+        def __init__(self, db_mgr):
+            self._db_mgr = db_mgr
+
+        async def find_by_session_id(self, session_id: str, limit: int = 100):
+            async with self._db_mgr.get_session() as session:
+                stmt = (
+                    select(ExecutionModel)
+                    .where(ExecutionModel.f_session_id == session_id)
+                    .order_by(ExecutionModel.f_created_at.desc())
+                    .limit(limit)
+                )
+                result = await session.execute(stmt)
+                return [model.to_entity() for model in result.scalars().all()]
+
+        async def save(self, execution):
+            import time
+            async with self._db_mgr.get_session() as session:
+                model = await session.get(ExecutionModel, execution.id)
+                if model is None:
+                    return
+
+                model.f_status = execution.state.status.value
+                model.f_stdout = execution.stdout
+                model.f_stderr = execution.stderr
+                model.f_exit_code = execution.state.exit_code or 0
+                model.f_error_message = execution.state.error_message or ""
+                model.f_completed_at = (
+                    int(execution.completed_at.timestamp() * 1000)
+                    if execution.completed_at
+                    else 0
+                )
+                model.f_updated_at = int(time.time() * 1000)
+                await session.commit()
+
+        async def commit(self):
+            """Direct repository 每次 save 已提交，保留兼容空实现。"""
+            return None
+
+    return DirectExecutionRepository(db_mgr)
+
+
+def _create_direct_template_repository(db_mgr):
+    """
+    创建直接使用数据库的模板仓储。
+
+    用于状态同步服务恢复 session 时解析真实模板镜像。
+    """
+    from src.infrastructure.persistence.models.template_model import TemplateModel
+
+    class DirectTemplateRepository:
+        def __init__(self, db_mgr):
+            self._db_mgr = db_mgr
+
+        async def find_by_id(self, template_id: str):
+            async with self._db_mgr.get_session() as session:
+                model = await session.get(TemplateModel, template_id)
+                return model.to_entity() if model else None
+
+    return DirectTemplateRepository(db_mgr)
+
+
+def _create_scheduler_for_state_sync(container_scheduler, template_repo=None):
     """为状态同步服务创建调度器"""
     settings = get_settings()
 
@@ -939,11 +1076,6 @@ def _create_scheduler_for_state_sync(container_scheduler):
 
     if IS_IN_KUBERNETES:
         from src.infrastructure.schedulers.k8s_scheduler_service import K8sSchedulerService
-
-        # 创建一个简单的 template repo 用于 scheduler
-        class SimpleTemplateRepo:
-            async def find_by_id(self, template_id: str):
-                return None
 
         # Build CONTROL_PLANE_URL based on kubernetes_namespace
         control_plane_url = (
@@ -954,7 +1086,7 @@ def _create_scheduler_for_state_sync(container_scheduler):
 
         return K8sSchedulerService(
             container_scheduler=container_scheduler,
-            template_repo=SimpleTemplateRepo(),
+            template_repo=template_repo,
             executor_client=None,
             executor_port=8080,
             control_plane_url=control_plane_url,
@@ -981,13 +1113,20 @@ def get_state_sync_service():
     # 创建会话仓储
     if USE_SQL_REPOSITORIES:
         session_repo = _create_direct_session_repository(db_manager)
+        execution_repo = _create_direct_execution_repository(db_manager)
+        template_repo = _create_direct_template_repository(db_manager)
     else:
         session_repo = MockSessionRepository()
+        execution_repo = MockExecutionRepository()
+        template_repo = MockTemplateRepository()
 
     # 创建或复用调度器
     scheduler = _scheduler_singleton
     if scheduler is None:
-        scheduler = _create_scheduler_for_state_sync(container_scheduler)
+        scheduler = _create_scheduler_for_state_sync(
+            container_scheduler=container_scheduler,
+            template_repo=template_repo,
+        )
         _scheduler_singleton = scheduler
 
     # Build CONTROL_PLANE_URL based on environment
@@ -1003,6 +1142,8 @@ def get_state_sync_service():
     return StateSyncService(
         session_repo=session_repo,
         container_scheduler=container_scheduler,
+        execution_repo=execution_repo,
+        template_repo=template_repo,
         scheduler=scheduler,
         control_plane_url=control_plane_url,
     )

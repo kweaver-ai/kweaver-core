@@ -8,6 +8,22 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any
 
 
+@dataclass(frozen=True)
+class ControlPlaneOwnerContext:
+    """当前 control plane Pod 的 owner 上下文。"""
+    pod_name: str
+    pod_uid: str
+
+
+@dataclass(frozen=True)
+class ContainerOwnershipInfo:
+    """容器/POD 当前归属信息。"""
+    owner_pod_name: Optional[str]
+    owner_pod_uid: Optional[str]
+    annotations: Dict[str, str]
+    has_owner_reference: bool
+
+
 @dataclass
 class ContainerConfig:
     """容器配置"""
@@ -20,6 +36,7 @@ class ContainerConfig:
     workspace_path: str  # S3路径，如 "s3://bucket/sessions/{session_id}/"
     labels: Dict[str, str]
     network_name: str = "sandbox_network"  # Docker 网络名称，默认 sandbox_network
+    owner_context: Optional[ControlPlaneOwnerContext] = None
 
 
 @dataclass
@@ -137,3 +154,14 @@ class IContainerScheduler(ABC):
     async def ping(self) -> bool:
         """检查调度器连接状态"""
         pass
+
+    async def get_container_ownership(
+        self,
+        container_id: str,
+    ) -> Optional[ContainerOwnershipInfo]:
+        """
+        获取容器归属信息。
+
+        默认返回 None，供不支持 owner 概念的调度器复用。
+        """
+        return None

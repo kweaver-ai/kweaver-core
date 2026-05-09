@@ -1,0 +1,65 @@
+# Template for local kind dev. Copy once:
+#   cp deploy/dev/conf/mac-config.yaml.example deploy/dev/conf/mac-config.yaml
+# After `data-services install`, passwords are filled when AUTO_GENERATE_CONFIG is true.
+# File mac-config.yaml is gitignored — do not commit secrets.
+
+namespace: kweaver
+env:
+  language: en_US.UTF-8
+  timezone: Asia/Shanghai
+image:
+  registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+
+accessAddress:
+  # Omit host for LAN IP auto-detection on install; set localhost for same-machine only.
+  port: 80
+  scheme: http
+  path: /
+depServices:
+  mq:
+    auth:
+      mechanism: 'PLAIN'
+      username: 'kafkauser'
+      password: 'REPLACE_ME'
+    mqHost: 'kafka.resource.svc.cluster.local'
+    mqLookupdHost: ""
+    mqLookupdPort: 0
+    mqPort: 9092
+    mqType: kafka
+  opensearch:
+    distribution: opensearch
+    host: 'opensearch-cluster-master.resource.svc.cluster.local'
+    user: 'admin'
+    password: 'REPLACE_ME'
+    port: 9200
+    protocol: http
+    version: ""
+
+  zookeeper:
+    host: 'zookeeper-headless.resource.svc.cluster.local'
+    port: 2181
+  rds:
+    admin_key: 'REPLACE_ME'
+    host: 'mariadb-proton-mariadb.resource.svc.cluster.local'
+    hostRead: 'mariadb-proton-mariadb.resource.svc.cluster.local'
+    port: 3306
+    portRead: 3306
+    source_type: internal
+    type: MariaDB
+    user: 'kweaver'
+    password: 'REPLACE_ME'
+    root_password: 'REPLACE_ME'
+    database: 'kweaver'
+  redis:
+    connectInfo:
+      masterGroupName: 'mymaster'
+      password: 'REPLACE_ME'
+      sentinelHost: 'redis-proton-redis-sentinel.resource.svc.cluster.local'
+      sentinelPassword: 'REPLACE_ME'
+      sentinelPort: 26379
+      sentinelUsername: 'root'
+      username: 'root'
+    connectType: 'sentinel'
+    sourceType: internal
+  class-443:
+    ingressClass: 'nginx'

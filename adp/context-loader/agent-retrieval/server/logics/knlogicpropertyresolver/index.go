@@ -25,10 +25,10 @@ const (
 
 // knLogicPropertyResolverService 逻辑属性解析服务实现
 type knLogicPropertyResolverService struct {
-	logger                interfaces.Logger
-	bknBackendAccess      interfaces.BknBackendAccess
-	ontologyQueryClient   interfaces.DrivenOntologyQuery
-	agentApp              interfaces.AgentApp
+	logger              interfaces.Logger
+	bknBackendAccess    interfaces.BknBackendAccess
+	ontologyQueryClient interfaces.DrivenOntologyQuery
+	agentApp            interfaces.AgentApp
 }
 
 var (
@@ -41,10 +41,10 @@ func NewKnLogicPropertyResolverService() interfaces.IKnLogicPropertyResolverServ
 	serviceOnce.Do(func() {
 		conf := config.NewConfigLoader()
 		service = &knLogicPropertyResolverService{
-			logger:           conf.GetLogger(),
-			bknBackendAccess: drivenadapters.NewBknBackendAccess(),
-			ontologyQueryClient:   drivenadapters.NewOntologyQueryAccess(),
-			agentApp:              drivenadapters.NewAgentAppClient(),
+			logger:              conf.GetLogger(),
+			bknBackendAccess:    drivenadapters.NewBknBackendAccess(),
+			ontologyQueryClient: drivenadapters.NewOntologyQueryAccess(),
+			agentApp:            drivenadapters.NewAgentAppClient(),
 		}
 	})
 	return service

@@ -27,7 +27,7 @@ func TestNewEqCond(t *testing.T) {
 		Convey("invalid value_from should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
 					Value:     "value1",
@@ -42,7 +42,7 @@ func TestNewEqCond(t *testing.T) {
 		Convey("slice value should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     []any{"value1", "value2"},
@@ -57,7 +57,7 @@ func TestNewEqCond(t *testing.T) {
 		Convey("valid config should create EqCond", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -74,7 +74,7 @@ func TestNewEqCond(t *testing.T) {
 		Convey("numeric value should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     123,
@@ -100,7 +100,7 @@ func TestEqCond_Convert(t *testing.T) {
 		Convey("string value should be quoted", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -124,7 +124,7 @@ func TestEqCond_Convert(t *testing.T) {
 		Convey("numeric value should not be quoted", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     123,
@@ -159,7 +159,7 @@ func TestEqCond_Convert2SQL(t *testing.T) {
 		Convey("string value should be quoted", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -179,7 +179,7 @@ func TestEqCond_Convert2SQL(t *testing.T) {
 		Convey("numeric value should not be quoted", func() {
 			cfg := &CondCfg{
 				Operation: OperationEq,
-				Name:      "field1",
+				Field:     "field1",
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     123,

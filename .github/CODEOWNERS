@@ -1,0 +1,48 @@
+# ──────────────────────────────────────────────────────────────
+# CODEOWNERS — auto-assign reviewers based on changed paths
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Rules:
+#   - Later rules override earlier ones (last match wins)
+#   - Owners can be @username, @org/team-name, or email
+#   - To enforce, enable "Require review from Code Owners"
+#     in Settings → Branches → Branch protection rules
+# ──────────────────────────────────────────────────────────────
+
+# ── Global fallback ──────────────────────────────────────────
+*                                          @xforce-io @sh00tg0a1
+
+# ── ADP (Application Delivery Platform) ─────────────────────
+adp/bkn/**                                 @kenlee1988 @Yana-tao
+adp/context-loader/**                      @criller
+adp/dataflow/**                            @zhangaishucn
+adp/execution-factory/**                   @criller
+adp/vega/**                                @kenlee1988 @Flynn-Zh @LuckyCaptain-go
+adp/docs/**                                @kenlee1988 @Flynn-Zh @LuckyCaptain-go @Yana-tao
+
+# ── Decision Agent ───────────────────────────────────────────
+decision-agent/**                          @guodawn
+
+# ── Infrastructure ───────────────────────────────────────────
+infra/mf-model-api/**                      @jiankang-kw
+infra/mf-model-manager/**                  @jiankang-kw
+infra/oss-gateway-backend/**               @jiankang-kw
+infra/sandbox/**                           @guodawn
+
+# ── Trace AI (Observability) ────────────────────────────────
+trace-ai/**                                @guodawn
+
+# ── Deployment ───────────────────────────────────────────────
+deploy/**                                  @sh00tg0a1 @tangkelu
+
+# ── Website / Docs ───────────────────────────────────────────
+website/**                                 @xforce-io
+help/**                                    @FennyXCHF @sh00tg0a1 @xforce-io
+
+# ── CI / CD / GitHub config ─────────────────────────────────
+.github/**                                 @xforce-io @sh00tg0a1 @FennyXCHF
+rules/**                                   @sh00tg0a1 @xforce-io @FennyXCHF
+
+# ── Release notes ────────────────────────────────────────────
+release-notes/**                           @sh00tg0a1 @xforce-io @FennyXCHF

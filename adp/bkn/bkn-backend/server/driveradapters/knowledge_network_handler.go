@@ -256,7 +256,7 @@ func (r *restHandler) ValidateKN(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
 		return
 	}
 
@@ -398,8 +398,7 @@ func (r *restHandler) UpdateKN(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -510,8 +509,7 @@ func (r *restHandler) DeleteKN(c *gin.Context) {
 		return
 	}
 	if kn == nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -793,6 +791,14 @@ func (r *restHandler) GetRelationTypePaths(c *gin.Context, visitor hydra.Visitor
 	// 设置 trace 的相关 api 的属性
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
+	// 1. 接受 kn_id 参数
+	knID := c.Param("kn_id")
+	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
+	span.SetAttributes(
+		attr.Key("kn_id").String(knID),
+		attr.Key("branch").String(branch),
+	)
+
 	//接收绑定参数
 	query := interfaces.RelationTypePathsBaseOnSource{}
 	err := c.ShouldBindJSON(&query)
@@ -805,18 +811,8 @@ func (r *restHandler) GetRelationTypePaths(c *gin.Context, visitor hydra.Visitor
 			httpErr.BaseError.ErrorDetails))
 
 		rest.ReplyError(c, httpErr)
-
 		return
 	}
-
-	// 1. 接受 kn_id 参数
-	knID := c.Param("kn_id")
-	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
-	span.SetAttributes(
-		attr.Key("kn_id").String(knID),
-		attr.Key("branch").String(branch),
-	)
-
 	query.KNID = knID
 	query.Branch = branch
 

@@ -6,7 +6,6 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdapmsenum"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
 	"github.com/pkg/errors"
 )
@@ -15,11 +14,6 @@ func (svc *permissionSvc) GetSingleMgmtPermission(ctx context.Context, resourceT
 	// 1. 检查是否禁用权限检查
 	if global.GConfig.SwitchFields.DisablePmsCheck {
 		allAllowed = true
-		return
-	}
-
-	if cenvhelper.IsLocalDev() {
-		allAllowed = false
 		return
 	}
 

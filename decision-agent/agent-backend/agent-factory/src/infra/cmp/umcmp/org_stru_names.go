@@ -8,7 +8,6 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp/dto/umret"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp/umerr"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp/umtypes"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/httphelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 
@@ -35,12 +34,7 @@ Loop:
 	apiURL := fmt.Sprintf("%s/v1/names", u.getPrivateURLPrefix())
 	u.logger.Infof("GetOsnNames apiURL: %s", apiURL)
 
-	var resp []byte
-	if cenvhelper.IsAaronLocalDev() {
-		resp, err = u.getOsnNamesMockResp()
-	} else {
-		resp, err = c.PostJSONExpect2xxByte(ctx, apiURL, umArgDto)
-	}
+	resp, err := c.PostJSONExpect2xxByte(ctx, apiURL, umArgDto)
 
 	respErr := &httphelper.CommonRespError{}
 	if errors.As(err, &respErr) {

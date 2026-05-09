@@ -8,20 +8,29 @@ Please read this guide before submitting contributions to ensure consistent proc
 
 ---
 
-## 🏗 Sub-Projects
+## 🏗 Repository Layout
 
-KWeaver is an open-source ecosystem consisting of multiple sub-projects. Please navigate to the corresponding repository based on the component you want to contribute to:
+KWeaver Core is a **monorepo** ([`kweaver-ai/kweaver-core`](https://github.com/kweaver-ai/kweaver-core)) that ships the platform's backend modules together. Pick the directory matching the component you want to change:
 
-| Sub-Project | Description | Repository |
+| Module | Path | Description |
 | --- | --- | --- |
-| **AI Store** | AI application and component marketplace | [kweaver-ai/dip](https://github.com/kweaver-ai/dip) |
-| **Studio** | DIP Studio - Visual development and management interface | [kweaver-ai/studio](https://github.com/kweaver-ai/studio) |
-| **Decision Agent** | Decision Agent - Intelligent decision agent | [kweaver-ai/decision-agent](https://github.com/kweaver-ai/decision-agent) |
-| **ADP** | AI Data Platform - Including BKN Engine, ContextLoader, and VEGA data virtualization engine | [kweaver-ai/adp](https://github.com/kweaver-ai/adp) |
-| **Operator Hub** | Operator Platform - Operator management and orchestration | [kweaver-ai/operator-hub](https://github.com/kweaver-ai/operator-hub) |
-| **Sandbox** | Sandbox runtime environment | [kweaver-ai/sandbox](https://github.com/kweaver-ai/sandbox) |
+| **AI Data Platform (ADP)** | [`adp/`](../adp) | BKN Engine (`adp/bkn`), Context Loader (`adp/context-loader`), Dataflow (`adp/dataflow`), Execution Factory (`adp/execution-factory`), VEGA virtualization (`adp/vega`) |
+| **Decision Agent** | [`decision-agent/`](../decision-agent) | Agent Executor / Factory / Memory under `agent-backend/` |
+| **Trace AI** | [`trace-ai/`](../trace-ai) | Agent observability and OpenTelemetry collector chart |
+| **Infra** | [`infra/`](../infra) | `mf-model-manager` (model registry), `oss-gateway-backend`, `sandbox` runtime |
+| **BKN samples** | [`bkn/`](../bkn) | Reference Business Knowledge Networks (e.g. `smart_home_supply_chain`) |
+| **Examples** | [`examples/`](../examples) | End-to-end CLI walkthroughs (DB / CSV / actions) |
+| **Help / Website** | [`help/`](../help), [`website/`](../website) | Bilingual product docs and the public docs site |
+| **Deploy** | [`deploy/`](../deploy) | One-click `deploy.sh` for Kubernetes (k8s + KWeaver Core charts) |
 
-> **Note**: Each sub-project has its own README and contribution guidelines. Please refer to the specific repository for detailed setup and development instructions.
+External CLI/SDKs that interact with this backend live in their own repositories:
+
+| Repository | Purpose |
+| --- | --- |
+| [`kweaver-ai/kweaver-sdk`](https://github.com/kweaver-ai/kweaver-sdk) | `kweaver` CLI + TypeScript / Python SDK + AI agent skills (`kweaver-core`, `create-bkn`) |
+| [`kweaver-ai/kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin) | `kweaver-admin` platform-administrator CLI + agent skill |
+
+> **Note**: Each module has its own README (and often `AGENTS.md` / `CLAUDE.md`) with build, test, and dev-loop instructions in the language it is written in. Read them before making module-local changes.
 
 ---
 
@@ -46,11 +55,12 @@ You can contribute in the following ways:
 When reporting a bug, please provide the following information:
 
 - **Version/Environment**:
-  - Go version (e.g., Go 1.23.0)
-  - OS (Windows/Linux/macOS)
-  - Database version (MariaDB 11.4+ / DM8)
-  - OpenSearch version (if applicable)
-  - Module affected (e.g., ADP, Decision Agent, DIP Studio)
+  - KWeaver Core version (`git describe --tags` or `VERSION` file, e.g. `v0.6.0`)
+  - Module affected (e.g. `adp/bkn`, `decision-agent/agent-backend/agent-executor`, `infra/sandbox`)
+  - Runtime (Java / Go / Python / Node — and version, e.g. JDK 17, Go 1.23, Python 3.11)
+  - OS (Linux distro + kernel, macOS, Windows)
+  - Cluster (single-node K3s / kubeadm / managed K8s) and how it was installed (`deploy.sh kweaver-core install [--minimum]`)
+  - Storage backends as relevant (MariaDB / DM8, OpenSearch, Redis, Kafka)
 
 - **Reproduction Steps**: Clear, step-by-step instructions to reproduce the issue
 
@@ -64,9 +74,11 @@ When reporting a bug, please provide the following information:
 
 ```markdown
 **Environment:**
-- Go: 1.23.0
+- KWeaver Core: v0.6.0
+- Module: adp/bkn
+- Runtime: JDK 17
 - OS: Linux Ubuntu 22.04
-- Module: ADP
+- Cluster: single-node K3s (deploy.sh kweaver-core install)
 - Database: MariaDB 11.4
 
 **Steps to Reproduce:**
@@ -138,13 +150,30 @@ Create a new branch from `main` (or the appropriate base branch):
 git checkout -b feature/my-feature
 # or
 git checkout -b fix/bug-description
+# or (module scope + linked Issue: second segment often starts with "<number>-<slug>")
+git checkout -b feature/agent-web/123-add-login
+git checkout -b fix/bkn-backend/456-query-timeout
 ```
 
 **Branch Naming Convention:**
 
-Branch names are validated automatically by CI on every Pull Request.
+Branch names are validated automatically by CI on every Pull Request (see `.github/workflows/lint-branch-name.yml`).
 
-Format: `<type>/<description>` or `<type>/<issue-number>-<description>` (when linked to an Issue)
+**Formats (at most two path segments after the type prefix):**
+
+- `<type>/<description>`, e.g. `feature/add-oauth-support`
+- `<type>/<issue-number>-<description>` (common when linking an Issue), e.g. `fix/123-memory-leak`
+- `<type>/<module>/<description>` (optional, for scoped work); the **description** segment may include an issue number, e.g. `feature/agent-web/123-add-login`, `fix/bkn-backend/456-query-timeout`
+
+**Do not** use three or more segments after the type, e.g. `feature/foo/bar/baz` will fail CI.
+
+**Examples (module + Issue)**:
+
+| Branch name | Notes |
+| --- | --- |
+| `feature/studio/789-export-pipeline` | Feature scoped to `studio`, Issue `#789` |
+| `fix/ontology-query/404-id-not-exist` | Fix scoped to `ontology-query`, Issue `#404` |
+| `docs/rules/120-contributing-branch` | Docs under `rules/`, Issue `#120` |
 
 | Branch Type | Format | Description | Example |
 | --- | --- | --- | --- |
@@ -160,11 +189,11 @@ Format: `<type>/<description>` or `<type>/<issue-number>-<description>` (when li
 | Build | `build/*` | Build system or dependencies | `build/update-go-module` |
 | Style | `style/*` | Code style / formatting | `style/fix-linter-warnings` |
 | Revert | `revert/*` | Reverting previous changes | `revert/rollback-auth-change` |
-| Release | `release/x.x.x` | Release preparation | `release/1.2.0` |
+| Release | `release/x.y.z` (optional prerelease suffix) | Release preparation | `release/1.2.0`, `release/1.2.0-rc.1` |
 
 Rules:
-- If the branch is linked to an Issue, prepend the issue number: `<type>/<N>-<description>` (e.g. `fix/123-memory-leak`)
-- `<description>` must be lowercase, using hyphens (`-`), dots (`.`), or underscores (`_`) as separators
+- If the branch is linked to an Issue, a common pattern is `<type>/<N>-<description>` (e.g. `fix/123-memory-leak`); you can also put the issue number in a two-segment path (e.g. `feature/agent-web/123-add-login`)
+- Each segment (between `/`) must start with a lowercase letter or digit; the rest may use hyphens (`-`), dots (`.`), or underscores (`_`), matching CI
 - Branch names must start with a valid type prefix followed by `/`
 - Bot branches (`dependabot/*`, `renovate/*`) are automatically exempted
 
@@ -182,14 +211,11 @@ Rules:
 - Add unit tests for new functionality
 - Ensure existing tests still pass
 - Aim for good test coverage
-
-```bash
-# Run tests
-go test ./...
-
-# Run tests with coverage
-go test -cover ./...
-```
+- Use the test runner that fits the module's language. Each module's README / `AGENTS.md` describes the canonical command — for example:
+  - Java (Maven) modules: `mvn test`
+  - Go modules: `go test ./...`
+  - Python modules: `pytest`
+  - Node / TypeScript modules: `npm test`
 
 ### 5. Update Documentation
 
@@ -505,44 +531,56 @@ the Apache License, Version 2.0.
 
 ### Prerequisites
 
-- Go 1.23.0 or higher
-- MariaDB 11.4+ or DM8
-- OpenSearch 2.x (optional, for full functionality)
-- Git
+KWeaver Core is polyglot. You only need the toolchain(s) for the module(s) you touch:
+
+- **Git** (always)
+- **Java** (JDK 17+) and Maven for most ADP / decision-agent backend modules
+- **Go** (1.23+) for `infra/oss-gateway-backend`, several CLIs and small services
+- **Python** (3.11+) for `infra/mf-model-manager`, model / data utilities
+- **Node.js** — kweaver CLIs require **22+** (per [`@kweaver-ai/kweaver-sdk` on npm](https://www.npmjs.com/package/@kweaver-ai/kweaver-sdk)). For `website/`, use `package.json` `engines` (e.g. >= 20).
+- **Docker** + a Kubernetes (single-node K3s / kubeadm / Docker Desktop) for end-to-end testing
+- **MariaDB 11.4+** (or DM8), **OpenSearch 2.x**, **Redis**, **Kafka** when running services that need them — usually provided by `deploy.sh`
+
+Each module's `README.md` / `AGENTS.md` lists the exact prerequisites, build commands and dev-loop for that module — always read them first.
 
 ### Local Development
 
-1. **Clone your fork:**
+1. **Clone your fork of `kweaver-core`:**
 
-```bash
-git clone https://github.com/YOUR_USERNAME/kweaver.git
-cd kweaver
-```
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/kweaver-core.git
+   cd kweaver-core
+   ```
 
-1. **Add upstream remote:**
+2. **Add upstream remote:**
 
-```bash
-git remote add upstream https://github.com/kweaver-ai/kweaver-core.git
-```
+   ```bash
+   git remote add upstream https://github.com/kweaver-ai/kweaver-core.git
+   ```
 
-1. **Set up the development environment:**
+3. **Pick the module you want to work on and follow its README.** For example:
 
-```bash
-# Navigate to the module you want to work on
-cd <module-directory>/server
+   ```bash
+   # Java module (Maven)
+   cd adp/bkn/bkn-backend && mvn -DskipTests package
 
-# Download dependencies
-go mod download
+   # Go module
+   cd infra/oss-gateway-backend && make build && make test
 
-# Run the service
-go run main.go
-```
+   # Python module
+   cd infra/mf-model-manager && pip install -r requirements.txt && pytest
 
-1. **Run tests:**
+   # Docs site
+   cd website && npm install && npm run start
+   ```
 
-```bash
-go test ./...
-```
+4. **(Optional) Spin up a full cluster** to test end-to-end via `deploy/` (see [`help/en/install.md`](../help/en/install.md)):
+
+   ```bash
+   cd deploy
+   ./deploy.sh kweaver-core install --minimum    # quick try
+   # or full install: ./deploy.sh kweaver-core install
+   ```
 
 ---
 
@@ -550,12 +588,11 @@ go test ./...
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via:
+Instead, please open a private report via GitHub's built-in security advisory flow:
 
-- Email: [Security contact email]
-- Internal security reporting system
+- [Report a vulnerability — kweaver-ai/kweaver-core](https://github.com/kweaver-ai/kweaver-core/security/advisories/new)
 
-We will acknowledge receipt and work with you to address the issue.
+We will acknowledge receipt and work with you to address the issue. Please include reproduction steps, affected version (`git describe --tags`), and the impact you observed.
 
 ---
 

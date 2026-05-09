@@ -57,7 +57,7 @@ depServices:
     system_id: ""
     host: mariadb-mariadb-master.resource
     port: 3330
-    database: "adp"
+    database: "kweaver"
     user: "anyshare"
     password: "xxxxxx"
     type: "mysql"

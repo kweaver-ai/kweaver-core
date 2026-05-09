@@ -2,7 +2,39 @@
 """单元测试 - agent_core_v2 模块"""
 
 import pytest
+import sys
+import types
+from types import SimpleNamespace
 from unittest.mock import MagicMock, AsyncMock, patch
+
+
+def install_resume_info_stub(monkeypatch):
+    """为 resume_agent 模块安装轻量 stub，避免拉起完整 router 初始化。"""
+    package_names = [
+        "app.router",
+        "app.router.agent_controller_pkg",
+        "app.router.agent_controller_pkg.rdto",
+        "app.router.agent_controller_pkg.rdto.v2",
+        "app.router.agent_controller_pkg.rdto.v2.req",
+    ]
+
+    for package_name in package_names:
+        module = types.ModuleType(package_name)
+        module.__path__ = []
+        monkeypatch.setitem(sys.modules, package_name, module)
+
+    resume_agent_module = types.ModuleType(
+        "app.router.agent_controller_pkg.rdto.v2.req.resume_agent"
+    )
+
+    class ResumeInfo:
+        def __init__(self, **kwargs):
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+
+    resume_agent_module.ResumeInfo = ResumeInfo
+    monkeypatch.setitem(sys.modules, resume_agent_module.__name__, resume_agent_module)
+    return ResumeInfo
 
 
 class TestAgentCoreV2:
@@ -15,6 +47,7 @@ class TestAgentCoreV2:
         config.agent_run_id = "test_run_id"
         config.agent_id = "test_agent_id"
         config.output_vars = []
+        config.react_disable_llm_cache.return_value = False
         return config
 
     @pytest.fixture
@@ -91,24 +124,18 @@ class TestAgentCoreV2:
 
         assert result is None
 
-    def test_get_resume_info_from_options_with_resume_info(self, mock_agent_config):
+    def test_get_resume_info_from_options_with_resume_info(
+        self, mock_agent_config, monkeypatch
+    ):
         """测试从options获取resume_info"""
         from app.logic.agent_core_logic_v2.agent_core_v2 import AgentCoreV2
-        from app.router.agent_controller_pkg.rdto.v2.req.resume_agent import ResumeInfo
-        from app.domain.vo.interrupt.interrupt_handle import InterruptHandle
 
         core = AgentCoreV2(agent_config=mock_agent_config)
-        # 创建一个真正的 ResumeInfo 实例
-        mock_handle = InterruptHandle(
-            frame_id="frame123",
-            snapshot_id="snap123",
-            resume_token="token123",
-            interrupt_type="confirm",
-            current_block=0,
-            restart_block=False,
-        )
+        ResumeInfo = install_resume_info_stub(monkeypatch)
         mock_resume_info = ResumeInfo(
-            resume_handle=mock_handle, action="confirm", data={"key": "value"}
+            resume_handle={"frame_id": "frame123"},
+            action="confirm",
+            data={"key": "value"},
         )
         core.run_options_vo.resume_info = mock_resume_info
 
@@ -117,11 +144,14 @@ class TestAgentCoreV2:
         # 如果已经是ResumeInfo类型，直接返回
         assert result == mock_resume_info
 
-    def test_get_resume_info_from_options_with_dict(self, mock_agent_config):
+    def test_get_resume_info_from_options_with_dict(
+        self, mock_agent_config, monkeypatch
+    ):
         """测试从options获取resume_info字典"""
         from app.logic.agent_core_logic_v2.agent_core_v2 import AgentCoreV2
 
         core = AgentCoreV2(agent_config=mock_agent_config)
+        install_resume_info_stub(monkeypatch)
         resume_data = {
             "resume_handle": {
                 "frame_id": "frame123",
@@ -186,6 +216,7 @@ class TestAgentCoreV2Run:
         config.agent_run_id = "test_run_id"
         config.agent_id = "test_agent_id"
         config.output_vars = []
+        config.react_disable_llm_cache.return_value = False
         return config
 
     @pytest.fixture
@@ -215,46 +246,40 @@ class TestAgentCoreV2Run:
                     return_value="user123",
                 ):
                     with patch(
-                        "app.logic.agent_core_logic_v2.agent_core_v2.get_user_account_type",
-                        return_value="standard",
-                    ):
+                        "app.logic.agent_core_logic_v2.agent_core_v2.run_dolphin"
+                    ) as mock_run_dolphin:
+
+                        async def mock_gen():
+                            yield {"status": "success", "data": "test"}
+
+                        mock_run_dolphin.return_value = mock_gen()
+
                         with patch(
-                            "app.logic.agent_core_logic_v2.agent_core_v2.set_user_account_id"
-                        ):
+                            "app.logic.agent_core_logic_v2.agent_core_v2.Config"
+                        ) as mock_config:
+                            mock_config.features.use_explore_block_v2 = False
+                            mock_config.features.disable_dolphin_sdk_llm_cache = False
+
                             with patch(
-                                "app.logic.agent_core_logic_v2.agent_core_v2.set_user_account_type"
+                                "app.logic.agent_core_logic_v2.agent_core_v2.flags"
                             ):
                                 with patch(
-                                    "app.logic.agent_core_logic_v2.agent_core_v2.run_dolphin"
-                                ) as mock_run_dolphin:
+                                    "app.logic.agent_core_logic_v2.agent_core_v2.StandLogger.info"
+                                ) as mock_info:
+                                    core = AgentCoreV2()
+                                    results = []
+                                    async for res in core.run(
+                                        mock_agent_config,
+                                        mock_agent_input,
+                                        headers,
+                                    ):
+                                        results.append(res)
 
-                                    async def mock_gen():
-                                        yield {"status": "success", "data": "test"}
-
-                                    mock_run_dolphin.return_value = mock_gen()
-
-                                    with patch(
-                                        "app.logic.agent_core_logic_v2.agent_core_v2.Config"
-                                    ) as mock_config:
-                                        mock_config.features.use_explore_block_v2 = (
-                                            False
-                                        )
-                                        mock_config.features.disable_dolphin_sdk_llm_cache = False
-
-                                        with patch(
-                                            "app.logic.agent_core_logic_v2.agent_core_v2.flags"
-                                        ):
-                                            core = AgentCoreV2()
-                                            results = []
-                                            async for res in core.run(
-                                                mock_agent_config,
-                                                mock_agent_input,
-                                                headers,
-                                            ):
-                                                results.append(res)
-
-                                            assert len(results) == 1
-                                            assert results[0]["status"] == "success"
+                                    assert len(results) == 1
+                                    assert results[0]["status"] == "success"
+                                    mock_info.assert_called_once_with(
+                                        "AgentCore run end"
+                                    )
 
     @pytest.mark.asyncio
     async def test_run_with_tool_interrupt(self, mock_agent_config, mock_agent_input):
@@ -284,50 +309,40 @@ class TestAgentCoreV2Run:
                     return_value="user123",
                 ):
                     with patch(
-                        "app.logic.agent_core_logic_v2.agent_core_v2.get_user_account_type",
-                        return_value="standard",
-                    ):
+                        "app.logic.agent_core_logic_v2.agent_core_v2.run_dolphin"
+                    ) as mock_run_dolphin:
+
+                        async def mock_gen():
+                            raise mock_interrupt_exception
+                            yield  # noqa: F821
+
+                        mock_run_dolphin.return_value = mock_gen()
+
                         with patch(
-                            "app.logic.agent_core_logic_v2.agent_core_v2.set_user_account_id"
-                        ):
+                            "app.logic.agent_core_logic_v2.agent_core_v2.InterruptHandler"
+                        ) as mock_handler:
+                            mock_handler.handle_tool_interrupt = AsyncMock()
+
                             with patch(
-                                "app.logic.agent_core_logic_v2.agent_core_v2.set_user_account_type"
-                            ):
+                                "app.logic.agent_core_logic_v2.agent_core_v2.Config"
+                            ) as mock_config:
+                                mock_config.features.use_explore_block_v2 = False
+                                mock_config.features.disable_dolphin_sdk_llm_cache = False
+
                                 with patch(
-                                    "app.logic.agent_core_logic_v2.agent_core_v2.run_dolphin"
-                                ) as mock_run_dolphin:
+                                    "app.logic.agent_core_logic_v2.agent_core_v2.flags"
+                                ):
+                                    core = AgentCoreV2()
+                                    results = []
+                                    async for res in core.run(
+                                        mock_agent_config,
+                                        mock_agent_input,
+                                        headers,
+                                    ):
+                                        results.append(res)
 
-                                    async def mock_gen():
-                                        raise mock_interrupt_exception
-                                        yield  # noqa: F821
-
-                                    mock_run_dolphin.return_value = mock_gen()
-
-                                    with patch(
-                                        "app.logic.agent_core_logic_v2.agent_core_v2.InterruptHandler"
-                                    ) as mock_handler:
-                                        mock_handler.handle_tool_interrupt = AsyncMock()
-
-                                        with patch(
-                                            "app.logic.agent_core_logic_v2.agent_core_v2.Config"
-                                        ) as mock_config:
-                                            mock_config.features.use_explore_block_v2 = False
-                                            mock_config.features.disable_dolphin_sdk_llm_cache = False
-
-                                            with patch(
-                                                "app.logic.agent_core_logic_v2.agent_core_v2.flags"
-                                            ):
-                                                core = AgentCoreV2()
-                                                results = []
-                                                async for res in core.run(
-                                                    mock_agent_config,
-                                                    mock_agent_input,
-                                                    headers,
-                                                ):
-                                                    results.append(res)
-
-                                                assert len(results) == 1
-                                                mock_handler.handle_tool_interrupt.assert_called_once()
+                                    assert len(results) == 1
+                                    mock_handler.handle_tool_interrupt.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_run_with_exception(self, mock_agent_config, mock_agent_input):
@@ -351,50 +366,168 @@ class TestAgentCoreV2Run:
                     return_value="user123",
                 ):
                     with patch(
-                        "app.logic.agent_core_logic_v2.agent_core_v2.get_user_account_type",
-                        return_value="standard",
-                    ):
+                        "app.logic.agent_core_logic_v2.agent_core_v2.run_dolphin"
+                    ) as mock_run_dolphin:
+
+                        async def mock_gen():
+                            raise Exception("Test error")
+                            yield  # noqa: F821
+
+                        mock_run_dolphin.return_value = mock_gen()
+
                         with patch(
-                            "app.logic.agent_core_logic_v2.agent_core_v2.set_user_account_id"
-                        ):
+                            "app.logic.agent_core_logic_v2.agent_core_v2.ExceptionHandler"
+                        ) as mock_handler:
+                            mock_handler.handle_exception = AsyncMock()
+
                             with patch(
-                                "app.logic.agent_core_logic_v2.agent_core_v2.set_user_account_type"
-                            ):
+                                "app.logic.agent_core_logic_v2.agent_core_v2.Config"
+                            ) as mock_config:
+                                mock_config.features.use_explore_block_v2 = False
+                                mock_config.features.disable_dolphin_sdk_llm_cache = False
+
                                 with patch(
-                                    "app.logic.agent_core_logic_v2.agent_core_v2.run_dolphin"
-                                ) as mock_run_dolphin:
-
-                                    async def mock_gen():
-                                        raise Exception("Test error")
-                                        yield  # noqa: F821
-
-                                    mock_run_dolphin.return_value = mock_gen()
-
+                                    "app.logic.agent_core_logic_v2.agent_core_v2.flags"
+                                ):
                                     with patch(
-                                        "app.logic.agent_core_logic_v2.agent_core_v2.ExceptionHandler"
-                                    ) as mock_handler:
-                                        mock_handler.handle_exception = AsyncMock()
+                                        "app.logic.agent_core_logic_v2.agent_core_v2.o11y_logger"
+                                    ):
+                                        core = AgentCoreV2()
+                                        results = []
+                                        async for res in core.run(
+                                            mock_agent_config,
+                                            mock_agent_input,
+                                            headers,
+                                        ):
+                                            results.append(res)
 
-                                        with patch(
-                                            "app.logic.agent_core_logic_v2.agent_core_v2.Config"
-                                        ) as mock_config:
-                                            mock_config.features.use_explore_block_v2 = False
-                                            mock_config.features.disable_dolphin_sdk_llm_cache = False
+                                        assert len(results) == 1
+                                        mock_handler.handle_exception.assert_called_once()
 
-                                            with patch(
-                                                "app.logic.agent_core_logic_v2.agent_core_v2.flags"
-                                            ):
-                                                with patch(
-                                                    "app.logic.agent_core_logic_v2.agent_core_v2.o11y_logger"
-                                                ):
-                                                    core = AgentCoreV2()
-                                                    results = []
-                                                    async for res in core.run(
-                                                        mock_agent_config,
-                                                        mock_agent_input,
-                                                        headers,
-                                                    ):
-                                                        results.append(res)
+    @pytest.mark.asyncio
+    async def test_run_skips_llm_message_logging_flags_when_missing(
+        self, mock_agent_config, mock_agent_input
+    ):
+        """测试当前 Dolphin 版本缺少 LLM_MESSAGE_LOGGING 常量时不会抛异常。"""
+        from app.logic.agent_core_logic_v2.agent_core_v2 import AgentCoreV2
 
-                                                    assert len(results) == 1
-                                                    mock_handler.handle_exception.assert_called_once()
+        headers = {"x-user-id": "user123"}
+
+        with patch(
+            "app.logic.agent_core_logic_v2.agent_core_v2.process_input",
+            new_callable=AsyncMock,
+            return_value={},
+        ):
+            with patch(
+                "app.logic.agent_core_logic_v2.agent_core_v2.process_tool_input",
+                new_callable=AsyncMock,
+                return_value=({}, None),
+            ):
+                with patch(
+                    "app.logic.agent_core_logic_v2.agent_core_v2.get_user_account_id",
+                    return_value="user123",
+                ):
+                    with patch(
+                        "app.logic.agent_core_logic_v2.agent_core_v2.run_dolphin"
+                    ) as mock_run_dolphin:
+
+                        async def mock_gen():
+                            yield {"status": "success", "data": "test"}
+
+                        mock_run_dolphin.return_value = mock_gen()
+
+                        with patch(
+                            "app.logic.agent_core_logic_v2.agent_core_v2.Config"
+                        ) as mock_config:
+                            mock_config.features.use_explore_block_v2 = False
+                            mock_config.features.disable_dolphin_sdk_llm_cache = False
+                            mock_config.llm_message_logging.enabled = True
+                            mock_config.llm_message_logging.log_dir = "/tmp/llm-log"
+
+                            mock_flags = SimpleNamespace(
+                                EXPLORE_BLOCK_V2="EXPLORE_BLOCK_V2",
+                                DISABLE_LLM_CACHE="DISABLE_LLM_CACHE",
+                                set_flag=MagicMock(),
+                                set_param=MagicMock(),
+                            )
+
+                            with patch(
+                                "app.logic.agent_core_logic_v2.agent_core_v2.flags",
+                                mock_flags,
+                            ):
+                                core = AgentCoreV2()
+                                results = []
+                                async for res in core.run(
+                                    mock_agent_config,
+                                    mock_agent_input,
+                                    headers,
+                                ):
+                                    results.append(res)
+
+                                assert len(results) == 1
+                                mock_run_dolphin.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_run_disables_llm_cache_when_agent_config_requests_it(
+        self, mock_agent_config, mock_agent_input
+    ):
+        """测试 react 模式配置要求禁用缓存时，会下发禁用缓存 flag。"""
+        from app.logic.agent_core_logic_v2.agent_core_v2 import AgentCoreV2
+
+        headers = {"x-user-id": "user123"}
+        mock_agent_config.react_disable_llm_cache.return_value = True
+
+        with patch(
+            "app.logic.agent_core_logic_v2.agent_core_v2.process_input",
+            new_callable=AsyncMock,
+            return_value={},
+        ):
+            with patch(
+                "app.logic.agent_core_logic_v2.agent_core_v2.process_tool_input",
+                new_callable=AsyncMock,
+                return_value=({}, None),
+            ):
+                with patch(
+                    "app.logic.agent_core_logic_v2.agent_core_v2.get_user_account_id",
+                    return_value="user123",
+                ):
+                    with patch(
+                        "app.logic.agent_core_logic_v2.agent_core_v2.run_dolphin"
+                    ) as mock_run_dolphin:
+
+                        async def mock_gen():
+                            yield {"status": "success", "data": "test"}
+
+                        mock_run_dolphin.return_value = mock_gen()
+
+                        with patch(
+                            "app.logic.agent_core_logic_v2.agent_core_v2.Config"
+                        ) as mock_config:
+                            mock_config.features.use_explore_block_v2 = False
+                            mock_config.features.disable_dolphin_sdk_llm_cache = False
+                            mock_config.llm_message_logging.enabled = False
+
+                            mock_flags = SimpleNamespace(
+                                EXPLORE_BLOCK_V2="EXPLORE_BLOCK_V2",
+                                DISABLE_LLM_CACHE="DISABLE_LLM_CACHE",
+                                set_flag=MagicMock(),
+                                set_param=MagicMock(),
+                            )
+
+                            with patch(
+                                "app.logic.agent_core_logic_v2.agent_core_v2.flags",
+                                mock_flags,
+                            ):
+                                core = AgentCoreV2()
+                                results = []
+                                async for res in core.run(
+                                    mock_agent_config,
+                                    mock_agent_input,
+                                    headers,
+                                ):
+                                    results.append(res)
+
+                                assert len(results) == 1
+                                mock_flags.set_flag.assert_any_call(
+                                    "DISABLE_LLM_CACHE", True
+                                )

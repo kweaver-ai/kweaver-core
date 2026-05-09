@@ -72,6 +72,10 @@ depServices:
     host: mf-model-api
     port: 9898
     protocol: http
+  vega-backend:
+    host: vega-backend-svc
+    port: 13014
+    protocol: http
 
 config:
   server:
@@ -82,6 +86,8 @@ config:
     writeTimeOut: 120
     viewDataTimeout: 5m
     defaultSmallModelEnabled: true
+    # Subgraph BFS only: silent truncate for filtered_cross_join virtual edges per relation step
+    filteredCrossJoinMaxEdgeExpand: 10000
   log:
     logLevel: info
     developMode: false
@@ -104,7 +110,6 @@ config:
     httpMetricFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
     grpcTraceFeedIngesterUrl: feed-ingester-service:30013
     grpcTraceJobId: dip-o11y-trace-grpc
-
 # 资源配置
 resources:
   requests:

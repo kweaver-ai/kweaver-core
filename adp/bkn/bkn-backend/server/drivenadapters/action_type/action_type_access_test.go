@@ -34,7 +34,7 @@ var (
 			ATName:       "Action Type 1",
 			ActionType:   interfaces.ACTION_SOURCE_TYPE_TOOL,
 			ObjectTypeID: "ot1",
-			Condition:    &interfaces.CondCfg{},
+			Condition:    &interfaces.ActionCondCfg{},
 			Affect:       &interfaces.ActionAffect{},
 			ActionSource: interfaces.ActionSource{
 				Type:   interfaces.ACTION_SOURCE_TYPE_TOOL,
@@ -231,7 +231,7 @@ func Test_ActionTypeAccess_ListActionTypes(t *testing.T) {
 		appSetting := &common.AppSetting{}
 		ata, smock := MockNewActionTypeAccess(appSetting)
 
-		conditionBytes, _ := sonic.Marshal((*interfaces.CondCfg)(nil))
+		conditionBytes, _ := sonic.Marshal((*interfaces.ActionCondCfg)(nil))
 		affectBytes, _ := sonic.Marshal((*interfaces.ActionAffect)(nil))
 		actionSourceBytes, _ := sonic.Marshal(interfaces.ActionSource{})
 		parametersBytes, _ := sonic.Marshal([]interfaces.Parameter{})
@@ -582,7 +582,7 @@ func Test_ActionTypeAccess_GetActionTypesByIDs(t *testing.T) {
 			"f_parameters, f_schedule, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 			"FROM %s WHERE f_kn_id = ? AND f_branch = ? AND f_id IN (?,?)", AT_TABLE_NAME)
 
-		conditionBytes, _ := sonic.Marshal((*interfaces.CondCfg)(nil))
+		conditionBytes, _ := sonic.Marshal((*interfaces.ActionCondCfg)(nil))
 		affectBytes, _ := sonic.Marshal((*interfaces.ActionAffect)(nil))
 		actionSourceBytes, _ := sonic.Marshal(interfaces.ActionSource{})
 		parametersBytes, _ := sonic.Marshal([]interfaces.Parameter{})
@@ -1075,7 +1075,7 @@ func Test_ActionTypeAccess_GetAllActionTypesByKnID(t *testing.T) {
 			"f_parameters, f_schedule, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 			"FROM %s WHERE f_kn_id = ? AND f_branch = ?", AT_TABLE_NAME)
 
-		conditionBytes, _ := sonic.Marshal((*interfaces.CondCfg)(nil))
+		conditionBytes, _ := sonic.Marshal((*interfaces.ActionCondCfg)(nil))
 		affectBytes, _ := sonic.Marshal((*interfaces.ActionAffect)(nil))
 		actionSourceBytes, _ := sonic.Marshal(interfaces.ActionSource{})
 		parametersBytes, _ := sonic.Marshal([]interfaces.Parameter{})

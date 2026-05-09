@@ -44,7 +44,7 @@ func Test_bknService_ExportToTar(t *testing.T) {
 			}
 			kns.EXPECT().GetKNByID(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, interfaces.Mode_Export).Return(kn, nil)
 
-			data, err := svc.ExportToTar(context.Background(),"kn1", interfaces.MAIN_BRANCH)
+			data, err := svc.ExportToTar(context.Background(), "kn1", interfaces.MAIN_BRANCH)
 
 			So(err, ShouldBeNil)
 			So(len(data), ShouldBeGreaterThan, 0)
@@ -69,7 +69,7 @@ func Test_bknService_ExportToTar(t *testing.T) {
 			}
 			kns.EXPECT().GetKNByID(gomock.Any(), "kn2", interfaces.MAIN_BRANCH, interfaces.Mode_Export).Return(kn, nil)
 
-			data, err := svc.ExportToTar(context.Background(),"kn2", interfaces.MAIN_BRANCH)
+			data, err := svc.ExportToTar(context.Background(), "kn2", interfaces.MAIN_BRANCH)
 
 			So(err, ShouldBeNil)
 			So(len(data), ShouldBeGreaterThan, 0)
@@ -85,7 +85,7 @@ func Test_bknService_ExportToTar(t *testing.T) {
 			}
 			kns.EXPECT().GetKNByID(gomock.Any(), "kn-err", interfaces.MAIN_BRANCH, interfaces.Mode_Export).Return(nil, getErr)
 
-			data, err := svc.ExportToTar(context.Background(),"kn-err", interfaces.MAIN_BRANCH)
+			data, err := svc.ExportToTar(context.Background(), "kn-err", interfaces.MAIN_BRANCH)
 
 			So(err, ShouldNotBeNil)
 			So(errors.Is(err, getErr), ShouldBeTrue)

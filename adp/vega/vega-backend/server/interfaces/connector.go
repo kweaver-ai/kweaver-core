@@ -10,39 +10,21 @@ type ConnectorConfig map[string]any
 
 // TableMeta represents table/asset metadata.
 type TableMeta struct {
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	Database    string           `json:"database"`   // 所属数据库名称（实例级连接时使用）
-	Schema      string           `json:"schema"`     // 所属schema名称（实例级连接时使用）
-	TableType   string           `json:"table_type"` // table | view | materialized_view
-	Properties  map[string]any   `json:"properties"` // 扩展属性：charset, collation, engine, row_count 等
-	Columns     []ColumnMeta     `json:"columns"`
-	PKs         []string         `json:"primary_keys"`
-	Indices     []IndexInfo      `json:"indices"`      // 索引列表
-	ForeignKeys []ForeignKeyInfo `json:"foreign_keys"` // 外键列表
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Database    string                `json:"database"`   // 所属数据库名称（实例级连接时使用）
+	Schema      string                `json:"schema"`     // 所属schema名称（实例级连接时使用）
+	TableType   string                `json:"table_type"` // table | view | materialized_view
+	Properties  map[string]any        `json:"properties"` // 扩展属性：charset, collation, engine, row_count 等
+	Columns     []TableColumnMeta     `json:"columns"`
+	PKs         []string              `json:"primary_keys"`
+	Indices     []TableIndexMeta      `json:"indices"`      // 索引列表
+	ForeignKeys []TableForeignKeyMeta `json:"foreign_keys"` // 外键列表
 
 }
 
-// ForeignKeyInfo represents foreign key metadata.
-type ForeignKeyInfo struct {
-	Name       string   `json:"name"`
-	Columns    []string `json:"columns"`
-	RefTable   string   `json:"ref_table"`
-	RefColumns []string `json:"ref_columns"`
-	OnDelete   string   `json:"on_delete,omitempty"`
-	OnUpdate   string   `json:"on_update,omitempty"`
-}
-
-// IndexInfo represents index metadata.
-type IndexInfo struct {
-	Name    string   `json:"name"`
-	Columns []string `json:"columns"`
-	Unique  bool     `json:"unique"`
-	Primary bool     `json:"primary"`
-}
-
-// ColumnMeta represents column metadata.
-type ColumnMeta struct {
+// TableColumnMeta represents column metadata.
+type TableColumnMeta struct {
 	Name              string `json:"name"`
 	Type              string `json:"type"`
 	OrigType          string `json:"orig_type"`
@@ -57,6 +39,24 @@ type ColumnMeta struct {
 	Collation         string `json:"collation,omitempty"`          // 排序规则
 	OrdinalPosition   int    `json:"ordinal_position"`             // 列位置（从1开始）
 	ColumnKey         string `json:"column_key"`                   // 列键
+}
+
+// TableIndexMeta represents index metadata.
+type TableIndexMeta struct {
+	Name    string   `json:"name"`
+	Columns []string `json:"columns"`
+	Unique  bool     `json:"unique"`
+	Primary bool     `json:"primary"`
+}
+
+// TableForeignKeyMeta represents foreign key metadata.
+type TableForeignKeyMeta struct {
+	Name       string   `json:"name"`
+	Columns    []string `json:"columns"`
+	RefTable   string   `json:"ref_table"`
+	RefColumns []string `json:"ref_columns"`
+	OnDelete   string   `json:"on_delete,omitempty"`
+	OnUpdate   string   `json:"on_update,omitempty"`
 }
 
 // QueryResult represents query execution result.
@@ -77,10 +77,18 @@ type FileMeta struct {
 
 // FilesetMeta represents a file or folder object from a fileset-capable source (e.g. AnyShare).
 type FilesetMeta struct {
-	ID             string         `json:"id"`
-	Name           string         `json:"name"`
-	DisplayPath    string         `json:"display_path"` // human-readable path hint for UI / source_identifier option
-	SourceMetadata map[string]any `json:"-"`            // flattened into Resource.SourceMetadata on discover
+	ID             string              `json:"id"`
+	Name           string              `json:"name"`
+	DisplayPath    string              `json:"display_path"` // human-readable path hint for UI / source_identifier option
+	SourceMetadata map[string]any      `json:"-"`            // flattened into Resource.SourceMetadata on discover
+	Columns        []FilesetColumnMeta `json:"columns"`
+}
+
+// FilesetColumnMeta represents column metadata.
+type FilesetColumnMeta struct {
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	OrigType string `json:"orig_type"`
 }
 
 // TopicMeta represents message topic metadata.
@@ -105,13 +113,13 @@ type MetricValue struct {
 
 // IndexMeta represents search index metadata.
 type IndexMeta struct {
-	Name       string               `json:"name"`
-	Properties map[string]any       `json:"properties"`
-	Mapping    map[string]FieldMeta `json:"mapping"`
+	Name       string                    `json:"name"`
+	Properties map[string]any            `json:"properties"`
+	Mapping    map[string]IndexFieldMeta `json:"mapping"`
 }
 
-// FieldMeta represents index field metadata.
-type FieldMeta struct {
+// IndexFieldMeta represents index field metadata.
+type IndexFieldMeta struct {
 	Name       string                 `json:"name"`
 	Type       string                 `json:"type"`
 	OrigType   string                 `json:"orig_type"`

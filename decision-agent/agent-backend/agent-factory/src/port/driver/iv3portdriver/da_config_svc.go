@@ -19,8 +19,6 @@ type IDataAgentConfigSvc interface {
 	Detail(ctx context.Context, id, key string) (res *agentconfigresp.DetailRes, err error)
 	Delete(ctx context.Context, id, ownerUid string, isPrivate bool) (auditLogInfo auditlogdto.AgentDeleteAuditLogInfo, err error)
 
-	ListForBenchmark(ctx context.Context, req *agentconfigreq.ListForBenchmarkReq) (agentList *agentconfigresp.ListForBenchmarkResp, err error)
-
 	// AiAutogen AI自动生成内容
 	AIAutogenV3(ctx *gin.Context, req *agentconfigreq.AiAutogenReq) (messageChan chan string, errorChan chan error, err error)
 

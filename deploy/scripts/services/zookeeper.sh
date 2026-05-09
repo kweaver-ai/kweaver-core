@@ -47,9 +47,9 @@ install_zookeeper() {
         ZOOKEEPER_SASL_PASSWORD="$(generate_random_password 10)"
     fi
 
-    # Create temporary values file for Helm (handles array structures like SASL users)
+    # Temporary values file (template must end with XXXXXX for macOS mktemp)
     local tmp_values
-    tmp_values="$(mktemp /tmp/zookeeper-values.XXXXXX.yaml)"
+    tmp_values="$(mktemp "${TMPDIR:-/tmp}/zookeeper-values.XXXXXX")"
     cat > "${tmp_values}" <<EOF
 namespace: ${ZOOKEEPER_NAMESPACE}
 replicaCount: ${ZOOKEEPER_REPLICAS}

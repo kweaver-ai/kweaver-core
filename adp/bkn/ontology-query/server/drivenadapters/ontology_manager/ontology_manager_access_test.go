@@ -330,7 +330,7 @@ func Test_ontologyManagerAccess_GetRelationType(t *testing.T) {
 			relationType := interfaces.RelationType{
 				RTID: rtID,
 				Type: interfaces.RELATION_TYPE_DATA_VIEW,
-				MappingRules: interfaces.InDirectMapping{
+				MappingRules: &interfaces.InDirectMapping{
 					BackingDataSource: &interfaces.ResourceInfo{
 						Type: "view",
 						ID:   "view1",
@@ -895,7 +895,7 @@ func Test_ontologyManagerAccess_GetRelationTypePathsBaseOnSource(t *testing.T) {
 						RelationType: interfaces.RelationType{
 							RTID: "rt1",
 							Type: interfaces.RELATION_TYPE_DATA_VIEW,
-							MappingRules: interfaces.InDirectMapping{
+							MappingRules: &interfaces.InDirectMapping{
 								BackingDataSource: &interfaces.ResourceInfo{
 									Type: "view",
 									ID:   "view1",

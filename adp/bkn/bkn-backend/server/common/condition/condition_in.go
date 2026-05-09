@@ -37,7 +37,7 @@ func NewInCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewFiel
 	return &InCond{
 		mCfg:             cfg,
 		mValue:           cfg.ValueOptCfg.Value.([]any),
-		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
+		mFilterFieldName: getFilterFieldName(cfg.Field, fieldsMap, false),
 	}, nil
 }
 
@@ -81,7 +81,7 @@ func (cond *InCond) Convert2SQL(ctx context.Context) (string, error) {
 // convertInCondToDatasetFilterCondition converts InCond to dataset filter condition format
 func convertInCondToDatasetFilterCondition(cfg *CondCfg) (map[string]any, error) {
 	return map[string]any{
-		"field":      cfg.Name,
+		"field":      cfg.Field,
 		"operation":  "in",
 		"value":      cfg.Value, // 数组
 		"value_from": "const",

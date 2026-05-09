@@ -1,0 +1,818 @@
+{
+  "input": {
+    "fields": [
+      {
+        "name": "query",
+        "type": "string",
+        "desc": ""
+      },
+      {
+        "name": "history",
+        "type": "object",
+        "desc": ""
+      },
+      {
+        "name": "header",
+        "type": "object",
+        "desc": ""
+      },
+      {
+        "name": "self_config",
+        "type": "object",
+        "desc": ""
+      }
+    ],
+    "rewrite": {
+      "enable": false,
+      "llm_config": {
+        "id": "",
+        "name": "test",
+        "model_type": "llm",
+        "temperature": 0.5,
+        "top_p": 0.5,
+        "top_k": 0,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "max_tokens": 1000
+      }
+    },
+    "augment": {
+      "enable": false,
+      "data_source": {
+        "kg": []
+      }
+    }
+  },
+  "system_prompt": "#角色任务 \n     你是专业的备份智能Agent，专门负责处理备份方案推荐、备份方案执行。你的核心利用“备份业务知识网络（BKN）”提供语义逻辑，引导用户完成从备份方案推荐到备份方案执行的流程。\n\n# 备份业务知识网络\n    1. 备份运行知识网络\n       - id：backup_run_knowledge_network\n       - 用途：直接查询运行态生产资源、基础配置与应用配置。\n    2. 备份规则知识网络\n       - id：`backup_rule_knowledge_network`\n       - 用途：推荐候选方案、备份计划规则、备份窗口规则、副本保留规则、基础配置规则、应用配置规则。\n\n# 备份方案推荐\n1. 查询运行知识网络，定位唯一 `production_resource`；未命中或命中多条时只做澄清，不继续推荐。\n2. 基于生产资源补齐最小上下文：`app_object_type`、`data_type`、`industry_type`、`data_size_gb`、`target_rpo_minutes`、`target_rto_minutes`、`backup_window`。补齐顺序固定为：用户输入 > 运行事实 > `recommendation_policy` 默认值。\n3. 查询 `backup_rule_knowledge_network` 生成唯一备份方案：\n   - 路径：`recommendation_policy` -> `data_rule` -> `legal_rule` -> `rpo_rule` -> `app_rule` -> `backup_solution` -> `backup_plan` / `backup_window` / `retention_plan` -> `basic_config_rule` / `app_config_rule`\n   - 备份方案内容：基础配置、应用配置、备份策略\n   - 备份策略内容：备份窗口、备份计划、副本保留\n   - 最多输出 3个备份策略\n4. 输出方案：生产资源信息、备份方案",
+  "dolphin": "@DESC\n你是一个专业的灾备运维管理员，负责为指定生产资源推荐备份方案。当前优先完成 MySQL 备份策略推荐。\n@DESC\n\n$query -> user_query\n\n'''\n请在同一轮对话中，按顺序完成以下两件事：\n1. 查询并确认用户指定的生产资源信息。\n2. 若已确认唯一生产资源，则继续为该生产资源推荐备份方案。\n\n【工具集约束】\n当前 Agent 固定使用 `contextloader工具集_060`，仅允许调用以下工具，并且必须使用这些英文原始工具名：\n- `kn_search`\n- `query_object_instance`\n- `query_instance_subgraph`\n- `get_logic_properties_values`\n- `get_action_info`\n- 不要调用别名、中文名或其它未在列表中的工具。\n\n【知识网络定义】\n    1. `backup_runtime_knowledge_network`\n       - 用途：直接查询运行态生产资源、保护对象、已生效基础配置与应用配置。\n    2. `backup_rule_knowledge_network`\n       - 用途：推荐规则、候选方案、备份计划、备份窗口、副本保留、基础配置、应用配置。\n       - 禁止调用MCP 工具\n\n【输入模式】\n当前优先支持以下单语句输入：\n- `为生产资源xxx推荐备份方案`\n- `为生产资源xxx推荐备份策略`\n- `给生产资源xxx推荐备份方案`\n\n遇到上述输入时，必须把 `xxx` 作为最优先的生产资源标识线索，并在同一轮中串行完成“查资源 + 推荐方案”。\n\n【总原则】\n1. 同一轮输入里，先查生产资源，再推荐方案，顺序不能颠倒。\n2. 若生产资源未命中或命中多条，本轮只输出澄清问题，不继续推荐。\n3. 若命中唯一生产资源，必须在本轮继续完成推荐，不要要求用户再发起第二轮。\n4. 最终回答中不要暴露任何内部 ID、规则 ID、字段英文名、工具原始返回 JSON。\n5. 每次调用工具前，先用一句简短中文说明“为什么查这个对象”；每次调用后，用一句话总结拿到了什么。\n\n【工具与查询约束】\n1. 查询生产资源时，优先使用 `backup_runtime_knowledge_network`。\n2. 推荐方案时，优先使用 `backup_rule_knowledge_network`；若需要补充已生效运行态上下文，可继续使用 `backup_runtime_knowledge_network`。\n3. 所有对象实例查询必须保守、分步进行，`limit` 不要超过 `10`；生产资源定位建议不超过 `5`。\n4. SQL 视图查询只使用安全操作符：`==`、`!=`、`>`、`>=`、`<`、`<=`、`in`、`like`、`and`、`or`。\n5. 不要使用 `match`、`multi_match`、`regex`、`contain`、`prefix`、`range`、`out_range`。\n6. 不要一次性查询全部对象；只查询当前推理需要的对象。\n7. 若运行态基础配置命中 `storage_service_id=auto_select` 或 `storage_pool_id=auto_select`，直接按“自动选择”输出，不要虚构真实运行态资源。\n\n【contextloader工具集_060 请求参数要求】\n1. `kn_search`\n   - 必须传 `query`。\n   - 需要 schema 时显式传 `only_schema=true`。\n   - 如需调优召回参数，只能放在 `retrieval_config.concept_retrieval` 下，不要平铺未知字段。\n2. `query_object_instance`\n   - 必须传 `ot_id`、`condition`、`limit`。\n   - `condition` 中若使用常量过滤，`value_from` 与 `value` 必须同时出现，并且 `value_from` 固定为 `const`。\n   - 组合条件统一使用 `{\"operation\":\"and|or\",\"sub_conditions\":[...]}`；不要混用非法结构。\n   - 不要设置无必要的 `need_total`、`properties`、`sort`。\n3. `query_instance_subgraph`\n   - 必须传 `relation_type_paths` 数组。\n   - 每条路径都要显式给出 `start_ot_id`、`rt_id`、`direction`，方向不能臆造。\n   - 只有在已明确关系路径时才调用；关系方向应以 schema 或上游结果为准。\n4. `get_logic_properties_values`\n   - `_instance_identities` 必须直接取自上游 `query_object_instance` 或 `query_instance_subgraph` 返回的 `_instance_identity`，不可手写。\n   - 仅在确实需要逻辑属性时调用。\n5. `get_action_info`\n   - `at_id` 必须来自 schema 检索结果。\n   - `_instance_identity` 必须来自上游实例查询结果，不可臆造。\n   - 本 Agent 以推荐为主，除非确有 action 需求，否则不要调用。\n6. 所有工具调用都必须优先复用当前配置自动注入的 `kn_id`、`x-account-id`、`x-account-type`，不要在回答里暴露这些内部参数。\n\n【处理步骤】\n1. 从用户输入中提取最可能的生产资源标识。\n   - 若输入形如“为生产资源xxx推荐备份方案”，优先提取 `xxx`。\n   - 同时补充提取可能的 `production_resource_id`、`production_resource_name`、所属生产系统、别名等线索。\n2. 查询生产资源。\n   - 必须优先通过 `backup_runtime_knowledge_network` 的 `production_resource` 对象做保守查询。\n   - 若命中唯一生产资源，整理其关键信息：生产资源名称、资源类型、对象类型,不需要扩展查询父对象、关联对象。\n   - 若未命中任何生产资源，明确告诉用户当前未定位到目标生产资源，并追问准确的生产资源名称或 ID。\n   - 若命中多条生产资源，列出必要的区分信息并请用户确认，不要继续推荐。\n3. 补全推荐上下文。\n   - 基于已确认的生产资源，补充 `app_object_type`、`data_type`、`industry_type`、`data_size_gb`、`target_rpo_minutes`、`target_rto_minutes`、`backup_window`。\n   - 若能从运行知识网络中继续查到 `protected_object`、`backup_config`、`mysql_backup_config`，优先用它们补全上下文。\n   - 若生产资源已明确属于 MySQL 场景，按 `app_object_type=mysql` 处理；若无法判断应用类型，先做最小澄清，不要硬推。\n4. 查询推荐规则。\n   - 查询 `recommendation_policy`，优先匹配 `industry_type`；若未命中，则回退 `industry_type=未定义`。\n   - 查询 `data_rule`，用归一化后的 `data_type` 精确匹配，并提取 `data_level`。\n   - 查询 `legal_rule`，优先查 `industry_type=用户输入行业` 且 `data_type=归一化数据类型`；若无结果，再查 `industry_type=未定义`。\n   - 查询 `rpo_rule`，判断哪条规则覆盖目标 RPO 区间。\n   - 查询 `app_rule`，用 `app_object_type=mysql` 精确匹配。\n5. 查询候选方案。\n   - 查询 `backup_solution` 候选，筛出满足数据类型、法规、RPO、RTO 的方案。\n   - 严格命中不足时，可以补充相近备选，但最终最多输出 1 个最佳方案。\n6. 组装方案细节。\n   - 对最终选中的候选分别查询 `backup_plan`、`backup_window`、`retention_plan`，并按 `order_index` 组织。\n   - 查询 `basic_config_rule` 与 `app_config_rule`，手工解释 `condition`，同一 `config_category` 只输出一个最终结果。\n7. 排序并输出。\n   - 按法规满足度、数据匹配度、RPO 满足度、RTO 满足度、窗口匹配度、方案优先级进行排序。\n   - 输出 1 个最适合当前生产资源的方案。\n\n【MySQL 推荐特化规则】\n1. 当 `target_rpo_minutes <= 60` 时，优先考虑低 RPO 或实时日志类 MySQL 方案。\n2. 当 `target_rpo_minutes > 60` 时，优先考虑标准逻辑增量或每日全备类方案。\n3. 当 `data_size_gb >= 500` 时，优先提高通道数，并优先考虑大数据量配置规则。\n4. 当 `data_type=普通数据` 且 `industry_type=政府` 时，优先满足政务法规，再在满足法规前提下选择 RPO/RTO 更贴近的 MySQL 方案。\n\n【输出要求】\n1. 如果已成功定位唯一生产资源，并完成推荐，本轮输出结构固定为：\n   - `生产资源信息`\n   - `备份方案`\n   - `备份策略`\n   - `备份计划`\n   - `备份窗口`\n   - `副本保留`\n   - `基础配置`\n   - `应用配置`\n2. 输出内容必须是业务可读中文，不要输出对象 ID、规则 ID、字段英文名。\n3. 最多输出 1 个候选方案，不要凑数。\n4. 如果本轮未定位成功或无法唯一定位，只输出澄清问题，不输出推荐方案。\n5. 回答里要体现这是“先查询该生产资源信息，再为该生产资源推荐备份方案”的单轮处理结果。\n''' -> sys_q\n\n\n/explore/(history=true, system_prompt=$sys_q, tools=[\"kn_search\", \"query_object_instance\", \"query_instance_subgraph\", \"get_logic_properties_values\", \"get_action_info\"])\n\n【用户问题】\n```text\n$user_query\n```\n-> answer\n",
+  "is_dolphin_mode": 0,
+  "pre_dolphin": [
+    {
+      "key": "context_organize",
+      "name": "上下文组织模块",
+      "value": "\n{\"query\": \"用户的问题为: \"+$query} -> context\n",
+      "enabled": true,
+      "edited": false
+    }
+  ],
+  "post_dolphin": [],
+  "data_source": {
+    "kg": [],
+    "doc": [],
+    "metric": [],
+    "kn_entry": [],
+    "knowledge_network": [],
+    "advanced_config": {
+      "kg": null,
+      "doc": null
+    }
+  },
+  "skills": {
+    "tools": [
+      {
+        "tool_id": "51382ef3-b35b-44a6-8a53-c670cbf53f10",
+        "tool_box_id": "f182d75a-7fd2-421a-a8e0-7064d75e39af",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "page",
+            "input_type": "integer",
+            "input_desc": "页码，从 1 开始",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "page_size",
+            "input_type": "integer",
+            "input_desc": "每页条数",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "all",
+            "input_type": "boolean",
+            "input_desc": "是否跨所有业务域返回（false=仅当前业务域）",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "X-Authorization",
+            "input_type": "string",
+            "input_desc": "OAuth Bearer token（格式：Bearer <token>）",
+            "map_type": "var",
+            "map_value": "header.authorization",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "调用方账户 ID（平台自动注入）",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "调用方账户类型（平台自动注入）",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "x-business-domain",
+            "input_type": "string",
+            "input_desc": "业务域 ID（平台自动注入）",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      },
+      {
+        "tool_id": "05275bb1-46e2-4727-9c6f-97d9ea0af94b",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户ID，用于内部服务调用时传递账户信息",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型：user(用户), app(应用), anonymous(匿名)",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "response_format",
+            "input_type": "string",
+            "input_desc": "响应格式：json 或 toon，默认 json",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "additional_context",
+            "input_type": "string",
+            "input_desc": "可选。补充上下文，如 timezone、instant、step、对象属性等，帮助生成 dynamic_params。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "知识网络ID。例 kn_medical",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "options",
+            "input_type": "object",
+            "input_desc": "【可选配置】控制接口行为的高级选项\n",
+            "children": [
+              {
+                "input_name": "return_debug",
+                "input_type": "boolean",
+                "input_desc": "是否返回 debug（dynamic_params、warnings 等）。默认 false",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": false
+              }
+            ]
+          },
+          {
+            "input_name": "ot_id",
+            "input_type": "string",
+            "input_desc": "对象类ID。例 company、drug",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "properties",
+            "input_type": "array",
+            "input_desc": "逻辑属性名列表（metric/operator）。自动生成 dynamic_params 并查询。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "query",
+            "input_type": "string",
+            "input_desc": "用户查询，需含时间（如\"最近一年\"）、统计维度、业务上下文，用于生成 dynamic_params",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "_instance_identities",
+            "input_type": "array",
+            "input_desc": "对象实例标识数组。**必须从上游提取，不可臆造。** 流程：先调 query_object_instance 或 query_instance_subgraph → 从每个对象的 _instance_identity 字段取值 → 按原顺序组成数组传入。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      },
+      {
+        "tool_id": "2fd071fa-a696-4fee-91e1-5b2dc190e88b",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户ID，用于内部服务调用时传递账户信息",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型：user(用户), app(应用), anonymous(匿名)",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "response_format",
+            "input_type": "string",
+            "input_desc": "响应格式：json 或 toon，默认 json",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "业务知识网络ID",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "max_concepts",
+            "input_type": "integer",
+            "input_desc": "最大返回概念数量",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "query",
+            "input_type": "string",
+            "input_desc": "用户自然语言查询",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "rerank_action",
+            "input_type": "string",
+            "input_desc": "重排动作",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "search_scope",
+            "input_type": "object",
+            "input_desc": "【可选】搜索域配置\n",
+            "children": [
+              {
+                "input_name": "include_action_types",
+                "input_type": "boolean",
+                "input_desc": "是否包含行作类",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": true
+              },
+              {
+                "input_name": "include_object_types",
+                "input_type": "boolean",
+                "input_desc": "是否包含对象类",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": true
+              },
+              {
+                "input_name": "include_relation_types",
+                "input_type": "boolean",
+                "input_desc": "是否包含关系类",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": true
+              },
+              {
+                "input_name": "concept_groups",
+                "input_type": "array",
+                "input_desc": "限定的概念分组",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": false
+              }
+            ]
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      },
+      {
+        "tool_id": "52b35175-cee3-41ea-91c0-1d70e8371f9c",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户ID，用于内部服务调用时传递账户信息",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型：user(用户), app(应用), anonymous(匿名)",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "response_format",
+            "input_type": "string",
+            "input_desc": "响应格式：json 或 toon，默认 json",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "retrieval_config",
+            "input_type": "object",
+            "input_desc": "召回配置参数，用于控制不同类型的召回场景（概念召回、语义实例召回、属性过滤）。如果不提供，将使用系统默认配置。",
+            "children": [
+              {
+                "input_name": "concept_retrieval",
+                "input_type": "object",
+                "input_desc": "概念召回/概念流程配置参数（原最外层参数已收敛到此处）",
+                "children": [
+                  {
+                    "input_name": "schema_brief",
+                    "input_type": "boolean",
+                    "input_desc": "概念召回时是否返回精简schema。True仅返回必要字段（概念ID/名称/关系source&target），不返回大字段。",
+                    "map_type": "fixedValue",
+                    "map_value": "false",
+                    "enable": true
+                  },
+                  {
+                    "input_name": "top_k",
+                    "input_type": "integer",
+                    "input_desc": "概念召回返回最相关关系类型数量（对象类型会随关系类型自动过滤）。",
+                    "map_type": "auto",
+                    "map_value": "",
+                    "enable": true
+                  },
+                  {
+                    "input_name": "include_sample_data",
+                    "input_type": "boolean",
+                    "input_desc": "是否获取对象类型的样例数据。True会为每个召回对象类型获取一条样例数据。",
+                    "map_type": "auto",
+                    "map_value": "",
+                    "enable": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "input_name": "enable_rerank",
+            "input_type": "boolean",
+            "input_desc": "是否启用重排序。如果为true，则启用重排序。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "指定的知识网络ID，必须传递",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "only_schema",
+            "input_type": "boolean",
+            "input_desc": "是否只召回概念（schema），不召回语义实例。如果为True，则只返回object_types、relation_types和action_types，不返回nodes。",
+            "map_type": "fixedValue",
+            "map_value": "true",
+            "enable": true
+          },
+          {
+            "input_name": "query",
+            "input_type": "string",
+            "input_desc": "用户查询问题或关键词，多个关键词之间用空格隔开",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      },
+      {
+        "tool_id": "8542b7c2-f82a-4c1e-ab8c-83e2e73ccfdf",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户ID，用于内部服务调用时传递账户信息",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型：user(用户), app(应用), anonymous(匿名)",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "业务知识网络ID",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "include_logic_params",
+            "input_type": "boolean",
+            "input_desc": "包含逻辑属性的计算参数，默认false，返回结果不包含逻辑属性的字段和值",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "response_format",
+            "input_type": "string",
+            "input_desc": "响应格式：json 或 toon，默认 json",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "relation_type_paths",
+            "input_type": "array",
+            "input_desc": "关系类路径集合,数组中可以包含多条不同的关系路径，系统会同时查询并返回所有路径的结果。每条路径必须符合严格的顺序和方向要求。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      },
+      {
+        "tool_id": "f46fa5df-f371-447f-8451-2d2f34cc78e9",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户ID，用于内部服务调用时传递账户信息",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型：user(用户), app(应用), anonymous(匿名)",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "业务知识网络ID",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "ot_id",
+            "input_type": "string",
+            "input_desc": "对象类ID",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "include_logic_params",
+            "input_type": "boolean",
+            "input_desc": "包含逻辑属性的计算参数，默认false，返回结果不包含逻辑属性的字段和值",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "response_format",
+            "input_type": "string",
+            "input_desc": "响应格式：json 或 toon，默认 json",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "condition",
+            "input_type": "object",
+            "input_desc": "过滤条件结构，用于构建对象实例的查询筛选条件。\n\n**重要规则：**\n- `value_from` 和 `value` 必须同时使用，不能单独使用\n- `value_from` 当前仅支持 \"const\"（常量值）\n- 当使用 `value_from: \"const\"` 时，必须同时提供 `value` 字段\n",
+            "children": [
+              {
+                "input_name": "operation",
+                "input_type": "string",
+                "input_desc": "查询条件操作符。\n**注意：** 虽然这里列出了所有可能的操作符，但每个对象类实际支持的操作符列表以对象类定义中的 `condition_operations` 字段为准。\n",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": true
+              },
+              {
+                "input_name": "sub_conditions",
+                "input_type": "array",
+                "input_desc": "子过滤条件数组，用于逻辑操作符(and/or)的组合查询",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": true
+              },
+              {
+                "input_name": "value",
+                "input_type": "unknown",
+                "input_desc": "字段值，格式根据操作符类型而定：\n- 比较操作符: 单个值\n- 范围查询: [min, max]数组\n- 集合操作: 值数组\n- 向量搜索: 特定格式数组\n\n**必须与 `value_from: \"const\"` 同时使用**\n",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": true
+              },
+              {
+                "input_name": "value_from",
+                "input_type": "string",
+                "input_desc": "字段值来源。\n\n**重要：** 当前仅支持 \"const\"（常量值），且必须与 `value` 字段同时使用\n",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": false
+              },
+              {
+                "input_name": "field",
+                "input_type": "string",
+                "input_desc": "字段名称，也即对象类的属性名称",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": true
+              }
+            ]
+          },
+          {
+            "input_name": "limit",
+            "input_type": "integer",
+            "input_desc": "返回的数量，默认值 10。范围 1-100",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "need_total",
+            "input_type": "boolean",
+            "input_desc": "是否需要总数，默认false",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "properties",
+            "input_type": "array",
+            "input_desc": "指定返回的对象属性字段列表，默认返回所有属性。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "sort",
+            "input_type": "array",
+            "input_desc": "排序字段，默认使用 @timestamp排序，排序方向为 desc",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      },
+      {
+        "tool_id": "00929c5f-3375-4ddc-9fb0-c48a24707f39",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户ID，用于内部服务调用时传递账户信息",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型：user(用户), app(应用), anonymous(匿名)",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "at_id",
+            "input_type": "string",
+            "input_desc": "行动类ID（从 Schema 获取）",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "知识网络ID",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "_instance_identities",
+            "input_type": "array",
+            "input_desc": "对象实例标识列表（可选）。每个元素为主键键值对，必须从 query_object_instance 或 query_instance_subgraph 返回的 _instance_identity 字段提取，不可臆造。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      },
+      {
+        "tool_id": "74498bbd-2bdf-4db3-a4da-a90133c7fb65",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户 ID，用于内部服务调用时传递账户信息",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型：user（用户）、app（应用）、anonymous（匿名）",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "response_format",
+            "input_type": "string",
+            "input_desc": "响应格式：json 或 toon，默认 json",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "object_type_id",
+            "input_type": "string",
+            "input_desc": "业务对象类型 ID（从 kn_search 或 kn_schema_search 返回的 concept_id 获取）。\n不传时为网络级召回；传入时为对象类级或实例级召回。\n",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "skill_query",
+            "input_type": "string",
+            "input_desc": "可选的 Skill 语义过滤词，对 skills 实例的 name/description 字段追加文本过滤。\nBKN 已构建向量时使用 knn，已构建全文索引时使用 match，否则使用 like。\n若 skills ObjectType 元数据获取失败则返回 502。\n",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "top_k",
+            "input_type": "integer",
+            "input_desc": "最多返回的 Skill 数量，默认 10，最大 20",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "instance_identities",
+            "input_type": "array",
+            "input_desc": "对象实例标识列表。每个元素为主键键值对，必须从 query_object_instance 或\nquery_instance_subgraph 返回的 _instance_identity 字段提取，不可臆造。\n传入时 object_type_id 也必须提供，否则返回 400。\n",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "知识网络 ID",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      }
+    ],
+    "agents": [],
+    "mcps": [],
+    "skills": null
+  },
+  "llms": [
+    {
+      "is_default": true,
+      "llm_config": {
+        "id": "2046436281143136256",
+        "name": "DeepSeek-V3.2",
+        "model_type": "llm",
+        "temperature": 1,
+        "top_p": 1,
+        "top_k": 1,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "max_tokens": 8192
+      }
+    }
+  ],
+  "is_data_flow_set_enabled": 0,
+  "opening_remark_config": null,
+  "preset_questions": [],
+  "output": {
+    "variables": {
+      "answer_var": "answer",
+      "doc_retrieval_var": "doc_retrieval_res",
+      "graph_retrieval_var": "graph_retrieval_res",
+      "related_questions_var": "related_questions",
+      "other_vars": null,
+      "middle_output_vars": null
+    },
+    "default_format": "markdown"
+  },
+  "built_in_can_edit_fields": null,
+  "memory": {
+    "is_enabled": false
+  },
+  "related_question": {
+    "is_enabled": false
+  },
+  "plan_mode": null,
+  "conversation_history_config": {
+    "strategy": "count",
+    "count_params": {
+      "count_limit": 10
+    },
+    "time_window_params": null,
+    "token_limit_params": null
+  },
+  "metadata": {
+    "config_tpl_version": "v1",
+    "config_last_set_timestamp": 1777128586699486500
+  }
+}

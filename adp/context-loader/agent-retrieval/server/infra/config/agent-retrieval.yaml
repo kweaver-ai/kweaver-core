@@ -16,32 +16,32 @@ deploy_agent:
   metric_dynamic_params_generator_key: "01KCG0MEPBNHHZHCSM5NTXRFSG" # Metric 动态参数生成智能体Key
   operator_dynamic_params_generator_key: "01KCJJ7PAK3ATSC02F48QJXFH8" # Operator 动态参数生成智能体Key
 oauth: # 对应hydra服务
-  public_host: "hydra-public.anyshare"
+  public_host: "hydra-public.kweaver"
   public_port: 4444
   public_protocol: "http"
-  admin_host: "hydra-admin.anyshare"
+  admin_host: "hydra-admin.kweaver"
   admin_port: 4445
   admin_protocol: "http"
   admin_prefix: "/admin"
 agent_app:
   private_protocol: "http"
-  private_host: "agent-factory.anyshare"
+  private_host: "agent-factory.kweaver"
   private_port: 13020
 bkn_backend:
   private_protocol: "http"
-  private_host: "bkn-backend-svc.anyshare"
+  private_host: "bkn-backend-svc.kweaver"
   private_port: 13014
 ontology_query:
   private_protocol: "http"
-  private_host: "ontology-query-svc.anyshare"
+  private_host: "ontology-query-svc.kweaver"
   private_port: 13018
 data_retrieval:
   private_protocol: "http"
-  private_host: "data-retrieval.anyshare"
+  private_host: "data-retrieval.kweaver"
   private_port: 9100
 operator_integration:
   private_protocol: "http"
-  private_host: "agent-operator-integration.anyshare"
+  private_host: "agent-operator-integration.kweaver"
   private_port: 9000
 redis:
   connectType: "sentinel"
@@ -53,7 +53,7 @@ redis:
   poolSize: 10
 mf_model_api:
   private_protocol: "http"
-  private_host: "mf-model-api.anyshare"
+  private_host: "mf-model-api.kweaver"
   private_port: 9898
 rerank_llm:
   model: ""
@@ -63,3 +63,9 @@ rerank_llm:
   frequency_penalty: 0.5
   presence_penalty: 0.5
   max_tokens: 5000
+find_skills:
+  default_top_k: 10
+  max_top_k: 20
+  recall_timeout_ms: 5000
+  total_timeout_ms: 10000
+  skills_object_type_id: "skills"

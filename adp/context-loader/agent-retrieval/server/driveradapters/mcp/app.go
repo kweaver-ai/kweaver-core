@@ -16,9 +16,9 @@ import (
 
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/drivenadapters"
 	logicsKar "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knactionrecall"
+	logicsFs "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knfindskills"
 	logicsKlp "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knlogicpropertyresolver"
 	logicsKqs "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knquerysubgraph"
-	logicsKr "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knretrieval"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knsearch"
 )
 
@@ -26,12 +26,12 @@ const (
 	serverName                      = "context-loader"
 	serverVersion                   = "1.0.0"
 	endpointPath                    = "/api/agent-retrieval/v1/mcp"
-	toolKeyKnSearch                 = "kn_search"
-	toolKeyKnSchemaSearch           = "kn_schema_search"
+	toolKeySearchSchema             = "search_schema"
 	toolKeyQueryObjectInstance      = "query_object_instance"
 	toolKeyQueryInstanceSubgraph    = "query_instance_subgraph"
 	toolKeyGetLogicPropertiesValues = "get_logic_properties_values"
 	toolKeyGetActionInfo            = "get_action_info"
+	toolKeyFindSkills               = "find_skills"
 )
 
 // NewMCPHandler creates an http.Handler for the MCP Streamable HTTP Server.
@@ -42,19 +42,11 @@ func NewMCPHandler() http.Handler {
 	)
 
 	knSearchService := knsearch.NewKnSearchService()
-	knSearchName, knSearchDesc := loadToolMeta(toolKeyKnSearch)
-	knSearchInput, knSearchOutput := loadToolSchemas(toolKeyKnSearch)
+	searchSchemaName, searchSchemaDesc := loadToolMeta(toolKeySearchSchema)
+	searchSchemaInput, searchSchemaOutput := loadToolSchemas(toolKeySearchSchema)
 	mcpServer.AddTool(
-		newToolWithSchemas(knSearchName, knSearchDesc, knSearchInput, knSearchOutput),
-		handleKnSearch(knSearchService),
-	)
-
-	knSchemaSearchService := logicsKr.NewKnRetrievalService()
-	knSchemaSearchName, knSchemaSearchDesc := loadToolMeta(toolKeyKnSchemaSearch)
-	knSchemaSearchInput, knSchemaSearchOutput := loadToolSchemas(toolKeyKnSchemaSearch)
-	mcpServer.AddTool(
-		newToolWithSchemas(knSchemaSearchName, knSchemaSearchDesc, knSchemaSearchInput, knSchemaSearchOutput),
-		handleKnSchemaSearch(knSchemaSearchService),
+		newToolWithSchemas(searchSchemaName, searchSchemaDesc, searchSchemaInput, searchSchemaOutput),
+		handleSearchSchema(knSearchService),
 	)
 
 	ontologyQuery := drivenadapters.NewOntologyQueryAccess()
@@ -87,6 +79,14 @@ func NewMCPHandler() http.Handler {
 	mcpServer.AddTool(
 		newToolWithSchemas(getActionInfoName, getActionInfoDesc, gaiInput, gaiOutput),
 		handleGetActionInfo(getActionInfoService),
+	)
+
+	findSkillsService := logicsFs.NewFindSkillsService()
+	findSkillsName, findSkillsDesc := loadToolMeta(toolKeyFindSkills)
+	fsInput, fsOutput := loadToolSchemas(toolKeyFindSkills)
+	mcpServer.AddTool(
+		newToolWithSchemas(findSkillsName, findSkillsDesc, fsInput, fsOutput),
+		handleFindSkills(findSkillsService),
 	)
 
 	streamableServer := server.NewStreamableHTTPServer(mcpServer,

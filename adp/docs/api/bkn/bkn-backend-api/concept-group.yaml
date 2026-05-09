@@ -1064,12 +1064,14 @@ components:
           enum:
             - direct
             - data_view
+            - filtered_cross_join
           type: string
         mapping_rules:
           oneOf:
             - $ref: "#/components/schemas/DirectMappingRules"
             - $ref: "#/components/schemas/DataViewMappingRule"
-          description: 关联的匹配规则。直接映射时，是Mapping的数组；间接关联时参考DataViewMappingRule
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: 关联的匹配规则。`direct` 时为 Mapping 数组；`data_view` 时为 DataViewMappingRule；`filtered_cross_join`（FCJ）时为 FilteredCrossJoinMappingRule。
         creator:
           description: 创建人ID
           type: string
@@ -1113,6 +1115,19 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Mapping"
+    FilteredCrossJoinMappingRule:
+      description: |
+        关系类型为 `filtered_cross_join`（分侧过滤全连接，FCJ）时的匹配规则。无数据视图与键映射；
+        `source_condition` / `target_condition` 为可选的实例过滤条件（结构与对象实例查询 Condition 一致，参见 relation-type / ontology-query 等 API 中的 Condition）。
+        两侧均可省略，或 `mapping_rules` 为 `{}`（表示两侧无额外过滤）。
+      type: object
+      properties:
+        source_condition:
+          description: 起点侧实例过滤条件；可省略表示该侧无约束
+          type: object
+        target_condition:
+          description: 终点侧实例过滤条件；可省略表示该侧无约束
+          type: object
     Mapping:
       description: 关联规则
       required:

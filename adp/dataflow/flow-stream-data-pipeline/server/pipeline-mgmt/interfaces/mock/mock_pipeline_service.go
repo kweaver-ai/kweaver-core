@@ -135,10 +135,10 @@ func (mr *MockPipelineMgmtServiceMockRecorder) GetPipelineTotals(ctx, pipelineQu
 }
 
 // ListPipelineResources mocks base method.
-func (m *MockPipelineMgmtService) ListPipelineResources(ctx context.Context, param *interfaces.ListPipelinesQuery) ([]*interfaces.Resource, int, error) {
+func (m *MockPipelineMgmtService) ListPipelineResources(ctx context.Context, param *interfaces.ListPipelinesQuery) ([]*interfaces.PermissionResource, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListPipelineResources", ctx, param)
-	ret0, _ := ret[0].([]*interfaces.Resource)
+	ret0, _ := ret[0].([]*interfaces.PermissionResource)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2

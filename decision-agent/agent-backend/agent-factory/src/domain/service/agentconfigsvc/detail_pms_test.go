@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/conf"
 	"go.uber.org/mock/gomock"
 
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/entity/daconfeo"
@@ -13,6 +14,7 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/daconfvalobj"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/daconfvalobj/skillvalobj"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/dbaccess/pubedagentdbacc/padbret"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess/idbaccessmock"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iauthzacc/authzaccmock"
@@ -188,6 +190,43 @@ func TestDataAgentConfigSvc_MarkSkillAgentPmsForDetail_EmptySkillAgents(t *testi
 
 	err := svc.markSkillAgentPmsForDetail(ctx, eo, "user-123")
 
+	assert.NoError(t, err)
+}
+
+func TestDataAgentConfigSvc_MarkSkillAgentPmsForDetail_DisablePmsCheckReturnsEarly(t *testing.T) {
+	oldCfg := global.GConfig
+	global.GConfig = &conf.Config{
+		SwitchFields: conf.NewSwitchFields(),
+	}
+	global.GConfig.SwitchFields.DisablePmsCheck = true
+
+	t.Cleanup(func() {
+		global.GConfig = oldCfg
+	})
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPubedAgentRepo := idbaccessmock.NewMockIPubedAgentRepo(ctrl)
+	mockAuthZHttp := authzaccmock.NewMockAuthZHttpAcc(ctrl)
+
+	svc := &dataAgentConfigSvc{
+		SvcBase:        service.NewSvcBase(),
+		pubedAgentRepo: mockPubedAgentRepo,
+		authZHttp:      mockAuthZHttp,
+	}
+
+	eo := &daconfeo.DataAgent{
+		Config: &daconfvalobj.Config{
+			Skill: &skillvalobj.Skill{
+				Agents: []*skillvalobj.SkillAgent{
+					{AgentKey: "agent-key-1"},
+				},
+			},
+		},
+	}
+
+	err := svc.markSkillAgentPmsForDetail(context.Background(), eo, "user-123")
 	assert.NoError(t, err)
 }
 

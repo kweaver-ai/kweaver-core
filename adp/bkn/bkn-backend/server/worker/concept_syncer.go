@@ -38,6 +38,7 @@ type ConceptSyncer struct {
 	ota        interfaces.ObjectTypeAccess
 	rta        interfaces.RelationTypeAccess
 	riskTypeA  interfaces.RiskTypeAccess
+	ma         interfaces.MetricAccess
 }
 
 func NewConceptSyncer(appSetting *common.AppSetting) *ConceptSyncer {
@@ -52,6 +53,7 @@ func NewConceptSyncer(appSetting *common.AppSetting) *ConceptSyncer {
 			ota:        logics.OTA,
 			rta:        logics.RTA,
 			riskTypeA:  logics.RiskTypeAccess,
+			ma:         logics.MA,
 		}
 	})
 	return cSyncer
@@ -175,7 +177,13 @@ func (cs *ConceptSyncer) handleKnowledgeNetwork(ctx context.Context, kn *interfa
 		return err
 	}
 
-	if !need_update && !ot_need_update && !rt_need_update && !at_need_update && !cg_need_update && !rtRisk_need_update {
+	_, metric_need_update, err := cs.handleMetrics(ctx, kn.KNID, kn.Branch)
+	if err != nil {
+		logger.Errorf("Failed to handle metrics %s %s: %v", kn.KNID, kn.Branch, err)
+		return err
+	}
+
+	if !need_update && !ot_need_update && !rt_need_update && !at_need_update && !cg_need_update && !rtRisk_need_update && !metric_need_update {
 		logger.Debugf("Knowledge network %s (%s %s) does not need update", kn.KNName, kn.KNID, kn.Branch)
 		return nil
 	}
@@ -377,6 +385,53 @@ func (cs *ConceptSyncer) handleRiskTypes(ctx context.Context, knID string, branc
 
 	logger.Debugf("Handle risk types for knowledge network %s %s done", knID, branch)
 	return arrRiskTypes, need_update, nil
+}
+
+// handleMetrics 同步指标到概念索引（与 handleObjectTypes 等一致：DB 与 dataset 按 id+update_time 比较）。
+func (cs *ConceptSyncer) handleMetrics(ctx context.Context, knID, branch string) ([]*interfaces.MetricDefinition, bool, error) {
+	if cs.ma == nil {
+		return nil, false, nil
+	}
+
+	logger.Debugf("Handle metrics for knowledge network %s %s", knID, branch)
+	metricsInDB, err := cs.ma.ListMetrics(ctx, interfaces.MetricsListQueryParams{
+		KNID:   knID,
+		Branch: branch,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+
+	metricsInDataset, err := cs.getAllMetricsFromDatasetByKnID(ctx, knID, branch)
+	if err != nil {
+		return nil, false, err
+	}
+
+	need_update := false
+	addList := []*interfaces.MetricDefinition{}
+	for _, mInDB := range metricsInDB {
+		mInDataset, exist := metricsInDataset[mInDB.ID]
+		if !exist {
+			addList = append(addList, mInDB)
+		} else if mInDB.UpdateTime != mInDataset.UpdateTime {
+			addList = append(addList, mInDB)
+		}
+	}
+	if len(addList) > 0 {
+		logger.Debugf("Need add (%d) metrics to dataset", len(addList))
+		need_update = true
+	}
+
+	err = cs.insertDatasetDataForMetrics(ctx, addList)
+	if err != nil {
+		return nil, false, err
+	}
+
+	out := make([]*interfaces.MetricDefinition, 0, len(metricsInDB))
+	out = append(out, metricsInDB...)
+
+	logger.Debugf("Handle metrics for knowledge network %s %s done", knID, branch)
+	return out, need_update, nil
 }
 
 // handleConceptGroups 获取知识网络的概念组
@@ -854,6 +909,66 @@ func (cs *ConceptSyncer) insertDatasetDataForRiskTypes(ctx context.Context, risk
 	return nil
 }
 
+func (cs *ConceptSyncer) insertDatasetDataForMetrics(ctx context.Context, metrics []*interfaces.MetricDefinition) error {
+	if len(metrics) == 0 {
+		return nil
+	}
+
+	if cs.appSetting.ServerSetting.DefaultSmallModelEnabled {
+		words := make([]string, 0, len(metrics))
+		for _, m := range metrics {
+			arr := []string{m.Name}
+			arr = append(arr, m.Tags...)
+			arr = append(arr, m.Comment, m.BKNRawContent)
+			word := strings.Join(arr, "\n")
+			words = append(words, word)
+		}
+
+		dftModel, err := cs.mfa.GetDefaultModel(ctx)
+		if err != nil {
+			logger.Errorf("GetDefaultModel error: %s", err.Error())
+			return err
+		}
+		vectors, err := cs.mfa.GetVector(ctx, dftModel, words)
+		if err != nil {
+			logger.Errorf("GetVector error: %s", err.Error())
+			return err
+		}
+		if len(vectors) != len(metrics) {
+			logger.Errorf("GetVector error: expect vectors num is [%d], actual vectors num is [%d]", len(metrics), len(vectors))
+			return fmt.Errorf("GetVector error: expect vectors num is [%d], actual vectors num is [%d]", len(metrics), len(vectors))
+		}
+		for i := range metrics {
+			metrics[i].Vector = vectors[i].Vector
+		}
+	}
+
+	documents := make([]map[string]any, 0, len(metrics))
+	for _, def := range metrics {
+		docid := interfaces.GenerateConceptDocuemtnID(def.KnID, interfaces.MODULE_TYPE_METRIC, def.ID, def.Branch)
+		def.ModuleType = interfaces.MODULE_TYPE_METRIC
+
+		docBytes, err := sonic.Marshal(def)
+		if err != nil {
+			logger.Errorf("Failed to marshal MetricDefinition: %s", err.Error())
+			return err
+		}
+		var doc map[string]any
+		if err := sonic.Unmarshal(docBytes, &doc); err != nil {
+			logger.Errorf("Failed to unmarshal MetricDefinition: %s", err.Error())
+			return err
+		}
+		doc["_id"] = docid
+		documents = append(documents, doc)
+	}
+
+	if err := cs.vba.WriteDatasetDocuments(ctx, interfaces.BKN_DATASET_ID, documents); err != nil {
+		logger.Errorf("WriteDatasetDocuments error: %s", err.Error())
+		return err
+	}
+	return nil
+}
+
 func (cs *ConceptSyncer) getAllKNsFromDataset(ctx context.Context) (map[string]*interfaces.KN, error) {
 	filterCondition := map[string]any{
 		"field":      "module_type",
@@ -862,13 +977,13 @@ func (cs *ConceptSyncer) getAllKNsFromDataset(ctx context.Context) (map[string]*
 		"value_from": "const",
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.KN{}, err
 	}
@@ -914,13 +1029,13 @@ func (cs *ConceptSyncer) getAllObjectTypesFromDatasetByKnID(ctx context.Context,
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.ObjectType{}, err
 	}
@@ -984,13 +1099,13 @@ func (cs *ConceptSyncer) getAllRelationTypesFromDatasetByKnID(ctx context.Contex
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.RelationType{}, err
 	}
@@ -1036,13 +1151,13 @@ func (cs *ConceptSyncer) getAllActionTypesFromDatasetByKnID(ctx context.Context,
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.ActionType{}, err
 	}
@@ -1052,7 +1167,7 @@ func (cs *ConceptSyncer) getAllActionTypesFromDatasetByKnID(ctx context.Context,
 		// Deserialize condition from JSON string
 		if condStr, exists := entry["condition"]; exists {
 			if condStrStr, ok := condStr.(string); ok && condStrStr != "" {
-				var condCfg interfaces.CondCfg
+				var condCfg interfaces.ActionCondCfg
 				if err := sonic.Unmarshal([]byte(condStrStr), &condCfg); err != nil {
 					logger.Errorf("Failed to unmarshal action_type condition: %s", err.Error())
 					return map[string]*interfaces.ActionType{}, err
@@ -1114,13 +1229,13 @@ func (cs *ConceptSyncer) getAllRiskTypesFromDatasetByKnID(ctx context.Context,
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.RiskType{}, err
 	}
@@ -1166,13 +1281,13 @@ func (cs *ConceptSyncer) getAllConceptGroupsFromDatasetByKnID(ctx context.Contex
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.ConceptGroup{}, err
 	}
@@ -1189,4 +1304,55 @@ func (cs *ConceptSyncer) getAllConceptGroupsFromDatasetByKnID(ctx context.Contex
 	}
 
 	return conceptGroups, nil
+}
+
+func (cs *ConceptSyncer) getAllMetricsFromDatasetByKnID(ctx context.Context,
+	knID string, branch string) (map[string]*interfaces.MetricDefinition, error) {
+
+	filterCondition := map[string]any{
+		"operation": "and",
+		"sub_conditions": []map[string]any{
+			{
+				"field":      "kn_id",
+				"operation":  "==",
+				"value":      knID,
+				"value_from": "const",
+			},
+			{
+				"field":      "branch",
+				"operation":  "==",
+				"value":      branch,
+				"value_from": "const",
+			},
+			{
+				"field":      "module_type",
+				"operation":  "==",
+				"value":      interfaces.MODULE_TYPE_METRIC,
+				"value_from": "const",
+			},
+		},
+	}
+
+	params := &interfaces.ResourceDataQueryParams{
+		FilterCondition: filterCondition,
+		Offset:          0,
+		Limit:           10000,
+		NeedTotal:       false,
+	}
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
+	if err != nil {
+		return map[string]*interfaces.MetricDefinition{}, err
+	}
+
+	metrics := map[string]*interfaces.MetricDefinition{}
+	for _, entry := range response.Entries {
+		md := interfaces.MetricDefinition{}
+		if err := mapstructure.WeakDecode(entry, &md); err != nil {
+			return map[string]*interfaces.MetricDefinition{}, err
+		}
+		mcopy := md
+		metrics[mcopy.ID] = &mcopy
+	}
+
+	return metrics, nil
 }

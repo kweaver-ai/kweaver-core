@@ -299,7 +299,18 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
-			relationType.MappingRules = mappings
+			relationType.MappingRules = &mappings
+		}
+		if relationType.Type == interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN {
+			var fcj interfaces.FilteredCrossJoinMapping
+			err = sonic.Unmarshal(mappingRulesBytes, &fcj)
+			if err != nil {
+				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
+				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
+				return []*interfaces.RelationType{}, err
+			}
+			relationType.MappingRules = &fcj
 		}
 
 		relationTypes = append(relationTypes, &relationType)
@@ -448,7 +459,18 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 			span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 			return nil, err
 		}
-		relationType.MappingRules = mappings
+		relationType.MappingRules = &mappings
+	}
+	if relationType.Type == interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN {
+		var fcj interfaces.FilteredCrossJoinMapping
+		err = sonic.Unmarshal(mappingRulesBytes, &fcj)
+		if err != nil {
+			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
+			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+			span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
+			return nil, err
+		}
+		relationType.MappingRules = &fcj
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -569,7 +591,18 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
-			relationType.MappingRules = mappings
+			relationType.MappingRules = &mappings
+		}
+		if relationType.Type == interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN {
+			var fcj interfaces.FilteredCrossJoinMapping
+			err = sonic.Unmarshal(mappingRulesBytes, &fcj)
+			if err != nil {
+				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
+				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
+				return []*interfaces.RelationType{}, err
+			}
+			relationType.MappingRules = &fcj
 		}
 
 		relationTypes = append(relationTypes, &relationType)
@@ -963,7 +996,18 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return map[string]*interfaces.RelationType{}, err
 			}
-			relationType.MappingRules = mappings
+			relationType.MappingRules = &mappings
+		}
+		if relationType.Type == interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN {
+			var fcj interfaces.FilteredCrossJoinMapping
+			err = sonic.Unmarshal(mappingRulesBytes, &fcj)
+			if err != nil {
+				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
+				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
+				return map[string]*interfaces.RelationType{}, err
+			}
+			relationType.MappingRules = &fcj
 		}
 
 		relationTypes[relationType.RTID] = &relationType

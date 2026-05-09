@@ -1,6 +1,19 @@
 """单元测试 - config/config_v2/models/service_config 模块"""
 
 
+DEPRECATED_SERVICE_NAMES = (
+    "kn_data_query",
+    "kn_knowledge_data",
+    "data_connection",
+    "search_engine",
+    "ecosearch",
+    "ecoindex_public",
+    "ecoindex_private",
+    "docset_private",
+    "datahub",
+)
+
+
 class TestServiceEndpoint:
     """测试 ServiceEndpoint 数据类"""
 
@@ -53,41 +66,8 @@ class TestServicesConfig:
         assert config.agent_memory.host == "agent-memory"
         assert config.agent_memory.port == "30790"
 
-        assert config.kn_data_query is not None
-        assert config.kn_data_query.host == "kn-data-query"
-        assert config.kn_data_query.port == "6480"
-
-        assert config.kn_knowledge_data is not None
-        assert config.kn_knowledge_data.host == "kn-knowledge-data"
-        assert config.kn_knowledge_data.port == "6475"
-
-        assert config.data_connection is not None
-        assert config.data_connection.host == "data-connection"
-        assert config.data_connection.port == "8098"
-
-        assert config.search_engine is not None
-        assert config.search_engine.host == "kn-search-engine"
-        assert config.search_engine.port == "6479"
-
-        assert config.ecosearch is not None
-        assert config.ecosearch.host == "ecosearch"
-        assert config.ecosearch.port == "32126"
-
-        assert config.ecoindex_public is not None
-        assert config.ecoindex_public.host == "ecoindex-public"
-        assert config.ecoindex_public.port == "32129"
-
-        assert config.ecoindex_private is not None
-        assert config.ecoindex_private.host == "ecoindex-private"
-        assert config.ecoindex_private.port == "32130"
-
-        assert config.docset_private is not None
-        assert config.docset_private.host == "docset-private"
-        assert config.docset_private.port == "32597"
-
-        assert config.datahub is not None
-        assert config.datahub.host == "datahubcentral-private"
-        assert config.datahub.port == ""
+        for service_name in DEPRECATED_SERVICE_NAMES:
+            assert not hasattr(config, service_name)
 
     def test_from_dict_with_all_services(self):
         """测试从字典创建（所有服务）"""
@@ -116,8 +96,8 @@ class TestServicesConfig:
         assert config.mf_model_api.port == "9999"
         assert config.agent_executor.host == "executor"
         assert config.agent_executor.port == "8000"
-        assert config.datahub.host == "datahub"
-        assert config.datahub.port == "8012"
+        for service_name in DEPRECATED_SERVICE_NAMES:
+            assert not hasattr(config, service_name)
 
     def test_from_dict_with_partial_services(self):
         """测试从字典创建（部分服务）"""
@@ -135,6 +115,8 @@ class TestServicesConfig:
         assert config.agent_executor is not None
         assert config.agent_executor.host == ""
         assert config.agent_executor.port == ""
+        for service_name in DEPRECATED_SERVICE_NAMES:
+            assert not hasattr(config, service_name)
 
     def test_from_dict_with_empty_dict(self):
         """测试从空字典创建"""
@@ -147,6 +129,8 @@ class TestServicesConfig:
         assert config.mf_model_api.host == ""
         assert config.agent_executor is not None
         assert config.agent_executor.host == ""
+        for service_name in DEPRECATED_SERVICE_NAMES:
+            assert not hasattr(config, service_name)
 
     def test_from_dict_port_to_string(self):
         """测试端口转换为字符串"""

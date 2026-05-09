@@ -7,26 +7,60 @@ package knretrieval
 
 import (
 	"context"
-	"errors"
+	"os"
 	"testing"
 
 	"github.com/smartystreets/goconvey/convey"
-	"go.uber.org/mock/gomock"
 
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/interfaces"
-	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/mocks"
+	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knrerank"
 )
+
+type testLogger struct{}
+
+func (l *testLogger) Debug(args ...interface{})                                  {}
+func (l *testLogger) Debugf(format string, args ...interface{})                  {}
+func (l *testLogger) Info(args ...interface{})                                   {}
+func (l *testLogger) Infof(format string, args ...interface{})                   {}
+func (l *testLogger) Warn(args ...interface{})                                   {}
+func (l *testLogger) Warnf(format string, args ...interface{})                   {}
+func (l *testLogger) Error(args ...interface{})                                  {}
+func (l *testLogger) Errorf(format string, args ...interface{})                  {}
+func (l *testLogger) WithContext(ctx context.Context) interfaces.Logger          { return l }
+func (l *testLogger) WithField(key string, value interface{}) interfaces.Logger  { return l }
+func (l *testLogger) WithFields(fields map[string]interface{}) interfaces.Logger { return l }
+
+type stubMFModelClient struct {
+	rerankResp  *interfaces.RerankResp
+	rerankError error
+	chatResp    string
+	chatError   error
+}
+
+var sharedMFModelClient = &stubMFModelClient{}
+
+func (m *stubMFModelClient) Chat(ctx context.Context, req *interfaces.LLMChatReq) (string, error) {
+	return m.chatResp, m.chatError
+}
+
+func (m *stubMFModelClient) Rerank(ctx context.Context, query string, documents []string) (*interfaces.RerankResp, error) {
+	return m.rerankResp, m.rerankError
+}
+
+func newTestService() *knRetrievalServiceImpl {
+	_ = os.Setenv("CONFIG_PROFILE", "../../infra/config")
+	logger := &testLogger{}
+	return &knRetrievalServiceImpl{
+		logger:     logger,
+		knReranker: knrerank.NewKnowledgeReranker(sharedMFModelClient, logger),
+	}
+}
 
 // TestSortByRerankAndMatchScore 测试 sortByRerankAndMatchScore 函数
 func TestSortByRerankAndMatchScore(t *testing.T) {
 	convey.Convey("TestSortByRerankAndMatchScore", t, func() {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockLogger := mocks.NewMockLogger(ctrl)
-
 		service := &knRetrievalServiceImpl{
-			logger: mockLogger,
+			logger: &testLogger{},
 		}
 
 		convey.Convey("按 RerankScore 降序、相同时按 MatchScore 降序", func() {
@@ -117,19 +151,14 @@ func TestSortByRerankAndMatchScore(t *testing.T) {
 	})
 }
 
-// TestRerankByDataRetrieval_DefaultAction 测试 rerankByDataRetrieval default action 场景
-func TestRerankByDataRetrieval_DefaultAction(t *testing.T) {
-	convey.Convey("TestRerankByDataRetrieval_DefaultAction", t, func() {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockLogger := mocks.NewMockLogger(ctrl)
-		mockDataRetrieval := mocks.NewMockDataRetrieval(ctrl)
-
-		service := &knRetrievalServiceImpl{
-			logger:        mockLogger,
-			dataRetrieval: mockDataRetrieval,
-		}
+// TestRerankConcepts_DefaultAction 测试 rerankConcepts default action 场景
+func TestRerankConcepts_DefaultAction(t *testing.T) {
+	convey.Convey("TestRerankConcepts_DefaultAction", t, func() {
+		sharedMFModelClient.rerankResp = nil
+		sharedMFModelClient.rerankError = nil
+		sharedMFModelClient.chatResp = ""
+		sharedMFModelClient.chatError = nil
+		service := newTestService()
 
 		ctx := context.Background()
 		queryUnderstanding := &interfaces.QueryUnderstanding{
@@ -142,25 +171,24 @@ func TestRerankByDataRetrieval_DefaultAction(t *testing.T) {
 		}
 
 		// default action 不调用 KnowledgeRerank
-		result, err := service.rerankByDataRetrieval(ctx, queryUnderstanding, concepts, interfaces.KnowledgeRerankActionDefault, 10)
+		result, err := service.rerankConcepts(ctx, queryUnderstanding, concepts, interfaces.KnowledgeRerankActionDefault, 10)
 		convey.So(err, convey.ShouldBeNil)
 		convey.So(len(result), convey.ShouldEqual, 2)
 	})
 }
 
-// TestRerankByDataRetrieval_VectorAction 测试 rerankByDataRetrieval vector action 场景
-func TestRerankByDataRetrieval_VectorAction(t *testing.T) {
-	convey.Convey("TestRerankByDataRetrieval_VectorAction", t, func() {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockLogger := mocks.NewMockLogger(ctrl)
-		mockDataRetrieval := mocks.NewMockDataRetrieval(ctrl)
-
-		service := &knRetrievalServiceImpl{
-			logger:        mockLogger,
-			dataRetrieval: mockDataRetrieval,
+// TestRerankConcepts_VectorAction 测试 rerankConcepts vector action 场景
+func TestRerankConcepts_VectorAction(t *testing.T) {
+	convey.Convey("TestRerankConcepts_VectorAction", t, func() {
+		sharedMFModelClient.rerankResp = &interfaces.RerankResp{
+			Results: []interfaces.RerankResult{
+				{Index: 0, RelevanceScore: 0.9},
+			},
 		}
+		sharedMFModelClient.rerankError = nil
+		sharedMFModelClient.chatResp = ""
+		sharedMFModelClient.chatError = nil
+		service := newTestService()
 
 		ctx := context.Background()
 		queryUnderstanding := &interfaces.QueryUnderstanding{
@@ -168,34 +196,24 @@ func TestRerankByDataRetrieval_VectorAction(t *testing.T) {
 		}
 
 		concepts := []*interfaces.ConceptResult{
-			{ConceptID: "1", ConceptName: "Concept1", RerankScore: 0.8},
+			{ConceptID: "1", ConceptName: "Concept1", ConceptType: interfaces.KnConceptTypeObject, RerankScore: 0.8},
 		}
 
-		// Mock KnowledgeRerank 调用
-		mockDataRetrieval.EXPECT().KnowledgeRerank(gomock.Any(), gomock.Any()).
-			Return([]*interfaces.ConceptResult{
-				{ConceptID: "1", ConceptName: "Concept1", RerankScore: 0.9},
-			}, nil)
-
-		result, err := service.rerankByDataRetrieval(ctx, queryUnderstanding, concepts, interfaces.KnowledgeRerankActionVector, 10)
+		result, err := service.rerankConcepts(ctx, queryUnderstanding, concepts, interfaces.KnowledgeRerankActionVector, 10)
 		convey.So(err, convey.ShouldBeNil)
 		convey.So(len(result), convey.ShouldEqual, 1)
+		convey.So(result[0].RerankScore, convey.ShouldEqual, 0.9)
 	})
 }
 
-// TestRerankByDataRetrieval_Error 测试 rerankByDataRetrieval 错误降级场景
-func TestRerankByDataRetrieval_Error(t *testing.T) {
-	convey.Convey("TestRerankByDataRetrieval_Error", t, func() {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockLogger := mocks.NewMockLogger(ctrl)
-		mockDataRetrieval := mocks.NewMockDataRetrieval(ctrl)
-
-		service := &knRetrievalServiceImpl{
-			logger:        mockLogger,
-			dataRetrieval: mockDataRetrieval,
-		}
+// TestRerankConcepts_Error 测试 rerankConcepts 错误降级场景
+func TestRerankConcepts_Error(t *testing.T) {
+	convey.Convey("TestRerankConcepts_Error", t, func() {
+		sharedMFModelClient.rerankResp = nil
+		sharedMFModelClient.rerankError = context.DeadlineExceeded
+		sharedMFModelClient.chatResp = ""
+		sharedMFModelClient.chatError = nil
+		service := newTestService()
 
 		ctx := context.Background()
 		queryUnderstanding := &interfaces.QueryUnderstanding{
@@ -203,39 +221,25 @@ func TestRerankByDataRetrieval_Error(t *testing.T) {
 		}
 
 		concepts := []*interfaces.ConceptResult{
-			{ConceptID: "1", ConceptName: "Concept1", RerankScore: 0.5}, // 添加非零分数，避免被过滤
+			{ConceptID: "1", ConceptName: "Concept1", ConceptType: interfaces.KnConceptTypeObject, RerankScore: 0.5},
 		}
 
-		// Mock KnowledgeRerank 错误
-		mockDataRetrieval.EXPECT().KnowledgeRerank(gomock.Any(), gomock.Any()).
-			Return(nil, errors.New("rerank failed"))
-
-		// 期待调用 Warnf 记录降级日志（2个参数：格式字符串 + err）
-		mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger)
-		mockLogger.EXPECT().Warnf(gomock.Any(), gomock.Any())
-
-		// 修改期待：rerank 失败时应降级返回原始数据，不返回错误
-		result, err := service.rerankByDataRetrieval(ctx, queryUnderstanding, concepts, interfaces.KnowledgeRerankActionVector, 10)
-		convey.So(err, convey.ShouldBeNil) // 降级后不应返回错误
+		result, err := service.rerankConcepts(ctx, queryUnderstanding, concepts, interfaces.KnowledgeRerankActionVector, 10)
+		convey.So(err, convey.ShouldBeNil)
 		convey.So(result, convey.ShouldNotBeNil)
-		convey.So(len(result), convey.ShouldEqual, 1) // 返回原始概念列表
+		convey.So(len(result), convey.ShouldEqual, 1)
 		convey.So(result[0].ConceptID, convey.ShouldEqual, "1")
 	})
 }
 
-// TestRerankByDataRetrieval_WithLimit 测试 rerankByDataRetrieval 分页限制
-func TestRerankByDataRetrieval_WithLimit(t *testing.T) {
-	convey.Convey("TestRerankByDataRetrieval_WithLimit", t, func() {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockLogger := mocks.NewMockLogger(ctrl)
-		mockDataRetrieval := mocks.NewMockDataRetrieval(ctrl)
-
-		service := &knRetrievalServiceImpl{
-			logger:        mockLogger,
-			dataRetrieval: mockDataRetrieval,
-		}
+// TestRerankConcepts_WithLimit 测试 rerankConcepts 分页限制
+func TestRerankConcepts_WithLimit(t *testing.T) {
+	convey.Convey("TestRerankConcepts_WithLimit", t, func() {
+		sharedMFModelClient.rerankResp = nil
+		sharedMFModelClient.rerankError = nil
+		sharedMFModelClient.chatResp = ""
+		sharedMFModelClient.chatError = nil
+		service := newTestService()
 
 		ctx := context.Background()
 		queryUnderstanding := &interfaces.QueryUnderstanding{
@@ -251,7 +255,7 @@ func TestRerankByDataRetrieval_WithLimit(t *testing.T) {
 		}
 
 		// limit=2 只返回前 2 个
-		result, err := service.rerankByDataRetrieval(ctx, queryUnderstanding, concepts, interfaces.KnowledgeRerankActionDefault, 2)
+		result, err := service.rerankConcepts(ctx, queryUnderstanding, concepts, interfaces.KnowledgeRerankActionDefault, 2)
 		convey.So(err, convey.ShouldBeNil)
 		convey.So(len(result), convey.ShouldEqual, 2)
 	})

@@ -270,6 +270,9 @@ func Test_actionTypeService_GetActionsByActionTypeID(t *testing.T) {
 				InstanceIdentities: []map[string]any{
 					{"id": "123"},
 				},
+				DynamicParams: map[string]any{
+					"input_param": "user_supplied",
+				},
 			}
 
 			actionType := interfaces.ActionType{
@@ -310,7 +313,113 @@ func Test_actionTypeService_GetActionsByActionTypeID(t *testing.T) {
 
 			result, err := service.GetActionsByActionTypeID(ctx, query)
 			So(err, ShouldBeNil)
-			So(result.Actions[0].DynamicParams["input_param"], ShouldBeNil)
+			So(result.Actions[0].DynamicParams["input_param"], ShouldEqual, "user_supplied")
+		})
+
+		Convey("失败 - 参数来源为输入但未提供 dynamic_params", func() {
+			query := &interfaces.ActionQuery{
+				KNID:         knID,
+				ActionTypeID: actionTypeID,
+				InstanceIdentities: []map[string]any{
+					{"id": "123"},
+				},
+			}
+
+			actionType := interfaces.ActionType{
+				ATID:         actionTypeID,
+				ATName:       "test_action",
+				ObjectTypeID: objectTypeID,
+				ActionSource: interfaces.ActionSource{
+					Type: "tool",
+				},
+				Parameters: []interfaces.Parameter{
+					{
+						Name:      "input_param",
+						ValueFrom: interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT,
+					},
+				},
+			}
+
+			omAccess.EXPECT().GetActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(actionType, map[string]any{"id": actionType.ATID}, true, nil)
+
+			result, err := service.GetActionsByActionTypeID(ctx, query)
+			So(err, ShouldNotBeNil)
+			httpErr, ok := err.(*rest.HTTPError)
+			So(ok, ShouldBeTrue)
+			So(httpErr.HTTPCode, ShouldEqual, http.StatusBadRequest)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, oerrors.OntologyQuery_ActionType_InvalidParameter_DynamicParams)
+			So(result.TotalCount, ShouldEqual, 0)
+		})
+
+		Convey("失败 - 多个 input 参数但 dynamic_params 只给了部分", func() {
+			query := &interfaces.ActionQuery{
+				KNID:         knID,
+				ActionTypeID: actionTypeID,
+				InstanceIdentities: []map[string]any{
+					{"id": "123"},
+				},
+				DynamicParams: map[string]any{
+					"input_a": "v1",
+				},
+			}
+
+			actionType := interfaces.ActionType{
+				ATID:         actionTypeID,
+				ATName:       "test_action",
+				ObjectTypeID: objectTypeID,
+				ActionSource: interfaces.ActionSource{
+					Type: "tool",
+				},
+				Parameters: []interfaces.Parameter{
+					{Name: "input_a", ValueFrom: interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT},
+					{Name: "input_b", ValueFrom: interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT},
+				},
+			}
+
+			omAccess.EXPECT().GetActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(actionType, map[string]any{"id": actionType.ATID}, true, nil)
+
+			result, err := service.GetActionsByActionTypeID(ctx, query)
+			So(err, ShouldNotBeNil)
+			httpErr, ok := err.(*rest.HTTPError)
+			So(ok, ShouldBeTrue)
+			So(httpErr.HTTPCode, ShouldEqual, http.StatusBadRequest)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, oerrors.OntologyQuery_ActionType_InvalidParameter_DynamicParams)
+			So(result.TotalCount, ShouldEqual, 0)
+		})
+
+		Convey("失败 - dynamic_params 中某 input 为 null", func() {
+			query := &interfaces.ActionQuery{
+				KNID:         knID,
+				ActionTypeID: actionTypeID,
+				InstanceIdentities: []map[string]any{
+					{"id": "123"},
+				},
+				DynamicParams: map[string]any{
+					"input_param": nil,
+				},
+			}
+
+			actionType := interfaces.ActionType{
+				ATID:         actionTypeID,
+				ATName:       "test_action",
+				ObjectTypeID: objectTypeID,
+				ActionSource: interfaces.ActionSource{
+					Type: "tool",
+				},
+				Parameters: []interfaces.Parameter{
+					{Name: "input_param", ValueFrom: interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT},
+				},
+			}
+
+			omAccess.EXPECT().GetActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(actionType, map[string]any{"id": actionType.ATID}, true, nil)
+
+			result, err := service.GetActionsByActionTypeID(ctx, query)
+			So(err, ShouldNotBeNil)
+			httpErr, ok := err.(*rest.HTTPError)
+			So(ok, ShouldBeTrue)
+			So(httpErr.HTTPCode, ShouldEqual, http.StatusBadRequest)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, oerrors.OntologyQuery_ActionType_InvalidParameter_DynamicParams)
+			So(result.TotalCount, ShouldEqual, 0)
 		})
 
 		Convey("成功 - 包含类型信息", func() {

@@ -140,6 +140,16 @@ type ActionType struct {
 	ObjectTypeID string `json:"object_type_id"` // Object type ID bound to action type
 }
 
+// ConceptGroup BKN concept group structure used by exported knowledge-network detail.
+type ConceptGroup struct {
+	ID            string          `json:"id"`
+	Name          string          `json:"name"`
+	ObjectTypeIDs []string        `json:"object_type_ids,omitempty"`
+	ObjectTypes   []*ObjectType   `json:"object_types,omitempty"`
+	RelationTypes []*RelationType `json:"relation_types,omitempty"`
+	ActionTypes   []*ActionType   `json:"action_types,omitempty"`
+}
+
 type KnCondValueFrom string
 
 const (
@@ -172,11 +182,12 @@ type KnSortParams struct {
 
 // QueryConceptsReq Query concepts request
 type QueryConceptsReq struct {
-	KnID      string          `json:"-"`         // Knowledge network ID
-	Cond      *KnCondition    `json:"condition"` // Retrieval condition
-	Sort      []*KnSortParams `json:"sort"`
-	Limit     int             `json:"limit"`      // Return count, default 10. Range 1-10000
-	NeedTotal bool            `json:"need_total"` // Whether total count is needed, default false
+	KnID          string          `json:"-"`                        // Knowledge network ID
+	ConceptGroups []string        `json:"concept_groups,omitempty"` // Concept group IDs
+	Cond          *KnCondition    `json:"condition"`                // Retrieval condition
+	Sort          []*KnSortParams `json:"sort"`
+	Limit         int             `json:"limit"`      // Return count, default 10. Range 1-10000
+	NeedTotal     bool            `json:"need_total"` // Whether total count is needed, default false
 }
 
 // Concepts Retrieved concepts list
@@ -202,6 +213,27 @@ type RelationTypeConcepts struct {
 // ActionTypeConcepts Action type concepts list
 type ActionTypeConcepts struct {
 	Entries    []*ActionType `json:"entries"`               // Action type data
+	TotalCount int64         `json:"total_count,omitempty"` // Total count
+}
+
+// MetricType Metric type structure definition
+type MetricType struct {
+	ID                 string `json:"id"`                            // Metric ID
+	Name               string `json:"name"`                          // Metric name
+	Comment            string `json:"comment,omitempty"`             // Metric comment
+	UnitType           string `json:"unit_type,omitempty"`           // Unit type
+	Unit               string `json:"unit,omitempty"`                // Unit
+	MetricType         string `json:"metric_type"`                   // Metric type
+	ScopeType          string `json:"scope_type"`                    // Scope type
+	ScopeRef           string `json:"scope_ref"`                     // Scope ref
+	TimeDimension      any    `json:"time_dimension,omitempty"`      // Time dimension
+	CalculationFormula any    `json:"calculation_formula"`           // Calculation formula
+	AnalysisDimensions any    `json:"analysis_dimensions,omitempty"` // Analysis dimensions
+}
+
+// MetricTypeConcepts Metric type concepts list
+type MetricTypeConcepts struct {
+	Entries    []*MetricType `json:"entries"`               // Metric type data
 	TotalCount int64         `json:"total_count,omitempty"` // Total count
 }
 
@@ -275,6 +307,7 @@ type KnowledgeNetworkDetail struct {
 	ID            string          `json:"id"`             // Knowledge network ID
 	Name          string          `json:"name"`           // Knowledge network name
 	Comment       string          `json:"comment"`        // Comment/description
+	ConceptGroups []*ConceptGroup `json:"concept_groups"` // Concept groups
 	ObjectTypes   []*ObjectType   `json:"object_types"`   // Object types
 	RelationTypes []*RelationType `json:"relation_types"` // Relation types
 	ActionTypes   []*ActionType   `json:"action_types"`   // Action types
@@ -299,6 +332,9 @@ type BknBackendAccess interface {
 	SearchActionTypes(ctx context.Context, query *QueryConceptsReq) (actionTypes *ActionTypeConcepts, err error)
 	// GetActionTypeDetail Get action type details
 	GetActionTypeDetail(ctx context.Context, knID string, atIDs []string, includeDetail bool) ([]*ActionType, error)
+
+	// SearchMetricTypes Search metric types
+	SearchMetricTypes(ctx context.Context, query *QueryConceptsReq) (metricTypes *MetricTypeConcepts, err error)
 
 	// CreateFullBuildOntologyJob Create a full ontology build job
 	CreateFullBuildOntologyJob(ctx context.Context, knID string, req *CreateFullBuildOntologyJobReq) (resp *CreateJobResp, err error)

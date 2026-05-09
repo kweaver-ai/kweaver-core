@@ -61,6 +61,29 @@ type RedisSetting struct {
 	MasterGroupName  string
 }
 
+// KafkaConnectSetting Kafka Connect 配置项
+type KafkaConnectSetting struct {
+	Host     string
+	Port     int
+	Protocol string
+}
+
+// RateLimitingConfig rate limiting 配置项
+type RateLimitingConfig struct {
+	Concurrency ConcurrencyConfig `mapstructure:"concurrency"`
+}
+
+// ConcurrencyConfig 并发控制配置项
+type ConcurrencyConfig struct {
+	Enabled     bool                      `mapstructure:"enabled"`
+	Global      GlobalConcurrencyConfig   `mapstructure:"global"`
+}
+
+// GlobalConcurrencyConfig 全局并发配置
+type GlobalConcurrencyConfig struct {
+	MaxConcurrentQueries int `mapstructure:"max_concurrent_queries"`
+}
+
 // AppSetting app配置项
 type AppSetting struct {
 	ServerSetting        ServerSetting             `mapstructure:"server"`
@@ -68,15 +91,19 @@ type AppSetting struct {
 	ObservabilitySetting o11y.ObservabilitySetting `mapstructure:"observability"`
 	CryptoSetting        CryptoSetting             `mapstructure:"crypto"`
 	DepServices          map[string]map[string]any `mapstructure:"depServices"`
+	RateLimitingSetting  RateLimitingConfig        `mapstructure:"rateLimiting"`
 
-	DBSetting         libdb.DBSetting
-	MQSetting         libmq.MQSetting
-	OpenSearchSetting rest.OpenSearchClientConfig
-	HydraAdminSetting hydra.HydraAdminSetting
-	RedisSetting      RedisSetting
+	DBSetting           libdb.DBSetting
+	MQSetting           libmq.MQSetting
+	OpenSearchSetting   rest.OpenSearchClientConfig
+	HydraAdminSetting   hydra.HydraAdminSetting
+	RedisSetting        RedisSetting
+	KafkaConnectSetting KafkaConnectSetting
 
-	PermissionUrl string
-	UserMgmtUrl   string
+	PermissionUrl     string
+	UserMgmtUrl       string
+	MfModelManagerUrl string
+	MfModelApiUrl     string
 }
 
 const (
@@ -84,15 +111,18 @@ const (
 	configName string = "vega-backend-config"
 	configType string = "yaml"
 
-	rdsServiceName        string = "rds"
-	mqServiceName         string = "mq"
-	opensearchServiceName string = "opensearch"
-	redisServiceName      string = "redis"
-	permissionServiceName string = "authorization-private"
-	userMgmtServiceName   string = "user-management"
-	hydraAdminServiceName string = "hydra-admin"
+	rdsServiceName            string = "rds"
+	mqServiceName             string = "mq"
+	opensearchServiceName     string = "opensearch"
+	redisServiceName          string = "redis"
+	permissionServiceName     string = "authorization-private"
+	userMgmtServiceName       string = "user-management"
+	hydraAdminServiceName     string = "hydra-admin"
+	kafkaConnectServiceName   string = "kafka-connect"
+	mfModelManagerServiceName string = "mf-model-manager"
+	mfModelApiServiceName     string = "mf-model-api"
 
-	DATA_BASE_NAME string = "adp"
+	DATA_BASE_NAME string = "kweaver"
 )
 
 var (
@@ -165,11 +195,16 @@ func loadSetting(vp *viper.Viper) {
 
 	SetRedisSetting()
 
+	SetKafkaConnectSetting()
+
 	if GetAuthEnabled() {
 		SetHydraAdminSetting()
 		SetPermissionSetting()
 		SetUserMgmtSetting()
 	}
+
+	SetMfModelManagerSetting()
+	SetMfModelApiSetting()
 
 	serverInfo := o11y.ServerInfo{
 		ServerName:    version.ServerName,
@@ -387,4 +422,43 @@ func SetHydraAdminSetting() {
 		HydraAdminHost:     setting["host"].(string),
 		HydraAdminPort:     setting["port"].(int),
 	}
+}
+
+func SetKafkaConnectSetting() {
+	setting, ok := appSetting.DepServices[kafkaConnectServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", kafkaConnectServiceName)
+	}
+
+	appSetting.KafkaConnectSetting = KafkaConnectSetting{
+		Host:     setting["host"].(string),
+		Port:     setting["port"].(int),
+		Protocol: setting["protocol"].(string),
+	}
+}
+
+func SetMfModelManagerSetting() {
+	setting, ok := appSetting.DepServices[mfModelManagerServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", mfModelManagerServiceName)
+	}
+
+	protocol := setting["protocol"].(string)
+	host := setting["host"].(string)
+	port := setting["port"].(int)
+
+	appSetting.MfModelManagerUrl = fmt.Sprintf("%s://%s:%d", protocol, host, port)
+}
+
+func SetMfModelApiSetting() {
+	setting, ok := appSetting.DepServices[mfModelApiServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", mfModelApiServiceName)
+	}
+
+	protocol := setting["protocol"].(string)
+	host := setting["host"].(string)
+	port := setting["port"].(int)
+
+	appSetting.MfModelApiUrl = fmt.Sprintf("%s://%s:%d", protocol, host, port)
 }

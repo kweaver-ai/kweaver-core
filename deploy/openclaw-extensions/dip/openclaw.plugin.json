@@ -1,0 +1,17 @@
+{
+  "id": "dip",
+  "name": "DIP",
+  "version": "1.0.1",
+  "name.zh-CN": "DIP 网关扩展",
+  "description": "Agent skills API, workspace archives HTTP access, and bundled contextloader skill (with repo skills/ merge).",
+  "description.zh-CN": "智能体技能 HTTP/CLI、工作区 archives 访问，合并发现 studio/skills 与插件内 skills（含 contextloader）。",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "skills": ["./skills"],
+  "extensions": [
+    "./index.ts"
+  ]
+}

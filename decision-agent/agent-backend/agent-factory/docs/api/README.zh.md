@@ -1,0 +1,115 @@
+# Agent Factory API 文档
+
+这个目录只保留对外可查看的最终 OpenAPI 文档产物。
+
+## 目录里的文件
+
+- `agent-factory.json`
+  - OpenAPI 3 JSON 版本，适合工具接入
+- `agent-factory.yaml`
+  - OpenAPI 3 YAML 版本，适合人工阅读和分发
+- `agent-factory.html`
+  - Scalar 风格的静态文档页面，适合 Try it Out
+- `agent-factory-redoc.html`
+  - Redoc 风格的静态文档页面，适合只读展示
+- `favicon.png`
+  - 静态文档页面图标
+
+## 如何生成
+
+在 `agent-backend/agent-factory` 目录下执行：
+
+```bash
+make gen-api-docs
+```
+
+## 如何校验
+
+```bash
+make validate-api-docs
+```
+
+这个命令会同时检查：
+
+- OpenAPI 结构是否合法
+- 路径数、接口数是否符合预期
+- 运行时 HTML 是否仍然只依赖本地 embed 资源
+- JSON / YAML / favicon 是否与运行时副本一致
+
+## APIChat 路径说明
+
+- 推荐使用 `/api/agent-factory/v1/api/chat/completion`
+  - 通过 body 中的 `agent_key` 指定目标 agent
+- `/api/agent-factory/v1/app/{app_key}/api/chat/completion`
+  - 已废弃，仅保留兼容旧调用
+  - 新接入请迁移到无 `app_key` 的主入口
+
+`GetAPIDoc` 使用的静态模板也按上述推荐路径维护在 `src/static/agent-api.json` 和 `src/static/agent-api.yaml` 中。
+
+## v3 Agent Config 模式说明
+
+`/api/agent-factory/v3/agent` 的 `config` 现在以 `mode` 作为主模式字段：
+
+- `default`
+  - 使用 `system_prompt`、`plan_mode`
+- `dolphin`
+  - 使用 `dolphin`
+  - `is_dolphin_mode` 仍保留，用于兼容旧请求
+  - 新增 `is_use_tool_id_in_dolphin`
+- `react`
+  - 使用 `system_prompt`、`react_config`、`plan_mode`
+
+对外文档与详情响应统一使用 `react_config`。
+
+## React Agent 专用创建接口
+
+新增了 React Agent 专用创建接口：
+
+- `/api/agent-factory/v3/agent/react`
+  - request body 与 `/api/agent-factory/v3/agent` 保持一致
+  - 仅用于创建 ReAct 模式 agent
+  - Handler 层会额外校验 `config.mode`，如果不为 `react`，则返回 `400`
+
+## 如何查看
+
+### 直接查看静态页面
+
+直接打开当前目录下的任一页面：
+
+- `agent-factory.html`
+- `agent-factory-redoc.html`
+
+这两个页面会从 `https://cdn.jsdmirror.com/` 加载前端文档 JS 资源。
+
+适用场景：
+
+- 需要把单个 HTML 文件直接分发给他人查看
+- 希望不再额外附带 `ui/` 本地资源目录
+
+注意：
+
+- 首次打开时需要网络可访问该 CDN
+- 页面里的 OpenAPI 文档内容仍然内嵌在 HTML 文件本身
+
+### 启动服务后查看
+
+启动 Agent Factory 后访问：
+
+- `http://127.0.0.1:30777/scalar`
+- `http://127.0.0.1:30777/redoc`
+- `http://127.0.0.1:30777/scalar/doc.json`
+- `http://127.0.0.1:30777/scalar/doc.yaml`
+
+这组运行时页面继续使用服务内嵌的本地 UI 资源，不依赖外部 CDN。
+
+推荐方式：
+
+- 需要发起请求、Try it Out：使用 Scalar 页面
+- 需要更好的只读文档展示：使用 Redoc 页面
+
+## 深入维护说明
+
+如果你需要了解生成链路、overlay、baseline 或 Swagger 中间产物，请查看：
+
+- `../../cmd/openapi-docs/README.simple.md`
+- `../../cmd/openapi-docs/docs/OPENAPI_AUTOMATION_GUIDE.md`

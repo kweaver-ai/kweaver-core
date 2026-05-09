@@ -2,6 +2,40 @@
 
 本分支 (`feature/803264`) 中新增的所有功能和特性记录如下。
 
+## [0.3.3]
+
+### 🚀 新功能
+
+- **K8s Session 的 Control Plane 接管恢复**
+  - 新增 control plane 启动接管流程，可在 control plane 重启或升级后识别由上一代 control-plane pod 创建的活跃 K8s session pod
+  - 新增 control plane Pod 身份注入能力（`POD_NAME`、`POD_UID`）以及 executor Pod owner reference 绑定能力，使重建后的 session pod 能重新归属到当前 control plane
+  - 新增升级接管场景下对中断执行任务的处理逻辑，当必须重建 executor pod 时，会将进行中的 execution 标记为失败
+
+### 🐛 问题修复
+
+- **Control Plane 重启后的 Session 恢复稳定性**
+  - 修复启动阶段状态同步恢复 session 时无法通过真实模板仓储解析模板的问题，避免因模板解析失败导致恢复链路直接失败
+  - 修复同名 Pod 重建时与旧 `Terminating` Pod 冲突的问题，在重试创建前会等待旧 Pod 从 K8s API 中彻底删除
+  - 修复 takeover recovery 成功后仍沿用旧 `last_activity_at` 导致被空闲清理任务立即回收的问题，恢复成功后会刷新会话活动时间
+
+- **K8s Session 调度资源请求**
+  - 调整 K8s 沙箱 session Pod 的 CPU 和内存 request 为 0，同时保持运行时 limits 不变
+  - 降低资源紧张集群中由于每个 session 预留 request 导致的 Pod 调度与启动失败概率
+
+### 🔧 改进
+
+- 为启动时状态同步补充 direct session/execution repository 支持，使接管逻辑可分页扫描全部活跃 session，并在不依赖请求级仓储注入的情况下持久化中断 execution 状态
+- 补充 K8s takeover、owner reference 识别、旧 Pod 重建冲突、依赖注入 wiring 以及恢复后活动时间刷新的单元测试覆盖
+
+### 📚 文档
+
+- 新增 control-plane 与 executor 生命周期绑定在重启、升级场景下的 PRD 和设计文档
+- 新增 `sandbox_local` Helm Chart，补充本地部署模板、组件元数据、RBAC 配置与运维说明，便于本地打包和环境初始化
+
+---
+
+*发布于 2026-04-20*
+
 ## [0.3.2]
 
 ### 🚀 新功能

@@ -41,7 +41,7 @@ depServices:
     user: 'username'
     password: 'password'
     type: "MYSQL"
-    database: "adp"
+    database: "kweaver"
     maxConnections: 5
   crypto:
     aesKey: "k8WVs8pfQae0LhUgevDvPXiYPqYZ8HRM"

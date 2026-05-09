@@ -6,14 +6,170 @@
   <title>Decision Agent API Reference</title>
   <link rel="icon" type="image/png" href="favicon.png" />
   <style>
+    :root {
+      --docs-nav-height: 68px;
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: #f5f7fb;
+    }
+
     body {
       margin: 0;
-      padding: 0;
+      padding: var(--docs-nav-height) 0 0;
+      background: #f5f7fb;
+    }
+
+    .docs-nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: var(--docs-nav-height);
+      padding: 16px 24px;
+      background: rgba(15, 23, 42, 0.94);
+      color: #f8fafc;
+      backdrop-filter: blur(12px);
+    }
+
+    .docs-nav__title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .docs-nav__links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .docs-nav__links a {
+      color: #cbd5e1;
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .docs-nav__links a[aria-current="page"] {
+      color: #0f172a;
+      background: #f8fafc;
+      border-color: #f8fafc;
+    }
+
+    .scalar-api-references-standalone-search {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      padding-top: 12px;
+      background: #f5f7fb;
+    }
+
+    .docs-sidebar-group-title {
+      margin-top: 18px;
+    }
+
+    #redoc-container,
+    .scalar-app {
+      min-height: calc(100vh - var(--docs-nav-height));
+    }
+
+    @media (max-width: 720px) {
+      .docs-nav {
+        padding: 14px 16px;
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 <body>
+  <header class="docs-nav">
+  <div class="docs-nav__title">Decision Agent API Reference</div>
+  <nav class="docs-nav__links">
+    <a href="agent-factory.html" aria-current="page">Scalar</a>
+    <a href="agent-factory-redoc.html">Redoc</a>
+  </nav>
+</header>
   <noscript>Scalar requires JavaScript to render the API reference.</noscript>
+  <script>
+    (() => {
+      const root = document.documentElement;
+
+      const syncDocsNavHeight = () => {
+        const nav = document.querySelector(".docs-nav");
+        if (!nav) {
+          return;
+        }
+
+        const height = Math.ceil(nav.getBoundingClientRect().height);
+        if (height > 0) {
+          root.style.setProperty("--docs-nav-height", height + "px");
+        }
+      };
+
+      syncDocsNavHeight();
+
+      if (typeof ResizeObserver === "function") {
+        const nav = document.querySelector(".docs-nav");
+        if (!nav) {
+          return;
+        }
+
+        const observer = new ResizeObserver(syncDocsNavHeight);
+        observer.observe(nav);
+        window.addEventListener("resize", syncDocsNavHeight);
+        window.addEventListener("pagehide", () => observer.disconnect(), { once: true });
+        return;
+      }
+
+      window.addEventListener("resize", syncDocsNavHeight);
+    })();
+  </script>
+  <script>
+    (() => {
+      const promoteScalarModelsGroup = () => {
+        const toc = document.querySelector('nav[aria-label*="Table of contents"] > ul.sidebar-group');
+        const modelsItem = toc?.querySelector("#sidebar-models");
+        if (!toc || !modelsItem) {
+          return;
+        }
+
+        let modelsTitle = toc.querySelector('[data-docs-models-group="true"]');
+        if (!modelsTitle) {
+          modelsTitle = document.createElement("li");
+          modelsTitle.className = "sidebar-group-title docs-sidebar-group-title";
+          modelsTitle.dataset.docsModelsGroup = "true";
+          modelsTitle.textContent = "Models";
+        }
+
+        if (modelsTitle.parentElement !== toc) {
+          toc.appendChild(modelsTitle);
+        }
+
+        if (modelsTitle.nextElementSibling !== modelsItem || modelsItem.parentElement !== toc) {
+          toc.appendChild(modelsTitle);
+          toc.appendChild(modelsItem);
+        }
+      };
+
+      const observer = new MutationObserver(promoteScalarModelsGroup);
+      observer.observe(document.body, { childList: true, subtree: true });
+      promoteScalarModelsGroup();
+      window.addEventListener("pagehide", () => observer.disconnect(), { once: true });
+    })();
+  </script>
   <script type="application/json" id="openapi-document">{
   "components": {
     "parameters": {
@@ -569,73 +725,6 @@
         },
         "type": "object"
       },
-      "AgentObservabilityReq": {
-        "properties": {
-          "agent_version": {
-            "description": "Agent版本",
-            "type": "string"
-          },
-          "end_time": {
-            "description": "结束时间戳，单位到毫秒，例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          },
-          "include_config": {
-            "default": false,
-            "description": "是否包含agent配置信息，默认值为false",
-            "type": "boolean"
-          },
-          "start_time": {
-            "description": "开始时间戳，单位到毫秒，例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "agent_version",
-          "start_time",
-          "end_time"
-        ],
-        "type": "object"
-      },
-      "AgentObservabilityResp": {
-        "properties": {
-          "agent": {
-            "$ref": "#/components/schemas/Agent"
-          },
-          "avg_execute_duration": {
-            "description": "平均执行时长",
-            "type": "integer"
-          },
-          "avg_session_rounds": {
-            "description": "平均会话轮次",
-            "type": "integer"
-          },
-          "avg_ttft_duration": {
-            "description": "平均首token响应时间",
-            "type": "integer"
-          },
-          "run_success_rate": {
-            "description": "Run成功率",
-            "format": "float",
-            "type": "number"
-          },
-          "tool_success_rate": {
-            "description": "工具调用成功率",
-            "format": "float",
-            "type": "number"
-          },
-          "total_requests": {
-            "description": "总请求数",
-            "type": "integer"
-          },
-          "total_sessions": {
-            "description": "总会话数",
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
       "Answer": {
         "properties": {
           "ask": {
@@ -1087,65 +1176,6 @@
           "id",
           "title"
         ],
-        "type": "object"
-      },
-      "ConversationListObservabilityReq": {
-        "properties": {
-          "agent_id": {
-            "description": "Agent id",
-            "type": "string"
-          },
-          "agent_version": {
-            "description": "Agent版本",
-            "type": "string"
-          },
-          "end_time": {
-            "description": "结束时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          },
-          "page": {
-            "default": 1,
-            "description": "分页页码",
-            "type": "integer"
-          },
-          "size": {
-            "default": 10,
-            "description": "分页大小",
-            "type": "integer"
-          },
-          "start_time": {
-            "description": "开始时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          },
-          "title": {
-            "description": "对话标题，默认为空查询全部，支持模糊查询",
-            "type": "string"
-          }
-        },
-        "required": [
-          "agent_id",
-          "agent_version",
-          "start_time",
-          "end_time"
-        ],
-        "type": "object"
-      },
-      "ConversationListObservabilityResp": {
-        "properties": {
-          "entries": {
-            "description": "对话列表",
-            "items": {
-              "$ref": "#/components/schemas/conversation_detail_ConversationDetail"
-            },
-            "type": "array"
-          },
-          "total_count": {
-            "description": "总数量",
-            "type": "integer"
-          }
-        },
         "type": "object"
       },
       "ConversationListResponse": {
@@ -2026,160 +2056,6 @@
         },
         "type": "object"
       },
-      "RunDetailObservabilityReq": {
-        "properties": {
-          "agent_version": {
-            "description": "Agent版本",
-            "type": "string"
-          },
-          "end_time": {
-            "description": "结束时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          },
-          "start_time": {
-            "description": "开始时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "agent_version",
-          "start_time",
-          "end_time"
-        ],
-        "type": "object"
-      },
-      "RunDetailObservabilityResp": {
-        "properties": {
-          "agent_id": {
-            "description": "Agent ID",
-            "type": "string"
-          },
-          "agent_version": {
-            "description": "Agent版本",
-            "type": "string"
-          },
-          "call_type": {
-            "description": "调用类型 chat/debugchat/apichat",
-            "type": "string"
-          },
-          "conversation_id": {
-            "description": "对话ID",
-            "type": "string"
-          },
-          "end_time": {
-            "description": "结束时间",
-            "format": "int64",
-            "type": "integer"
-          },
-          "input_message": {
-            "description": "输入query",
-            "type": "string"
-          },
-          "progress": {
-            "description": "run运行过程",
-            "items": {
-              "$ref": "#/components/schemas/Progress"
-            },
-            "type": "array"
-          },
-          "run_id": {
-            "description": "Run ID",
-            "type": "string"
-          },
-          "session_id": {
-            "description": "会话ID",
-            "type": "string"
-          },
-          "start_time": {
-            "description": "开始时间，毫秒时间戳",
-            "format": "int64",
-            "type": "integer"
-          },
-          "status": {
-            "description": "运行状态 Success / Failed",
-            "type": "string"
-          },
-          "tool_call_count": {
-            "description": "工具调用次数",
-            "type": "integer"
-          },
-          "tool_call_failed_count": {
-            "description": "工具调用失败次数",
-            "type": "integer"
-          },
-          "total_time": {
-            "description": "总时间，单位ms",
-            "format": "int64",
-            "type": "integer"
-          },
-          "total_tokens": {
-            "description": "总token数",
-            "format": "int64",
-            "type": "integer"
-          },
-          "ttft": {
-            "description": "首token响应时间，单位ms",
-            "type": "integer"
-          },
-          "user_id": {
-            "description": "用户ID",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "RunListObservabilityReq": {
-        "properties": {
-          "agent_version": {
-            "description": "Agent版本",
-            "type": "string"
-          },
-          "end_time": {
-            "description": "结束时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          },
-          "page": {
-            "default": 1,
-            "description": "分页页码",
-            "type": "integer"
-          },
-          "size": {
-            "default": 10,
-            "description": "分页大小",
-            "type": "integer"
-          },
-          "start_time": {
-            "description": "开始时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "agent_version",
-          "start_time",
-          "end_time"
-        ],
-        "type": "object"
-      },
-      "RunListObservabilityResp": {
-        "properties": {
-          "entries": {
-            "description": "Run详情列表",
-            "items": {
-              "$ref": "#/components/schemas/RunDetail"
-            },
-            "type": "array"
-          },
-          "total_count": {
-            "description": "总数量",
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
       "SessionDetailList": {
         "properties": {
           "avg_run_execute_duration": {
@@ -2218,123 +2094,6 @@
           },
           "tool_fail_count": {
             "description": "工具失败次数",
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "SessionDetailObservabilityReq": {
-        "properties": {
-          "agent_version": {
-            "description": "Agent版本",
-            "type": "string"
-          },
-          "end_time": {
-            "description": "结束时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          },
-          "start_time": {
-            "description": "开始时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "agent_version",
-          "start_time",
-          "end_time"
-        ],
-        "type": "object"
-      },
-      "SessionDetailObservabilityResp": {
-        "properties": {
-          "avg_run_execute_duration": {
-            "description": "平均运行执行时长",
-            "type": "integer"
-          },
-          "avg_run_ttft_duration": {
-            "description": "平均运行首token响应时间",
-            "type": "integer"
-          },
-          "end_time": {
-            "description": "结束时间",
-            "format": "int64",
-            "type": "integer"
-          },
-          "run_error_count": {
-            "description": "运行错误次数",
-            "type": "integer"
-          },
-          "session_duration": {
-            "description": "Session时长，单位毫秒",
-            "type": "integer"
-          },
-          "session_id": {
-            "description": "Session ID",
-            "type": "string"
-          },
-          "session_run_count": {
-            "description": "Session运行次数",
-            "type": "integer"
-          },
-          "start_time": {
-            "description": "开始时间",
-            "format": "int64",
-            "type": "integer"
-          },
-          "tool_fail_count": {
-            "description": "工具失败次数",
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "SessionListObservabilityReq": {
-        "properties": {
-          "agent_version": {
-            "description": "Agent版本",
-            "type": "string"
-          },
-          "end_time": {
-            "description": "结束时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          },
-          "page": {
-            "default": 1,
-            "description": "分页页码",
-            "type": "integer"
-          },
-          "size": {
-            "default": 10,
-            "description": "分页大小",
-            "type": "integer"
-          },
-          "start_time": {
-            "description": "开始时间戳，单位精确到毫秒。例如:1646360670123",
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "agent_version",
-          "start_time",
-          "end_time"
-        ],
-        "type": "object"
-      },
-      "SessionListObservabilityResp": {
-        "properties": {
-          "entries": {
-            "description": "Session详情列表",
-            "items": {
-              "$ref": "#/components/schemas/SessionDetailList"
-            },
-            "type": "array"
-          },
-          "total_count": {
-            "description": "不分页情况下的总数量",
             "type": "integer"
           }
         },
@@ -2573,60 +2332,6 @@
           },
           "pagination_marker_str": {
             "$ref": "#/components/schemas/agent_pagination_marker_str"
-          }
-        },
-        "type": "object"
-      },
-      "agent_list_for_benchmark": {
-        "description": "智能体列表",
-        "properties": {
-          "entries": {
-            "description": "智能体列表",
-            "items": {
-              "$ref": "#/components/schemas/agent_list_for_benchmark_item"
-            },
-            "type": "array"
-          },
-          "total": {
-            "description": "- 总数\n- 包括已发布和未发布\n  - 如果同一个agent同时存在已发布和未发布版本，算2个\n",
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "agent_list_for_benchmark_item": {
-        "properties": {
-          "id": {
-            "description": "agent id",
-            "example": "xxx",
-            "type": "string"
-          },
-          "key": {
-            "description": "agent 标识",
-            "example": "xxx",
-            "type": "string"
-          },
-          "name": {
-            "description": "名字",
-            "example": "agent1",
-            "type": "string"
-          },
-          "status": {
-            "description": "- 状态\n  - unpublished: 未发布\n  - published: 已发布\n",
-            "enum": [
-              "unpublished",
-              "published"
-            ],
-            "example": "unpublished",
-            "type": "string"
-          },
-          "updated_at": {
-            "description": "更新时间",
-            "type": "integer"
-          },
-          "version": {
-            "description": "- 版本\n  - 未发布的为：v0\n  - 发布的为：latest\n",
-            "type": "string"
           }
         },
         "type": "object"
@@ -3035,6 +2740,19 @@
           }
         },
         "type": "object"
+      },
+      "cdaenum.AgentMode": {
+        "enum": [
+          "default",
+          "dolphin",
+          "react"
+        ],
+        "type": "string",
+        "x-enum-varnames": [
+          "AgentModeDefault",
+          "AgentModeDolphin",
+          "AgentModeReact"
+        ]
       },
       "cdaenum.AvatarType": {
         "enum": [
@@ -4269,6 +3987,19 @@
           "question": {
             "description": "问题内容",
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "daconfvalobj.ReactConfig": {
+        "properties": {
+          "disable_history_in_a_conversation": {
+            "description": "是否禁用单次会话的历史记录",
+            "type": "boolean"
+          },
+          "disable_llm_cache": {
+            "description": "是否禁用LLM缓存",
+            "type": "boolean"
           }
         },
         "type": "object"
@@ -7345,6 +7076,14 @@
             ],
             "description": "配置元数据"
           },
+          "mode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/cdaenum.AgentMode"
+              }
+            ],
+            "description": "配置模式"
+          },
           "opening_remark_config": {
             "allOf": [
               {
@@ -7389,6 +7128,14 @@
               "$ref": "#/components/schemas/daconfvalobj.PresetQuestion"
             },
             "type": "array"
+          },
+          "react_config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/daconfvalobj.ReactConfig"
+              }
+            ],
+            "description": "ReAct 模式配置"
           },
           "related_question": {
             "allOf": [
@@ -9678,563 +9425,7 @@
         ]
       }
     },
-    "/api/agent-factory/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session": {
-      "parameters": [
-        {
-          "in": "path",
-          "name": "agent_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "in": "path",
-          "name": "conversation_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        }
-      ],
-      "post": {
-        "description": "获取指定对话的session列表，包含session的详细信息",
-        "operationId": "getSessionList",
-        "parameters": [
-          {
-            "description": "agent_id",
-            "in": "path",
-            "name": "agent_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "conversation_id",
-            "in": "path",
-            "name": "conversation_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SessionListObservabilityReq"
-              }
-            }
-          },
-          "description": "请求体",
-          "x-originalParamName": "request"
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SessionListObservabilityResp"
-                }
-              }
-            },
-            "description": "成功返回session列表"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequestError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFoundError"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalServerError"
-          }
-        },
-        "summary": "获取指定对话的session列表",
-        "tags": [
-          "可观测性"
-        ]
-      }
-    },
-    "/api/agent-factory/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/detail": {
-      "parameters": [
-        {
-          "in": "path",
-          "name": "agent_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "in": "path",
-          "name": "conversation_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "in": "path",
-          "name": "session_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        }
-      ],
-      "post": {
-        "description": "获取指定session的详情信息，包含多个指标",
-        "operationId": "getSessionDetail",
-        "parameters": [
-          {
-            "description": "agent_id",
-            "in": "path",
-            "name": "agent_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "conversation_id",
-            "in": "path",
-            "name": "conversation_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "session_id",
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SessionDetailObservabilityReq"
-              }
-            }
-          },
-          "description": "请求体",
-          "x-originalParamName": "request"
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SessionDetailObservabilityResp"
-                }
-              }
-            },
-            "description": "成功返回session详情"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequestError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFoundError"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalServerError"
-          }
-        },
-        "summary": "获取指定session的详情信息",
-        "tags": [
-          "可观测性"
-        ]
-      }
-    },
-    "/api/agent-factory/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run": {
-      "parameters": [
-        {
-          "in": "path",
-          "name": "agent_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "in": "path",
-          "name": "conversation_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "in": "path",
-          "name": "session_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        }
-      ],
-      "post": {
-        "description": "获取指定对话的session下的run列表，返回每个run的详情列表",
-        "operationId": "getRunList",
-        "parameters": [
-          {
-            "description": "agent_id",
-            "in": "path",
-            "name": "agent_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "conversation_id",
-            "in": "path",
-            "name": "conversation_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "session_id",
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RunListObservabilityReq"
-              }
-            }
-          },
-          "description": "请求体",
-          "x-originalParamName": "request"
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunListObservabilityResp"
-                }
-              }
-            },
-            "description": "成功返回run列表"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequestError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFoundError"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalServerError"
-          }
-        },
-        "summary": "获取指定session下的run列表",
-        "tags": [
-          "可观测性"
-        ]
-      }
-    },
-    "/api/agent-factory/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run/{run_id}/detail": {
-      "parameters": [
-        {
-          "in": "path",
-          "name": "agent_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "in": "path",
-          "name": "conversation_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "in": "path",
-          "name": "session_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "in": "path",
-          "name": "run_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        }
-      ],
-      "post": {
-        "description": "获取指定run的详情信息，包含run的完整信息",
-        "operationId": "getRunDetail",
-        "parameters": [
-          {
-            "description": "agent_id",
-            "in": "path",
-            "name": "agent_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "conversation_id",
-            "in": "path",
-            "name": "conversation_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "session_id",
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "run_id",
-            "in": "path",
-            "name": "run_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RunDetailObservabilityReq"
-              }
-            }
-          },
-          "description": "请求体",
-          "x-originalParamName": "request"
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunDetailObservabilityResp"
-                }
-              }
-            },
-            "description": "成功返回run详情"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequestError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFoundError"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalServerError"
-          }
-        },
-        "summary": "获取指定run的详情信息",
-        "tags": [
-          "可观测性"
-        ]
-      }
-    },
-    "/api/agent-factory/v1/observability/agent/{agent_id}/detail": {
-      "parameters": [
-        {
-          "in": "path",
-          "name": "agent_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        }
-      ],
-      "post": {
-        "description": "查询指定Agent的可观测信息，返回结果包含Agent的配置信息以及可观测性的指标，支持时间过滤",
-        "operationId": "getAgentObservability",
-        "parameters": [
-          {
-            "description": "agent_id",
-            "in": "path",
-            "name": "agent_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AgentObservabilityReq"
-              }
-            }
-          },
-          "description": "请求体",
-          "x-originalParamName": "request"
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentObservabilityResp"
-                }
-              }
-            },
-            "description": "成功返回Agent可观测信息"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequestError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFoundError"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalServerError"
-          }
-        },
-        "summary": "查询指定Agent的可观测信息",
-        "tags": [
-          "可观测性"
-        ]
-      }
-    },
-    "/api/agent-factory/v1/observability/agent/{agent_key}/conversation": {
-      "parameters": [
-        {
-          "in": "path",
-          "name": "agent_key",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        }
-      ],
-      "post": {
-        "description": "查询Agent下的所有对话列表，支持分页和根据对话title模糊查询",
-        "operationId": "getConversationList",
-        "parameters": [
-          {
-            "description": "agent_key",
-            "in": "path",
-            "name": "agent_key",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConversationListObservabilityReq"
-              }
-            }
-          },
-          "description": "请求体",
-          "x-originalParamName": "request"
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationListObservabilityResp"
-                }
-              }
-            },
-            "description": "成功返回对话列表"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequestError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFoundError"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalServerError"
-          }
-        },
-        "summary": "查询Agent下的所有对话列表",
-        "tags": [
-          "可观测性"
-        ]
-      }
-    },
     "/api/agent-factory/v3/agent": {
-      "get": {
-        "description": "- Agent列表（供模型工厂做 Agent 的 Benchmarch 使用） - 只提供`内部接口`",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/page"
-          },
-          {
-            "$ref": "#/components/parameters/pageLimit"
-          },
-          {
-            "$ref": "#/components/parameters/name"
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/agent_list_for_benchmark"
-                }
-              }
-            },
-            "description": "成功"
-          },
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "403": {
-            "$ref": "#/components/responses/403"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        },
-        "summary": "Agent列表（benchmarch）",
-        "tags": [
-          "agent-ignore"
-        ]
-      },
       "post": {
         "description": "创建一个新的 Agent 配置",
         "requestBody": {
@@ -11974,6 +11165,79 @@
         "summary": "获取dolphin模板列表",
         "tags": [
           "其他"
+        ]
+      }
+    },
+    "/api/agent-factory/v3/agent/react": {
+      "post": {
+        "description": "创建一个新的 React 模式 Agent 配置。请求体与普通创建接口一致，但 config.mode 必须为 react。",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/swagger.AgentConfigCreateReq"
+              }
+            }
+          },
+          "description": "React Agent 配置",
+          "x-originalParamName": "request"
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.AgentConfigCreateRes"
+                }
+              }
+            },
+            "description": "成功"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.APIError"
+                }
+              }
+            },
+            "description": "请求参数错误"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.APIError"
+                }
+              }
+            },
+            "description": "未授权"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.APIError"
+                }
+              }
+            },
+            "description": "禁止访问"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.APIError"
+                }
+              }
+            },
+            "description": "服务器内部错误"
+          }
+        },
+        "summary": "创建react agent",
+        "tags": [
+          "agent",
+          "agent-internal"
         ]
       }
     },
@@ -13820,9 +13084,6 @@
       "name": "对话"
     },
     {
-      "name": "可观测性"
-    },
-    {
       "name": "自定义错误码汇总"
     },
     {
@@ -13857,8 +13118,7 @@
       "tags": [
         "对话管理",
         "对话session管理",
-        "对话",
-        "可观测性"
+        "对话"
       ]
     },
     {
@@ -13888,6 +13148,6 @@
       window.addEventListener("pagehide", () => URL.revokeObjectURL(specURL), { once: true });
     })();
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.34.6"></script>
+  <script src="https://cdn.jsdmirror.com/npm/@scalar/api-reference@1.34.6/dist/browser/standalone.js"></script>
 </body>
 </html>

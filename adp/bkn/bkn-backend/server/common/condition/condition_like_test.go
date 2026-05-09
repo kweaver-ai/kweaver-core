@@ -39,7 +39,7 @@ func TestNewLikeCond(t *testing.T) {
 		Convey("non-string field should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationLike,
-				Name:      "field3",
+				Field:     "field3",
 				NameField: fieldsMap["field3"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -55,7 +55,7 @@ func TestNewLikeCond(t *testing.T) {
 		Convey("invalid value_from should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
@@ -71,7 +71,7 @@ func TestNewLikeCond(t *testing.T) {
 		Convey("non-string value should return error", func() {
 			cfg := &CondCfg{
 				Operation: OperationLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -87,7 +87,7 @@ func TestNewLikeCond(t *testing.T) {
 		Convey("valid string field and value should create LikeCond", func() {
 			cfg := &CondCfg{
 				Operation: OperationLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -105,7 +105,7 @@ func TestNewLikeCond(t *testing.T) {
 		Convey("text field should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationLike,
-				Name:      "field2",
+				Field:     "field2",
 				NameField: fieldsMap["field2"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -120,7 +120,7 @@ func TestNewLikeCond(t *testing.T) {
 		Convey("char field should work", func() {
 			cfg := &CondCfg{
 				Operation: OperationLike,
-				Name:      "field4",
+				Field:     "field4",
 				NameField: fieldsMap["field4"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -147,7 +147,7 @@ func TestLikeCond_Convert(t *testing.T) {
 		Convey("should create regexp query", func() {
 			cfg := &CondCfg{
 				Operation: OperationLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -184,7 +184,7 @@ func TestLikeCond_Convert2SQL(t *testing.T) {
 		Convey("should create LIKE query", func() {
 			cfg := &CondCfg{
 				Operation: OperationLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
@@ -205,7 +205,7 @@ func TestLikeCond_Convert2SQL(t *testing.T) {
 		Convey("special characters should be escaped", func() {
 			cfg := &CondCfg{
 				Operation: OperationLike,
-				Name:      "field1",
+				Field:     "field1",
 				NameField: fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,

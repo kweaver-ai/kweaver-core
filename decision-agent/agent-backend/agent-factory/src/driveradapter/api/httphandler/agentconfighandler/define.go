@@ -19,9 +19,10 @@ type daConfHTTPHandler struct {
 }
 
 func (h *daConfHTTPHandler) RegPubRouter(router *gin.RouterGroup) {
-	router.POST("/agent", h.Create)          // 新建agent
-	router.PUT("/agent/:agent_id", h.Update) // 编辑agent
-	router.GET("/agent/:agent_id", h.Detail) // 获取agent详情
+	router.POST("/agent", h.Create)            // 新建agent
+	router.POST("/agent/react", h.CreateReact) // 新建react agent
+	router.PUT("/agent/:agent_id", h.Update)   // 编辑agent
+	router.GET("/agent/:agent_id", h.Detail)   // 获取agent详情
 	// router.GET("/agent", h.AgentList)        // agent列表
 
 	router.GET("/agent/by-key/:key", h.DetailByKey) // 获取agent详情 by key
@@ -50,7 +51,6 @@ func (h *daConfHTTPHandler) RegPriRouter(router *gin.RouterGroup) {
 	g.POST("/agent", h.Create)             // 新建agent
 	g.PUT("/agent/:agent_id", h.Update)    // 编辑agent
 	g.DELETE("/agent/:agent_id", h.Delete) // 删除agent
-	// g.GET("/agent", h.AgentListListForBenchmark) // agent列表 for benchmark （2026-03-02 13:44:20注释掉）
 
 	g.GET("/agent/:agent_id", h.Detail)        // 获取agent详情
 	g.GET("/agent/by-key/:key", h.DetailByKey) // 获取agent详情 by key

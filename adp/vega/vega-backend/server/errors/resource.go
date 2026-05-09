@@ -15,6 +15,11 @@ const (
 	VegaBackend_Resource_InvalidParameter_CatalogID = "VegaBackend.Resource.InvalidParameter.CatalogID"
 	VegaBackend_Resource_LengthExceeded_Name        = "VegaBackend.Resource.LengthExceeded.Name"
 	VegaBackend_Resource_LengthExceeded_Description = "VegaBackend.Resource.LengthExceeded.Description"
+	VegaBackend_InvalidParameter_Aggregation        = "VegaBackend.InvalidParameter.Aggregation"
+	VegaBackend_InvalidParameter_GroupBy            = "VegaBackend.InvalidParameter.GroupBy"
+	VegaBackend_InvalidParameter_OrderBy            = "VegaBackend.InvalidParameter.OrderBy"
+	VegaBackend_InvalidParameter_Having             = "VegaBackend.InvalidParameter.Having"
+	VegaBackend_InvalidParameter_CalendarInterval   = "VegaBackend.InvalidParameter.CalendarInterval"
 
 	// 403 Forbidden
 	VegaBackend_Resource_NotFound        = "VegaBackend.Resource.NotFound"
@@ -43,6 +48,11 @@ var ResourceErrCodeList = []string{
 	VegaBackend_Resource_InvalidParameter_CatalogID,
 	VegaBackend_Resource_LengthExceeded_Name,
 	VegaBackend_Resource_LengthExceeded_Description,
+	VegaBackend_InvalidParameter_Aggregation,
+	VegaBackend_InvalidParameter_GroupBy,
+	VegaBackend_InvalidParameter_OrderBy,
+	VegaBackend_InvalidParameter_Having,
+	VegaBackend_InvalidParameter_CalendarInterval,
 	VegaBackend_Resource_NotFound,
 	VegaBackend_Resource_NameExists,
 	VegaBackend_Resource_IDExists,

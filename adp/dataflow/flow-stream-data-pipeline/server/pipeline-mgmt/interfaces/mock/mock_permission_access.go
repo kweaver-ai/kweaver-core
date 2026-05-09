@@ -71,7 +71,7 @@ func (mr *MockPermissionAccessMockRecorder) CreateResources(ctx, policies any) *
 }
 
 // DeleteResources mocks base method.
-func (m *MockPermissionAccess) DeleteResources(ctx context.Context, resources []interfaces.Resource) error {
+func (m *MockPermissionAccess) DeleteResources(ctx context.Context, resources []interfaces.PermissionResource) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteResources", ctx, resources)
 	ret0, _ := ret[0].(error)
@@ -85,10 +85,10 @@ func (mr *MockPermissionAccessMockRecorder) DeleteResources(ctx, resources any) 
 }
 
 // FilterResources mocks base method.
-func (m *MockPermissionAccess) FilterResources(ctx context.Context, filter interfaces.ResourcesFilter) ([]interfaces.ResourceOps, error) {
+func (m *MockPermissionAccess) FilterResources(ctx context.Context, filter interfaces.PermissionResourcesFilter) (map[string]interfaces.PermissionResourceOps, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FilterResources", ctx, filter)
-	ret0, _ := ret[0].([]interfaces.ResourceOps)
+	ret0, _ := ret[0].(map[string]interfaces.PermissionResourceOps)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -99,17 +99,17 @@ func (mr *MockPermissionAccessMockRecorder) FilterResources(ctx, filter any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FilterResources", reflect.TypeOf((*MockPermissionAccess)(nil).FilterResources), ctx, filter)
 }
 
-// GetResourceOps mocks base method.
-func (m *MockPermissionAccess) GetResourceOps(ctx context.Context, filter interfaces.ResourcesFilter) ([]interfaces.GetResourceOpsResponse, error) {
+// GetResourcesOperations mocks base method.
+func (m *MockPermissionAccess) GetResourcesOperations(ctx context.Context, filter interfaces.PermissionResourcesFilter) (map[string]interfaces.PermissionResourceOps, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetResourceOps", ctx, filter)
-	ret0, _ := ret[0].([]interfaces.GetResourceOpsResponse)
+	ret := m.ctrl.Call(m, "GetResourcesOperations", ctx, filter)
+	ret0, _ := ret[0].(map[string]interfaces.PermissionResourceOps)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetResourceOps indicates an expected call of GetResourceOps.
-func (mr *MockPermissionAccessMockRecorder) GetResourceOps(ctx, filter any) *gomock.Call {
+// GetResourcesOperations indicates an expected call of GetResourcesOperations.
+func (mr *MockPermissionAccessMockRecorder) GetResourcesOperations(ctx, filter any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceOps", reflect.TypeOf((*MockPermissionAccess)(nil).GetResourceOps), ctx, filter)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourcesOperations", reflect.TypeOf((*MockPermissionAccess)(nil).GetResourcesOperations), ctx, filter)
 }

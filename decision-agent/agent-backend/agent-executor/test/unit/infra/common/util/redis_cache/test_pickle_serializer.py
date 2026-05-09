@@ -1,21 +1,27 @@
 """单元测试 - infra/common/util/redis_cache/pickle_serializer 模块"""
 
-import sys
-import pickle
-from datetime import datetime
-
-# Add app directory to path
-sys.path.insert(
-    0, "/Users/guochenguang/project/decision-agent/agent-backend/agent-executor/app"
-)
-
-# Direct import to avoid __init__.py issues
 import importlib.util
+import pickle
+import sys
+from datetime import datetime
+from pathlib import Path
+
+
+SERIALIZER_PATH = (
+    Path(__file__).resolve().parents[6]
+    / "app"
+    / "infra"
+    / "common"
+    / "util"
+    / "redis_cache"
+    / "pickle_serializer.py"
+)
 
 spec = importlib.util.spec_from_file_location(
     "pickle_serializer",
-    "/Users/guochenguang/project/decision-agent/agent-backend/agent-executor/app/infra/common/util/redis_cache/pickle_serializer.py",
+    SERIALIZER_PATH,
 )
+assert spec is not None and spec.loader is not None
 pickle_serializer_module = importlib.util.module_from_spec(spec)
 sys.modules["pickle_serializer"] = pickle_serializer_module
 spec.loader.exec_module(pickle_serializer_module)

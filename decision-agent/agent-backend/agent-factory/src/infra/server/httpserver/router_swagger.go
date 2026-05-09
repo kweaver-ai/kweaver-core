@@ -1,22 +1,30 @@
 package httpserver
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/internal/openapidoc"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
 	apidocs "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/server/apidocs"
 	"github.com/tidwall/sjson"
 )
 
 const (
-	scalarDocsPath    = "/swagger/index.html"
-	scalarDocJSONPath = "/swagger/doc.json"
-	scalarDocYAMLPath = "/swagger/doc.yaml"
-	scalarFaviconPath = "/swagger/favicon.png"
-	scalarCDNURL      = "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.34.6"
+	scalarDocsPath    = "/scalar"
+	redocDocsPath     = "/redoc"
+
+	scalarDocJSONPath = "/scalar/doc.json"
+	scalarDocYAMLPath = "/scalar/doc.yaml"
+	scalarFaviconPath = "/scalar/favicon.png"
+
+	apidocsUIPath     = "/apidocs-ui"
+	
+	scalarJSAssetPath = apidocsUIPath + "/scalar-api-reference.js"
+	redocJSAssetPath  = apidocsUIPath + "/redoc.standalone.js"
 )
 
 // registerSwaggerRoutes 注册 API 文档路由
@@ -25,21 +33,15 @@ func (s *httpServer) registerSwaggerRoutes(engine *gin.Engine) {
 		return
 	}
 
-	engine.GET("/swagger", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, scalarDocsPath)
-	})
-	engine.GET("/swagger/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, scalarDocsPath)
-	})
-	engine.GET("/scalar", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, scalarDocsPath)
-	})
-	engine.GET("/scalar/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, scalarDocsPath)
-	})
+	engine.StaticFS(apidocsUIPath, apidocs.UIAssetsFileSystem())
+
 	engine.GET(scalarDocsPath, func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(renderScalarPage(scalarDocJSONPath)))
 	})
+	engine.GET(redocDocsPath, func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(renderRedocPage(scalarDocJSONPath)))
+	})
+
 	engine.GET(scalarDocJSONPath, func(c *gin.Context) {
 		c.Data(http.StatusOK, "application/json; charset=utf-8", renderOpenAPIDocJSON(c))
 	})
@@ -52,26 +54,57 @@ func (s *httpServer) registerSwaggerRoutes(engine *gin.Engine) {
 }
 
 func renderScalarPage(specURL string) string {
-	return `<!DOCTYPE html>
+	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Decision Agent API Reference</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="icon" type="image/png" href="%s" />
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-    }
+    %s
   </style>
 </head>
 <body>
+  %s
   <noscript>Scalar requires JavaScript to render the API reference.</noscript>
-  <script id="api-reference" data-url="` + specURL + `"></script>
-  <script src="` + scalarCDNURL + `"></script>
+  <script>
+    %s
+  </script>
+  <script>
+    %s
+  </script>
+  <script id="api-reference" data-url="%s"></script>
+  <script src="%s"></script>
 </body>
-</html>`
+</html>`, scalarFaviconPath, openapidoc.DocsPageStyle(), runtimeDocsNavHTML("scalar"), openapidoc.DocsBootstrapScript(), openapidoc.ScalarPageEnhancementScript(), specURL, scalarJSAssetPath)
+}
+
+func renderRedocPage(specURL string) string {
+	return fmt.Sprintf(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Decision Agent API Reference</title>
+  <link rel="icon" type="image/png" href="%s" />
+  <style>
+    %s
+  </style>
+</head>
+<body>
+  %s
+  <noscript>Redoc requires JavaScript to render the API reference.</noscript>
+  <script>
+    %s
+  </script>
+  <div id="redoc-container"></div>
+  <script src="%s"></script>
+  <script>
+    %s
+  </script>
+</body>
+</html>`, scalarFaviconPath, openapidoc.DocsPageStyle(), runtimeDocsNavHTML("redoc"), openapidoc.DocsBootstrapScript(), redocJSAssetPath, openapidoc.RedocInitScript(fmt.Sprintf("%q", specURL)))
 }
 
 func renderOpenAPIDocJSON(c *gin.Context) []byte {
@@ -182,4 +215,8 @@ func firstHeaderValue(value string) string {
 	}
 
 	return strings.TrimSpace(strings.Split(value, ",")[0])
+}
+
+func runtimeDocsNavHTML(active string) string {
+	return openapidoc.DocsNavHTML(active, scalarDocsPath, redocDocsPath)
 }

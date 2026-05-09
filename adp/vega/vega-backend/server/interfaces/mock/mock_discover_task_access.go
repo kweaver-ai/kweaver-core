@@ -142,3 +142,17 @@ func (mr *MockDiscoverTaskAccessMockRecorder) UpdateStatus(ctx, id, status, mess
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockDiscoverTaskAccess)(nil).UpdateStatus), ctx, id, status, message, stime)
 }
+
+// Delete mocks base method.
+func (m *MockDiscoverTaskAccess) Delete(ctx context.Context, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockDiscoverTaskAccessMockRecorder) Delete(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDiscoverTaskAccess)(nil).Delete), ctx, id)
+}

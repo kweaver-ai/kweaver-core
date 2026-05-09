@@ -42,9 +42,6 @@ func resetInjectSingletons() {
 	conversationSvcOnce = sync.Once{}
 	conversationSvcImpl = nil
 
-	observabilitySvcOnce = sync.Once{}
-	observabilitySvcImpl = nil
-
 	sessionSvcOnce = sync.Once{}
 	sessionSvcImpl = nil
 

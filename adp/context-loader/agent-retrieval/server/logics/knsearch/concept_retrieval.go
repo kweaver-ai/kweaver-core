@@ -21,7 +21,17 @@ import (
 const objectTypeRelationMultiplier = 2
 
 // conceptRetrieval 概念召回主逻辑
-// 流程：获取知识网络详情 -> 可选粗召回 -> 关系类型排序 -> 对象类型过滤 -> 属性裁剪
+//
+// 路由策略：
+//   - 当 config.ConceptGroups 非空时，走 conceptRetrievalByGroups：直接调用 BKN
+//     的 SearchObjectTypes/SearchRelationTypes/SearchActionTypes，由 BKN 在分组
+//     范围内完成召回，跳过本地全量 GetKnowledgeNetworkDetail 与本地过滤。
+//   - 当 config.ConceptGroups 为空时，沿用历史路径：拉全量网络详情 -> 可选粗召
+//     回 -> 关系排序 -> 对象选择 -> 属性裁剪。
+//
+// 这样切分的原因：BKN concept_group 以 object_type 集合作为边界，
+// relation_type/action_type 的分组范围由 BKN 按对象边界推导。ContextLoader
+// 不复制这套分组推导逻辑，而是把 BKN typed search 作为事实来源。
 func (s *localSearchImpl) conceptRetrieval(
 	ctx context.Context,
 	req *interfaces.KnSearchLocalRequest,
@@ -31,7 +41,10 @@ func (s *localSearchImpl) conceptRetrieval(
 	ctx, _ = o11y.StartInternalSpan(ctx)
 	defer o11y.EndSpan(ctx, err)
 
-	// 1. 获取知识网络详情
+	if len(config.ConceptGroups) > 0 {
+		return s.conceptRetrievalByGroups(ctx, req, config)
+	}
+
 	networkDetail, err := s.bknBackend.GetKnowledgeNetworkDetail(ctx, req.KnID)
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("[ConceptRetrieval] GetKnowledgeNetworkDetail failed: %v", err)
@@ -76,6 +89,170 @@ func (s *localSearchImpl) conceptRetrieval(
 		RelationTypes: relationTypesLocal,
 		ActionTypes:   actionTypesLocal,
 	}, nil
+}
+
+// conceptRetrievalByGroups 是 concept_groups 非空场景下的概念召回路径。
+//
+// 设计要点：
+//   - 直接调用 BKN 的 typed search API（SearchObjectTypes / SearchRelationTypes /
+//     SearchActionTypes），由 BKN 完成 concept_groups 范围过滤；不再依赖
+//     GetKnowledgeNetworkDetail 与本地过滤。
+//   - 三个调用任一失败立即向上透传错误（包含分组不存在场景）。这里有意不把
+//     BKN 错误（例如未知分组返回的 5xx + "all concept group not found ..."）
+//     吞成空结果，调用方需要据此区分"分组合法但无概念"与"分组本身不存在"。
+//     BKN 侧在分组未知时返回 5xx 是已知语义偏差，应通过独立 issue 推动改为 4xx，
+//     ContextLoader 在切换前不做错误码翻译。
+//   - relation/action 可能引用未被独立 object search 命中的对象；转换前批量
+//     补齐这些对象详情，避免返回缺端点对象的 schema。
+//   - 排序、对象选择、属性裁剪复用现有函数（rankRelationTypes /
+//     selectObjectTypesForConceptRetrieval / convertXxxToLocal / fetchSampleData），
+//     保证两条路径下的下游行为对齐。
+func (s *localSearchImpl) conceptRetrievalByGroups(
+	ctx context.Context,
+	req *interfaces.KnSearchLocalRequest,
+	config *interfaces.KnSearchConceptRetrievalConfig,
+) (*interfaces.KnSearchConceptResult, error) {
+	objectLimit := config.CoarseObjectLimit
+	relationLimit := config.CoarseRelationLimit
+	// Action 类型缺少专用 limit；BKN 端 action 数量级与 object 类似，复用
+	// CoarseObjectLimit 即可，避免给配置面引入新字段。
+	actionLimit := config.CoarseObjectLimit
+
+	objectReq := s.buildCoarseRecallQuery(req.KnID, req.Query, objectLimit, config.ConceptGroups)
+	objectResp, err := s.bknBackend.SearchObjectTypes(ctx, objectReq)
+	if err != nil {
+		s.logger.WithContext(ctx).Errorf("[ConceptRetrieval][Groups] SearchObjectTypes failed: %v", err)
+		return nil, err
+	}
+
+	relationReq := s.buildCoarseRecallQuery(req.KnID, req.Query, relationLimit, config.ConceptGroups)
+	relationResp, err := s.bknBackend.SearchRelationTypes(ctx, relationReq)
+	if err != nil {
+		s.logger.WithContext(ctx).Errorf("[ConceptRetrieval][Groups] SearchRelationTypes failed: %v", err)
+		return nil, err
+	}
+
+	actionReq := s.buildCoarseRecallQuery(req.KnID, req.Query, actionLimit, config.ConceptGroups)
+	actionResp, err := s.bknBackend.SearchActionTypes(ctx, actionReq)
+	if err != nil {
+		s.logger.WithContext(ctx).Errorf("[ConceptRetrieval][Groups] SearchActionTypes failed: %v", err)
+		return nil, err
+	}
+
+	var (
+		objects   []*interfaces.ObjectType
+		relations []*interfaces.RelationType
+		actions   []*interfaces.ActionType
+	)
+	if objectResp != nil {
+		objects = objectResp.Entries
+	}
+	if relationResp != nil {
+		relations = relationResp.Entries
+	}
+	if actionResp != nil {
+		actions = actionResp.Entries
+	}
+
+	s.logger.WithContext(ctx).Debugf(
+		"[ConceptRetrieval][Groups] BKN returned: groups=%v object_types=%d relation_types=%d action_types=%d",
+		config.ConceptGroups, len(objects), len(relations), len(actions),
+	)
+
+	objects, err = s.completeReferencedObjectTypes(ctx, req.KnID, objects, relations, actions)
+	if err != nil {
+		s.logger.WithContext(ctx).Errorf("[ConceptRetrieval][Groups] complete referenced object types failed: %v", err)
+		return nil, err
+	}
+
+	rankedRelations := s.rankRelationTypes(ctx, req.Query, objects, relations, config.TopK, req.EnableRerank)
+	selectedObjects := s.selectObjectTypesForConceptRetrieval(objects, rankedRelations, config.TopK)
+
+	brief := boolValue(config.SchemaBrief)
+	objectTypesLocal := s.convertObjectTypesToLocal(selectedObjects, brief)
+	relationTypesLocal := s.convertRelationTypesToLocal(rankedRelations, brief)
+	actionTypesLocal := s.convertActionTypesToLocal(actions, req.KnID, objects)
+
+	if boolValue(config.IncludeSampleData) && len(objectTypesLocal) > 0 {
+		s.fetchSampleData(ctx, req.KnID, objectTypesLocal, brief)
+	}
+
+	return &interfaces.KnSearchConceptResult{
+		ObjectTypes:   objectTypesLocal,
+		RelationTypes: relationTypesLocal,
+		ActionTypes:   actionTypesLocal,
+	}, nil
+}
+
+func (s *localSearchImpl) completeReferencedObjectTypes(
+	ctx context.Context,
+	knID string,
+	objects []*interfaces.ObjectType,
+	relations []*interfaces.RelationType,
+	actions []*interfaces.ActionType,
+) ([]*interfaces.ObjectType, error) {
+	known := make(map[string]struct{}, len(objects))
+	for _, obj := range objects {
+		if obj == nil || obj.ID == "" {
+			continue
+		}
+		known[obj.ID] = struct{}{}
+	}
+
+	missingSeen := map[string]struct{}{}
+	missingIDs := []string{}
+	addMissing := func(id string) {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			return
+		}
+		if _, ok := known[id]; ok {
+			return
+		}
+		if _, ok := missingSeen[id]; ok {
+			return
+		}
+		missingSeen[id] = struct{}{}
+		missingIDs = append(missingIDs, id)
+	}
+
+	for _, rel := range relations {
+		if rel == nil {
+			continue
+		}
+		addMissing(rel.SourceObjectTypeID)
+		addMissing(rel.TargetObjectTypeID)
+	}
+	for _, action := range actions {
+		if action == nil {
+			continue
+		}
+		addMissing(action.ObjectTypeID)
+	}
+
+	if len(missingIDs) == 0 {
+		return objects, nil
+	}
+
+	enriched, err := s.bknBackend.GetObjectTypeDetail(ctx, knID, missingIDs, true)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*interfaces.ObjectType, 0, len(objects)+len(enriched))
+	out = append(out, objects...)
+	for _, obj := range enriched {
+		if obj == nil || obj.ID == "" {
+			continue
+		}
+		if _, ok := known[obj.ID]; ok {
+			continue
+		}
+		known[obj.ID] = struct{}{}
+		out = append(out, obj)
+	}
+
+	return out, nil
 }
 
 func (s *localSearchImpl) selectObjectTypesForConceptRetrieval(
@@ -200,7 +377,7 @@ func (s *localSearchImpl) coarseRecall(
 	coarseRelationScores := make(map[string]float64)
 
 	// 粗召回对象类型
-	objectReq := s.buildCoarseRecallQuery(knID, query, config.CoarseObjectLimit)
+	objectReq := s.buildCoarseRecallQuery(knID, query, config.CoarseObjectLimit, config.ConceptGroups)
 	coarseObjects, objErr := s.bknBackend.SearchObjectTypes(ctx, objectReq)
 	if objErr != nil {
 		s.logger.WithContext(ctx).Warnf("[CoarseRecall] SearchObjectTypes failed: %v", objErr)
@@ -214,7 +391,7 @@ func (s *localSearchImpl) coarseRecall(
 	}
 
 	// 粗召回关系类型
-	relationReq := s.buildCoarseRecallQuery(knID, query, config.CoarseRelationLimit)
+	relationReq := s.buildCoarseRecallQuery(knID, query, config.CoarseRelationLimit, config.ConceptGroups)
 	coarseRelations, relErr := s.bknBackend.SearchRelationTypes(ctx, relationReq)
 	if relErr != nil {
 		s.logger.WithContext(ctx).Warnf("[CoarseRecall] SearchRelationTypes failed: %v", relErr)
@@ -305,9 +482,10 @@ func (s *localSearchImpl) coarseRecall(
 
 // buildCoarseRecallQuery 构建粗召回查询条件
 // 业务逻辑：使用 knn + match 组合查询，按分数降序排序
-func (s *localSearchImpl) buildCoarseRecallQuery(knID, query string, limit int) *interfaces.QueryConceptsReq {
+func (s *localSearchImpl) buildCoarseRecallQuery(knID, query string, limit int, conceptGroups []string) *interfaces.QueryConceptsReq {
 	return &interfaces.QueryConceptsReq{
-		KnID: knID,
+		KnID:          knID,
+		ConceptGroups: normalizeConceptGroups(conceptGroups),
 		Cond: &interfaces.KnCondition{
 			Operation: interfaces.KnOperationTypeOr,
 			SubConditions: []*interfaces.KnCondition{

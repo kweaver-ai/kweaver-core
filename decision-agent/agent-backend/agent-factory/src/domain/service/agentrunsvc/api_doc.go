@@ -33,7 +33,7 @@ func (agentSvc *agentSvc) GetAPIDoc(ctx context.Context, req *agentreq.GetAPIDoc
 
 	loader := openapi3.NewLoader()
 
-	docByte, err := static.StaticFiles.ReadFile("agent-api.json")
+	docByte, err := static.StaticFiles.ReadFile("agent-api.yaml")
 	if err != nil {
 		otellog.LogError(ctx, fmt.Sprintf("[GetAPIDoc] read file failed: %v", err), err)
 		return nil, errors.Wrapf(err, "[GetAPIDoc] read file failed: %v", err)

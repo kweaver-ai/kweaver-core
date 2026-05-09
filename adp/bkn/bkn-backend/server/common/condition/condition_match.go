@@ -22,7 +22,7 @@ func NewMatchCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap
 		return nil, fmt.Errorf("condition [match] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
-	name := getFilterFieldName(cfg.Name, fieldsMap, true)
+	name := getFilterFieldName(cfg.Field, fieldsMap, true)
 	var fields []string
 	// 如果指定*查询，并且视图的字段范围为部分字段，那么将查询的字段替换成视图的字段列表
 	if name == AllField {
@@ -82,7 +82,7 @@ func (cond *MatchCond) Convert2SQL(ctx context.Context) (string, error) {
 
 // convertMatchCondToDatasetFilterCondition converts MatchCond to dataset filter condition format
 func convertMatchCondToDatasetFilterCondition(cfg *CondCfg, fieldsMap map[string]*ViewField) (map[string]any, error) {
-	name := getFilterFieldName(cfg.Name, fieldsMap, true)
+	name := getFilterFieldName(cfg.Field, fieldsMap, true)
 	var fields []string
 	// 如果指定*查询，并且视图的字段范围为部分字段，那么将查询的字段替换成视图的字段列表
 	if name == AllField {

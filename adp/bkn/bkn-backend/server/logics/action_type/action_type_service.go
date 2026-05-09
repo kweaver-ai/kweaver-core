@@ -150,6 +150,43 @@ func (ats *actionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx,
 		return []string{}, err
 	}
 
+	// 0. 开始事务
+	if tx == nil {
+		tx, err = ats.db.Begin()
+		if err != nil {
+			logger.Errorf("Begin transaction error: %s", err.Error())
+			span.SetStatus(codes.Error, "事务开启失败")
+			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+
+			return []string{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				berrors.BknBackend_ActionType_InternalError_BeginTransactionFailed).
+				WithErrorDetails(err.Error())
+		}
+		// 0.1 异常时
+		defer func() {
+			switch err {
+			case nil:
+				// 提交事务
+				err = tx.Commit()
+				if err != nil {
+					logger.Errorf("CreateActionType Transaction Commit Failed:%v", err)
+					span.SetStatus(codes.Error, "提交事务失败")
+					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Commit Failed: %s", err.Error()))
+					return
+				}
+				logger.Infof("CreateActionType Transaction Commit Success")
+				o11y.Debug(ctx, "CreateActionType Transaction Commit Success")
+			default:
+				rollbackErr := tx.Rollback()
+				if rollbackErr != nil {
+					logger.Errorf("CreateActionType Transaction Rollback Error:%v", rollbackErr)
+					span.SetStatus(codes.Error, "事务回滚失败")
+					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Rollback Error: %s", err.Error()))
+				}
+			}
+		}()
+	}
+
 	currentTime := time.Now().UnixMilli()
 	for _, actionType := range actionTypes {
 		// 若提交的模型id为空，生成分布式ID
@@ -190,43 +227,6 @@ func (ats *actionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx,
 
 		bknAction := logics.ToBKNActionType(actionType)
 		actionType.BKNRawContent = bknsdk.SerializeActionType(bknAction)
-	}
-
-	// 0. 开始事务
-	if tx == nil {
-		tx, err = ats.db.Begin()
-		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
-			return []string{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
-				berrors.BknBackend_ActionType_InternalError_BeginTransactionFailed).
-				WithErrorDetails(err.Error())
-		}
-		// 0.1 异常时
-		defer func() {
-			switch err {
-			case nil:
-				// 提交事务
-				err = tx.Commit()
-				if err != nil {
-					logger.Errorf("CreateActionType Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Commit Failed: %s", err.Error()))
-					return
-				}
-				logger.Infof("CreateActionType Transaction Commit Success")
-				o11y.Debug(ctx, "CreateActionType Transaction Commit Success")
-			default:
-				rollbackErr := tx.Rollback()
-				if rollbackErr != nil {
-					logger.Errorf("CreateActionType Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Rollback Error: %s", err.Error()))
-				}
-			}
-		}()
 	}
 
 	createActionTypes, updateActionTypes, err := ats.handleActionTypeImportMode(ctx, mode, actionTypes)
@@ -959,8 +959,9 @@ func (ats *actionTypeService) SearchActionTypes(ctx context.Context, query *inte
 				cgCnt, len(query.ConceptGroups))
 			logger.Errorf(errStr)
 
-			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
-				berrors.BknBackend_ActionType_InternalError).
+			// 所有概念分组都不存在，报404，概念分组不存在
+			return response, rest.NewHTTPError(ctx, http.StatusNotFound,
+				berrors.BknBackend_ConceptGroup_ConceptGroupNotFound).
 				WithErrorDetails(errStr)
 		}
 
@@ -998,15 +999,15 @@ func (ats *actionTypeService) SearchActionTypes(ctx context.Context, query *inte
 	if query.NeedTotal {
 		if len(atIDMap) == 0 {
 			// 查询总数
-			params := &interfaces.DatasetQueryParams{
+			params := &interfaces.ResourceDataQueryParams{
 				FilterCondition: filterCondition,
 				Offset:          0,
 				Limit:           1, // 查询1条数据，获取total
 				NeedTotal:       true,
 			}
-			datasetResp, err := ats.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+			datasetResp, err := ats.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 			if err != nil {
-				logger.Errorf("QueryDatasetData error: %s", err.Error())
+				logger.Errorf("QueryResourceData error: %s", err.Error())
 				span.SetStatus(codes.Error, "业务知识网络行动类检索查询总数失败")
 				return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 					berrors.BknBackend_ActionType_InternalError).
@@ -1035,16 +1036,16 @@ func (ats *actionTypeService) SearchActionTypes(ctx context.Context, query *inte
 
 	for {
 		// 调用 dataset 查询
-		params := &interfaces.DatasetQueryParams{
+		params := &interfaces.ResourceDataQueryParams{
 			FilterCondition: filterCondition,
 			Offset:          offset,
 			Limit:           limit,
 			NeedTotal:       false,
 			Sort:            query.Sort,
 		}
-		datasetResp, err := ats.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+		datasetResp, err := ats.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 		if err != nil {
-			logger.Errorf("QueryDatasetData error: %s", err.Error())
+			logger.Errorf("QueryResourceData error: %s", err.Error())
 			span.SetStatus(codes.Error, "业务知识网络行动类检索查询失败")
 			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ActionType_InternalError).
@@ -1061,7 +1062,7 @@ func (ats *actionTypeService) SearchActionTypes(ctx context.Context, query *inte
 			// Deserialize condition from JSON string
 			if condStr, exists := entry["condition"]; exists {
 				if condStrStr, ok := condStr.(string); ok && condStrStr != "" {
-					var condCfg interfaces.CondCfg
+					var condCfg interfaces.ActionCondCfg
 					if err := sonic.Unmarshal([]byte(condStrStr), &condCfg); err != nil {
 						logger.Errorf("Failed to unmarshal action_type condition: %s", err.Error())
 						return response, rest.NewHTTPError(ctx, http.StatusBadRequest,
@@ -1166,13 +1167,13 @@ func (ats *actionTypeService) GetTotal(ctx context.Context, filterCondition map[
 		}
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           1, // 查询1条数据，获取total
 		NeedTotal:       true,
 	}
-	datasetResp, err := ats.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	datasetResp, err := ats.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		span.SetStatus(codes.Error, "Search total documents count failed")
 		return total, rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_ActionType_InternalError).

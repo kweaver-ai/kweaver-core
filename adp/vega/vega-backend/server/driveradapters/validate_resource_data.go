@@ -31,6 +31,11 @@ func ValidateResourceDataQueryParams(ctx context.Context, params *interfaces.Res
 		}
 	}
 
+	// limit 默认值为 10
+	if params.Limit == 0 {
+		params.Limit = interfaces.DEFAULT_DATA_LIMIT
+	}
+
 	// 校验分页参数
 	err := validatePaginationParams(ctx, params.Offset, params.Limit)
 	if err != nil {
@@ -41,6 +46,14 @@ func ValidateResourceDataQueryParams(ctx context.Context, params *interfaces.Res
 	err = validateSortFields(ctx, params.Sort)
 	if err != nil {
 		return err
+	}
+
+	// 聚合模式下的参数校验：当Aggregation、GroupBy或Having任一参数存在时执行
+	if isAggregateQuery(params) {
+		err = validateAggregateParams(ctx, params)
+		if err != nil {
+			return err
+		}
 	}
 
 	// 过滤条件用map接，然后再decode到condCfg中
@@ -186,6 +199,96 @@ func validateFilterCondCfg(ctx context.Context, cfg *interfaces.FilterCondCfg) e
 						WithErrorDetails(fmt.Sprintf("[%s] operation's value should contains at least 1 value", cfg.Operation))
 				}
 			}
+		}
+	}
+
+	return nil
+}
+
+// isAggregateQuery 判断是否为聚合查询
+func isAggregateQuery(params *interfaces.ResourceDataQueryParams) bool {
+	// 根据聚合相关字段推断
+	return params.Aggregation != nil || len(params.GroupBy) > 0 || params.Having != nil
+}
+
+// validateCalendarInterval 校验 calendar_interval 是否为有效的枚举值
+// 允许的值包括：minute, hour, day, week, month, quarter, year
+func validateCalendarInterval(ctx context.Context, calendarInterval string) error {
+	switch calendarInterval {
+	case interfaces.CALENDAR_UNIT_MINUTE,
+		interfaces.CALENDAR_UNIT_HOUR,
+		interfaces.CALENDAR_UNIT_DAY,
+		interfaces.CALENDAR_UNIT_WEEK,
+		interfaces.CALENDAR_UNIT_MONTH,
+		interfaces.CALENDAR_UNIT_QUARTER,
+		interfaces.CALENDAR_UNIT_YEAR:
+		return nil
+	default:
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_CalendarInterval).
+			WithErrorDetails(fmt.Sprintf("Invalid calendar_interval value: %s, must be one of: minute, hour, day, week, month, quarter, year", calendarInterval))
+	}
+}
+
+// validateAggregateParams 校验聚合查询参数
+func validateAggregateParams(ctx context.Context, params *interfaces.ResourceDataQueryParams) error {
+	// 校验aggregation
+	if params.Aggregation != nil {
+		if params.Aggregation.Property == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Aggregation).
+				WithErrorDetails("Aggregation property cannot be empty")
+		}
+		// 校验聚合函数类型
+		validAggr := map[string]bool{
+			"count": true, "count_distinct": true, "sum": true,
+			"max": true, "min": true, "avg": true,
+		}
+		if !validAggr[params.Aggregation.Aggr] {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Aggregation).
+				WithErrorDetails(fmt.Sprintf("Unsupported aggregation function: %s", params.Aggregation.Aggr))
+		}
+	}
+
+	// 校验group_by
+	for _, groupByItem := range params.GroupBy {
+		if groupByItem.Property == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_GroupBy).
+				WithErrorDetails("GroupBy property cannot be empty")
+		}
+		// 校验calendar_interval
+		if groupByItem.CalendarInterval != "" {
+			err := validateCalendarInterval(ctx, groupByItem.CalendarInterval)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// 校验having
+	if params.Having != nil {
+		// having依赖aggregation或count(*)
+		if params.Aggregation == nil && params.Having.Field != "count(*)" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Having).
+				WithErrorDetails("Having clause requires aggregation or count(*)")
+		}
+		// 校验field字段
+		if params.Having.Field != "__value" && params.Having.Field != "count(*)" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Having).
+				WithErrorDetails("Having field must be '__value' or 'count(*)'")
+		}
+		// 校验operation
+		validOps := map[string]bool{
+			"==": true, "!=": true, ">": true, ">=": true,
+			"<": true, "<=": true, "in": true, "not_in": true,
+			"range": true, "out_range": true,
+		}
+		if !validOps[params.Having.Operation] {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Having).
+				WithErrorDetails(fmt.Sprintf("Unsupported having operation: %s", params.Having.Operation))
+		}
+		// 校验value
+		if params.Having.Value == nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Having).
+				WithErrorDetails("Having value cannot be empty")
 		}
 	}
 

@@ -20,9 +20,15 @@
 - `../../docs/api/agent-factory.json`
 - `../../docs/api/agent-factory.yaml`
 - `../../docs/api/agent-factory.html`
+- `../../docs/api/agent-factory-redoc.html`
 - `../../docs/api/favicon.png`
 
 这些文件是对外文档目录中的最终结果。
+
+其中：
+
+- `docs/api/*.html` 对外分发时默认使用 `cdn.jsdmirror.com`
+- 不再要求同步 `docs/api/ui/*`
 
 ### 生成输入
 
@@ -40,7 +46,9 @@
 - `../../src/infra/server/apidocs/assets/agent-factory.json`
 - `../../src/infra/server/apidocs/assets/agent-factory.yaml`
 - `../../src/infra/server/apidocs/assets/agent-factory.html`
+- `../../src/infra/server/apidocs/assets/agent-factory-redoc.html`
 - `../../src/infra/server/apidocs/assets/favicon.png`
+- `../../src/infra/server/apidocs/assets/ui/*`
 
 服务运行时通过 `src/infra/server/apidocs/embed.go` 将这组文件打进二进制。
 
@@ -50,10 +58,10 @@
 2. 执行 `make gen-swag`
 3. Swagger 中间产物写入 `cmd/openapi-docs/generated/swagger`
 4. 执行 `make gen-api-docs`
-5. `cmd/openapi-docs generate` 读取 Swagger / overlay / baseline / 运行时 favicon
-6. 生成最终 OpenAPI 3 JSON、YAML、HTML
+5. `cmd/openapi-docs generate` 读取 Swagger / overlay / baseline / 运行时 favicon / 本地 UI 资源
+6. 生成最终 OpenAPI 3 JSON、YAML、Scalar HTML、Redoc HTML
 7. 同步写入公共文档目录和运行时副本目录
-8. 执行 `make validate-api-docs` 做结构校验和副本一致性校验
+8. 执行 `make validate-api-docs` 做结构校验、HTML 依赖策略校验和副本一致性校验
 
 ## 常用命令
 
@@ -108,11 +116,19 @@ make validate-api-docs
 
 ### 什么时候需要看运行时副本
 
-当 `/swagger/doc.json`、`/swagger/doc.yaml`、`/swagger/index.html` 表现异常时，优先检查：
+当 `/scalar/doc.json`、`/scalar/doc.yaml`、`/scalar/index.html` 表现异常时，优先检查：
 
 1. `make gen-api-docs` 是否已执行
-2. `../../src/infra/server/apidocs/assets/*` 是否与 `../../docs/api/*` 一致
+2. `../../src/infra/server/apidocs/assets/*.json`、`*.yaml`、`favicon.png` 是否与 `../../docs/api/*` 一致
 3. `make validate-api-docs` 是否通过
+
+当 `/redoc/index.html` 或运行中的 `/scalar` 页面异常时，也优先检查上述三项，并确认 `../../src/infra/server/apidocs/assets/ui/*` 是否已经同步。
+
+当离线分发的 `docs/api/*.html` 异常时，优先检查：
+
+1. 当前网络是否可访问 `cdn.jsdmirror.com`
+2. `make validate-api-docs` 是否通过
+3. HTML 中引用的 CDN URL 是否仍为版本固定的预期地址
 
 ## 相关文档
 

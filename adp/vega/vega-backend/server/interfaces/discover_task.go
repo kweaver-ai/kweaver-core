@@ -26,9 +26,11 @@ const (
 
 // DiscoverTask represents a discover task entity.
 type DiscoverTask struct {
-	ID          string `json:"id"`
-	CatalogID   string `json:"catalog_id"`
-	TriggerType string `json:"trigger_type"` // manual/scheduled
+	ID          string   `json:"id"`
+	CatalogID   string   `json:"catalog_id"`
+	ScheduleID  string   `json:"schedule_id"`
+	Strategies  []string `json:"strategies"`   // Strategies for discover: can be one or more of ["insert", "delete", "update"], or empty for all
+	TriggerType string   `json:"trigger_type"` // manual/scheduled
 
 	Status     string          `json:"status"`   // pending/running/completed/failed
 	Progress   int             `json:"progress"` // 0-100
@@ -44,9 +46,10 @@ type DiscoverTask struct {
 // DiscoverTaskQueryParams holds discover task list query parameters.
 type DiscoverTaskQueryParams struct {
 	PaginationQueryParams
-	CatalogID   string `json:"catalog_id"`
-	Status      string `json:"status"`
-	TriggerType string `json:"trigger_type"`
+	CatalogID   string `form:"catalog_id" json:"catalog_id"`
+	ScheduleID  string `form:"schedule_id" json:"schedule_id"`
+	Status      string `form:"status" json:"status"`
+	TriggerType string `form:"trigger_type" json:"trigger_type"`
 }
 
 // DiscoverTaskMessage represents the Kafka message for discover task.

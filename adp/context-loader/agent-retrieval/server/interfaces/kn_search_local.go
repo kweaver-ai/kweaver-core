@@ -33,16 +33,17 @@ type KnSearchRetrievalConfig struct {
 
 // KnSearchConceptRetrievalConfig 概念召回配置参数
 type KnSearchConceptRetrievalConfig struct {
-	TopK                   int   `json:"top_k" default:"10"`
-	IncludeSampleData      *bool `json:"include_sample_data" default:"false"`
-	SchemaBrief            *bool `json:"schema_brief" default:"true"`
-	EnableCoarseRecall     *bool `json:"enable_coarse_recall" default:"true"`
-	CoarseObjectLimit      int   `json:"coarse_object_limit" default:"2000"`
-	CoarseRelationLimit    int   `json:"coarse_relation_limit" default:"300"`
-	CoarseMinRelationCount int   `json:"coarse_min_relation_count" default:"5000"`
-	EnablePropertyBrief    *bool `json:"enable_property_brief" default:"true"`
-	PerObjectPropertyTopK  int   `json:"per_object_property_top_k" default:"8"`
-	GlobalPropertyTopK     int   `json:"global_property_top_k" default:"30"`
+	ConceptGroups          []string `json:"concept_groups,omitempty"`
+	TopK                   int      `json:"top_k" default:"10"`
+	IncludeSampleData      *bool    `json:"include_sample_data" default:"false"`
+	SchemaBrief            *bool    `json:"schema_brief" default:"false"`
+	EnableCoarseRecall     *bool    `json:"enable_coarse_recall" default:"true"`
+	CoarseObjectLimit      int      `json:"coarse_object_limit" default:"2000"`
+	CoarseRelationLimit    int      `json:"coarse_relation_limit" default:"300"`
+	CoarseMinRelationCount int      `json:"coarse_min_relation_count" default:"5000"`
+	EnablePropertyBrief    *bool    `json:"enable_property_brief" default:"true"`
+	PerObjectPropertyTopK  int      `json:"per_object_property_top_k" default:"8"`
+	GlobalPropertyTopK     int      `json:"global_property_top_k" default:"30"`
 }
 
 // KnSearchSemanticInstanceRetrievalConfig 语义实例召回配置参数

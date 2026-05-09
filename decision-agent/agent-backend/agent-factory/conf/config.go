@@ -35,6 +35,9 @@ type Config struct {
 	*cconf.Config
 	MQ MQConf
 
+	// 是否启用 OS 登录与权限能力，默认 true
+	AuthEnable *bool `yaml:"auth_enable"`
+
 	// APP 配置字段
 	AgentFactoryConf    *AgentFactoryConf    `yaml:"agent_factory"`
 	AgentExecutorConf   *AgentExecutorConf   `yaml:"agent_executor"`
@@ -46,9 +49,6 @@ type Config struct {
 
 	// 流式响应配置
 	StreamDiffFrequency int `yaml:"stream_diff_frequency"`
-
-	// OpenTelemetry 配置
-	OtelConfig *OtelConfig `yaml:"opentelemetry"`
 
 	// 新版 OTel Collector 配置
 	OtelV2Config *otel.OtelV2Config `yaml:"otel"`
@@ -65,8 +65,37 @@ func (c Config) IsDebug() bool {
 	return cenvhelper.IsDebugMode()
 }
 
+func (c *Config) IsAuthEnabled() bool {
+	if c == nil || c.AuthEnable == nil {
+		return true
+	}
+
+	return *c.AuthEnable
+}
+
 func (c *Config) IsBizDomainDisabled() bool {
 	return c != nil && c.SwitchFields.IsBizDomainDisabled()
+}
+
+func (c *Config) normalizeAuthRelatedSwitches() {
+	if c == nil {
+		return
+	}
+
+	if c.SwitchFields == nil {
+		c.SwitchFields = NewSwitchFields()
+	}
+
+	if c.SwitchFields.Mock == nil {
+		c.SwitchFields.Mock = &MockSwitchFields{}
+	}
+
+	if !c.IsAuthEnabled() {
+		c.SwitchFields.DisablePmsCheck = true
+		c.SwitchFields.Mock.MockHydra = true
+		c.SwitchFields.Mock.MockAuthZ = true
+		c.SwitchFields.Mock.MockUserManagerModule = true
+	}
 }
 
 var (
@@ -74,23 +103,27 @@ var (
 	configImpl *Config
 )
 
+func defaultBoolPtr(v bool) *bool {
+	return &v
+}
+
 func NewConfig() *Config {
 	configOnce.Do(func() {
 		configImpl = &Config{}
 
 		configImpl.SwitchFields = NewSwitchFields()
+		configImpl.AuthEnable = defaultBoolPtr(true)
 
 		configImpl.Config = cconf.BaseDefConfig()
 
-		configImpl.OtelConfig = &OtelConfig{}
 		configImpl.OtelV2Config = &otel.OtelV2Config{}
 
 		bys := cconf.GetConfigBys("agent-factory.yaml")
 		cconf.LoadConfig(bys, configImpl.Config)
 		// 同时加载扩展字段（AgentFactoryConf等）
 		cconf.LoadConfig(bys, configImpl)
+		configImpl.normalizeAuthRelatedSwitches()
 
-		setOtelDefaults(configImpl.OtelConfig)
 		configImpl.OtelV2Config.SetDefaults()
 
 		secretBys := cconf.GetConfigBys("secret/agent-factory-secret.yaml")

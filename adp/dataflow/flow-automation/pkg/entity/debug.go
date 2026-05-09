@@ -3,9 +3,9 @@ package entity
 import (
 	"context"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/dependency"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/dependency"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/utils"
 )
 
 type DebugContext struct {

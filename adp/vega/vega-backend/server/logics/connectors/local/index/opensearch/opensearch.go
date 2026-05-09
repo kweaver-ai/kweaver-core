@@ -56,8 +56,6 @@ func (c *OpenSearchConnector) ExecuteQueryWithDsl(ctx context.Context, resourceN
 	if err := json.Unmarshal([]byte(dsl), &dslMap); err != nil {
 		return nil, fmt.Errorf("invalid DSL JSON: %w", err)
 	}
-	// Log the DSL query for debugging
-	fmt.Printf("[OpenSearch DSL Query]:\n%s\n", dsl)
 
 	// Execute search request with the provided DSL
 	// resourceId is used as the index name
@@ -70,7 +68,7 @@ func (c *OpenSearchConnector) ExecuteQueryWithDsl(ctx context.Context, resourceN
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute search: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("search failed: %s", resp.String())
@@ -143,12 +141,12 @@ func NewOpenSearchConnector() connectors.IndexConnector {
 
 // GetType returns the data source type.
 func (c *OpenSearchConnector) GetType() string {
-	return "opensearch"
+	return interfaces.ConnectorTypeOpenSearch
 }
 
 // GetName returns the data source name.
 func (c *OpenSearchConnector) GetName() string {
-	return "opensearch"
+	return interfaces.ConnectorTypeOpenSearch
 }
 
 // GetMode returns the connector mode.
@@ -238,7 +236,7 @@ func (c *OpenSearchConnector) Ping(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.IsError() {
 		return fmt.Errorf("ping failed: %s", resp.String())
 	}
@@ -276,7 +274,7 @@ func (c *OpenSearchConnector) GetMetadata(ctx context.Context) (map[string]any, 
 		return nil, err
 	}
 	// 确保响应体被关闭，以释放资源
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	// 检查响应是否包含错误
 	if resp.IsError() {
 		return nil, fmt.Errorf("get metadata failed: %s", resp.String())
@@ -310,7 +308,7 @@ func (c *OpenSearchConnector) ListIndexes(ctx context.Context) ([]*interfaces.In
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("failed to list indices: %s", resp.String())
@@ -383,7 +381,7 @@ func (c *OpenSearchConnector) fetchMappings(ctx context.Context, index *interfac
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("opensearch API error: %s", resp.String())
@@ -425,7 +423,7 @@ func (c *OpenSearchConnector) fetchMappings(ctx context.Context, index *interfac
 		parseProperties("", idxData.Mappings.Properties, result)
 	}
 	// Parse mappings:这里是存储的字段元数据，包括type映射
-	fieldMap := make(map[string]interfaces.FieldMeta)
+	fieldMap := make(map[string]interfaces.IndexFieldMeta)
 	// 遍历：key 和 value 都拿到
 	for fieldName, value := range result {
 		// value: {"ignore_above":256,"type":"keyword"}
@@ -433,7 +431,7 @@ func (c *OpenSearchConnector) fetchMappings(ctx context.Context, index *interfac
 		if !ok {
 			return fmt.Errorf("failed to read fieldType: indexName:%s,%w", index.Name, err)
 		}
-		fieldMap[fieldName] = interfaces.FieldMeta{
+		fieldMap[fieldName] = interfaces.IndexFieldMeta{
 			Name:       fieldName,
 			Type:       MapType(fieldType),
 			OrigType:   fieldType,
@@ -456,7 +454,7 @@ func (c *OpenSearchConnector) fetchSettings(ctx context.Context, index *interfac
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("opensearch API error: %s", resp.String())
@@ -497,7 +495,7 @@ func (c *OpenSearchConnector) fetchMappingsForQuery(ctx context.Context, indexNa
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("opensearch API error: %s", resp.String())
@@ -560,7 +558,7 @@ func (c *OpenSearchConnector) ExecuteRawQuery(ctx context.Context, index string,
 	if err != nil {
 		return nil, fmt.Errorf("execute query failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("opensearch API error: %s", resp.String())
@@ -623,8 +621,8 @@ func (c *OpenSearchConnector) ExecuteRawQuery(ctx context.Context, index string,
 	}
 
 	// 构建响应
-	// total_count统一设置为实际返回的数据条数
-	totalCount := int64(len(entries))
+	// total_count设置为OpenSearch返回的总数据量
+	totalCount := searchResp.Hits.Total.Value
 
 	response := &interfaces.SQLQueryResponse{
 		Columns:    columns,
@@ -669,6 +667,221 @@ func (c *OpenSearchConnector) ExecuteQuery(ctx context.Context, indexName string
 		return nil, fmt.Errorf("index name is empty in resource")
 	}
 
+	// 聚合查询：当Aggregation、GroupBy或Having任一参数存在时执行
+	if params.Aggregation != nil || len(params.GroupBy) > 0 || params.Having != nil {
+		// 构建OpenSearch聚合查询
+		query := map[string]any{
+			"size": 0, // 聚合查询不需要返回文档
+		}
+
+		// 处理过滤条件
+		if params.ActualFilterCond != nil {
+			filterQuery, err := c.ConvertFilterCondition(params.ActualFilterCond, resource.SchemaDefinition)
+			if err != nil {
+				return nil, fmt.Errorf("failed to build filter query: %w", err)
+			}
+			if filterQuery != nil {
+				query["query"] = filterQuery
+			}
+		} else {
+			query["query"] = map[string]any{
+				"match_all": map[string]any{},
+			}
+		}
+
+		// 构建聚合查询
+		aggs := map[string]any{}
+
+		// 确定聚合函数和别名
+		var aggAlias string
+		var metricBody map[string]any
+		if params.Aggregation != nil {
+			if params.Aggregation.Alias != "" {
+				aggAlias = params.Aggregation.Alias
+			} else {
+				aggAlias = "__value"
+			}
+
+			aggField := params.Aggregation.Property
+			aggFunc := params.Aggregation.Aggr
+
+			switch aggFunc {
+			case "count":
+				metricBody = map[string]any{
+					"value_count": map[string]any{
+						"field": aggField,
+					},
+				}
+			case "count_distinct":
+				metricBody = map[string]any{
+					"cardinality": map[string]any{
+						"field": aggField,
+					},
+				}
+			case "sum":
+				metricBody = map[string]any{
+					"sum": map[string]any{
+						"field": aggField,
+					},
+				}
+			case "avg":
+				metricBody = map[string]any{
+					"avg": map[string]any{
+						"field": aggField,
+					},
+				}
+			case "max":
+				metricBody = map[string]any{
+					"max": map[string]any{
+						"field": aggField,
+					},
+				}
+			case "min":
+				metricBody = map[string]any{
+					"min": map[string]any{
+						"field": aggField,
+					},
+				}
+			}
+		}
+
+		// 分组：自内向外嵌套 terms / date_histogram；度量与 HAVING 挂在最内层桶下。
+		if len(params.GroupBy) > 0 {
+			leafAggs := make(map[string]any)
+			if metricBody != nil {
+				leafAggs[aggAlias] = metricBody
+			}
+			if params.Having != nil && params.Aggregation != nil {
+				leafAggs["having_filter"] = c.buildHavingBucketSelector(params.Having, aggAlias)
+			}
+
+			innerNode := leafAggs
+			n := len(params.GroupBy)
+			for i := n - 1; i >= 0; i-- {
+				gb := params.GroupBy[i]
+				name := "group_by_" + gb.Property
+				var bucket map[string]any
+				if gb.CalendarInterval != "" {
+					bucket = map[string]any{
+						"date_histogram": map[string]any{
+							"field":             gb.Property,
+							"calendar_interval": gb.CalendarInterval,
+						},
+					}
+				} else {
+					bucket = map[string]any{
+						"terms": map[string]any{
+							"field": gb.Property,
+							"size":  nestedTermsSize(i, n, params.Limit),
+						},
+					}
+				}
+				if len(innerNode) > 0 {
+					bucket["aggs"] = innerNode
+				}
+				innerNode = map[string]any{name: bucket}
+			}
+			for k, v := range innerNode {
+				aggs[k] = v
+			}
+			// 对每一层 terms 应用 sort 映射到的 order（第二维度排序写在内层 terms 上）
+			for _, v := range aggs {
+				if node, ok := v.(map[string]any); ok {
+					c.applyTermsOrderToGroupAggNode(node, params, aggAlias)
+				}
+			}
+		} else if metricBody != nil {
+			aggs[aggAlias] = metricBody
+		}
+
+		// 将聚合添加到查询
+		query["aggs"] = aggs
+
+		// 序列化查询
+		queryJSON, err := json.Marshal(query)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize aggregate query: %w", err)
+		}
+
+		logger.Debugf("OpenSearch aggregate query: %s", string(queryJSON))
+
+		// 执行搜索请求
+		req := opensearchapi.SearchRequest{
+			Index: []string{indexName},
+			Body:  bytes.NewReader(queryJSON),
+		}
+
+		resp, err := req.Do(ctx, c.client)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute aggregate search: %w", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.IsError() {
+			return nil, fmt.Errorf("aggregate search failed: %s", resp.String())
+		}
+
+		// 读取响应体用于日志记录
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+		logger.Debugf("OpenSearch aggregate response: %s", string(bodyBytes))
+
+		// 解析响应
+		var result map[string]any
+		if err := json.Unmarshal(bodyBytes, &result); err != nil {
+			return nil, fmt.Errorf("failed to decode aggregate search result: %w", err)
+		}
+
+		// 提取文档总数
+		var totalCount int64
+		if hits, ok := result["hits"].(map[string]any); ok {
+			if totalMap, ok := hits["total"].(map[string]any); ok {
+				if value, ok := totalMap["value"].(float64); ok {
+					totalCount = int64(value)
+				} else if value, ok := totalMap["value"].(int64); ok {
+					totalCount = value
+				}
+			}
+		}
+
+		// 提取聚合结果
+		aggregations, ok := result["aggregations"].(map[string]any)
+		if !ok {
+			return &interfaces.QueryResult{
+				Rows:  []map[string]any{},
+				Total: totalCount,
+			}, nil
+		}
+
+		// 处理分组聚合结果（支持多层 group_by 嵌套桶展平）
+		var rows []map[string]any
+		if len(params.GroupBy) > 0 {
+			groupByAggName := "group_by_" + params.GroupBy[0].Property
+			if groupByAgg, ok := aggregations[groupByAggName].(map[string]any); ok {
+				rows = c.flattenNestedGroupByRows(groupByAgg, params, aggAlias)
+			}
+		} else {
+			// 没有分组，只有聚合
+			if params.Aggregation != nil {
+				row := make(map[string]any)
+				if aggResult, ok := aggregations[aggAlias].(map[string]any); ok {
+					if value, ok := aggResult["value"]; ok {
+						row[aggAlias] = value
+					}
+				}
+				rows = append(rows, row)
+			}
+		}
+
+		return &interfaces.QueryResult{
+			Rows:  rows,
+			Total: totalCount,
+		}, nil
+	}
+
+	// 明细查询
 	// Build the OpenSearch query
 	query := map[string]any{
 		"query": map[string]any{
@@ -703,8 +916,9 @@ func (c *OpenSearchConnector) ExecuteQuery(ctx context.Context, indexName string
 	if params != nil && len(params.Sort) > 0 {
 		sort := make([]map[string]any, 0, len(params.Sort))
 		for _, s := range params.Sort {
+			keyword, _ := c.getKeywordSuffix(s.Field, resource.SchemaDefinition)
 			sort = append(sort, map[string]any{
-				s.Field: map[string]any{
+				s.Field + keyword: map[string]any{
 					"order": s.Direction,
 				},
 			})
@@ -745,14 +959,8 @@ func (c *OpenSearchConnector) ExecuteQuery(ctx context.Context, indexName string
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize query: %w", err)
 	}
-	// Format the JSON query for better readability
-	var prettyJSON bytes.Buffer
-	err = json.Indent(&prettyJSON, queryJSON, "", "  ")
-	if err != nil {
-		fmt.Println("[OpenSearch query]:", string(queryJSON))
-	} else {
-		fmt.Println("[OpenSearch query]:\n", prettyJSON.String())
-	}
+	logger.Debugf("Executing query: %s", string(queryJSON))
+
 	// Execute search request
 	req := opensearchapi.SearchRequest{
 		Index: []string{indexName},
@@ -763,7 +971,7 @@ func (c *OpenSearchConnector) ExecuteQuery(ctx context.Context, indexName string
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute search: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("search failed: %s", resp.String())
@@ -818,6 +1026,217 @@ func (c *OpenSearchConnector) ExecuteQuery(ctx context.Context, indexName string
 		Rows:  documents,
 		Total: int64(total),
 	}, nil
+}
+
+// nestedTermsSize 为嵌套 group_by 中每一层 terms 设置 size：最内层用 limit 控制「每个父桶下」的行数，外层用较大上限以展开组合。
+func nestedTermsSize(levelIndex, numLevels, limit int) int {
+	if numLevels <= 1 {
+		if limit > 0 {
+			return limit
+		}
+		return 10
+	}
+	if levelIndex == numLevels-1 {
+		if limit > 0 {
+			return limit
+		}
+		return 10
+	}
+	outer := 1000
+	if limit > 0 {
+		if x := limit * 100; x > 10000 {
+			outer = 10000
+		} else if x < 100 {
+			outer = 100
+		} else {
+			outer = x
+		}
+	}
+	return outer
+}
+
+// applyTermsOrderToGroupAggNode 递归为子树中每个 terms 桶写入 order（多维度时第二维 sort 落在内层 terms）。
+// 按度量排序仅在该 terms 的直接子 aggs 中包含度量名时生效，避免外层 terms 引用嵌套过深的子聚合导致 DSL 非法。
+func (c *OpenSearchConnector) applyTermsOrderToGroupAggNode(node map[string]any, params *interfaces.ResourceDataQueryParams, aggAlias string) {
+	if terms, ok := node["terms"].(map[string]any); ok {
+		field, _ := terms["field"].(string)
+		sub, _ := node["aggs"].(map[string]any)
+		metricDirectChild := aggAlias != "" && sub != nil && sub[aggAlias] != nil
+
+		var orderList []map[string]any
+		for _, sortItem := range params.Sort {
+			dir := strings.ToLower(sortItem.Direction)
+			if dir != "asc" && dir != "desc" {
+				dir = "asc"
+			}
+			if params.Aggregation != nil && metricDirectChild && (sortItem.Field == aggAlias || sortItem.Field == "__value") {
+				orderList = append(orderList, map[string]any{aggAlias: dir})
+			}
+			if sortItem.Field == field {
+				orderList = append(orderList, map[string]any{"_key": dir})
+			}
+		}
+		if len(orderList) > 0 {
+			terms["order"] = orderList
+		}
+	}
+	sub, ok := node["aggs"].(map[string]any)
+	if !ok {
+		return
+	}
+	for name, child := range sub {
+		if name == "having_filter" {
+			continue
+		}
+		if childMap, ok := child.(map[string]any); ok {
+			c.applyTermsOrderToGroupAggNode(childMap, params, aggAlias)
+		}
+	}
+}
+
+func (c *OpenSearchConnector) mergeMetricIntoRowFromBucket(bucket map[string]any, row map[string]any, aggAlias string) {
+	if aggAlias == "" {
+		return
+	}
+	if value, ok := bucket[aggAlias]; ok {
+		if valueMap, ok := value.(map[string]any); ok {
+			if val, ok := valueMap["value"]; ok {
+				row[aggAlias] = val
+			}
+		} else {
+			row[aggAlias] = value
+		}
+	}
+}
+
+// collectGroupByRowsFromBucket 自外层桶递归展开为多行（每行包含各维度键与可选度量）。
+func (c *OpenSearchConnector) collectGroupByRowsFromBucket(bucket map[string]any, level int, params *interfaces.ResourceDataQueryParams, aggAlias string, rowSoFar map[string]any) []map[string]any {
+	if level < 0 || level >= len(params.GroupBy) {
+		return nil
+	}
+	gb := params.GroupBy[level]
+	row := make(map[string]any, len(rowSoFar)+2)
+	for k, v := range rowSoFar {
+		row[k] = v
+	}
+	if key, ok := bucket["key"]; ok {
+		row[gb.Property] = key
+	} else if keyStr, ok := bucket["key_as_string"]; ok {
+		row[gb.Property] = keyStr
+	}
+
+	if level == len(params.GroupBy)-1 {
+		if params.Aggregation != nil {
+			c.mergeMetricIntoRowFromBucket(bucket, row, aggAlias)
+		}
+		return []map[string]any{row}
+	}
+
+	nextName := "group_by_" + params.GroupBy[level+1].Property
+	// OpenSearch bucket 的子聚合结果直接平铺在 bucket 下，而不是挂在 bucket["aggs"] 中。
+	childAgg, ok := bucket[nextName].(map[string]any)
+	if !ok {
+		return []map[string]any{row}
+	}
+	nextBuckets, ok := childAgg["buckets"].([]any)
+	if !ok {
+		return []map[string]any{row}
+	}
+	var out []map[string]any
+	for _, nb := range nextBuckets {
+		nbm, ok := nb.(map[string]any)
+		if !ok {
+			continue
+		}
+		out = append(out, c.collectGroupByRowsFromBucket(nbm, level+1, params, aggAlias, row)...)
+	}
+	return out
+}
+
+// flattenNestedGroupByRows 读取最外层 group_by 聚合并展平为结果行，最后按 limit 截断。
+func (c *OpenSearchConnector) flattenNestedGroupByRows(rootAgg map[string]any, params *interfaces.ResourceDataQueryParams, aggAlias string) []map[string]any {
+	buckets, ok := rootAgg["buckets"].([]any)
+	if !ok {
+		return []map[string]any{}
+	}
+	var rows []map[string]any
+	for _, b := range buckets {
+		bm, ok := b.(map[string]any)
+		if !ok {
+			continue
+		}
+		rows = append(rows, c.collectGroupByRowsFromBucket(bm, 0, params, aggAlias, nil)...)
+	}
+	if params.Limit > 0 && len(rows) > params.Limit {
+		rows = rows[:params.Limit]
+	}
+	return rows
+}
+
+// buildHavingBucketSelector 构建HAVING条件的bucket_selector聚合
+func (c *OpenSearchConnector) buildHavingBucketSelector(having *interfaces.HavingClause, aggAlias string) map[string]any {
+	// OpenSearch使用bucket_selector聚合实现HAVING
+	script := ""
+	switch having.Operation {
+	case "==":
+		script = fmt.Sprintf("params.%s == %v", aggAlias, having.Value)
+	case "!=":
+		script = fmt.Sprintf("params.%s != %v", aggAlias, having.Value)
+	case ">":
+		script = fmt.Sprintf("params.%s > %v", aggAlias, having.Value)
+	case ">=":
+		script = fmt.Sprintf("params.%s >= %v", aggAlias, having.Value)
+	case "<":
+		script = fmt.Sprintf("params.%s < %v", aggAlias, having.Value)
+	case "<=":
+		script = fmt.Sprintf("params.%s <= %v", aggAlias, having.Value)
+	case "in":
+		if values, ok := having.Value.([]any); ok {
+			script = fmt.Sprintf("%s.contains(params.%s.toString())", formatInValuesForScript(values), aggAlias)
+		}
+	case "not_in":
+		if values, ok := having.Value.([]any); ok {
+			script = fmt.Sprintf("!%s.contains(params.%s.toString())", formatInValuesForScript(values), aggAlias)
+		}
+	case "range":
+		if values, ok := having.Value.([]any); ok && len(values) == 2 {
+			script = fmt.Sprintf("params.%s >= %v && params.%s <= %v", aggAlias, values[0], aggAlias, values[1])
+		}
+	case "out_range":
+		if values, ok := having.Value.([]any); ok && len(values) == 2 {
+			script = fmt.Sprintf("params.%s < %v || params.%s > %v", aggAlias, values[0], aggAlias, values[1])
+		}
+	}
+
+	return map[string]any{
+		"bucket_selector": map[string]any{
+			"buckets_path": map[string]any{
+				aggAlias: aggAlias,
+			},
+			"script": map[string]any{
+				"source": script,
+			},
+		},
+	}
+}
+
+// formatInValuesForScript 格式化IN操作的值列表为Painless脚本格式
+func formatInValuesForScript(values []any) string {
+	if len(values) == 0 {
+		return "[]"
+	}
+
+	var strValues []string
+	for _, v := range values {
+		switch val := v.(type) {
+		case string:
+			strValues = append(strValues, fmt.Sprintf("'%s'", val))
+		default:
+			strValues = append(strValues, fmt.Sprintf("%v", val))
+		}
+	}
+
+	return fmt.Sprintf("[%s]", strings.Join(strValues, ", "))
 }
 
 // buildFieldMappings 构建字段映射
@@ -968,7 +1387,7 @@ func (c *OpenSearchConnector) Create(ctx context.Context, name string, schemaDef
 	if err != nil {
 		return err
 	}
-	defer createResp.Body.Close()
+	defer func() { _ = createResp.Body.Close() }()
 
 	if createResp.IsError() {
 		return fmt.Errorf("failed to create index: %s", createResp.String())
@@ -1016,7 +1435,7 @@ func (c *OpenSearchConnector) Update(ctx context.Context, name string, schemaDef
 	if err != nil {
 		return err
 	}
-	defer updateResp.Body.Close()
+	defer func() { _ = updateResp.Body.Close() }()
 
 	if updateResp.IsError() {
 		return fmt.Errorf("failed to update index mapping: %s", updateResp.String())
@@ -1048,7 +1467,7 @@ func (c *OpenSearchConnector) Delete(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	defer deleteResp.Body.Close()
+	defer func() { _ = deleteResp.Body.Close() }()
 
 	if deleteResp.IsError() {
 		return fmt.Errorf("failed to delete index: %s", deleteResp.String())
@@ -1102,7 +1521,7 @@ func (c *OpenSearchConnector) CreateDocuments(ctx context.Context, name string, 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("failed to create documents: %s", resp.String())
@@ -1111,6 +1530,21 @@ func (c *OpenSearchConnector) CreateDocuments(ctx context.Context, name string, 
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
+	}
+	if errors, ok := result["errors"].(bool); ok && errors {
+		// 遍历所有操作结果，检查是否有失败
+		if items, ok := result["items"].([]interface{}); ok {
+			for _, item := range items {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					if indexResult, ok := itemMap["index"].(map[string]interface{}); ok {
+						if errorObj, ok := indexResult["error"].(map[string]interface{}); ok {
+							// 找到失败的文档，返回错误
+							return nil, fmt.Errorf("failed to create document, error type: %s, reason: %s", errorObj["type"].(string), errorObj["reason"].(string))
+						}
+					}
+				}
+			}
+		}
 	}
 
 	var docIDs []string
@@ -1144,7 +1578,7 @@ func (c *OpenSearchConnector) GetDocument(ctx context.Context, name string, docI
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("failed to get document: %s", resp.String())
@@ -1165,36 +1599,6 @@ func (c *OpenSearchConnector) GetDocument(ctx context.Context, name string, docI
 	return source, nil
 }
 
-// Update Document
-func (c *OpenSearchConnector) UpdateDocument(ctx context.Context, name string, docID string, document map[string]any) error {
-	if err := c.Connect(ctx); err != nil {
-		return err
-	}
-
-	data, err := json.Marshal(map[string]any{"doc": document})
-	if err != nil {
-		return err
-	}
-
-	req := opensearchapi.UpdateRequest{
-		Index:      name,
-		DocumentID: docID,
-		Body:       bytes.NewReader(data),
-	}
-
-	resp, err := req.Do(ctx, c.client)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.IsError() {
-		return fmt.Errorf("failed to update document: %s", resp.String())
-	}
-
-	return nil
-}
-
 // Delete Document
 func (c *OpenSearchConnector) DeleteDocument(ctx context.Context, name string, docID string) error {
 	if err := c.Connect(ctx); err != nil {
@@ -1210,7 +1614,7 @@ func (c *OpenSearchConnector) DeleteDocument(ctx context.Context, name string, d
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("failed to delete document: %s", resp.String())
@@ -1220,9 +1624,9 @@ func (c *OpenSearchConnector) DeleteDocument(ctx context.Context, name string, d
 }
 
 // Update Documents
-func (c *OpenSearchConnector) UpdateDocuments(ctx context.Context, name string, updateRequests []map[string]any) error {
+func (c *OpenSearchConnector) UpsertDocuments(ctx context.Context, name string, updateRequests []map[string]any) ([]string, error) {
 	if err := c.Connect(ctx); err != nil {
-		return err
+		return nil, err
 	}
 
 	var bulkBody bytes.Buffer
@@ -1243,33 +1647,69 @@ func (c *OpenSearchConnector) UpdateDocuments(ctx context.Context, name string, 
 			},
 		}
 		if err := json.NewEncoder(&bulkBody).Encode(metadata); err != nil {
-			return err
+			return nil, err
 		}
 
-		// 写入更新操作的文档
+		// 写入更新操作的文档，添加upsert功能
 		updateDoc := map[string]any{
-			"doc": document,
+			"doc":    document,
+			"upsert": document, // 当文档不存在时，使用整个document作为新文档
 		}
 		if err := json.NewEncoder(&bulkBody).Encode(updateDoc); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	req := opensearchapi.BulkRequest{
-		Body: &bulkBody,
+		Body:    &bulkBody,
+		Refresh: "true",
 	}
 
 	resp, err := req.Do(ctx, c.client)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
-		return fmt.Errorf("failed to update documents: %s", resp.String())
+		return nil, fmt.Errorf("failed to update documents: %s", resp.String())
 	}
 
-	return nil
+	// 检查是否有部分文档更新失败
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	var successDocIDs []string
+	var errMsg string
+	if items, ok := result["items"].([]interface{}); ok {
+		for i, item := range items {
+			if itemMap, ok := item.(map[string]interface{}); ok {
+				if updateResult, ok := itemMap["update"].(map[string]interface{}); ok {
+					if status, ok := updateResult["status"].(float64); ok {
+						if status < 400 {
+							// 提取成功的文档ID
+							if docID, ok := updateRequests[i]["id"].(string); ok {
+								successDocIDs = append(successDocIDs, docID)
+							}
+						} else {
+							// 记录错误信息
+							if errMsg == "" {
+								errMsg = fmt.Sprintf("error type: %s, reason: %s", updateResult["error"].(map[string]interface{})["type"].(string), updateResult["error"].(map[string]interface{})["reason"].(string))
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if errMsg != "" {
+		return successDocIDs, fmt.Errorf("%s", errMsg)
+	}
+
+	return successDocIDs, nil
 }
 
 // Delete Documents
@@ -1299,14 +1739,15 @@ func (c *OpenSearchConnector) DeleteDocuments(ctx context.Context, name string, 
 	}
 
 	req := opensearchapi.BulkRequest{
-		Body: &bulkBody,
+		Body:    &bulkBody,
+		Refresh: "true",
 	}
 
 	resp, err := req.Do(ctx, c.client)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("failed to delete documents: %s", resp.String())
@@ -1353,7 +1794,7 @@ func (c *OpenSearchConnector) DeleteDocumentsByQuery(ctx context.Context, name s
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("failed to delete documents: %s", resp.String())
@@ -1372,7 +1813,7 @@ func (c *OpenSearchConnector) indexExist(ctx context.Context, name string) (bool
 	if err != nil {
 		return false, err
 	}
-	defer existsResp.Body.Close()
+	defer func() { _ = existsResp.Body.Close() }()
 
 	return existsResp.StatusCode == 200, nil
 }

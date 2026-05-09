@@ -1,0 +1,299 @@
+openapi: 3.0.3
+info:
+  title: Skill 召回接口
+  description: |
+    基于业务上下文的 Skill 召回接口。Agent 在运行时传入知识网络 ID、对象类型和可选的实例标识，
+    召回与当前业务上下文相关的 Skill 候选列表，返回最小化 Skill 元数据（skill_id、name、description）。
+
+    当前版本仅支持两种召回模式，由请求参数自动决定：
+    - **对象类级**（kn_id + object_type_id）：沿 object_type_id 与 skills 之间的 RelationType 路径召回。
+    - **实例级**（kn_id + object_type_id + instance_identities）：从具体实例出发召回，并补充对象类级结果。
+  version: 1.0.0
+
+servers:
+  - url: http://agent-retrieval:30779
+    description: agent-retrieval 服务
+
+tags:
+  - name: skill-recall
+    description: Skill 召回相关接口
+
+paths:
+  /api/agent-retrieval/in/v1/kn/find_skills:
+    post:
+      summary: find_skills
+      description: |
+        基于业务上下文召回 Skill 候选列表。
+
+        **召回模式选择规则（自动判断，无需显式指定）：**
+
+        | 请求参数 | 召回模式 |
+        |---------|---------|
+        | kn_id + object_type_id | 对象类级（Mode 2） |
+        | kn_id + object_type_id + instance_identities | 实例级（Mode 3） |
+
+        **skill_query 说明：** 传入时会对 skills 实例的 name/description 字段追加文本过滤条件（支持 knn/match/like，
+        优先使用已构建的向量/索引能力），若 BKN 中 skills ObjectType 不存在或元数据获取失败则返回 502。
+      operationId: findSkills
+      tags:
+        - skill-recall
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户 ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - user
+              - app
+              - anonymous
+          description: 账户类型：user（用户）、app（应用）、anonymous（匿名）
+        - name: response_format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - json
+              - toon
+            default: json
+          description: 响应格式：json 或 toon，默认 json
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindSkillsRequest'
+            examples:
+              object_type_level:
+                summary: 对象类级召回（kn_id + object_type_id）
+                value:
+                  kn_id: kn_legal
+                  object_type_id: contract
+                  top_k: 10
+              instance_level:
+                summary: 实例级召回（kn_id + object_type_id + instance_identities）
+                value:
+                  kn_id: kn_legal
+                  object_type_id: contract
+                  instance_identities:
+                    - contract_id: C-2024-001
+                  top_k: 10
+              with_skill_query:
+                summary: 带语义过滤的实例级召回
+                value:
+                  kn_id: kn_legal
+                  object_type_id: contract
+                  instance_identities:
+                    - contract_id: C-2024-001
+                  skill_query: 合同审查
+                  top_k: 5
+      responses:
+        '200':
+          description: 成功返回 Skill 候选列表（可能为空列表）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindSkillsResponse'
+              examples:
+                success_with_results:
+                  summary: 返回 Skill 候选
+                  value:
+                    entries:
+                      - skill_id: skill_contract_review
+                        name: 合同审查
+                        description: 对合同条款进行全面审查，识别风险点
+                      - skill_id: skill_clause_extract
+                        name: 关键条款提取
+                        description: 提取合同中的关键条款和义务
+                empty_result_no_binding:
+                  summary: 无匹配 Skill（对象类未配置 Skill 绑定）
+                  value:
+                    entries: []
+                    message: "当前对象类未配置 Skill 绑定关系，无法在该范围内召回 Skill。请确认该对象类是否已绑定 Skill。"
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_kn_id:
+                  value:
+                    code: INVALID_REQUEST
+                    description: kn_id 为必填字段
+                missing_object_type_id:
+                  value:
+                    code: INVALID_REQUEST
+                    description: object_type_id 为必填字段
+                instance_without_object_type:
+                  value:
+                    code: INVALID_REQUEST
+                    description: instance_identities 不为空时 object_type_id 也必须提供
+                skills_contract_incomplete:
+                  value:
+                    code: Public.BadRequest
+                    description: 参数错误
+                    details:
+                      kn_id: kn_legal
+                      skills_object_type_id: skills
+                      missing_data_properties:
+                        - skill_id
+                        - name
+                      reason: skills object type contract is incomplete
+                    solution: 请检查当前知识网络下 skills ObjectType 的数据属性定义，确保至少存在 skill_id 与 name
+                    link: 无
+        '404':
+          description: 当前知识网络中不存在指定对象类，或缺少 skills ObjectType
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                object_type_not_found:
+                  value:
+                    code: Public.NotFound
+                    description: 对象不存在
+                    details:
+                      kn_id: kn_legal
+                      object_type_id: contract
+                      reason: object_type_id not found in current knowledge network
+                    solution: 请确认 object_type_id 是否存在于当前知识网络后重试
+                    link: 无
+                skills_object_type_not_found:
+                  value:
+                    code: Public.NotFound
+                    description: 对象不存在
+                    details:
+                      kn_id: kn_legal
+                      skills_object_type_id: skills
+                      reason: skills object type not found in current knowledge network
+                    solution: 请先在当前知识网络中准备固定的 skills ObjectType 后重试
+                    link: 无
+        '502':
+          description: 上游服务不可用（BKN 或 ontology-query 异常）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                skills_ot_not_found:
+                  value:
+                    code: BAD_GATEWAY
+                    description: "skill_query requires skills ObjectType (id=skills) but none found in kn_id=kn_legal"
+
+components:
+  schemas:
+    FindSkillsRequest:
+      type: object
+      required:
+        - kn_id
+        - object_type_id
+      properties:
+        kn_id:
+          type: string
+          description: 知识网络 ID
+          example: kn_legal
+        object_type_id:
+          type: string
+          description: |
+            业务对象类型 ID（从 kn_search 或 kn_schema_search 返回的 concept_id 获取）。
+            当前版本为必填项；传入后为对象类级或实例级召回，且该对象类必须存在于当前知识网络中。
+          example: contract
+        instance_identities:
+          type: array
+          description: |
+            对象实例标识列表。每个元素为主键键值对，必须从 query_object_instance 或
+            query_instance_subgraph 返回的 _instance_identity 字段提取，不可臆造。
+            传入时 object_type_id 也必须提供，否则返回 400。
+          items:
+            type: object
+            additionalProperties:
+              oneOf:
+                - type: string
+                - type: number
+                - type: integer
+                - type: boolean
+          example:
+            - contract_id: C-2024-001
+        skill_query:
+          type: string
+          description: |
+            可选的 Skill 语义过滤词，对 skills 实例的 name/description 字段追加文本过滤。
+            BKN 已构建向量时使用 knn，已构建全文索引时使用 match，否则使用 like。
+            若 skills ObjectType 元数据获取失败则返回 502。
+            入口会先校验 skills ObjectType 至少存在 `skill_id` 与 `name` 数据属性；`description` 可选。
+          example: 合同审查
+        top_k:
+          type: integer
+          description: 最多返回的 Skill 数量，默认 10，最大 20
+          default: 10
+          minimum: 1
+          maximum: 20
+          example: 10
+
+    FindSkillsResponse:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          description: |
+            Skill 候选列表，按命中层级优先级（实例级 > 对象类级）和相关性分数降序排列。
+            同优先级同分数时按 skill_id 字典序排列，保证顺序稳定。
+            无匹配时返回空数组。
+          items:
+            $ref: '#/components/schemas/SkillItem'
+        message:
+          type: string
+          description: |
+            空结果说明信息。仅当 entries 为空且接口返回 200 时出现。
+            用于向调用方（Agent）解释当前为什么没有结果，以及下一步建议。
+            entries 非空时不返回此字段。支持多语言（由请求 X-Language 头决定）。
+
+    SkillItem:
+      type: object
+      required:
+        - skill_id
+        - name
+      properties:
+        skill_id:
+          type: string
+          description: Skill 唯一标识，由 execution-factory 写入 BKN skills ObjectType 时确定
+          example: skill_contract_review
+        name:
+          type: string
+          description: Skill 名称
+          example: 合同审查
+        description:
+          type: string
+          description: Skill 功能描述（可选，BKN 中无此属性时不返回，也不作为 find_skills 的硬性前提）
+          example: 对合同条款进行全面审查，识别风险点
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 错误码
+          example: INVALID_REQUEST
+        description:
+          type: string
+          description: 错误详情
+          example: kn_id 为必填字段
+        details:
+          type: object
+          description: 错误详情
+        solution:
+          type: string
+          description: 解决方案
+        link:
+          type: string
+          description: 错误链接

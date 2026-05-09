@@ -89,8 +89,7 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -112,7 +111,6 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-
 	reqBody.KNID = knID
 	reqBody.Branch = branch
 
@@ -222,8 +220,7 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -250,8 +247,7 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 	if len(jobIDs) != len(jobs) {
 		for _, jobID := range jobIDs {
 			if _, exist := jobs[jobID]; !exist {
-				httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest,
-					berrors.BknBackend_Job_JobNotFound)
+				httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_Job_JobNotFound)
 				// 设置 trace 的错误信息的 attributes
 				o11y.AddHttpAttrs4HttpError(span, httpErr)
 				rest.ReplyError(c, httpErr)
@@ -262,8 +258,7 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 	for _, job := range jobs {
 		// 校验任务是否在当前业务知识网络下
 		if job.KNID != knID || job.Branch != branch {
-			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest,
-				berrors.BknBackend_Job_JobNotFound)
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_Job_JobNotFound)
 			// 设置 trace 的错误信息的 attributes
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
@@ -366,8 +361,7 @@ func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -516,8 +510,7 @@ func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -536,8 +529,7 @@ func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if job == nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_Job_JobNotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_Job_JobNotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)

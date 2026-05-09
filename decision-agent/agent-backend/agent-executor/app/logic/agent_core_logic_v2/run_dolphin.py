@@ -1,3 +1,4 @@
+import copy
 import json
 from typing import Any, AsyncGenerator, Dict, Optional, TYPE_CHECKING
 from dolphin.sdk.agent.dolphin_agent import DolphinAgent
@@ -85,7 +86,7 @@ async def run_dolphin(
     if ac.is_warmup:
         return
 
-    tool_dict = await build_tools(ac, skills)
+    tool_dict = await build_tools(ac, skills, request_headers=headers)
 
     # 3.2 构造toolkit
     toolkit = TriditionalToolkit.buildFromTooldict(tool_dict)
@@ -125,19 +126,21 @@ async def run_dolphin(
         f"{COLORS['blue']}========================================{COLORS['end']}"
     )
 
-    # 6. 构造init_params
-    init_params = {
-        "config": llm_config,
-        "variables": context_variables,
-        "skillkit": toolkit,
-        # "skillkit_hook": skillkit_hook,
-    }
 
-    o11y_logger().info(f"[run_dolphin] agent_init init_params = {init_params}")
-    o11y_logger().info(f"[run_dolphin] agent_run dolphin_prompt = {dolphin_prompt}")
+    # 8. 创建GlobalConfig对象
+    # 8.1 使用 deepcopy 确保嵌套结构（如 llms/headers 等）也与原 llm_config 完全隔离，
+    # 避免后续对 dolphin_global_config_dict 的修改影响到 llm_config。
+    dolphin_global_config_dict = copy.deepcopy(llm_config)
 
-    # 8. 从llm_config字典创建GlobalConfig对象
-    global_config = GlobalConfig.from_dict(llm_config)
+    # 8.2 添加自定义配置：是否开启 Skill 功能
+    dolphin_global_config_dict["skill_enabled"] = (
+        Config.features.skill_enabled
+    )
+    
+    # 8.3 从字典创建GlobalConfig对象
+    global_config = GlobalConfig.from_dict(dolphin_global_config_dict)
+
+
     # 只启用内置日期函数
     global_config.skill_config.enabled_skills = [
         "system_functions._date",
@@ -160,37 +163,19 @@ async def run_dolphin(
 
     # 9.2 创建trace listener（如果启用）
     trace_listener = None
-    o11y_logger().info(
-        f"[run_dolphin] Dolphin trace check: "
-        f"is_dolphin_trace_enabled={Config.is_dolphin_trace_enabled()}, "
-        f"is_o11y_trace_enabled={Config.is_o11y_trace_enabled()}"
-    )
-
     if Config.is_dolphin_trace_enabled():
         try:
             from dolphin.core.observability.otel_listener import OTelTraceListener
-
-            o11y_logger().info(
-                f"[run_dolphin] Creating OTelTraceListener with: "
-                f"agent_id={config.agent_id}, "
-                f"conversation_id={config.conversation_id}, "
-                f"user_id={user_id}"
-            )
 
             trace_listener = OTelTraceListener(
                 agent_id=config.agent_id or "",
                 conversation_id=config.conversation_id or "",
                 user_id=user_id or "",
             )
-            o11y_logger().info(
-                f"[run_dolphin] Dolphin trace listener created successfully: "
-                f"agent_id={config.agent_id}, conversation_id={config.conversation_id}"
-            )
         except Exception as e:
+            StandLogger.warn(f"[run_dolphin] Failed to create trace listener: {e}")
             o11y_logger().warn(f"[run_dolphin] Failed to create trace listener: {e}")
             trace_listener = None
-    else:
-        o11y_logger().info("[run_dolphin] Dolphin trace is disabled")
 
     # 适配 Dolphin SDK 的 history 变量名：
     # SDK 内部使用 KEY_HISTORY 常量（当前值为 "_history"）而不是 "history"

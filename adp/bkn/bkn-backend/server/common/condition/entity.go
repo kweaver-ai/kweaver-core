@@ -148,14 +148,19 @@ type Filter struct {
 }
 
 type CondCfg struct {
-	Name        string     `json:"field,omitempty" mapstructure:"field"`
+	Field       string     `json:"field,omitempty" mapstructure:"field"`
 	Operation   string     `json:"operation,omitempty" mapstructure:"operation"`
 	SubConds    []*CondCfg `json:"sub_conditions,omitempty" mapstructure:"sub_conditions"`
 	ValueOptCfg `mapstructure:",squash"`
 
-	RemainCfg map[string]any `mapstructure:",remain"`
+	RemainCfg map[string]any `json:",inline" mapstructure:",remain,squash"`
 
 	NameField *ViewField `json:"-" mapstructure:"-"`
+}
+
+type ValueOptCfg struct {
+	ValueFrom string `json:"value_from,omitempty" mapstructure:"value_from"`
+	Value     any    `json:"value,omitempty" mapstructure:"value"`
 }
 
 type ViewField struct {
@@ -166,11 +171,6 @@ type ViewField struct {
 	OriginalName string `json:"original_name"`
 
 	Path []string `json:"-"`
-}
-
-type ValueOptCfg struct {
-	ValueFrom string `json:"value_from,omitempty" mapstructure:"value_from"`
-	Value     any    `json:"value,omitempty" mapstructure:"value"`
 }
 
 func (field *ViewField) InitFieldPath() {

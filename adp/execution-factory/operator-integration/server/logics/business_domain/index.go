@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/drivenadapters"
 	infracommon "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/config"
@@ -27,7 +28,13 @@ func NewBusinessDomainService() interfaces.IBusinessDomainService {
 	}
 }
 
-// 要求业务域ID必传递
+// GetBusinessDomainFromHeader 从Header中获取业务域并校验是否存在
+func (s *businessDomainServiceImpl) GetBusinessDomainFromHeader(c *gin.Context) (businessDomain string) {
+	businessDomain = c.GetHeader(string(interfaces.HeaderXBusinessDomain))
+	return businessDomain
+}
+
+// ValidateBusinessDomain 校验业务域是否存在
 func (s *businessDomainServiceImpl) ValidateBusinessDomain(ctx context.Context) (err error) {
 	_, ok := infracommon.GetBusinessDomainFromCtx(ctx)
 	if !ok {

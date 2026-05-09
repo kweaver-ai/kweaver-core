@@ -6,6 +6,7 @@ server:
   writeTimeOut: 120
   viewDataTimeout: 5m
   defaultSmallModelEnabled: true
+  filteredCrossJoinMaxEdgeExpand: 10000
 log:
   logLevel: debug
   developMode: false
@@ -71,6 +72,10 @@ depServices:
   uniquery:
     host: localhost
     port: 13011
+    protocol: http
+  vega-backend:
+    host: localhost
+    port: 13014
     protocol: http
   bkn-backend:
     host: localhost

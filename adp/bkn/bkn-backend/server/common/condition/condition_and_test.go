@@ -44,7 +44,7 @@ func TestNewAndCond(t *testing.T) {
 			for i := 0; i <= MaxSubCondition; i++ {
 				subConds[i] = &CondCfg{
 					Operation: OperationEq,
-					Name:      "field1",
+					Field:     "field1",
 					ValueOptCfg: ValueOptCfg{
 						ValueFrom: ValueFrom_Const,
 						Value:     "value1",
@@ -67,7 +67,7 @@ func TestNewAndCond(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -75,7 +75,7 @@ func TestNewAndCond(t *testing.T) {
 					},
 					{
 						Operation: OperationEq,
-						Name:      "field2",
+						Field:     "field2",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value2",
@@ -98,7 +98,7 @@ func TestNewAndCond(t *testing.T) {
 					nil,
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -117,7 +117,7 @@ func TestNewAndCond(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "nonexistent",
+						Field:     "nonexistent",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -152,7 +152,7 @@ func TestAndCond_Convert(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -178,7 +178,7 @@ func TestAndCond_Convert(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -186,7 +186,7 @@ func TestAndCond_Convert(t *testing.T) {
 					},
 					{
 						Operation: OperationEq,
-						Name:      "field2",
+						Field:     "field2",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value2",
@@ -214,7 +214,7 @@ func TestAndCond_Convert(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationKNN,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -260,7 +260,7 @@ func TestAndCond_Convert2SQL(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -283,7 +283,7 @@ func TestAndCond_Convert2SQL(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationEq,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",
@@ -291,7 +291,7 @@ func TestAndCond_Convert2SQL(t *testing.T) {
 					},
 					{
 						Operation: OperationEq,
-						Name:      "field2",
+						Field:     "field2",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value2",
@@ -316,7 +316,7 @@ func TestAndCond_Convert2SQL(t *testing.T) {
 				SubConds: []*CondCfg{
 					{
 						Operation: OperationMatch,
-						Name:      "field1",
+						Field:     "field1",
 						ValueOptCfg: ValueOptCfg{
 							ValueFrom: ValueFrom_Const,
 							Value:     "value1",

@@ -12,6 +12,7 @@ const (
 	VegaBackend_Catalog_InvalidParameter                 = "VegaBackend.Catalog.InvalidParameter"
 	VegaBackend_Catalog_InvalidParameter_Type            = "VegaBackend.Catalog.InvalidParameter.Type"
 	VegaBackend_Catalog_InvalidParameter_Name            = "VegaBackend.Catalog.InvalidParameter.Name"
+	VegaBackend_Catalog_InvalidParameter_ID              = "VegaBackend.Catalog.InvalidParameter.ID"
 	VegaBackend_Catalog_InvalidParameter_ConnectorType   = "VegaBackend.Catalog.InvalidParameter.ConnectorType"
 	VegaBackend_Catalog_InvalidParameter_ConnectorConfig = "VegaBackend.Catalog.InvalidParameter.ConnectorConfig"
 	VegaBackend_Catalog_LengthExceeded_Name              = "VegaBackend.Catalog.LengthExceeded.Name"
@@ -21,6 +22,7 @@ const (
 	VegaBackend_Catalog_NotFound   = "VegaBackend.Catalog.NotFound"
 	VegaBackend_Catalog_NameExists = "VegaBackend.Catalog.NameExists"
 	VegaBackend_Catalog_IDExists   = "VegaBackend.Catalog.IDExists"
+	VegaBackend_Catalog_IDMismatch = "VegaBackend.Catalog.IDMismatch"
 	VegaBackend_Catalog_HasAssets  = "VegaBackend.Catalog.HasAssets"
 	VegaBackend_Catalog_IsDisabled = "VegaBackend.Catalog.IsDisabled"
 
@@ -42,6 +44,7 @@ var CatalogErrCodeList = []string{
 	VegaBackend_Catalog_InvalidParameter,
 	VegaBackend_Catalog_InvalidParameter_Type,
 	VegaBackend_Catalog_InvalidParameter_Name,
+	VegaBackend_Catalog_InvalidParameter_ID,
 	VegaBackend_Catalog_InvalidParameter_ConnectorType,
 	VegaBackend_Catalog_InvalidParameter_ConnectorConfig,
 	VegaBackend_Catalog_LengthExceeded_Name,
@@ -49,6 +52,7 @@ var CatalogErrCodeList = []string{
 	VegaBackend_Catalog_NotFound,
 	VegaBackend_Catalog_NameExists,
 	VegaBackend_Catalog_IDExists,
+	VegaBackend_Catalog_IDMismatch,
 	VegaBackend_Catalog_HasAssets,
 	VegaBackend_Catalog_IsDisabled,
 	VegaBackend_Catalog_InternalError,

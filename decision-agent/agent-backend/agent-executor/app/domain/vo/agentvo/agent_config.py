@@ -4,7 +4,12 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, validator, Field
 
 from app.utils.snow_id import snow_id
-from .agent_config_vos import SkillVo, OutputConfigVo, ConfigMetadataVo
+from .agent_config_vos import (
+    SkillVo,
+    OutputConfigVo,
+    ConfigMetadataVo,
+    ReactConfigVo,
+)
 
 
 class AgentConfigVo(BaseModel):
@@ -19,6 +24,7 @@ class AgentConfigVo(BaseModel):
     data_source: Optional[Dict[str, Any]] = {}
 
     system_prompt: Optional[str] = None
+    mode: Optional[str] = None
     is_dolphin_mode: bool = False
     dolphin: Optional[str] = None
 
@@ -35,6 +41,7 @@ class AgentConfigVo(BaseModel):
     plan_mode: Optional[Dict[str, bool]] = None
     # config metadata
     metadata: Optional[ConfigMetadataVo] = None
+    react_config: Optional[ReactConfigVo] = None
 
     # agent-app 传入 (也改为由_options参数传入 2025年10月19日)
     agent_id: Optional[str] = None
@@ -106,6 +113,44 @@ class AgentConfigVo(BaseModel):
 
     def is_plan_mode(self) -> bool:
         return self.plan_mode and self.plan_mode.get("is_enabled", False)
+
+    @validator("react_config", pre=True, always=True)
+    def validate_react_config(cls, v):
+        """验证 react_config 字段"""
+        if v is None:
+            return None
+
+        if isinstance(v, ReactConfigVo):
+            return v
+
+        if isinstance(v, dict):
+            return ReactConfigVo(**v)
+
+        return None
+    
+    def react_disable_history_in_a_conversation(self) -> bool:
+        """
+        react模式下，检查是否禁用历史对话，此方法仅在mode为react时有效
+        """
+        if self.mode != "react":
+            return False
+
+        return bool(
+            self.react_config
+            and self.react_config.disable_history_in_a_conversation
+        )
+
+    def react_disable_llm_cache(self) -> bool:
+        """
+        react模式下，检查是否禁用LLM缓存，此方法仅在mode为react时有效
+        """
+        if self.mode != "react":
+            return False
+        
+        return bool(
+            self.react_config
+            and self.react_config.disable_llm_cache
+        )
 
     def append_task_plan_agent(self):
         if self.is_plan_mode():

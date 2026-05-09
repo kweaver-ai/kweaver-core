@@ -29,10 +29,11 @@ var (
 		RTID:   "rt1",
 		RTName: "Risk Type 1",
 		CommonInfo: interfaces.CommonInfo{
-			Tags:    testTags,
-			Comment: "test comment",
-			Icon:    "icon1",
-			Color:   "color1",
+			Tags:          testTags,
+			Comment:       "test comment",
+			Icon:          "icon1",
+			Color:         "color1",
+			BKNRawContent: "bkn1",
 		},
 		KNID:   "kn1",
 		Branch: interfaces.MAIN_BRANCH,
@@ -61,7 +62,7 @@ func MockNewRiskTypeAccess(appSetting *common.AppSetting) (*riskTypeAccess, sqlm
 
 // rtSelectCols 是 ListRiskTypes / GetRiskTypesByIDs 的 SELECT 列列表（与实现保持一致）
 var rtSelectCols = []string{
-	"f_id", "f_name", "f_comment", "f_tags", "f_icon", "f_color",
+	"f_id", "f_name", "f_comment", "f_tags", "f_icon", "f_color", "f_bkn_raw_content",
 	"f_kn_id", "f_branch", "f_creator", "f_creator_type", "f_create_time",
 	"f_updater", "f_updater_type", "f_update_time",
 }
@@ -69,7 +70,7 @@ var rtSelectCols = []string{
 // addRTRow 向 Rows 追加一行风险类测试数据
 func addRTRow(rows *sqlmock.Rows, id, name string) *sqlmock.Rows {
 	return rows.AddRow(
-		id, name, "test comment", `"tag1"`, "icon1", "color1",
+		id, name, "test comment", `"tag1"`, "icon1", "color1", "bkn1",
 		"kn1", "main", "admin", "admin", testUpdateTime,
 		"admin", "admin", testUpdateTime,
 	)
@@ -175,9 +176,9 @@ func Test_RiskTypeAccess_CreateRiskType(t *testing.T) {
 		rta, smock := MockNewRiskTypeAccess(appSetting)
 
 		sqlStr := fmt.Sprintf(
-			"INSERT INTO %s (f_id,f_name,f_comment,f_tags,f_icon,f_color,f_kn_id,f_branch,"+
+			"INSERT INTO %s (f_id,f_name,f_comment,f_tags,f_icon,f_color,f_bkn_raw_content,f_kn_id,f_branch,"+
 				"f_creator,f_creator_type,f_create_time,f_updater,f_updater_type,f_update_time) "+
-				"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+				"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
 			RT_TABLE_NAME,
 		)
 
@@ -214,7 +215,7 @@ func Test_RiskTypeAccess_ListRiskTypes(t *testing.T) {
 		rta, smock := MockNewRiskTypeAccess(appSetting)
 
 		baseSelect := fmt.Sprintf(
-			"SELECT f_id, f_name, f_comment, f_tags, f_icon, f_color, f_kn_id, f_branch, "+
+			"SELECT f_id, f_name, f_comment, f_tags, f_icon, f_color, f_bkn_raw_content, f_kn_id, f_branch, "+
 				"f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 				"FROM %s", RT_TABLE_NAME,
 		)
@@ -375,7 +376,7 @@ func Test_RiskTypeAccess_GetRiskTypesByIDs(t *testing.T) {
 		rta, smock := MockNewRiskTypeAccess(appSetting)
 
 		sqlStr := fmt.Sprintf(
-			"SELECT f_id, f_name, f_comment, f_tags, f_icon, f_color, f_kn_id, f_branch, "+
+			"SELECT f_id, f_name, f_comment, f_tags, f_icon, f_color, f_bkn_raw_content, f_kn_id, f_branch, "+
 				"f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 				"FROM %s WHERE f_kn_id = ? AND f_branch = ? AND f_id IN (?,?)",
 			RT_TABLE_NAME,
@@ -444,7 +445,7 @@ func Test_RiskTypeAccess_UpdateRiskType(t *testing.T) {
 
 		// squirrel SetMap sorts keys alphabetically
 		sqlStr := fmt.Sprintf(
-			"UPDATE %s SET f_color = ?, f_comment = ?, f_icon = ?, f_name = ?, f_tags = ?, "+
+			"UPDATE %s SET f_bkn_raw_content = ?, f_color = ?, f_comment = ?, f_icon = ?, f_name = ?, f_tags = ?, "+
 				"f_update_time = ?, f_updater = ?, f_updater_type = ? "+
 				"WHERE f_id = ? AND f_kn_id = ? AND f_branch = ?",
 			RT_TABLE_NAME,
@@ -529,7 +530,7 @@ func Test_RiskTypeAccess_GetAllRiskTypesByKnID(t *testing.T) {
 		rta, smock := MockNewRiskTypeAccess(appSetting)
 
 		sqlStr := fmt.Sprintf(
-			"SELECT f_id, f_name, f_comment, f_tags, f_icon, f_color, f_kn_id, f_branch, "+
+			"SELECT f_id, f_name, f_comment, f_tags, f_icon, f_color, f_bkn_raw_content, f_kn_id, f_branch, "+
 				"f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 				"FROM %s WHERE f_kn_id = ? AND f_branch = ?",
 			RT_TABLE_NAME,

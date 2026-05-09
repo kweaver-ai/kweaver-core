@@ -5,8 +5,6 @@ import stat
 
 from app.common.config import Config
 from app.utils.common import GetCallerInfo, IsInPod
-
-# from tlogging import SamplerLogger
 import os
 
 from logging.handlers import TimedRotatingFileHandler
@@ -54,6 +52,7 @@ class StandLog_logging(object):
                     when="midnight",
                     interval=1,
                     backupCount=30,  # 保留30天的日志
+                    encoding='utf-8',  # 使用 UTF-8 编码，支持 emoji
                 )
 
                 file_handler.setFormatter(LOG_FORMATTER)
@@ -72,6 +71,7 @@ class StandLog_logging(object):
                     when="midnight",
                     interval=1,
                     backupCount=30,  # 保留30天的日志
+                    encoding='utf-8',  # 使用 UTF-8 编码，支持 emoji
                 )
                 file_handler.setLevel(Config.app.get_stdlib_log_level())
                 file_handler.setFormatter(LOG_FORMATTER)

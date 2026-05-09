@@ -26,12 +26,7 @@ dependencies = [
     "structlog==24.1.0",
     "setuptools==76.0.0",
     "uvicorn==0.38.0",
-    #"mq-sdk@git+ssh://devops.aishu.cn:22/AISHUDevOps/One-Architecture/_git/proton-mq-python@1.7.4",
-    #    "mq-sdk@git+https://github.com/kweaver-ai/proton-mq-sdk-py@release/1.9.0",
-    #"telemetrysdk-python@git+ssh://devops.aishu.cn:22/AISHUDevOps/One-Architecture/_git/TelemetrySDK-Python@2.6.1",
-    #    "telemetrysdk-python@git+https://github.com/kweaver-ai/TelemetrySDK-Python@2.4.2",
-    #    "tlogging",
-    "kweaver-dolphin==0.4.3",
+    "kweaver-dolphin==0.6.5",
     "python-dotenv>=1.0.0",
 ]
 
@@ -50,15 +45,18 @@ dev = [
      "pytest-cov>=4.0.0",
      "pylint==3.0.3",
      "pylint-junit==0.3.3",
- ]
+     "aioresponses>=0.7.8",
+]
 
 lint = [
     "pre-commit>=4.5.1",
     "ruff>=0.15.0",
 ]
 [tool.uv]
-#index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 index-url = "https://mirrors.aliyun.com/pypi/simple"
+extra-index-url = [
+    "https://pypi.tuna.tsinghua.edu.cn/simple"
+]
 
 
 #[[tool.uv.index]]
@@ -70,9 +68,6 @@ index-url = "https://mirrors.aliyun.com/pypi/simple"
 #[tool.uv.sources]
 # kweaver-dolphin 源切换配置
 #kweaver-dolphin = { index = "test-pypi" }
-
-#mq-sdk = { git = "https://github.com/kweaver-ai/proton-mq-sdk-py", rev = "release/1.9.0" }
-#tlogging = { git = "https://github.com/kweaver-ai/TelemetrySDK-Python", rev = "2.4.2" }
 
 [tool.pytest.ini_options]
 norecursedirs = ["test/unit/common/tool_v2", "test/unit/boot"]
