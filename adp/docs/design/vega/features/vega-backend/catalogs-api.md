@@ -398,7 +398,7 @@
 获取指定Catalog的健康状态信息。
 
 ### 请求信息
-- **URL**: `/api/vega-backend/v1/catalogs/:ids/health-status`
+- **URL**: `/api/vega-backend/v1/catalogs/:id/health-status`
 - **方法**: `GET`
 
 ### 路径参数

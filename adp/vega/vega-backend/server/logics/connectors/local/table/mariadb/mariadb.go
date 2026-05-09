@@ -258,7 +258,7 @@ func (c *MariaDBConnector) validateDatabases(ctx context.Context) error {
 }
 
 // ExecuteRawSQL 执行原始SQL查询
-func (c *MariaDBConnector) ExecuteRawSQL(ctx context.Context, sql string) (*interfaces.SQLQueryResponse, error) {
+func (c *MariaDBConnector) ExecuteRawSQL(ctx context.Context, sql string) (*interfaces.RawQueryResponse, error) {
 	if err := c.Connect(ctx); err != nil {
 		return nil, fmt.Errorf("connect failed: %w", err)
 	}
@@ -279,7 +279,7 @@ func (c *MariaDBConnector) ExecuteRawSQL(ctx context.Context, sql string) (*inte
 		return nil, fmt.Errorf("get column types failed: %w", err)
 	}
 
-	response := &interfaces.SQLQueryResponse{
+	response := &interfaces.RawQueryResponse{
 		Columns: make([]interfaces.ColumnInfo, len(columns)),
 		Entries: make([]map[string]any, 0),
 		Stats: interfaces.QueryStats{

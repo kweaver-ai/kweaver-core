@@ -58,6 +58,9 @@ logs/
 # Local/platform test reports and outputs (not versioned)
 reports/
 
+# Local Cursor / agent superpowers docs (not versioned in this repo)
+/docs/superpowers/
+
 # macOS kind dev: local config contains generated passwords (copy from mac-config.yaml.example)
 deploy/dev/conf/mac-config.yaml
 

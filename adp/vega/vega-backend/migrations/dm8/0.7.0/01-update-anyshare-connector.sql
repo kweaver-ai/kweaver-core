@@ -10,8 +10,8 @@
 
 SET SCHEMA kweaver;
 
--- 删除原有的 uk_catalog_source_identifier 唯一索引
-DROP INDEX uk_catalog_source_identifier ON t_resource;
+-- 删除原有的 idx_t_resource_catalog_source_identifier 唯一索引
+DROP INDEX idx_t_resource_catalog_source_identifier;
 
 -- 更新anyshare连接器的doc_lib_type字段描述
 UPDATE t_connector_type

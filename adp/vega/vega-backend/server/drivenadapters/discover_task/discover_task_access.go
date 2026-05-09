@@ -41,9 +41,9 @@ type discoverTaskAccess struct {
 	db         *sql.DB
 }
 
-// GetScheduledTaskStrategies retrieves strategies from t_scheduled_discover_task table by ID.
+// GetScheduledTaskStrategies retrieves strategies from t_discover_schedule table by ID.
 func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, scheduledTaskID string) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query scheduled_discover_task by ID",
+	ctx, span := ar_trace.Tracer.Start(ctx, "Query discover_schedule by ID",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
@@ -52,12 +52,12 @@ func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, sc
 		attr.Key("db_type").String(libdb.GetDBType()))
 
 	sqlStr, vals, err := sq.Select("f_strategies").
-		From("t_scheduled_discover_task").
+		From("t_discover_schedule").
 		Where(sq.Eq{"f_id": scheduledTaskID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build select scheduled_discover_task sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build select scheduled_discover_task sql: %v", err))
+		logger.Errorf("Failed to build select discover_schedule sql: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Failed to build select discover_schedule sql: %v", err))
 		span.SetStatus(codes.Error, "Build sql failed")
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, sc
 		return []string{}, nil
 	}
 	if err != nil {
-		logger.Errorf("Scan scheduled_discover_task failed: %v", err)
+		logger.Errorf("Scan discover_schedule failed: %v", err)
 		span.SetStatus(codes.Error, "Scan failed")
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 		Columns(
 			"f_id",
 			"f_catalog_id",
-			"f_scheduled_id",
+			"f_schedule_id",
 			"f_strategies",
 			"f_trigger_type",
 			"f_status",
@@ -156,8 +156,8 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 			task.CreateTime,
 		).ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build insert discover_task sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build insert discover_task sql: %v", err))
+		logger.Errorf("Failed to build insert discover_schedule sql: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Failed to build insert discover_schedule sql: %v", err))
 		span.SetStatus(codes.Error, "Build sql failed")
 		return err
 	}
@@ -166,8 +166,8 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 
 	_, err = da.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Insert discover_task failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Insert discover_task failed: %v", err))
+		logger.Errorf("Insert discover_schedule failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Insert discover_schedule failed: %v", err))
 		span.SetStatus(codes.Error, "Insert failed")
 		return err
 	}
@@ -187,7 +187,7 @@ func (da *discoverTaskAccess) GetByID(ctx context.Context, id string) (*interfac
 	sqlStr, vals, err := sq.Select(
 		"f_id",
 		"f_catalog_id",
-		"f_scheduled_id",
+		"f_schedule_id",
 		"f_strategies",
 		"f_trigger_type",
 		"f_status",
@@ -268,7 +268,7 @@ func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.Discov
 	builder := sq.Select(
 		"f_id",
 		"f_catalog_id",
-		"f_scheduled_id",
+		"f_schedule_id",
 		"f_strategies",
 		"f_trigger_type",
 		"f_status",
@@ -289,8 +289,8 @@ func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.Discov
 		countBuilder = countBuilder.Where(sq.Eq{"f_catalog_id": params.CatalogID})
 	}
 	if params.ScheduleID != "" {
-		builder = builder.Where(sq.Eq{"f_scheduled_id": params.ScheduleID})
-		countBuilder = countBuilder.Where(sq.Eq{"f_scheduled_id": params.ScheduleID})
+		builder = builder.Where(sq.Eq{"f_schedule_id": params.ScheduleID})
+		countBuilder = countBuilder.Where(sq.Eq{"f_schedule_id": params.ScheduleID})
 	}
 	if params.Status != "" {
 		builder = builder.Where(sq.Eq{"f_status": params.Status})

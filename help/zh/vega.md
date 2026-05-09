@@ -382,7 +382,7 @@ curl -sk -X PUT "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001" 
 curl -sk -X DELETE "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
-curl -sk "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001,cat_mysql002/health-status" \
+curl -sk "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001/health-status" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 curl -sk -X POST "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001/test-connection" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
@@ -392,8 +392,6 @@ curl -sk "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001/resource
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
 curl -sk "https://<访问地址>/api/vega-backend/v1/resources?catalog_id=cat_pg001&limit=50" \
-  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
-curl -sk "https://<访问地址>/api/vega-backend/v1/resources/list?limit=50" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 curl -sk -X POST "https://<访问地址>/api/vega-backend/v1/resources" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
@@ -412,15 +410,19 @@ curl -sk -X POST "https://<访问地址>/api/vega-backend/v1/resources/res_order
   -H "x-http-method-override: GET" \
   -d '{"limit":10,"offset":0,"need_total":true}'
 
-curl -sk -X POST "https://<访问地址>/api/vega-backend/v1/resources/dataset/res-ds/docs" \
+# Dataset 文档写入（使用 POST 覆盖）
+curl -sk -X POST "https://<访问地址>/api/vega-backend/v1/resources/res-ds/data" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
-  -d '[{"id":"doc1"}]'
-curl -sk -X POST "https://<访问地址>/api/vega-backend/v1/resources/dataset/res-ds/build" \
+  -H "x-http-method-override: POST" \
+  -d '[{"id":"doc1","content":"..."}]'
+
+# Dataset 构建任务
+curl -sk -X POST "https://<访问地址>/api/vega-backend/v1/build-tasks" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
-  -d '{"mode":"full"}'
-curl -sk "https://<访问地址>/api/vega-backend/v1/resources/dataset/res-ds/build/<task-id>" \
+  -d '{"resource_id":"res-ds","mode":"full"}'
+curl -sk "https://<访问地址>/api/vega-backend/v1/build-tasks/<task-id>" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
 curl -sk -X POST "https://<访问地址>/api/vega-backend/v1/query/execute" \

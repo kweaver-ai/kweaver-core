@@ -106,7 +106,8 @@ func createTestDocuments(client *testutil.HTTPClient, resourceID string, count i
 			"content":    generateVector(768),
 		})
 	}
-	resp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", documentsPayload)
+	client.SetHeader("X-HTTP-Method-Override", "POST")
+	resp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", documentsPayload)
 	So(resp.StatusCode, ShouldEqual, http.StatusCreated)
 	So(resp.Body["ids"], ShouldNotBeEmpty)
 }
@@ -214,7 +215,7 @@ func TestConcurrencyQuery(t *testing.T) {
 			So(successCount+globalLimitExceededCount+catalogLimitExceededCount, ShouldEqual, requestCount)
 			So(successCount, ShouldBeGreaterThanOrEqualTo, concurrency)
 			So(globalLimitExceededCount, ShouldBeGreaterThan, 0) // 必须有全局限流
-			So(catalogLimitExceededCount, ShouldEqual, 0) // catalog限流无效
+			So(catalogLimitExceededCount, ShouldEqual, 0)        // catalog限流无效
 		})
 
 		Convey("RC103: Catalog级别限流测试 - 全局并发10（与RC101对比），catalog并发2", func() {
@@ -285,7 +286,7 @@ func TestConcurrencyQuery(t *testing.T) {
 			So(successCount+globalLimitExceededCount+catalogLimitExceededCount, ShouldEqual, requestCount)
 			So(successCount, ShouldBeGreaterThanOrEqualTo, int(catalogConcurrencyLimit))
 			So(catalogLimitExceededCount, ShouldBeGreaterThan, 0) // 必须有catalog级限流（全局10并发，但是catalog最大2并发）
-			So(globalLimitExceededCount, ShouldEqual, 0) // 全局限流无效
+			So(globalLimitExceededCount, ShouldEqual, 0)          // 全局限流无效
 		})
 
 		deleteResp := client.DELETE("/api/vega-backend/v1/resources/" + resourceID)

@@ -28,7 +28,7 @@ type RateLimitError struct {
 	Err        error
 	Message    string
 	HTTPStatus int
-	LimitType  string // "global" or "catalog"
+	LimitType  string  // "global" or "catalog"
 	RetryAfter float64 // Suggested retry time in seconds
 	Limit      int     // The limit that was exceeded
 	Current    int     // Current usage
@@ -42,15 +42,16 @@ func NewRateLimitError(err error, message string) *RateLimitError {
 		RetryAfter: 5.0, // Default 5 seconds
 	}
 
-	if err == ErrGlobalLimitExceeded {
+	switch err {
+	case ErrGlobalLimitExceeded:
 		rateErr.HTTPStatus = http.StatusTooManyRequests
 		rateErr.LimitType = "global"
 		rateErr.RetryAfter = 5.0
-	} else if err == ErrCatalogLimitExceeded {
+	case ErrCatalogLimitExceeded:
 		rateErr.HTTPStatus = http.StatusTooManyRequests
 		rateErr.LimitType = "catalog"
 		rateErr.RetryAfter = 10.0
-	} else if err == ErrQueueTimeout {
+	case ErrQueueTimeout:
 		rateErr.HTTPStatus = http.StatusServiceUnavailable
 		rateErr.LimitType = "queue"
 		rateErr.RetryAfter = 30.0

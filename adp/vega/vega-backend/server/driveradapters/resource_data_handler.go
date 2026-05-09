@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,65 +19,71 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
+	"github.com/mitchellh/mapstructure"
 	"go.opentelemetry.io/otel/trace"
 
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 )
 
-// QueryResourceDataByEx handles POST /api/vega-backend/v1/resources/:id/data (External)
-func (r *restHandler) QueryResourceDataByEx(c *gin.Context) {
+// PostResourceDataByEx handles POST /api/vega-backend/v1/resources/:id/data (External).
+// Dispatches based on X-HTTP-Method-Override header:
+//
+//	GET    → query (any category; returns entries + optional total_count)
+//	POST   → batch create documents (dataset category only)
+//	DELETE → delete documents by filter (dataset category only)
+func (r *restHandler) PostResourceDataByEx(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"QueryResourceDataByEx", trace.WithSpanKind(trace.SpanKindServer))
+		"PostResourceDataByEx", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	// 外网接口：校验token
 	visitor, err := r.verifyOAuth(ctx, c)
 	if err != nil {
 		return
 	}
-	r.queryResourceData(c, ctx, span, visitor)
+	r.postResourceData(c, ctx, span, visitor)
 }
 
-// QueryResourceDataByIn handles POST /api/vega-backend/in/v1/resources/:id/data (Internal)
-func (r *restHandler) QueryResourceDataByIn(c *gin.Context) {
+// PostResourceDataByIn handles POST /api/vega-backend/in/v1/resources/:id/data (Internal).
+func (r *restHandler) PostResourceDataByIn(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"QueryResourceDataByIn", trace.WithSpanKind(trace.SpanKindServer))
+		"PostResourceDataByIn", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	// 内网接口：user_id从header中取
 	visitor := GenerateVisitor(c)
-	r.queryResourceData(c, ctx, span, visitor)
+	r.postResourceData(c, ctx, span, visitor)
 }
 
-// queryResourceData is the shared implementation
-func (r *restHandler) queryResourceData(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	start := time.Now()
-
-	accountInfo := interfaces.AccountInfo{
-		ID:   visitor.ID,
-		Type: string(visitor.Type),
-	}
+// postResourceData dispatches POST /resources/:id/data to the right branch based on
+// X-HTTP-Method-Override header.
+func (r *restHandler) postResourceData(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	// 1. check重载请求头
-	method := c.GetHeader(interfaces.HTTP_HEADER_METHOD_OVERRIDE)
-	if method != http.MethodGet {
+	override := strings.ToUpper(c.GetHeader(interfaces.HTTP_HEADER_METHOD_OVERRIDE))
+	switch override {
+	case http.MethodGet:
+		r.queryResourceData(c, ctx, span)
+	case http.MethodPost:
+		r.createResourceData(c, ctx, span)
+	case http.MethodDelete:
+		r.deleteResourceDataByQuery(c, ctx, span)
+	default:
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_OverrideMethod)
 		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
-
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyErrorWithHeaders(c, httpErr, map[string]string{
-			interfaces.X_REQUEST_TOOK: time.Since(start).String(),
-		})
-		return
+		rest.ReplyError(c, httpErr)
 	}
+}
+
+// queryResourceData handles POST /resources/:id/data + Override: GET.
+// Generic resource-data query, supports any category.
+func (r *restHandler) queryResourceData(c *gin.Context, ctx context.Context, span trace.Span) {
+	start := time.Now()
 
 	resourceID := c.Param("id")
 
-	// 解析请求体
 	var params interfaces.ResourceDataQueryParams
 	if err := c.ShouldBindJSON(&params); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
@@ -86,9 +93,7 @@ func (r *restHandler) queryResourceData(c *gin.Context, ctx context.Context, spa
 		return
 	}
 
-	// 资源查询的参数校验
-	err := ValidateResourceDataQueryParams(ctx, &params)
-	if err != nil {
+	if err := ValidateResourceDataQueryParams(ctx, &params); err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -124,7 +129,374 @@ func (r *restHandler) queryResourceData(c *gin.Context, ctx context.Context, spa
 		resultData["total_count"] = total
 	}
 
-	logger.Debug("Handler QueryResourceData Success")
+	logger.Debug("Handler queryResourceData Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	rest.ReplyOK(c, http.StatusOK, resultData)
+	rest.ReplyOkWithHeaders(c, http.StatusOK, resultData, map[string]string{
+		interfaces.X_REQUEST_TOOK: time.Since(start).String(),
+	})
+}
+
+// createResourceData handles POST /resources/:id/data + Override: POST.
+// Batch create documents; dataset category only.
+func (r *restHandler) createResourceData(c *gin.Context, ctx context.Context, span trace.Span) {
+	resource, ok := r.requireDatasetResource(c, ctx, span, c.Param("id"))
+	if !ok {
+		return
+	}
+
+	var documents []map[string]any
+	if err := c.ShouldBindJSON(&documents); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	docIDs, err := r.ds.CreateDocuments(ctx, resource.ID, documents)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	logger.Debug("Handler createResourceData Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusCreated)
+	rest.ReplyOK(c, http.StatusCreated, map[string]any{"ids": docIDs})
+}
+
+// deleteResourceDataByQuery handles POST /resources/:id/data + Override: DELETE.
+// Delete documents by filter; dataset category only. Body must carry a non-empty filter.
+func (r *restHandler) deleteResourceDataByQuery(c *gin.Context, ctx context.Context, span trace.Span) {
+	start := time.Now()
+
+	resource, ok := r.requireDatasetResource(c, ctx, span, c.Param("id"))
+	if !ok {
+		return
+	}
+
+	var params interfaces.ResourceDataQueryParams
+	if err := c.ShouldBindJSON(&params); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	if params.FilterCondition == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("filter is required for delete-by-query (empty filter would delete all documents)")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	var actualCond *interfaces.FilterCondCfg
+	if err := mapstructure.Decode(params.FilterCondition, &actualCond); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_FilterCondition).
+			WithErrorDetails(fmt.Sprintf("mapstructure decode filters failed: %s", err.Error()))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	params.FilterCondCfg = actualCond
+
+	if err := r.ds.DeleteDocumentsByQuery(ctx, resource.ID, resource, &params); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	logger.Debug("Handler deleteResourceDataByQuery Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	rest.ReplyOkWithHeaders(c, http.StatusNoContent, nil, map[string]string{
+		interfaces.X_REQUEST_TOOK: time.Since(start).String(),
+	})
+}
+
+// =========================== PUT /resources/:id/data ===========================
+
+// PutResourceDataByEx handles PUT /api/vega-backend/v1/resources/:id/data (External).
+// Batch upsert documents; dataset category only. Each document must carry an `id` field.
+func (r *restHandler) PutResourceDataByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"PutResourceDataByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.putResourceData(c, ctx, span, visitor)
+}
+
+// PutResourceDataByIn handles PUT /api/vega-backend/in/v1/resources/:id/data (Internal).
+func (r *restHandler) PutResourceDataByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"PutResourceDataByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor := GenerateVisitor(c)
+	r.putResourceData(c, ctx, span, visitor)
+}
+
+func (r *restHandler) putResourceData(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	resource, ok := r.requireDatasetResource(c, ctx, span, c.Param("id"))
+	if !ok {
+		return
+	}
+
+	var documents []map[string]any
+	if err := c.ShouldBindJSON(&documents); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if len(documents) == 0 {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("documents array cannot be empty")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Each document must carry id; collect violators.
+	invalidIndexes := make([]int, 0)
+	for i, doc := range documents {
+		if id, ok := doc["id"].(string); !ok || id == "" {
+			invalidIndexes = append(invalidIndexes, i)
+		}
+	}
+	if len(invalidIndexes) > 0 {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(map[string]any{
+				"message":         "every document must carry a non-empty `id` field for PUT (update)",
+				"invalid_indexes": invalidIndexes,
+			})
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	docIDs, err := r.ds.UpsertDocuments(ctx, resource.ID, documents)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	logger.Debug("Handler putResourceData Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, map[string]any{"ids": docIDs})
+}
+
+// =========================== GET /resources/:id/data/:doc_id ===========================
+
+// GetResourceDataDocByEx handles GET /api/vega-backend/v1/resources/:id/data/:doc_id (External).
+func (r *restHandler) GetResourceDataDocByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"GetResourceDataDocByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.getResourceDataDoc(c, ctx, span, visitor)
+}
+
+// GetResourceDataDocByIn handles GET /api/vega-backend/in/v1/resources/:id/data/:doc_id (Internal).
+func (r *restHandler) GetResourceDataDocByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"GetResourceDataDocByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor := GenerateVisitor(c)
+	r.getResourceDataDoc(c, ctx, span, visitor)
+}
+
+func (r *restHandler) getResourceDataDoc(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	resource, ok := r.requireDatasetResource(c, ctx, span, c.Param("id"))
+	if !ok {
+		return
+	}
+
+	docID := c.Param("doc_id")
+	doc, err := r.ds.GetDocument(ctx, resource.ID, docID)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if doc == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_NotFound).
+			WithErrorDetails(fmt.Sprintf("document %s not found", docID))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, doc)
+}
+
+// =========================== PUT /resources/:id/data/:doc_id ===========================
+
+// PutResourceDataDocByEx handles PUT /api/vega-backend/v1/resources/:id/data/:doc_id (External).
+// Single-document update; doc_id from path takes precedence over any `id` field in body.
+func (r *restHandler) PutResourceDataDocByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"PutResourceDataDocByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.putResourceDataDoc(c, ctx, span, visitor)
+}
+
+// PutResourceDataDocByIn handles PUT /api/vega-backend/in/v1/resources/:id/data/:doc_id (Internal).
+func (r *restHandler) PutResourceDataDocByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"PutResourceDataDocByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor := GenerateVisitor(c)
+	r.putResourceDataDoc(c, ctx, span, visitor)
+}
+
+func (r *restHandler) putResourceDataDoc(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	resource, ok := r.requireDatasetResource(c, ctx, span, c.Param("id"))
+	if !ok {
+		return
+	}
+
+	docID := c.Param("doc_id")
+
+	var doc map[string]any
+	if err := c.ShouldBindJSON(&doc); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if doc == nil {
+		doc = map[string]any{}
+	}
+	if bodyID, exists := doc["id"]; exists {
+		if s, ok := bodyID.(string); !ok || s != docID {
+			logger.Warnf("PutResourceDataDoc: body.id (%v) overridden by path doc_id (%s)", bodyID, docID)
+		}
+	}
+	doc["id"] = docID
+
+	if _, err := r.ds.UpsertDocuments(ctx, resource.ID, []map[string]any{doc}); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	logger.Debug("Handler putResourceDataDoc Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, map[string]any{"id": docID})
+}
+
+// =========================== DELETE /resources/:id/data/:doc_ids ===========================
+
+// DeleteResourceDataByEx handles DELETE /api/vega-backend/v1/resources/:id/data/:doc_ids (External).
+// Best-effort batch delete by IDs; missing IDs are silently skipped.
+func (r *restHandler) DeleteResourceDataByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"DeleteResourceDataByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.deleteResourceData(c, ctx, span, visitor)
+}
+
+// DeleteResourceDataByIn handles DELETE /api/vega-backend/in/v1/resources/:id/data/:doc_ids (Internal).
+func (r *restHandler) DeleteResourceDataByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"DeleteResourceDataByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor := GenerateVisitor(c)
+	r.deleteResourceData(c, ctx, span, visitor)
+}
+
+func (r *restHandler) deleteResourceData(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	resource, ok := r.requireDatasetResource(c, ctx, span, c.Param("id"))
+	if !ok {
+		return
+	}
+
+	// service expects comma-separated string; pass through.
+	docIDs := c.Param("doc_ids")
+	if err := r.ds.DeleteDocuments(ctx, resource.ID, docIDs); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	logger.Debug("Handler deleteResourceData Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	rest.ReplyOK(c, http.StatusNoContent, nil)
+}
+
+// =========================== helpers ===========================
+
+// requireDatasetResource loads resource by id and verifies it exists with category=dataset.
+// On failure replies with the appropriate HTTP error and returns ok=false.
+func (r *restHandler) requireDatasetResource(c *gin.Context, ctx context.Context, span trace.Span, id string) (*interfaces.Resource, bool) {
+	resource, err := r.rs.GetByID(ctx, id)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return nil, false
+	}
+	if resource == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_NotFound)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return nil, false
+	}
+	if resource.Category != interfaces.ResourceCategoryDataset {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
+			WithErrorDetails(fmt.Sprintf("operation requires resource category=dataset, got: %s", resource.Category))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return nil, false
+	}
+	return resource, true
 }

@@ -22,10 +22,10 @@ import (
 	"vega-backend/logics/query"
 )
 
-// SQLQueryByEx handles POST /api/vega-backend/v1/resources/query (External)
-func (r *restHandler) SQLQueryByEx(c *gin.Context) {
+// RawQueryByEx handles POST /api/vega-backend/v1/resources/query (External)
+func (r *restHandler) RawQueryByEx(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"SQLQueryByEx", trace.WithSpanKind(trace.SpanKindServer))
+		"RawQueryByEx", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	// 外网接口：校验token
@@ -33,22 +33,22 @@ func (r *restHandler) SQLQueryByEx(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	r.sqlQuery(c, ctx, span, visitor)
+	r.rawQuery(c, ctx, span, visitor)
 }
 
-// SQLQueryByIn handles POST /api/vega-backend/in/v1/resources/query (Internal)
-func (r *restHandler) SQLQueryByIn(c *gin.Context) {
+// RawQueryByIn handles POST /api/vega-backend/in/v1/resources/query (Internal)
+func (r *restHandler) RawQueryByIn(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"SQLQueryByIn", trace.WithSpanKind(trace.SpanKindServer))
+		"RawQueryByIn", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	// 内网接口：user_id从header中取
 	visitor := GenerateVisitor(c)
-	r.sqlQuery(c, ctx, span, visitor)
+	r.rawQuery(c, ctx, span, visitor)
 }
 
 // sqlQuery is the shared implementation for SQL query
-func (r *restHandler) sqlQuery(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -57,9 +57,9 @@ func (r *restHandler) sqlQuery(c *gin.Context, ctx context.Context, span trace.S
 
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	var req interfaces.SQLQueryRequest
+	var req interfaces.RawQueryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, "VegaBackend.InvalidParameter.RequestBody").
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails(err.Error())
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -105,7 +105,7 @@ func (r *restHandler) sqlQuery(c *gin.Context, ctx context.Context, span trace.S
 		return
 	}
 
-	qs := query.NewSQLQueryService(r.appSetting)
+	qs := query.NewRawQueryService(r.appSetting)
 	resp, err := qs.Execute(ctx, &req)
 	if err != nil {
 		var httpErr *rest.HTTPError

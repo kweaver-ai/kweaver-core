@@ -13,9 +13,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"vega-backend/interfaces"
 
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+
+	"vega-backend/interfaces"
 )
 
 // ExecuteQuery executes a query on the fileset.

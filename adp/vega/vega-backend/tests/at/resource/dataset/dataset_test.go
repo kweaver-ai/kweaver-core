@@ -311,7 +311,8 @@ func TestDatasetResourceCreateAndQuery(t *testing.T) {
 					},
 				},
 			}
-			createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", []map[string]any{docPayload})
+			client.SetHeader("X-HTTP-Method-Override", "POST")
+			createDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", []map[string]any{docPayload})
 			So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
 			So(createDocResp.Body["ids"], ShouldNotBeEmpty)
 
@@ -359,7 +360,8 @@ func TestDatasetResourceCreateAndQuery(t *testing.T) {
 					"b": "Anytown, USA",
 				},
 			}
-			createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", []map[string]any{docPayload})
+			client.SetHeader("X-HTTP-Method-Override", "POST")
+			createDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", []map[string]any{docPayload})
 			So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
 			So(createDocResp.Body["ids"], ShouldNotBeEmpty)
 			ids, ok := createDocResp.Body["ids"].([]interface{})
@@ -681,7 +683,8 @@ func TestDatasetDocumentsCreate(t *testing.T) {
 				"content":    generateVector(768),
 			},
 		}
-		resp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", documentsPayload)
+		client.SetHeader("X-HTTP-Method-Override", "POST")
+		resp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", documentsPayload)
 		So(resp.StatusCode, ShouldEqual, http.StatusCreated)
 		So(resp.Body["ids"], ShouldNotBeEmpty)
 		ids, ok := resp.Body["ids"].([]interface{})
@@ -748,7 +751,8 @@ func TestDatasetDocumentsList(t *testing.T) {
 				"content":    generateVector(768),
 			},
 		}
-		createDocsResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", documentsPayload)
+		client.SetHeader("X-HTTP-Method-Override", "POST")
+		createDocsResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", documentsPayload)
 		So(createDocsResp.StatusCode, ShouldEqual, http.StatusCreated)
 
 		// 构建基础查询条件
@@ -1226,7 +1230,8 @@ func TestDatasetDocumentGet(t *testing.T) {
 
 		// 先创建一个文档（使用批量创建接口）
 		docPayload := buildDatasetDocumentPayload()
-		createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", []map[string]any{docPayload})
+		client.SetHeader("X-HTTP-Method-Override", "POST")
+		createDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", []map[string]any{docPayload})
 		So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
 		So(createDocResp.Body["ids"], ShouldNotBeEmpty)
 		ids, ok := createDocResp.Body["ids"].([]interface{})
@@ -1277,7 +1282,9 @@ func TestDatasetDocumentUpdate(t *testing.T) {
 
 		// 先创建一个文档（使用批量创建接口）
 		docPayload := buildDatasetDocumentPayload()
-		createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", []map[string]any{docPayload})
+		client.SetHeader("X-HTTP-Method-Override", "POST")
+		createDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", []map[string]any{docPayload})
+		client.RemoveHeader("X-HTTP-Method-Override")
 		So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
 		So(createDocResp.Body["ids"], ShouldNotBeEmpty)
 		ids, ok := createDocResp.Body["ids"].([]interface{})
@@ -1300,7 +1307,9 @@ func TestDatasetDocumentUpdate(t *testing.T) {
 			},
 		}
 
-		resp := client.PUT("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", updatePayload)
+		client.SetHeader("X-HTTP-Method-Override", "PUT")
+		resp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", updatePayload)
+		client.RemoveHeader("X-HTTP-Method-Override")
 		So(resp.StatusCode, ShouldEqual, http.StatusNoContent)
 
 		// 清理资源
@@ -1333,7 +1342,9 @@ func TestDatasetDocumentDelete(t *testing.T) {
 
 		// 先创建一个文档（使用批量创建接口）
 		docPayload := buildDatasetDocumentPayload()
-		createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", []map[string]any{docPayload})
+		client.SetHeader("X-HTTP-Method-Override", "POST")
+		createDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", []map[string]any{docPayload})
+		client.RemoveHeader("X-HTTP-Method-Override")
 		So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
 		So(createDocResp.Body["ids"], ShouldNotBeEmpty)
 		ids, ok := createDocResp.Body["ids"].([]interface{})
@@ -1341,8 +1352,8 @@ func TestDatasetDocumentDelete(t *testing.T) {
 		So(len(ids), ShouldBeGreaterThan, 0)
 		docID := ids[0].(string)
 
-		// 删除文档（使用批量删除接口）
-		resp := client.DELETE("/api/vega-backend/v1/resources/dataset/" + resourceID + "/docs/" + docID)
+		// 删除文档（使用 DELETE /resources/{id}/data/{doc_ids} 接口）
+		resp := client.DELETE("/api/vega-backend/v1/resources/" + resourceID + "/data/" + docID)
 		So(resp.StatusCode, ShouldEqual, http.StatusNoContent)
 
 		// 清理资源
@@ -1394,7 +1405,9 @@ func TestDatasetDocumentDeleteByQuery(t *testing.T) {
 				"content":    generateVector(768),
 			},
 		}
-		createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", documentsPayload)
+		client.SetHeader("X-HTTP-Method-Override", "POST")
+		createDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", documentsPayload)
+		client.RemoveHeader("X-HTTP-Method-Override")
 		So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
 		So(createDocResp.Body["ids"], ShouldNotBeEmpty)
 
@@ -1411,7 +1424,7 @@ func TestDatasetDocumentDeleteByQuery(t *testing.T) {
 
 		// 通过查询条件删除文档（使用POST请求，method override DELETE）
 		client.SetHeader("X-HTTP-Method-Override", "DELETE")
-		resp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs/query", queryPayload)
+		resp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", queryPayload)
 		client.RemoveHeader("X-HTTP-Method-Override")
 		So(resp.StatusCode, ShouldEqual, http.StatusNoContent)
 
@@ -1468,7 +1481,9 @@ func TestDatasetDocumentsSearchAfter(t *testing.T) {
 				"content":    generateVector(768),
 			})
 		}
-		createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", documentsPayload)
+		client.SetHeader("X-HTTP-Method-Override", "POST")
+		createDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", documentsPayload)
+		client.RemoveHeader("X-HTTP-Method-Override")
 		So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
 		So(createDocResp.Body["ids"], ShouldNotBeEmpty)
 
@@ -1556,7 +1571,9 @@ func TestDatasetDocumentsSourceFilter(t *testing.T) {
 				"content":    generateVector(768),
 			},
 		}
-		createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", documentsPayload)
+		client.SetHeader("X-HTTP-Method-Override", "POST")
+		createDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", documentsPayload)
+		client.RemoveHeader("X-HTTP-Method-Override")
 		So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
 		So(createDocResp.Body["ids"], ShouldNotBeEmpty)
 

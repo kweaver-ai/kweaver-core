@@ -40,7 +40,7 @@ type logicViewService struct {
 	cs         interfaces.CatalogService
 	rs         interfaces.ResourceService
 	ps         interfaces.PermissionService
-	qs         interfaces.SQLQueryService
+	qs         interfaces.RawQueryService
 }
 
 // NewLogicViewService creates a new ResourceDataService.
@@ -51,7 +51,7 @@ func NewLogicViewService(appSetting *common.AppSetting) interfaces.LogicViewServ
 			cs:         catalog.NewCatalogService(appSetting),
 			rs:         resource.NewResourceService(appSetting),
 			ps:         permission.NewPermissionService(appSetting),
-			qs:         query.NewSQLQueryService(appSetting),
+			qs:         query.NewRawQueryService(appSetting),
 		}
 	})
 	return lvService
@@ -286,7 +286,7 @@ func (lvs *logicViewService) executeCompositeViewByDSL(ctx context.Context, view
 				WithErrorDetails(fmt.Sprintf("failed to unmarshal dsl: %v", err))
 		}
 
-		req := interfaces.SQLQueryRequest{
+		req := interfaces.RawQueryRequest{
 			Query:        dslMap,
 			ResourceType: resourceType,
 			QueryType:    params.QueryType,
@@ -365,7 +365,7 @@ func (lvs *logicViewService) executeCompositeViewBySQL(ctx context.Context, view
 			break
 		}
 
-		req := interfaces.SQLQueryRequest{
+		req := interfaces.RawQueryRequest{
 			Query:        finalSql,
 			ResourceType: resourceType,
 			QueryType:    params.QueryType,

@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"vega-backend/interfaces"
-
 	"github.com/bytedance/sonic"
 	"github.com/hibiken/asynq"
 	"github.com/segmentio/kafka-go"
+
+	"vega-backend/interfaces"
 )
 
 func getIndexName(resourceID, buildTaskID string) string {
