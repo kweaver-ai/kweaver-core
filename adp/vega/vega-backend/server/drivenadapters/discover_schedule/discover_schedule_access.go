@@ -56,7 +56,7 @@ func stringToStrategies(s string) []string {
 }
 
 const (
-	SCHEDULED_DISCOVER_TASK_TABLE_NAME = "t_scheduled_discover_task"
+	SCHEDULED_DISCOVER_TASK_TABLE_NAME = "t_discover_schedule"
 )
 
 var (
@@ -195,7 +195,7 @@ func (dsa *discoverScheduleAccess) ExecuteTask(ctx context.Context, task *interf
  */
 func (dsa *discoverScheduleAccess) Create(ctx context.Context, task *interfaces.DiscoverSchedule) error {
 	// 使用OpenTelemetry追踪函数执行过程，创建一个客户端类型的span
-	ctx, span := ar_trace.Tracer.Start(ctx, "Insert into t_scheduled_discover_task", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := ar_trace.Tracer.Start(ctx, "Insert into t_discover_schedule", trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End() // 确保span在函数结束时结束
 	// 设置span的属性，包含数据库URL和类型信息
 	span.SetAttributes(
@@ -235,7 +235,7 @@ func (dsa *discoverScheduleAccess) Create(ctx context.Context, task *interfaces.
 			"f_strategies",
 			"f_last_run",
 			"f_next_run",
-			"f_creator_id",
+			"f_creator",
 			"f_creator_type",
 			"f_create_time",
 		).
@@ -295,10 +295,10 @@ func (dsa *discoverScheduleAccess) GetByID(ctx context.Context, id string) (*int
 		"f_strategies",
 		"f_last_run",
 		"f_next_run",
-		"f_creator_id",
+		"f_creator",
 		"f_creator_type",
 		"f_create_time",
-		"f_updater_id",
+		"f_updater",
 		"f_updater_type",
 		"f_update_time",
 	).From(SCHEDULED_DISCOVER_TASK_TABLE_NAME).
@@ -366,10 +366,10 @@ func (dsa *discoverScheduleAccess) List(ctx context.Context, params interfaces.D
 		"f_strategies",
 		"f_last_run",
 		"f_next_run",
-		"f_creator_id",
+		"f_creator",
 		"f_creator_type",
 		"f_create_time",
-		"f_updater_id",
+		"f_updater",
 		"f_updater_type",
 		"f_update_time",
 	).From(SCHEDULED_DISCOVER_TASK_TABLE_NAME)
@@ -516,7 +516,7 @@ func (dsa *discoverScheduleAccess) Update(ctx context.Context, task *interfaces.
 		enableFlag = 1
 	}
 	updateBuilder = updateBuilder.
-		Set("f_updater_id", task.Updater.ID).
+		Set("f_updater", task.Updater.ID).
 		Set("f_updater_type", task.Updater.Type).
 		Set("f_update_time", task.UpdateTime).
 		Set("f_enabled", enableFlag)
@@ -620,10 +620,10 @@ func (dsa *discoverScheduleAccess) GetEnabledTasks(ctx context.Context) ([]*inte
 		"f_enabled",
 		"f_last_run",
 		"f_next_run",
-		"f_creator_id",
+		"f_creator",
 		"f_creator_type",
 		"f_create_time",
-		"f_updater_id",
+		"f_updater",
 		"f_updater_type",
 		"f_update_time",
 	).From(SCHEDULED_DISCOVER_TASK_TABLE_NAME).

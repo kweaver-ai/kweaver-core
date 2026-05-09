@@ -41,7 +41,7 @@ type discoverTaskAccess struct {
 	db         *sql.DB
 }
 
-// GetScheduledTaskStrategies retrieves strategies from t_scheduled_discover_task table by ID.
+// GetScheduledTaskStrategies retrieves strategies from t_discover_schedule table by ID.
 func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, scheduledTaskID string) ([]string, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Query scheduled_discover_task by ID",
 		trace.WithSpanKind(trace.SpanKindClient))
@@ -52,7 +52,7 @@ func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, sc
 		attr.Key("db_type").String(libdb.GetDBType()))
 
 	sqlStr, vals, err := sq.Select("f_strategies").
-		From("t_scheduled_discover_task").
+		From("t_discover_schedule").
 		Where(sq.Eq{"f_id": scheduledTaskID}).
 		ToSql()
 	if err != nil {
@@ -126,7 +126,7 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 		Columns(
 			"f_id",
 			"f_catalog_id",
-			"f_scheduled_id",
+			"f_schedule_id",
 			"f_strategies",
 			"f_trigger_type",
 			"f_status",
@@ -187,7 +187,7 @@ func (da *discoverTaskAccess) GetByID(ctx context.Context, id string) (*interfac
 	sqlStr, vals, err := sq.Select(
 		"f_id",
 		"f_catalog_id",
-		"f_scheduled_id",
+		"f_schedule_id",
 		"f_strategies",
 		"f_trigger_type",
 		"f_status",
@@ -268,7 +268,7 @@ func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.Discov
 	builder := sq.Select(
 		"f_id",
 		"f_catalog_id",
-		"f_scheduled_id",
+		"f_schedule_id",
 		"f_strategies",
 		"f_trigger_type",
 		"f_status",
@@ -289,8 +289,8 @@ func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.Discov
 		countBuilder = countBuilder.Where(sq.Eq{"f_catalog_id": params.CatalogID})
 	}
 	if params.ScheduleID != "" {
-		builder = builder.Where(sq.Eq{"f_scheduled_id": params.ScheduleID})
-		countBuilder = countBuilder.Where(sq.Eq{"f_scheduled_id": params.ScheduleID})
+		builder = builder.Where(sq.Eq{"f_schedule_id": params.ScheduleID})
+		countBuilder = countBuilder.Where(sq.Eq{"f_schedule_id": params.ScheduleID})
 	}
 	if params.Status != "" {
 		builder = builder.Where(sq.Eq{"f_status": params.Status})

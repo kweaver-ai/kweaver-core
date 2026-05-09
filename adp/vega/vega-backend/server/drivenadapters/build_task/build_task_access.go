@@ -56,7 +56,7 @@ func (bta *buildTaskAccess) Create(ctx context.Context, buildTask *interfaces.Bu
 	query := `
 		INSERT INTO ` + BUILD_TASK_TABLE_NAME + ` (
 			f_id, f_resource_id, f_catalog_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
+			f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
@@ -104,7 +104,7 @@ func (bta *buildTaskAccess) GetByID(ctx context.Context, id string) (*interfaces
 	query := `
 		SELECT 
 			f_id, f_resource_id, f_catalog_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
+			f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
 		FROM ` + BUILD_TASK_TABLE_NAME + `
 		WHERE f_id = ?
 	`
@@ -171,7 +171,7 @@ func (bta *buildTaskAccess) GetByResourceID(ctx context.Context, resourceID stri
 	query := `
 		SELECT 
 			f_id, f_resource_id, f_catalog_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
+			f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
 		FROM ` + BUILD_TASK_TABLE_NAME + `
 		WHERE f_resource_id = ?
 		LIMIT 1
@@ -239,7 +239,7 @@ func (bta *buildTaskAccess) GetByCatalogID(ctx context.Context, catalogID string
 	query := `
 		SELECT 
 			f_id, f_resource_id, f_catalog_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
+			f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
 		FROM ` + BUILD_TASK_TABLE_NAME + `
 		WHERE f_catalog_id = ?
 	`
@@ -456,7 +456,7 @@ func (bta *buildTaskAccess) List(ctx context.Context, params interfaces.BuildTas
 	query := `
 		SELECT
 			f_id, f_resource_id, f_catalog_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
+			f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
 		FROM ` + BUILD_TASK_TABLE_NAME + ` ` + whereClause + `
 		ORDER BY ` + orderBy + ` ` + direction + `
 		LIMIT ? OFFSET ?
