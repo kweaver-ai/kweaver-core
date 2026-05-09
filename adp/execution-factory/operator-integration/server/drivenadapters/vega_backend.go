@@ -154,8 +154,9 @@ func (v *vegaBackendClient) CreateResource(ctx context.Context, req *interfaces.
 }
 
 func (v *vegaBackendClient) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
-	src := fmt.Sprintf("%s/v1/resources/dataset/%s/docs", v.baseURL, url.PathEscape(datasetID))
+	src := fmt.Sprintf("%s/v1/resources/%s/data", v.baseURL, url.PathEscape(datasetID))
 	headers := v.buildHeaders(ctx)
+	headers["X-HTTP-Method-Override"] = "POST"
 	v.logger.WithContext(ctx).Infof("write vega dataset documents, resource_id=%s, documents=%d, url=%s", datasetID, len(documents), src)
 	respCode, respData, err := v.httpClient.PostNoUnmarshal(ctx, src, headers, documents)
 	if err != nil {
@@ -169,7 +170,7 @@ func (v *vegaBackendClient) WriteDatasetDocuments(ctx context.Context, datasetID
 }
 
 func (v *vegaBackendClient) UpdateDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
-	src := fmt.Sprintf("%s/v1/resources/dataset/%s/docs", v.baseURL, url.PathEscape(datasetID))
+	src := fmt.Sprintf("%s/v1/resources/%s/data", v.baseURL, url.PathEscape(datasetID))
 	headers := v.buildHeaders(ctx)
 	v.logger.WithContext(ctx).Infof("update vega dataset documents, resource_id=%s, documents=%d, url=%s", datasetID, len(documents), src)
 	respCode, respData, err := v.httpClient.PutNoUnmarshal(ctx, src, headers, documents)
@@ -184,7 +185,7 @@ func (v *vegaBackendClient) UpdateDatasetDocuments(ctx context.Context, datasetI
 }
 
 func (v *vegaBackendClient) DeleteDatasetDocumentByID(ctx context.Context, datasetID string, docID string) error {
-	src := fmt.Sprintf("%s/v1/resources/dataset/%s/docs/%s", v.baseURL, url.PathEscape(datasetID), url.PathEscape(docID))
+	src := fmt.Sprintf("%s/v1/resources/%s/data/%s", v.baseURL, url.PathEscape(datasetID), url.PathEscape(docID))
 	headers := v.buildHeaders(ctx)
 	v.logger.WithContext(ctx).Infof("delete vega dataset document, resource_id=%s, doc_id=%s, url=%s", datasetID, docID, src)
 	respCode, respData, err := v.httpClient.DeleteNoUnmarshal(ctx, src, headers)

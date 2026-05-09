@@ -64,15 +64,32 @@ func TestVegaBackendClient(t *testing.T) {
 			docs := []map[string]any{
 				{"_id": "skill-1", "skill_id": "skill-1", "name": "demo"},
 			}
-			httpClient.EXPECT().PostNoUnmarshal(gomock.Any(), "http://vega-backend:9898/api/vega-backend/v1/resources/dataset/kweaver_execution_factory_skill_dataset/docs", headers, docs).
+			writeHeaders := map[string]string{
+				"Content-Type":            "application/json",
+				"x-account-id":           "acc-1",
+				"x-account-type":         "user",
+				"X-HTTP-Method-Override": "POST",
+			}
+			httpClient.EXPECT().PostNoUnmarshal(gomock.Any(), "http://vega-backend:9898/api/vega-backend/v1/resources/kweaver_execution_factory_skill_dataset/data", writeHeaders, docs).
 				Return(http.StatusCreated, []byte(`{}`), nil)
 
 			err := client.WriteDatasetDocuments(ctx, "kweaver_execution_factory_skill_dataset", docs)
 			So(err, ShouldBeNil)
 		})
 
+		Convey("updates dataset documents", func() {
+			docs := []map[string]any{
+				{"_id": "skill-1", "skill_id": "skill-1", "name": "demo-updated"},
+			}
+			httpClient.EXPECT().PutNoUnmarshal(gomock.Any(), "http://vega-backend:9898/api/vega-backend/v1/resources/kweaver_execution_factory_skill_dataset/data", headers, docs).
+				Return(http.StatusOK, []byte(`{}`), nil)
+
+			err := client.UpdateDatasetDocuments(ctx, "kweaver_execution_factory_skill_dataset", docs)
+			So(err, ShouldBeNil)
+		})
+
 		Convey("deletes dataset document by id", func() {
-			httpClient.EXPECT().DeleteNoUnmarshal(gomock.Any(), "http://vega-backend:9898/api/vega-backend/v1/resources/dataset/kweaver_execution_factory_skill_dataset/docs/skill-1", headers).
+			httpClient.EXPECT().DeleteNoUnmarshal(gomock.Any(), "http://vega-backend:9898/api/vega-backend/v1/resources/kweaver_execution_factory_skill_dataset/data/skill-1", headers).
 				Return(http.StatusNoContent, []byte{}, nil)
 
 			err := client.DeleteDatasetDocumentByID(ctx, "kweaver_execution_factory_skill_dataset", "skill-1")

@@ -447,7 +447,7 @@ sequenceDiagram
     R->>DB: 写 history 快照
     DB-->>R: commit success
     R->>S: UpsertSkill(skill)
-    S->>V: POST /api/vega-backend/v1/resources/{id}/data (X-HTTP-Method-Override: POST)
+    S->>V: POST /resources/{id}/data
 ```
 
 ### 历史回放流程
@@ -469,7 +469,7 @@ sequenceDiagram
         R->>DB: 写 release/history
         DB-->>R: commit success
         R->>S: UpsertSkill(skill)
-        S->>V: POST /api/vega-backend/v1/resources/{id}/data (X-HTTP-Method-Override: POST)
+        S->>V: POST /resources/{id}/data
     end
 ```
 
