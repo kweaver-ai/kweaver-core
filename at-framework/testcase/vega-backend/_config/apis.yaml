@@ -5,6 +5,11 @@
 #   PUT       /api/vega-backend/v1/catalogs/{id}
 #   GET       /api/vega-backend/v1/catalogs/{ids}/health-status
 #   POST      /api/vega-backend/v1/catalogs/{id}/test-connection
+#   GET       /api/vega-backend/v1/discover-tasks
+#   GET       /api/vega-backend/v1/discover-tasks/{id}
+#   DELETE    /api/vega-backend/v1/discover-tasks/{ids}
+#   POST      /api/vega-backend/v1/catalogs/{id}/discover
+
 
 
 -   name: 查询catalog列表
@@ -232,7 +237,7 @@
             }
 
 -   name: 检查catalog状态
-    url: /api/vega-backend/v1/catalogs/${ids}/health-status
+    url: /api/vega-backend/v1/catalogs/${id}/health-status
     method: GET
     headers: >-
         {
@@ -275,8 +280,174 @@
         200: >-
             {
               "success": true,
-              "message": "连接成功",
-              "latency_ms": 0
+              "message": "连接成功"
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "目录不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 获取发现任务列表
+    url: /api/vega-backend/v1/discover-tasks
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "entries": [],
+              "total_count": 0
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 获取发现任务详情
+    url: /api/vega-backend/v1/discover-tasks/${id}
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "id": "discover_task_id",
+              "catalog_id": "catalog_id",
+              "schedule_id": "",
+              "strategies": ["insert"],
+              "trigger_type": "manual",
+              "status": "pending",
+              "progress": 0,
+              "message": "",
+              "start_time": 0,
+              "finish_time": 0,
+              "result": null,
+              "creator": {"id": "", "type": "", "name": ""},
+              "create_time": 0
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "任务不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 删除发现任务
+    url: /api/vega-backend/v1/discover-tasks/${ids}
+    method: DELETE
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "任务不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "状态冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: catalog资源发现
+    url: /api/vega-backend/v1/catalogs/${id}/discover
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "id": "discover_task_id"
             }
         401: >-
             {

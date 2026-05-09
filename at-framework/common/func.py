@@ -203,15 +203,29 @@ def load_case_by_suite(file_path: str):
     with open(file_path, "r", encoding="utf-8") as fp:
         suite = yaml.safe_load(fp)
 
-    if suite.get("switch", "n") not in ('y', 'Y', '1', 'ON'):
+    _enabled_values = ('y', '1', 'on', 'true')
+    if suite.get("switch", "n").lower() not in _enabled_values:
         return []
 
+    """
+    include语法实现
+    当用例文件包含include时，读取子文件
+    """
+    sub_case_list = []
+    for f in suite.get("include", []):
+        sub_file_path = os.path.join(os.path.dirname(file_path), f)
+        with open(sub_file_path, "r", encoding="utf-8") as fp:
+            sub_case = yaml.safe_load(fp)
+            sub_case_list.extend(sub_case)
+
+    suite["cases"].extend(sub_case_list)
+
     case_list = []
-    _enabled_values = ('y', 'Y', '1', 'ON', 'on', 'true', 'TRUE', 'True')
     for case in suite["cases"]:
-        case_switch = str(case.get("switch", suite.get("switch", "y"))).strip()
+        case_switch = str(case.get("switch", "y")).lower()
         if case_switch not in _enabled_values:
             continue
+
         case_info = {
             "feature": suite.get("feature"),
             "story": suite.get("story"),
@@ -278,8 +292,8 @@ def load_case(path: str):
     default_protocol = (parsed.scheme if parsed and parsed.scheme else "https")
     default_host = (server_cfg.get("host", "") or (parsed.hostname if parsed else "") or "").strip()
     default_port = (
-        str(server_cfg.get("public_port", "")).strip()
-        or (str(parsed.port) if parsed and parsed.port else ("443" if default_protocol == "https" else "80"))
+            str(server_cfg.get("public_port", "")).strip()
+            or (str(parsed.port) if parsed and parsed.port else ("443" if default_protocol == "https" else "80"))
     )
 
     global_flat.setdefault("protocol", default_protocol)
@@ -543,4 +557,3 @@ if __name__ == "__main__":
     for x in rst:
         print(x)
     pass
-
