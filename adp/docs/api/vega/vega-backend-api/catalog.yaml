@@ -340,19 +340,27 @@ components:
         - connector_type
       properties:
         id:
-          description: catalog ID
+          description: catalog ID；小写字母、数字、下划线、连字符，不能以下划线开头，最大长度 40
           type: string
+          pattern: "^[a-z0-9][a-z0-9\\-_]{0,39}$"
+          maxLength: 40
         name:
-          description: catalog 名称，全局唯一
+          description: catalog 名称，必填，全局唯一，最大长度 255
           type: string
+          minLength: 1
+          maxLength: 255
         tags:
-          description: 标签
+          description: 标签列表（可选），最多 5 个，每个标签非空且最大长度 40，不能包含特殊字符
           type: array
+          maxItems: 5
           items:
             type: string
+            minLength: 1
+            maxLength: 40
         description:
-          description: 描述
+          description: 描述，最大长度 1000
           type: string
+          maxLength: 1000
         type:
           description: catalog 类型
           type: string
@@ -419,19 +427,27 @@ components:
         - connector_type
       properties:
         id:
-          description: catalog ID；POST 时可省略由后端生成，PUT 时必填且必须与路径参数一致
+          description: catalog ID；POST 时可省略由后端生成，PUT 时必填且必须与路径参数一致；小写字母、数字、下划线、连字符，不能以下划线开头，最大长度 40
           type: string
+          pattern: "^[a-z0-9][a-z0-9\\-_]{0,39}$"
+          maxLength: 40
         name:
-          description: catalog 名称，全局唯一
+          description: catalog 名称，必填，全局唯一，最大长度 255
           type: string
+          minLength: 1
+          maxLength: 255
         tags:
-          description: 标签
+          description: 标签列表（可选），最多 5 个，每个标签非空且最大长度 40，不能包含特殊字符
           type: array
+          maxItems: 5
           items:
             type: string
+            minLength: 1
+            maxLength: 40
         description:
-          description: 描述
+          description: 描述，最大长度 1000
           type: string
+          maxLength: 1000
         connector_type:
           description: 连接器类型标识；必须是已注册且 enabled 的类型
           type: string
