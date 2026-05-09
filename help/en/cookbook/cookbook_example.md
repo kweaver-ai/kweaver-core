@@ -106,6 +106,6 @@ A non-empty `concepts` list from `bkn search` indicates the retrieval pipeline i
 
 ## 6. See also
 
-- References: [BKN Engine](../bkn.md) · [Data Source Management](../datasource.md) · [Quick start](../quick-start.md)
+- References: [BKN Engine](../manual/bkn.md) · [Data Source Management](../manual/datasource.md) · [Quick start](../quick-start.md)
 - End-to-end sample project: [`examples/02-csv-to-kn/`](../../../examples/02-csv-to-kn/) in the repo
 - Agent import template: [`../examples/sample-agent.import.json`](../examples/sample-agent.import.json) — bind it to your new KN once the build finishes

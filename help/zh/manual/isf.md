@@ -24,7 +24,7 @@ kweaver-admin role list
 kweaver-admin audit list --user alice --start 2026-04-01 --end 2026-04-30
 ```
 
-> 命令清单、token 隔离（`~/.kweaver-admin/`）、与最小化安装的兼容说明等详见 [安装与部署 — 完整安装后的管理员工具（kweaver-admin）](install.md#-完整安装后的管理员工具kweaver-admin)。
+> 命令清单、token 隔离（`~/.kweaver-admin/`）、与最小化安装的兼容说明等详见 [安装与部署 — 完整安装后的管理员工具（kweaver-admin）](../install.md#-完整安装后的管理员工具kweaver-admin)。
 >
 > 内置「三权分立」账号 `system / admin / security / audit` 不可随意删改；操作员请使用**个人账号**而非共享 `admin`，便于审计追溯。
 

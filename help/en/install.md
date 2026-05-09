@@ -437,7 +437,7 @@ kweaver-admin small-model add
 kweaver-admin small-model test <modelId>
 ```
 
-> Equivalent to invoking `kweaver call /api/mf-model-manager/...` (see [Model management](model.md)); for day-to-day admin work the `kweaver-admin llm` / `small-model` subcommands offer better validation and output.
+> Equivalent to invoking `kweaver call /api/mf-model-manager/...` (see [Model management](manual/model.md)); for day-to-day admin work the `kweaver-admin llm` / `small-model` subcommands offer better validation and output.
 
 #### Audit
 
@@ -552,7 +552,7 @@ On a cluster where Core is already running:
 
 KWeaver does not include pre-configured models by default. To use **semantic search** (`kweaver bkn search`) or **Decision Agent**, register an LLM and an Embedding model first.
 
-> Full details: [Model management](model.md). Minimal registration example:
+> Full details: [Model management](manual/model.md). Minimal registration example:
 
 ```bash
 # Register an LLM (DeepSeek example)
@@ -586,7 +586,7 @@ kweaver call '/api/mf-model-manager/v1/llm/list?page=1&size=50'
 kweaver call '/api/mf-model-manager/v1/small-model/list?page=1&size=50'
 ```
 
-> Enabling BKN semantic search also requires a ConfigMap change — see [Model management — Enable BKN semantic search](model.md#enable-bkn-semantic-search).
+> Enabling BKN semantic search also requires a ConfigMap change — see [Model management — Enable BKN semantic search](manual/model.md#enable-bkn-semantic-search).
 
 ---
 
@@ -617,5 +617,5 @@ kubectl get events -A --sort-by=.lastTimestamp | tail -50
 | Goal | Doc |
 | --- | --- |
 | First commands and BKN | [Quick start](quick-start.md) |
-| Model registration | [Model management](model.md) |
-| Enable BKN semantic search | [Enable BKN semantic search](model.md#enable-bkn-semantic-search) |
+| Model registration | [Model management](manual/model.md) |
+| Enable BKN semantic search | [Enable BKN semantic search](manual/model.md#enable-bkn-semantic-search) |

@@ -14,7 +14,7 @@ Typical ingress prefixes:
 
 **Related modules:** [Context Loader](context-loader.md), [Execution Factory](execution-factory.md), [BKN Engine](bkn.md), [Trace AI](trace-ai.md).
 
-> **Model configuration prerequisite**: Agents require an LLM and an Embedding model. A `--minimum` install does not include pre-configured models — complete [Install and deploy — Configure models](install.md#configure-models) before using agents. Use `--llm-id` when creating an agent to specify the registered LLM ID.
+> **Model configuration prerequisite**: Agents require an LLM and an Embedding model. A `--minimum` install does not include pre-configured models — complete [Install and deploy — Configure models](../install.md#configure-models) before using agents. Use `--llm-id` when creating an agent to specify the registered LLM ID.
 
 ## 🚀 Usage
 

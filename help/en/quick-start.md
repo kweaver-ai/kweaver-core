@@ -4,7 +4,7 @@ This walkthrough assumes KWeaver Core is already [installed and deployed](instal
 
 > Before installing on a new host, run **`sudo bash deploy/preflight.sh`** (check / `--fix`) to validate kernel, sysctl, containerd, kubectl, helm, Node and the `kweaver` CLIs. After `deploy.sh kweaver-core install`, run **`sudo bash deploy/onboard.sh`** (Linux — matches `sudo deploy.sh`; macOS dev path uses plain `bash`) to register an LLM + embedding, patch the BKN ConfigMap (only when the default actually changes), and on a full install create the business user **`test`** + import the Context Loader toolset. Both are documented in [Install — Pre-install host check / fix: `preflight.sh`](install.md#-pre-install-host-check--fix-preflightsh) and [Install — Post-install: `onboard.sh`](install.md#post-install-onboardsh).
 
-> **Model configuration note**: **Register at least one LLM and one embedding (vector) small model** when possible: the LLM powers Agent chat and reasoning; the embedding model powers semantic search and vectorization. Semantic search (Step 4) and Agent chat (Step 5) depend on these; after registering an embedding, complete [Enable BKN semantic search](model.md#enable-bkn-semantic-search) in the cluster (ConfigMap / default small-model name). Other registration details are in [Model management](model.md). A `--minimum` install has no bundled models; see also [Install and deploy — Configure models](install.md#configure-models). Data source connection, knowledge network creation, and conditional queries work without models.
+> **Model configuration note**: **Register at least one LLM and one embedding (vector) small model** when possible: the LLM powers Agent chat and reasoning; the embedding model powers semantic search and vectorization. Semantic search (Step 4) and Agent chat (Step 5) depend on these; after registering an embedding, complete [Enable BKN semantic search](manual/model.md#enable-bkn-semantic-search) in the cluster (ConfigMap / default small-model name). Other registration details are in [Model management](manual/model.md). A `--minimum` install has no bundled models; see also [Install and deploy — Configure models](install.md#configure-models). Data source connection, knowledge network creation, and conditional queries work without models.
 
 ---
 
@@ -47,7 +47,7 @@ kweaver-admin user roles <userId>                                  # verify
 ```
 
 - **Path A default password is `111111`** (set by onboard for `test`); **Path B default password is `123456`** (ISF `Usrm_AddUser` hardcoded default). Use whichever matches the path you took.
-- Role / permission notes: [Install — Administrator tool after a full install (kweaver-admin)](install.md#-administrator-tool-after-a-full-install-kweaver-admin) and [ISF](isf.md#-administrator-tool-kweaver-admin). In production, grant least privilege; the "every role" pattern is for local / PoC / quick start.
+- Role / permission notes: [Install — Administrator tool after a full install (kweaver-admin)](install.md#-administrator-tool-after-a-full-install-kweaver-admin) and [ISF](manual/isf.md#-administrator-tool-kweaver-admin). In production, grant least privilege; the "every role" pattern is for local / PoC / quick start.
 - **Minimum install** (`--minimum`): both paths are unnecessary — use `kweaver auth login <platform-url> --no-auth`.
 
 If you already have a sign-in account from ops, skip both paths and go straight to "Sign in" below.
@@ -167,7 +167,7 @@ kweaver bkn object-type list <kn_id>
 
 ### Step 4: Semantic Search
 
-> Semantic search requires an embedding model and [Enable BKN semantic search](model.md#enable-bkn-semantic-search). If either is missing, this step may fail. See also [Model management](model.md) and [Install and deploy — Configure models](install.md#configure-models). The **conditional query** below works without semantic search enabled.
+> Semantic search requires an embedding model and [Enable BKN semantic search](manual/model.md#enable-bkn-semantic-search). If either is missing, this step may fail. See also [Model management](manual/model.md) and [Install and deploy — Configure models](install.md#configure-models). The **conditional query** below works without semantic search enabled.
 
 ```bash
 kweaver bkn search <kn_id> "overdue orders"
@@ -270,7 +270,7 @@ const subgraph = await client.bkn.querySubgraph(knId, {
 
 ### Semantic Search
 
-> Requires a registered embedding and [Enable BKN semantic search](model.md#enable-bkn-semantic-search).
+> Requires a registered embedding and [Enable BKN semantic search](manual/model.md#enable-bkn-semantic-search).
 
 ```typescript
 const result = await client.bkn.semanticSearch(knId, 'overdue orders');
@@ -299,7 +299,7 @@ const mcpInstances = await cl.queryInstances({ ot_id: otId, limit: 5 });
 
 **Story**: The knowledge network is built. Now you want to give your business team a natural-language interface — no SQL needed, just ask questions and get answers.
 
-> **Prerequisite**: Agents require an LLM and an embedding; see [Model management](model.md) and [Install and deploy — Configure models](install.md#configure-models). For semantic features, also complete [Enable BKN semantic search](model.md#enable-bkn-semantic-search).
+> **Prerequisite**: Agents require an LLM and an embedding; see [Model management](manual/model.md) and [Install and deploy — Configure models](install.md#configure-models). For semantic features, also complete [Enable BKN semantic search](manual/model.md#enable-bkn-semantic-search).
 
 ### CLI
 
@@ -452,9 +452,9 @@ kweaver dataview query <view_id> --sql "SELECT supplier_name, city FROM <catalog
 # kweaver dataview get <view_id> → use JSON field meta_table_name (Vega catalog id + source schema + table)
 ```
 
-`<catalog>` must be the **Vega catalog id** for that data source (see `kweaver vega catalog list`); `"supply_chain"` / `"supplier_entity"` map to the source database/schema and table. **Reliable approach**: copy the **`meta_table_name`** field from **`kweaver dataview get <view_id>`** into your SQL. For `sql_str`, `fields`, and the field table, see the Dataview section in [VEGA](vega.md).
+`<catalog>` must be the **Vega catalog id** for that data source (see `kweaver vega catalog list`); `"supply_chain"` / `"supplier_entity"` map to the source database/schema and table. **Reliable approach**: copy the **`meta_table_name`** field from **`kweaver dataview get <view_id>`** into your SQL. For `sql_str`, `fields`, and the field table, see the Dataview section in [VEGA](manual/vega.md).
 
-On a **Core-only** install, `dataview query` without `--sql` supports structured reads (pagination, column selection, etc.). **Ad-hoc `--sql`** requires **`vega-calculate-coordinator`**, shipped as part of the **Etrino** stack (`vega-hdfs`, `vega-calculate`, `vega-metadata`). From the `deploy` directory run `./deploy.sh etrino install`. See [Install and deploy](install.md) and [VEGA](vega.md).
+On a **Core-only** install, `dataview query` without `--sql` supports structured reads (pagination, column selection, etc.). **Ad-hoc `--sql`** requires **`vega-calculate-coordinator`**, shipped as part of the **Etrino** stack (`vega-hdfs`, `vega-calculate`, `vega-metadata`). From the `deploy` directory run `./deploy.sh etrino install`. See [Install and deploy](install.md) and [VEGA](manual/vega.md).
 
 ---
 
@@ -482,15 +482,15 @@ kweaver dataflow logs <dag_id> <instance_id> --detail
 
 | Goal | Doc |
 | --- | --- |
-| Full BKN operations (schema, conditional queries, actions) | [bkn.md](bkn.md) |
-| Model registration & testing | [Model management](model.md) |
-| Enable semantic search in the cluster (ConfigMap) | [Enable BKN semantic search](model.md#enable-bkn-semantic-search) |
-| Data virtualization & catalog management | [vega.md](vega.md) |
-| Agent lifecycle | [decision-agent.md](decision-agent.md) |
-| Pipeline orchestration details | [dataflow.md](dataflow.md) |
-| MCP layered retrieval | [context-loader.md](context-loader.md) |
-| Tools & skill management | [execution-factory.md](execution-factory.md) |
-| Trace & evidence chain | [trace-ai.md](trace-ai.md) |
-| Auth & security governance | [isf.md](isf.md) |
+| Full BKN operations (schema, conditional queries, actions) | [bkn.md](manual/bkn.md) |
+| Model registration & testing | [Model management](manual/model.md) |
+| Enable semantic search in the cluster (ConfigMap) | [Enable BKN semantic search](manual/model.md#enable-bkn-semantic-search) |
+| Data virtualization & catalog management | [vega.md](manual/vega.md) |
+| Agent lifecycle | [decision-agent.md](manual/decision-agent.md) |
+| Pipeline orchestration details | [dataflow.md](manual/dataflow.md) |
+| MCP layered retrieval | [context-loader.md](manual/context-loader.md) |
+| Tools & skill management | [execution-factory.md](manual/execution-factory.md) |
+| Trace & evidence chain | [trace-ai.md](manual/trace-ai.md) |
+| Auth & security governance | [isf.md](manual/isf.md) |
 
 Full SDK example code ships with the `@kweaver-ai/kweaver-sdk` npm package.

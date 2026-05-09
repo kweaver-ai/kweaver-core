@@ -440,7 +440,7 @@ kweaver-admin small-model add
 kweaver-admin small-model test <modelId>
 ```
 
-> 与 [`模型管理`](model.md) 中通过 `kweaver call /api/mf-model-manager/...` 的方式等价；推荐管理员日常用 `kweaver-admin llm` / `small-model` 子命令，参数校验与回显更友好。
+> 与 [`模型管理`](manual/model.md) 中通过 `kweaver call /api/mf-model-manager/...` 的方式等价；推荐管理员日常用 `kweaver-admin llm` / `small-model` 子命令，参数校验与回显更友好。
 
 #### 审计
 
@@ -460,7 +460,7 @@ kweaver-admin --json call /api/eacp/v1/... -X POST -d '{"...":"..."}'
 
 - **新建用户的默认密码固定为 `123456`**，首次登录强制改密 — 这是 ISF 用户存储的上游既定行为（`Usrm_AddUser` thrift 不接收密码参数）。请通过安全渠道把账号交给本人，由其首登时改密；后续忘/失密用 `kweaver-admin user reset-password`。
 - **三权分立内置账号**：`system / admin / security / audit` 不可随意删改；操作员请使用**个人账号**而非共享 `admin`，便于审计追溯。
-- **首次登录改密（错误码 401001017）**：`kweaver-admin auth login` 触发该错误时，TTY 下会引导改密并自动重试登录；非 TTY 下显式补充 `--new-password '<新密码>'` 一次性完成（与 `kweaver` CLI 行为一致，参见 [Info Security Fabric — 修改密码](isf.md#-修改密码)）。
+- **首次登录改密（错误码 401001017）**：`kweaver-admin auth login` 触发该错误时，TTY 下会引导改密并自动重试登录；非 TTY 下显式补充 `--new-password '<新密码>'` 一次性完成（与 `kweaver` CLI 行为一致，参见 [Info Security Fabric — 修改密码](manual/isf.md#-修改密码)）。
 - **TLS：** `-k` / `--insecure`（或环境变量 `KWEAVER_TLS_INSECURE=1`）仅用于开发/自签名证书场景，生产请使用受信任证书。
 - **Web 控制台未暴露的能力，CLI 是首选路径**：例如部门写入（`Usrm_AddDepartment` / `Usrm_EditDepartment`）、用户更新（`Usrm_EditUser` 回退）、用户角色查询（`role list + role members` 回退）等，详见 [`kweaver-admin/docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md)。
 
@@ -555,7 +555,7 @@ curl -sk "https://<访问地址>/health" || true
 
 KWeaver 默认不包含预置模型。如需使用 **语义搜索**（`kweaver bkn search`）或 **Decision Agent**，需先注册 LLM 与 Embedding 小模型。
 
-> 🔧 详细操作见 [模型管理](model.md)。以下为最小注册示例：
+> 🔧 详细操作见 [模型管理](manual/model.md)。以下为最小注册示例：
 
 ```bash
 # 注册 LLM（以 DeepSeek 为例）
@@ -589,7 +589,7 @@ kweaver call '/api/mf-model-manager/v1/llm/list?page=1&size=50'
 kweaver call '/api/mf-model-manager/v1/small-model/list?page=1&size=50'
 ```
 
-> 🔧 启用 BKN 语义搜索还需修改 ConfigMap，见 [模型管理 — 启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
+> 🔧 启用 BKN 语义搜索还需修改 ConfigMap，见 [模型管理 — 启用 BKN 语义搜索](manual/model.md#启用-bkn-语义搜索)。
 
 ---
 
@@ -620,5 +620,5 @@ kubectl get events -A --sort-by=.lastTimestamp | tail -50
 | 目标 | 文档 |
 | --- | --- |
 | 🚀 上手第一条命令、首次创建 BKN | [快速开始](quick-start.md) |
-| 🧠 模型注册、测试与管理 | [模型管理](model.md) |
-| 🔧 启用 BKN 语义搜索（ConfigMap） | [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索) |
+| 🧠 模型注册、测试与管理 | [模型管理](manual/model.md) |
+| 🔧 启用 BKN 语义搜索（ConfigMap） | [启用 BKN 语义搜索](manual/model.md#启用-bkn-语义搜索) |

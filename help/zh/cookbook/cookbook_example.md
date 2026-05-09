@@ -106,6 +106,6 @@ kweaver bkn search <kn_id> "物料"
 
 ## 6. See also（延伸阅读）
 
-- 参考：[BKN 引擎](../bkn.md) · [数据源管理](../datasource.md) · [快速开始](../quick-start.md)
+- 参考：[BKN 引擎](../manual/bkn.md) · [数据源管理](../manual/datasource.md) · [快速开始](../quick-start.md)
 - 完整示例项目：仓库内 [`examples/02-csv-to-kn/`](../../../examples/02-csv-to-kn/)
 - Agent 导入模板：[`../examples/sample-agent.import.json`](../examples/sample-agent.import.json)（可在 KN 建好后绑定使用）

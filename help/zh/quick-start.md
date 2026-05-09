@@ -53,7 +53,7 @@ kweaver-admin user roles <userId>                              # 确认已挂角
 ```
 
 - **路径 A 默认密码 `111111`**（onboard 给 `test` 设置的）；**路径 B 默认密码 `123456`**（ISF `Usrm_AddUser` 硬编码默认）。两者不同，请按实际路径取。
-- 角色与权限说明见 [安装与部署 — 完整安装后的管理员工具（kweaver-admin）](install.md#-完整安装后的管理员工具kweaver-admin) 与 [ISF](isf.md#-管理员工具kweaver-admin)。生产环境请只赋必要角色；上面「挂齐所有角色」适合本地 / POC / 快速开始。
+- 角色与权限说明见 [安装与部署 — 完整安装后的管理员工具（kweaver-admin）](install.md#-完整安装后的管理员工具kweaver-admin) 与 [ISF](manual/isf.md#-管理员工具kweaver-admin)。生产环境请只赋必要角色；上面「挂齐所有角色」适合本地 / POC / 快速开始。
 - **最小化安装**（`--minimum`）下鉴权与业务域服务被裁剪，**两条路径都不需要**：直接用 `kweaver auth login <平台地址> --no-auth` 即可。
 
 若你已从运维处拿到**可登录的现有账号**（或安装文档给出的初始用户），两条路径都可以跳过，直接进入下节「登录平台」。
@@ -104,7 +104,7 @@ kweaver call '/api/agent-operator-integration/v1/tool-box/list?name=contextloade
 
 **推荐路径**：跑 `sudo bash deploy/onboard.sh`（macOS dev：`bash deploy/dev/mac.sh onboard`），它会**交互式**询问你要不要注册 LLM / Embedding，并在新增 Embedding 时按需 patch BKN ConfigMap 自动启用语义搜索；非交互场景用 `sudo bash deploy/onboard.sh --config=models.yaml`（参考 `deploy/conf/models.yaml.example`）。已存在的模型会自动跳过，可重复运行。
 
-**手工方式**：见 [模型管理](model.md)，注册 Embedding 后还需 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
+**手工方式**：见 [模型管理](manual/model.md)，注册 Embedding 后还需 [启用 BKN 语义搜索](manual/model.md#启用-bkn-语义搜索)。
 
 ---
 
@@ -212,7 +212,7 @@ kweaver bkn object-type query <kn_id> ot-1 \
   '{"limit":10,"condition":{"field":"status","operation":"==","value":"overdue"}}'
 ```
 
-语义搜索（需要 Embedding 模型并 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)）：
+语义搜索（需要 Embedding 模型并 [启用 BKN 语义搜索](manual/model.md#启用-bkn-语义搜索)）：
 
 ```bash
 kweaver bkn search <kn_id> "超期订单"
@@ -226,7 +226,7 @@ kweaver bkn search <kn_id> "超期订单"
 
 **故事线**：知识网络建好了，你希望给业务团队一个自然语言接口 — 不用写 SQL，直接问问题就能得到回答。
 
-> **前置条件**：Agent 需要 LLM；配置见 [模型管理](model.md)。语义能力还需 Embedding 并 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
+> **前置条件**：Agent 需要 LLM；配置见 [模型管理](manual/model.md)。语义能力还需 Embedding 并 [启用 BKN 语义搜索](manual/model.md#启用-bkn-语义搜索)。
 
 ```bash
 # 查看已注册的 LLM（获取 llm_id）
@@ -343,9 +343,9 @@ kweaver dataview query <view_id> --sql "SELECT supplier_name, city FROM <catalog
 # kweaver dataview get <view_id> → 使用响应 JSON 字段 meta_table_name（与 vega catalog id + 源库 schema/表名 一致）
 ```
 
-其中 `<catalog>` 须替换为该数据源在 **Vega** 中注册得到的 **catalog id**（见 `kweaver vega catalog list`），**不要**用视图逻辑名或裸表名代替；`"supply_chain"`、`"supplier_entity"` 分别对应源库中的 database/schema 与物理表名。**可靠做法**：`kweaver dataview get <view_id>` 取响应中的 **`meta_table_name`** 字段，在 SQL 中原样引用；`sql_str`、`fields` 含义见 [VEGA](vega.md)「数据视图」中的字段表。
+其中 `<catalog>` 须替换为该数据源在 **Vega** 中注册得到的 **catalog id**（见 `kweaver vega catalog list`），**不要**用视图逻辑名或裸表名代替；`"supply_chain"`、`"supplier_entity"` 分别对应源库中的 database/schema 与物理表名。**可靠做法**：`kweaver dataview get <view_id>` 取响应中的 **`meta_table_name`** 字段，在 SQL 中原样引用；`sql_str`、`fields` 含义见 [VEGA](manual/vega.md)「数据视图」中的字段表。
 
-仅 **Core** 部署时，`dataview query` 不带 `--sql` 可做分页、选列等结构化查询；**`--sql` 复杂自定义 SQL** 需要 **`vega-calculate-coordinator`**，由 **Etrino** 套件提供（`vega-hdfs`、`vega-calculate`、`vega-metadata`）。在 `deploy` 目录执行 `./deploy.sh etrino install` 即可。详见 [安装与部署](install.md) 与 [VEGA](vega.md)。
+仅 **Core** 部署时，`dataview query` 不带 `--sql` 可做分页、选列等结构化查询；**`--sql` 复杂自定义 SQL** 需要 **`vega-calculate-coordinator`**，由 **Etrino** 套件提供（`vega-hdfs`、`vega-calculate`、`vega-metadata`）。在 `deploy` 目录执行 `./deploy.sh etrino install` 即可。详见 [安装与部署](install.md) 与 [VEGA](manual/vega.md)。
 
 ---
 
@@ -455,7 +455,7 @@ const subgraph = await client.bkn.querySubgraph(knId, {
 
 ### 🧭 语义搜索
 
-> 需已注册 Embedding 并完成 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
+> 需已注册 Embedding 并完成 [启用 BKN 语义搜索](manual/model.md#启用-bkn-语义搜索)。
 
 ```typescript
 const result = await client.bkn.semanticSearch(knId, '超期订单');
@@ -518,13 +518,13 @@ const messages = await client.conversations.listMessages(conversationId, { limit
 
 | 目标 | 文档 |
 | --- | --- |
-| 🧱 完整 BKN 操作（Schema、条件查询、Action） | [bkn.md](bkn.md) |
-| 🧠 模型注册、测试与管理 | [model.md](model.md) |
-| 🔧 集群中启用语义搜索（ConfigMap） | [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索) |
-| 🗄️ 数据虚拟化与 Catalog 管理 | [vega.md](vega.md) |
-| 🤖 Agent 全生命周期 | [decision-agent.md](decision-agent.md) |
-| 🔁 流程编排详细 | [dataflow.md](dataflow.md) |
-| 📚 MCP 分层检索 | [context-loader.md](context-loader.md) |
-| 🛠️ 工具与技能管理 | [execution-factory.md](execution-factory.md) |
-| 🔭 链路追踪与证据链 | [trace-ai.md](trace-ai.md) |
-| 🔐 认证与安全治理 | [isf.md](isf.md) |
+| 🧱 完整 BKN 操作（Schema、条件查询、Action） | [bkn.md](manual/bkn.md) |
+| 🧠 模型注册、测试与管理 | [model.md](manual/model.md) |
+| 🔧 集群中启用语义搜索（ConfigMap） | [启用 BKN 语义搜索](manual/model.md#启用-bkn-语义搜索) |
+| 🗄️ 数据虚拟化与 Catalog 管理 | [vega.md](manual/vega.md) |
+| 🤖 Agent 全生命周期 | [decision-agent.md](manual/decision-agent.md) |
+| 🔁 流程编排详细 | [dataflow.md](manual/dataflow.md) |
+| 📚 MCP 分层检索 | [context-loader.md](manual/context-loader.md) |
+| 🛠️ 工具与技能管理 | [execution-factory.md](manual/execution-factory.md) |
+| 🔭 链路追踪与证据链 | [trace-ai.md](manual/trace-ai.md) |
+| 🔐 认证与安全治理 | [isf.md](manual/isf.md) |

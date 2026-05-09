@@ -14,7 +14,7 @@
 
 **相关模块：** [Context Loader](context-loader.md)、[Execution Factory](execution-factory.md)、[BKN 引擎](bkn.md)、[Trace AI](trace-ai.md)。
 
-> **模型配置前置条件**：Agent 需要 LLM（大语言模型）和 Embedding 小模型。`--minimum` 安装不包含预置模型，使用前请先完成 [安装与部署 — 配置模型](install.md#配置模型)。创建 Agent 时需通过 `--llm-id` 指定已注册的 LLM ID。
+> **模型配置前置条件**：Agent 需要 LLM（大语言模型）和 Embedding 小模型。`--minimum` 安装不包含预置模型，使用前请先完成 [安装与部署 — 配置模型](../install.md#配置模型)。创建 Agent 时需通过 `--llm-id` 指定已注册的 LLM ID。
 
 ## 🚀 使用方式
 
