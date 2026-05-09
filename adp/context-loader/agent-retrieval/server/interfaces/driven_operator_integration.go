@@ -68,6 +68,12 @@ type CallMCPToolRequest struct {
 	Parameters map[string]interface{} `json:"parameters"`
 }
 
+// SyncToolDependencyPackageRequest 同步内部依赖工具包请求
+type SyncToolDependencyPackageRequest struct {
+	Mode        string
+	PackageData []byte
+}
+
 // ==================== Driven Adapters Interface ====================
 
 // DrivenOperatorIntegration Operator integration service interface
@@ -78,4 +84,6 @@ type DrivenOperatorIntegration interface {
 	GetMCPToolDetail(ctx context.Context, req *GetMCPToolDetailRequest) (*GetMCPToolDetailResponse, error)
 	// CallMCPTool Call MCP tool
 	CallMCPTool(ctx context.Context, req *CallMCPToolRequest) (map[string]interface{}, error)
+	// SyncToolDependencyPackage Sync internal tool dependency package
+	SyncToolDependencyPackage(ctx context.Context, req *SyncToolDependencyPackageRequest) error
 }

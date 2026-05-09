@@ -6,8 +6,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/bootstrap"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/driveradapters"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/common"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/config"
@@ -74,5 +76,6 @@ func main() {
 	}
 	defer s.config.Logger.Info("stop agent-retrieval server")
 	s.Start()
+	go bootstrap.NewToolDependencySync().Start(context.Background())
 	select {}
 }

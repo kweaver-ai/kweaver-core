@@ -1,0 +1,131 @@
+openapi: "3.0.1"
+info:
+  title: "算子平台内部组件导入"
+  description: "算子平台内部组件导入相关接口，用于内部服务自动同步组件快照"
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:9000/api/agent-operator-integration/internal-v1
+    description: 服务器地址
+tags:
+  - name: "内部导入"
+    description: "内部组件导入接口"
+
+paths:
+  /impex/intcomp/import/{type}:
+    post:
+      summary: 内部组件导入
+      description: |
+        面向内部服务的组件快照导入接口，当前用于 ContextLoader 启动时同步依赖工具包。
+
+        该接口复用现有组件导入逻辑，接收 `.adp` 文件内容；成功时以 HTTP 201 表示导入请求已处理，响应体为空。
+      operationId: importInternalComponent
+      tags:
+        - "内部导入"
+      parameters:
+        - name: x-business-domain
+          in: header
+          required: true
+          schema:
+            type: string
+            example: bd_public
+          description: 业务域 ID；ContextLoader 自动同步场景固定传 `bd_public`
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 调用账号 ID；未传时服务端会按内部默认账号处理
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            example: user
+          description: 调用账号类型
+        - name: type
+          in: path
+          description: 组件类型；当前 ContextLoader 自动同步仅使用 `toolbox`
+          required: true
+          schema:
+            type: string
+            enum:
+              - toolbox
+          example: toolbox
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/InternalImportReq"
+      responses:
+        "201":
+          description: 导入成功；当前响应体为空
+        "400":
+          description: 非法请求，例如缺少文件、mode 非法、组件类型非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 无权限或业务域不可访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 资源冲突
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "415":
+          description: Content-Type 不是 multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: 内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    InternalImportReq:
+      type: object
+      description: 内部组件导入请求
+      required:
+        - data
+      properties:
+        data:
+          type: string
+          format: binary
+          description: "`.adp` 组件快照文件内容"
+        mode:
+          type: string
+          description: 导入模式；不传时服务端默认 create，ContextLoader 自动同步固定传 upsert
+          enum:
+            - create
+            - upsert
+          example: upsert
+    Error:
+      type: object
+      description: 错误信息
+      properties:
+        code:
+          type: string
+          description: 错误码
+        description:
+          type: string
+          description: 错误信息
+        detail:
+          type: object
+          description: 错误详情
+        solution:
+          type: string
+          description: 错误解决方案
+        link:
+          type: string
+          description: 错误链接

@@ -43,9 +43,10 @@ type Config struct {
 	ConceptSearchConfig KnConceptSearchConfig `yaml:"concept_search_config"` // Knowledge network concept search configuration
 	Observability       ObservabilityConfig   `yaml:"-"`
 	// 新增配置 - 知识重排和检索相关
-	MFModelAPI PrivateBaseConfig `yaml:"mf_model_api"` // MF-Model API统一服务配置
-	RerankLLM  RerankLLMConfig   `yaml:"rerank_llm"`   // Rerank用的LLM参数配置
-	FindSkills FindSkillsConfig  `yaml:"find_skills"`  // find_skills Skill 召回配置
+	MFModelAPI         PrivateBaseConfig        `yaml:"mf_model_api"`         // MF-Model API统一服务配置
+	RerankLLM          RerankLLMConfig          `yaml:"rerank_llm"`           // Rerank用的LLM参数配置
+	FindSkills         FindSkillsConfig         `yaml:"find_skills"`          // find_skills Skill 召回配置
+	ToolDependencySync ToolDependencySyncConfig `yaml:"tool_dependency_sync"` // 工具依赖自动同步配置
 }
 
 // ObservabilityConfig trace configuration
@@ -169,6 +170,13 @@ type FindSkillsConfig struct {
 	RecallTimeoutMs    int    `yaml:"recall_timeout_ms" default:"5000"`
 	TotalTimeoutMs     int    `yaml:"total_timeout_ms" default:"10000"`
 	SkillsObjectTypeID string `yaml:"skills_object_type_id" default:"skills"`
+}
+
+// ToolDependencySyncConfig 工具依赖自动同步配置
+type ToolDependencySyncConfig struct {
+	Enabled                     bool `yaml:"enabled" default:"true"`
+	InitialRetryIntervalSeconds int  `yaml:"initial_retry_interval_seconds" default:"5"`
+	MaxRetryIntervalSeconds     int  `yaml:"max_retry_interval_seconds" default:"60"`
 }
 
 // SetMachineID sets machine ID

@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"sync"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/dbaccess"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/drivenadapters"
+	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/config"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/errors"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/validator"
@@ -18,7 +20,6 @@ import (
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/operator"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/toolbox"
 	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
-	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -109,40 +110,42 @@ func (m *componentImpexManager) ImportConfig(ctx context.Context, importReq *int
 		err = errors.DefaultHTTPError(ctx, http.StatusBadRequest, "component type not support")
 		return
 	}
-	// 检查资源新建权限
-	accessor, err := m.AuthService.GetAccessor(ctx, importReq.UserID)
-	if err != nil {
-		return
-	}
-	err = m.AuthService.CheckCreatePermission(ctx, accessor, resourceType)
-	if err != nil {
-		return
-	}
-	switch resourceType {
-	case interfaces.AuthResourceTypeOperator:
-	case interfaces.AuthResourceTypeToolBox:
-		if data.Operator != nil && len(data.Operator.Configs) > 0 {
-			err = m.AuthService.CheckCreatePermission(ctx, accessor, interfaces.AuthResourceTypeOperator)
-			if err != nil {
-				return
-			}
+	if common.IsPublicAPIFromCtx(ctx) {
+		var accessor *interfaces.AuthAccessor
+		accessor, err = m.AuthService.GetAccessor(ctx, importReq.UserID)
+		if err != nil {
+			return
 		}
-	case interfaces.AuthResourceTypeMCP:
-		if data.Operator != nil && len(data.Operator.Configs) > 0 {
-			err = m.AuthService.CheckCreatePermission(ctx, accessor, interfaces.AuthResourceTypeOperator)
-			if err != nil {
-				return
-			}
+		err = m.AuthService.CheckCreatePermission(ctx, accessor, resourceType)
+		if err != nil {
+			return
 		}
-		if data.Toolbox != nil && len(data.Toolbox.Configs) > 0 {
-			err = m.AuthService.CheckCreatePermission(ctx, accessor, interfaces.AuthResourceTypeToolBox)
-			if err != nil {
-				return
+		switch resourceType {
+		case interfaces.AuthResourceTypeOperator:
+		case interfaces.AuthResourceTypeToolBox:
+			if data.Operator != nil && len(data.Operator.Configs) > 0 {
+				err = m.AuthService.CheckCreatePermission(ctx, accessor, interfaces.AuthResourceTypeOperator)
+				if err != nil {
+					return
+				}
 			}
+		case interfaces.AuthResourceTypeMCP:
+			if data.Operator != nil && len(data.Operator.Configs) > 0 {
+				err = m.AuthService.CheckCreatePermission(ctx, accessor, interfaces.AuthResourceTypeOperator)
+				if err != nil {
+					return
+				}
+			}
+			if data.Toolbox != nil && len(data.Toolbox.Configs) > 0 {
+				err = m.AuthService.CheckCreatePermission(ctx, accessor, interfaces.AuthResourceTypeToolBox)
+				if err != nil {
+					return
+				}
+			}
+		default:
+			err = errors.DefaultHTTPError(ctx, http.StatusBadRequest, "component type not support")
+			return
 		}
-	default:
-		err = errors.DefaultHTTPError(ctx, http.StatusBadRequest, "component type not support")
-		return
 	}
 	err = m.importConfigWithTx(ctx, importReq.Type, data, importReq.Mode, importReq.UserID)
 	if err != nil {

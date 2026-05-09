@@ -18,6 +18,7 @@ type restPrivateHandler struct {
 	MCPRestHandler        MCPRestHandler
 	UpgradeHandler        common.UpgradeHandler
 	UnifiedProxyHandler   common.UnifiedProxyHandler
+	ImpexHandler          common.ImpexHandler
 	Logger                interfaces.Logger
 	SkillRestHandler      SkillRestHandler
 	businessDomainService interfaces.IBusinessDomainService
@@ -32,6 +33,7 @@ func NewRestPrivateHandler() interfaces.HTTPRouterInterface {
 		MCPRestHandler:        NewMCPRestHandler(),
 		UpgradeHandler:        common.NewUpgradeHandler(),
 		UnifiedProxyHandler:   common.NewUnifiedProxyHandler(),
+		ImpexHandler:          common.NewImpexHandler(),
 		Logger:                config.NewConfigLoader().GetLogger(),
 		SkillRestHandler:      NewSkillRestHandler(),
 		businessDomainService: business_domain.NewBusinessDomainService(),
@@ -59,4 +61,6 @@ func (r *restPrivateHandler) RegisterRouter(engine *gin.RouterGroup) {
 	engine.POST("/upgrade/v070/migrate-history", r.UpgradeHandler.UpgradeSkillV070)
 	// 函数沙箱执行
 	engine.POST("/function/exec/:version", middlewareBusinessDomain(true, false, r.businessDomainService), r.UnifiedProxyHandler.FunctionExecuteProxy)
+	// 内部依赖包导入
+	engine.POST("/impex/intcomp/import/:type", middlewareBusinessDomain(false, true, r.businessDomainService), r.ImpexHandler.Import)
 }

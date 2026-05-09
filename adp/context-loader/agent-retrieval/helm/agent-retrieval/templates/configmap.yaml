@@ -67,6 +67,10 @@ data:
       frequency_penalty: {{ default 0.5 .Values.service.rerank_llm.frequency_penalty }}
       presence_penalty: {{ default 0.5 .Values.service.rerank_llm.presence_penalty }}
       max_tokens: {{ default 5000 .Values.service.rerank_llm.max_tokens }}
+    tool_dependency_sync:
+      enabled: {{ default true .Values.service.tool_dependency_sync.enabled }}
+      initial_retry_interval_seconds: {{ default 5 .Values.service.tool_dependency_sync.initial_retry_interval_seconds }}
+      max_retry_interval_seconds: {{ default 60 .Values.service.tool_dependency_sync.max_retry_interval_seconds }}
 
   observability.yaml: |
     # 可观测相关配置
