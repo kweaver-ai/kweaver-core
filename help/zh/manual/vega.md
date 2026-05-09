@@ -206,7 +206,7 @@ kweaver dataview query dv_001 \
   --sql "SELECT customer_name, order_count FROM mysql_demo.\"sales\".\"customer_orders\" WHERE region = '华东' LIMIT 20"
 ```
 
-**自定义 SQL（`--sql`）与 Etrino**：不带 `--sql` 时，`dataview query` 使用视图内建定义，走直连数据源；`--sql` 会经 `vega-gateway-pro` 调用 **`vega-calculate-coordinator`**（Hetu/Presto 系引擎），该组件不在 KWeaver Core 默认清单中，需部署 **Etrino 相关 Chart**：`vega-hdfs`、`vega-calculate`（内含 coordinator）、`vega-metadata`。在 `deploy` 目录执行 `./deploy.sh etrino install` 即可单独安装 Etrino。**复杂 SQL 请使用 catalog.`"schema"."table"` 全限定名。** 步骤见 [安装与部署](install.md) 中的「可选：Etrino」。
+**自定义 SQL（`--sql`）与 Etrino**：不带 `--sql` 时，`dataview query` 使用视图内建定义，走直连数据源；`--sql` 会经 `vega-gateway-pro` 调用 **`vega-calculate-coordinator`**（Hetu/Presto 系引擎），该组件不在 KWeaver Core 默认清单中，需部署 **Etrino 相关 Chart**：`vega-hdfs`、`vega-calculate`（内含 coordinator）、`vega-metadata`。在 `deploy` 目录执行 `./deploy.sh etrino install` 即可单独安装 Etrino。**复杂 SQL 请使用 catalog.`"schema"."table"` 全限定名。** 步骤见 [安装与部署](../install.md) 中的「可选：Etrino」。
 
 **`dataview get` 响应字段（自定义 `--sql` 时）**：`kweaver dataview get <view_id> --pretty` 返回的 JSON 中，与表引用直接相关的是下表（字段名与 REST / TypeScript / Python SDK 一致）。
 

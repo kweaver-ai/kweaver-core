@@ -19,5 +19,6 @@ This directory contains the development standards for the KWeaver project. If yo
 
 - **Branch naming**: `feature/`, `fix/`, `refactor/`, `docs/`, `ci/`, `chore/` — see [CONTRIBUTING](CONTRIBUTING.md)
 - **Commit format**: Conventional Commits (`type(scope): subject`) — see [CONTRIBUTING](CONTRIBUTING.md)
+- **Documentation layout**: Root [`docs/`](../docs), per-module `docs/`, [`help/`](../help) manuals (`manual/`) and cookbooks (`cookbook/`) — see [CONTRIBUTING — DOCUMENTATION](CONTRIBUTING.md#documentation)
 - **Design docs**: Located in each module's `docs/design/` directory — see [WORKFLOW](WORKFLOW.md)
 - **API checklist**: Error format, pagination, status codes — see [DEVELOPMENT](DEVELOPMENT.md)

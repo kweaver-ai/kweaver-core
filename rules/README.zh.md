@@ -19,5 +19,6 @@
 
 - **分支命名**：`feature/`、`fix/`、`refactor/`、`docs/`、`ci/`、`chore/` — 详见[贡献指南](CONTRIBUTING.zh.md)
 - **提交格式**：Conventional Commits（`type(scope): subject`）— 详见[贡献指南](CONTRIBUTING.zh.md)
+- **文档划分**：仓库根 [`docs/`](../docs)、各模块自有 `docs/`、[`help/`](../help) 下 **`manual/`**（手册）与 **`cookbook/`**（场景化 Cookbook；模版见各语言下 `cookbook/` 目录）— 详见 [贡献指南](CONTRIBUTING.zh.md) 中的 **DOCUMENTATION（文档放置规范）** 一节
 - **设计文档**：位于各模块的 `docs/design/` 目录 — 详见[团队协作流程](WORKFLOW.zh.md)
 - **API 检查清单**：错误格式、分页、状态码 — 详见[研发规范](DEVELOPMENT.zh.md)

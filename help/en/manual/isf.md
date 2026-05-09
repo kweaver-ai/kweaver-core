@@ -24,7 +24,7 @@ kweaver-admin role list
 kweaver-admin audit list --user alice --start 2026-04-01 --end 2026-04-30
 ```
 
-> Full command list, token isolation (`~/.kweaver-admin/`), and `--minimum` install caveats: see [Install — Administrator tool after a full install (kweaver-admin)](install.md#-administrator-tool-after-a-full-install-kweaver-admin).
+> Full command list, token isolation (`~/.kweaver-admin/`), and `--minimum` install caveats: see [Install — Administrator tool after a full install (kweaver-admin)](../install.md#-administrator-tool-after-a-full-install-kweaver-admin).
 >
 > Respect the **separation-of-duties** built-in accounts (`system`, `admin`, `security`, `audit`) — operators should use individual accounts, not the shared `admin`, for traceable audit logs.
 
