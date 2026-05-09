@@ -2,9 +2,56 @@ feature: vega-backend
 story: catalog
 switch: n
 tags:
-  - vega-backend
-  - catalog
-  - schema
+    - vega-backend
+    - catalog
+    - schema
 
 cases:
+    -   name: "创建catalog_MySQL数据源_仅必需参数"
+        url: "创建catalog"
+        body_params: >-
+            {
+                "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+                "connector_type": "mysql",
+                "connector_config": {
+                    "host": "${mysql_host}",
+                    "port": ${mysql_port},
+                    "username": "${mysql_user}",
+                    "password": "${mysql_password}"
+                }
+            }
+        resp_values: >-
+            {
+                "catalog_id": "$.id"
+            }
+        code_check: "201"
 
+    -   name: "查看catalog详情_MySQL数据源"
+        url: "查看catalog详情"
+        prev_case: "创建catalog_MySQL数据源_仅必需参数"
+        path_params: >-
+            {
+                "ids": "${catalog_id}"
+            }
+        resp_values: >-
+            {
+                "catalog_name": "$.entries[0].name"
+            }
+        code_check: "200"
+
+    -   name: "Negative_创建catalog_参数校验_name名称重复_请求失败"
+        url: "创建catalog"
+        prev_case: "查看catalog详情_MySQL数据源"
+        body_params: >-
+            {
+                "name": "${catalog_name}",
+                "connector_type": "mysql",
+                "connector_config": {
+                    "host": "${mysql_host}",
+                    "port": ${mysql_port},
+                    "username": "${mysql_user}",
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"]
+                }
+            }
+        code_check: "409"
