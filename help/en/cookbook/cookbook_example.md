@@ -1,13 +1,15 @@
 # Build a knowledge network from CSV in one shot
 
-> **This page doubles as the Cookbook recipe template** — copy the structure and adapt it to your scenario.
+> Start a new recipe by copying [`_TEMPLATE.md`](./_TEMPLATE.md). This page is the first concrete example showing how each section is filled in.
+
+> - **Difficulty**: ⭐ Beginner
+> - **Time**: ~ 10 minutes
+> - **Modules touched**: `bkn`, `datasource`
+> - **CLI version**: `kweaver >= 0.6`
 
 ## 1. Goal
 
-In about ten minutes, turn a handful of local CSV files into a queryable BKN knowledge network (KN):
-
-- Auto-create the underlying table, dataview, object types (OTs), and the index.
-- Verify the data is usable with `object-type query` and semantic search.
+**After this recipe you will have:** a knowledge network named `supply-kn` where each input CSV becomes one object type (OT), queryable via `bkn object-type query` and searchable via `bkn search` — all from a single command, with no hand-written schema.
 
 ## 2. Prerequisites
 
@@ -58,7 +60,17 @@ Quick parameter reference:
 | `--build` / `--no-build` | no | `--build` by default; pass `--no-build` to skip |
 | `--timeout` | no | Build wait timeout in seconds (default 300) |
 
-> Equivalent two-step path: `kweaver ds import-csv <ds_id> --files "*.csv" --table-prefix sc_`, then `kweaver bkn create-from-ds <ds_id> --name "supply-kn" --build`.
+<details>
+<summary>Equivalent two-step path (use this when you want to override primary/display keys)</summary>
+
+```bash
+kweaver ds import-csv <ds_id> --files "*.csv" --table-prefix sc_
+kweaver bkn create-from-ds <ds_id> --name "supply-kn" --build
+```
+
+In the step-by-step path you can pass `--primary-key` / `--display-key` to `bkn object-type create` to pin the keys explicitly.
+
+</details>
 
 ### 3.3 Verify
 
@@ -74,6 +86,8 @@ kweaver bkn search <kn_id> "material"
 ```
 
 ## 4. Expected output
+
+> **Success criterion**: `object-type query` returns `total > 0`, `datas[0]` contains the CSV columns you imported, and `bkn search` returns a non-empty `concepts` list.
 
 `object-type query` should return something like:
 
@@ -95,14 +109,16 @@ A non-empty `concepts` list from `bkn search` indicates the retrieval pipeline i
 
 ## 5. Troubleshooting
 
+> The "Symptom" column lists **the literal output or error a reader will see**, so it can be search-matched directly.
+
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| `401 Unauthorized` / `oauth info is not active` | Token expired | `kweaver auth login <platform-url>` |
-| Empty `object-type list` after creation | Wrong path or glob did not match anything | Check `--files`, use absolute paths if needed |
-| `total = 0` from query | Build incomplete or mapping mismatch | `kweaver bkn stats <kn_id>` for `doc_count`; rebuild with `kweaver bkn build <kn_id> --wait --timeout 600` |
-| Re-import fails after column changes | Table already exists | First batch with `--recreate`: `kweaver ds import-csv <ds_id> --files "*.csv" --recreate` |
-| Auto-detected primary key is unsuitable | Heuristic failed for your data | Use the step-by-step path and call `kweaver bkn object-type create ... --primary-key ... --display-key ...` |
-| `match` returns HTTP 500 | The view does not support full-text search | Change the `condition` operator to `like` |
+| `401 Unauthorized`, or response body contains `oauth info is not active` | Token expired | `kweaver auth login <platform-url>` |
+| `kweaver bkn object-type list <kn_id>` prints `[]` | Wrong path or glob matched nothing | Check `--files`; use absolute paths if needed |
+| `object-type query` response shows `total = 0` | Build incomplete or mapping mismatch | `kweaver bkn stats <kn_id>` to check `doc_count`; rebuild with `kweaver bkn build <kn_id> --wait --timeout 600` |
+| `ds import-csv` reports `table already exists` | Staging table already there | First batch with `--recreate`: `kweaver ds import-csv <ds_id> --files "*.csv" --recreate` |
+| Auto-detected primary key is not your business key | Heuristic could not infer it | Use the step-by-step path and pass `kweaver bkn object-type create ... --primary-key ... --display-key ...` |
+| `bkn search` returns `HTTP 500` | The view does not support full-text search | Switch the query `condition` from `match` to `like` |
 
 ## 6. See also
 

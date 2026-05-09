@@ -1,13 +1,15 @@
 # 从 CSV 一键建知识网络
 
-> **本文同时充当 Cookbook 第一篇 Recipe 的模版**：复制这份骨架改成你的场景即可。
+> 写新 Recipe 请复制 [`_TEMPLATE.md`](./_TEMPLATE.md)；本文是首个示例，演示模版各段如何填。
+
+> - **难度**：⭐ 入门
+> - **耗时**：约 10 分钟
+> - **涉及模块**：`bkn`、`datasource`
+> - **CLI 版本**：`kweaver >= 0.6`
 
 ## 1. Goal（目标）
 
-10 分钟内，把若干本地 CSV 文件「**一键**」变成一个可查询的 BKN 知识网络（KN）：
-
-- 自动建表、自动建对象类（OT）、自动建索引；
-- 完成后用 `object-type query` 和语义检索验证数据可用。
+**完成后你将拥有：** 一个名为 `supply-kn` 的知识网络（KN），每张 CSV 自动成为一个对象类（OT），可用 `bkn object-type query` 查询、`bkn search` 语义检索 —— 全程一条命令，无需手写 schema。
 
 ## 2. Prerequisites（前置条件）
 
@@ -58,7 +60,17 @@ kweaver bkn create-from-csv <ds_id> \
 | `--build` / `--no-build` | 否 | 默认 `--build`；`--no-build` 跳过构建 |
 | `--timeout` | 否 | 构建等待超时秒数（默认 300） |
 
-> 等价的「两步路径」：先 `kweaver ds import-csv <ds_id> --files "*.csv" --table-prefix sc_`，再 `kweaver bkn create-from-ds <ds_id> --name "supply-kn" --build`。
+<details>
+<summary>等价的两步路径（想自定义主键 / 显示键时用）</summary>
+
+```bash
+kweaver ds import-csv <ds_id> --files "*.csv" --table-prefix sc_
+kweaver bkn create-from-ds <ds_id> --name "supply-kn" --build
+```
+
+分步路径下可在 `bkn object-type create` 时用 `--primary-key` / `--display-key` 显式指定字段。
+
+</details>
 
 ### 3.3 验证 KN 可用
 
@@ -74,6 +86,8 @@ kweaver bkn search <kn_id> "物料"
 ```
 
 ## 4. Expected output（期望输出）
+
+> **判定成功的依据**：`object-type query` 返回的 `total > 0`，且 `datas[0]` 包含你导入的 CSV 列；`bkn search` 返回非空 `concepts`。
 
 `object-type query` 应返回类似：
 
@@ -95,14 +109,16 @@ kweaver bkn search <kn_id> "物料"
 
 ## 5. Troubleshooting（常见问题）
 
+> 「现象」列写**用户能直接看到的具体输出 / 报错**，便于复制搜索。
+
 | 现象 | 可能原因 | 处理 |
 | --- | --- | --- |
-| `401 Unauthorized` / `oauth info is not active` | token 过期 | `kweaver auth login <平台地址>` |
-| 创建后 `object-type list` 为空 | CSV 路径错 / glob 没匹配到 | 确认 `--files` 路径，必要时改用绝对路径 |
-| 查询 `total = 0` | 构建未完成或映射错 | `kweaver bkn stats <kn_id>` 看 `doc_count`；必要时 `kweaver bkn build <kn_id> --wait --timeout 600` 重建 |
-| 列结构变了再次导入失败 | 同名表已存在 | 首批加 `--recreate`：`kweaver ds import-csv <ds_id> --files "*.csv" --recreate` |
-| PK 自动选得不合适 | 启发式无法识别业务唯一键 | 走分步路径，`kweaver bkn object-type create` 显式 `--primary-key` / `--display-key` |
-| `match` 操作报 500 | 视图不支持全文检索 | `condition` 改 `like` |
+| `401 Unauthorized` 或返回体含 `oauth info is not active` | token 过期 | `kweaver auth login <平台地址>` |
+| `kweaver bkn object-type list <kn_id>` 输出 `[]` | CSV 路径错 / glob 没匹配到 | 确认 `--files` 路径，必要时改用绝对路径 |
+| `object-type query` 响应中 `total = 0` | 构建未完成或映射错 | `kweaver bkn stats <kn_id>` 看 `doc_count`；必要时 `kweaver bkn build <kn_id> --wait --timeout 600` 重建 |
+| `ds import-csv` 报 `table already exists` | 同名表已存在 | 首批加 `--recreate`：`kweaver ds import-csv <ds_id> --files "*.csv" --recreate` |
+| 自动选出的主键不是业务唯一键 | 启发式无法识别 | 走分步路径，`kweaver bkn object-type create` 显式 `--primary-key` / `--display-key` |
+| `bkn search` 返回 `HTTP 500` | 视图不支持全文检索 | 把查询 `condition` 从 `match` 改为 `like` |
 
 ## 6. See also（延伸阅读）
 
