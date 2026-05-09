@@ -105,7 +105,7 @@ type KN struct {
 	KNName     string `json:"name" mapstructure:"name"`
 	CommonInfo `mapstructure:",squash"`
 
-	SkillContent string `json:"-" mapstructure:"-"`
+	SkillContent string `json:"skill_content,omitempty" mapstructure:"skill_content"`
 
 	Branch         string `json:"branch,omitempty" mapstructure:"branch"`
 	BusinessDomain string `json:"business_domain,omitempty" mapstructure:"business_domain"`

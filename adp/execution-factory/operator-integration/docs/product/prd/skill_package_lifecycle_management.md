@@ -31,9 +31,9 @@
   - 支持历史查询、历史回灌到草稿、按历史版本直接重新发布。
   - 保证线上读取链路始终只读取 `release`。
   - 保证 Skill dataset 索引同步具备明确动作：
-    - 创建走 `POST /resources/dataset/{id}/docs`
-    - 更新走 `PUT /resources/dataset/{id}/docs`
-    - 删除走 `DELETE /resources/dataset/{id}/docs/{doc_id}`
+    - 创建走 `POST /api/vega-backend/v1/resources/{id}/data` + `X-HTTP-Method-Override: POST`
+    - 更新走 `POST /api/vega-backend/v1/resources/{id}/data` + `X-HTTP-Method-Override: PUT`
+    - 删除走 `POST /api/vega-backend/v1/resources/{id}/data` + `X-HTTP-Method-Override: DELETE`（body 中携带 filter_condition）
 
 ---
 
@@ -342,9 +342,9 @@ flowchart TD
 - Given 一个 `editing` 或 `unpublish` 状态的 Skill，When 用户更新 zip 包，Then 系统复用当前 `version` 并以先删除后上传的方式覆盖当前草稿文件集合。
 - Given 一个 `published` 或 `offline` 状态的 Skill，When 用户更新 zip 包，Then 系统生成新的草稿 `version` 且不覆盖旧发布版本文件。
 - Given 一个已发布 Skill，When 用户完成包更新，Then 草稿态状态变为 `editing` 且线上读取仍继续读取旧 `release`。
-- Given 一个 Skill 被首次注册，When 系统同步 dataset，Then 系统调用 `POST /resources/dataset/{id}/docs` 创建索引文档。
-- Given 一个已存在 Skill 发生内容更新，When 系统同步 dataset，Then 系统调用 `PUT /resources/dataset/{id}/docs` 更新索引文档。
-- Given 一个已发布 Skill 被下架，When 系统同步 dataset，Then 系统调用 `DELETE /resources/dataset/{id}/docs/{doc_id}` 删除索引文档。
+- Given 一个 Skill 被首次注册，When 系统同步 dataset，Then 系统调用 `POST /api/vega-backend/v1/resources/{id}/data` + `X-HTTP-Method-Override: POST` 创建索引文档。
+- Given 一个已存在 Skill 发生内容更新，When 系统同步 dataset，Then 系统调用 `POST /api/vega-backend/v1/resources/{id}/data` + `X-HTTP-Method-Override: PUT` 更新索引文档。
+- Given 一个已发布 Skill 被下架，When 系统同步 dataset，Then 系统调用 `POST /api/vega-backend/v1/resources/{id}/data` + `X-HTTP-Method-Override: DELETE` 删除索引文档。
 - Given 一个历史版本存在，When 用户执行历史回灌，Then 系统将该历史版本恢复到草稿态且不直接覆盖当前 `release`。
 - Given 一个历史版本存在，When 用户执行历史直接重新发布，Then 系统用该历史快照覆盖当前 `release` 并保持发布链路可用。
 

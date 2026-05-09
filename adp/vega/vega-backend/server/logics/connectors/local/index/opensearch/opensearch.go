@@ -533,7 +533,7 @@ func (c *OpenSearchConnector) fetchMappingsForQuery(ctx context.Context, indexNa
 }
 
 // ExecuteRawQuery executes a raw OpenSearch DSL query on the specified index.
-func (c *OpenSearchConnector) ExecuteRawQuery(ctx context.Context, index string, query map[string]any) (*interfaces.SQLQueryResponse, error) {
+func (c *OpenSearchConnector) ExecuteRawQuery(ctx context.Context, index string, query map[string]any) (*interfaces.RawQueryResponse, error) {
 	if err := c.Connect(ctx); err != nil {
 		return nil, fmt.Errorf("connect failed: %w", err)
 	}
@@ -583,7 +583,7 @@ func (c *OpenSearchConnector) ExecuteRawQuery(ctx context.Context, index string,
 
 	// If no hits, return empty result
 	if len(searchResp.Hits.Hits) == 0 {
-		return &interfaces.SQLQueryResponse{
+		return &interfaces.RawQueryResponse{
 			Columns:    []interfaces.ColumnInfo{},
 			Entries:    []map[string]any{},
 			TotalCount: 0,
@@ -624,7 +624,7 @@ func (c *OpenSearchConnector) ExecuteRawQuery(ctx context.Context, index string,
 	// total_count设置为OpenSearch返回的总数据量
 	totalCount := searchResp.Hits.Total.Value
 
-	response := &interfaces.SQLQueryResponse{
+	response := &interfaces.RawQueryResponse{
 		Columns:    columns,
 		Entries:    entries,
 		TotalCount: totalCount,

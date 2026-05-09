@@ -27,10 +27,10 @@ import (
 	"vega-backend/logics/catalog"
 	"vega-backend/logics/connector_type"
 	"vega-backend/logics/dataset"
+	"vega-backend/logics/discover_schedule"
 	"vega-backend/logics/discover_task"
 	"vega-backend/logics/resource"
 	"vega-backend/logics/resource_data"
-	scheduled_discover_task "vega-backend/logics/scheduled_discover_task"
 	"vega-backend/version"
 )
 
@@ -48,19 +48,20 @@ type restHandler struct {
 	ds         interfaces.DatasetService
 	cts        interfaces.ConnectorTypeService
 	dts        interfaces.DiscoverTaskService
-	sdtService interfaces.ScheduledDiscoverTaskService
-	scheduler  *worker.Scheduler
+	dss        interfaces.DiscoverScheduleService
 	rds        interfaces.ResourceDataService
+
+	sw *worker.ScheduleWorker
 }
 
 // NewRestHandler creates a new RestHandler.
-func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) RestHandler {
+func NewRestHandler(appSetting *common.AppSetting, sw *worker.ScheduleWorker) RestHandler {
 	cs := catalog.NewCatalogService(appSetting)
 	rs := resource.NewResourceService(appSetting)
 	bts := build_task.NewBuildTaskService(appSetting)
 	ds := dataset.NewDatasetService(appSetting)
 	dts := discover_task.NewDiscoverTaskService(appSetting)
-	sdtService := scheduled_discover_task.NewScheduledDiscoverTaskService(appSetting, dts)
+	dss := discover_schedule.NewDiscoverScheduleService(appSetting, dts)
 
 	return &restHandler{
 		appSetting: appSetting,
@@ -71,8 +72,8 @@ func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) 
 		ds:         ds,
 		cts:        connector_type.NewConnectorTypeService(appSetting),
 		dts:        dts,
-		sdtService: sdtService,
-		scheduler:  scheduler,
+		dss:        dss,
+		sw:         sw,
 		rds:        resource_data.NewResourceDataService(appSetting),
 	}
 }
@@ -92,21 +93,12 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		{
 			catalogs.GET("", r.ListCatalogsByEx)
 			catalogs.POST("", r.verifyJsonContentType(), r.CreateCatalogByEx)
-			catalogs.GET("/:ids", r.GetCatalogsByEx)
 			catalogs.PUT("/:id", r.verifyJsonContentType(), r.UpdateCatalogByEx)
-			catalogs.DELETE("/:ids", r.DeleteCatalogsByEx)
-			catalogs.GET("/:ids/health-status", r.GetCatalogHealthStatusByEx)
+			catalogs.GET("/:id/health-status", r.GetCatalogHealthStatusByEx)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByEx)
-
-			// 资源发现
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByEx)
-
-			// 定时&策略采集相关
-			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByEx)
-			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByEx)
-			catalogs.POST("/:id/scheduled-discover/:task_id/start", r.StartScheduledDiscoverTaskByEx)
-			catalogs.POST("/:id/scheduled-discover/:task_id/stop", r.StopScheduledDiscoverTaskByEx)
-			catalogs.PUT("/:id/scheduled-discover/:task_id", r.verifyJsonContentType(), r.UpdateScheduledDiscoverTaskByEx)
+			catalogs.GET("/:ids", r.GetCatalogsByEx)
+			catalogs.DELETE("/:ids", r.DeleteCatalogsByEx)
 		}
 
 		// DiscoverTask APIs - External
@@ -117,22 +109,32 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			discoverTasks.DELETE("/:ids", r.DeleteDiscoverTasksByEx)
 		}
 
+		// DiscoverSchedule APIs - External
+		discoverSchedules := apiV1.Group("/discover-schedules")
+		{
+			discoverSchedules.POST("", r.verifyJsonContentType(), r.CreateDiscoverScheduleByEx)
+			discoverSchedules.GET("", r.ListDiscoverSchedulesByEx)
+			discoverSchedules.GET("/:id", r.GetDiscoverScheduleByEx)
+			discoverSchedules.PUT("/:id", r.verifyJsonContentType(), r.UpdateDiscoverScheduleByEx)
+			discoverSchedules.DELETE("/:id", r.DeleteDiscoverScheduleByEx)
+			discoverSchedules.POST("/:id/enable", r.EnableDiscoverScheduleByEx)
+			discoverSchedules.POST("/:id/disable", r.DisableDiscoverScheduleByEx)
+		}
+
 		// Resource APIs - External
 		resources := apiV1.Group("/resources")
 		{
 			resources.GET("", r.ListResourcesByEx)
 			resources.POST("", r.verifyJsonContentType(), r.CreateResourceByEx)
-			resources.GET("/:ids", r.GetResourcesByEx)
+			resources.POST("/:id/data", r.verifyJsonContentType(), r.PostResourceDataByEx)
+			resources.PUT("/:id/data", r.verifyJsonContentType(), r.PutResourceDataByEx)
+			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByEx)
+			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByEx)
+			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByEx)
+			resources.GET("/:ids", r.GetResourcesByEx) // ids为资源ID，多个资源ID逗号分隔
 			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByEx)
-			resources.DELETE("/:ids", r.DeleteResourcesByEx)
-
-			resources.POST("/:id/data", r.verifyJsonContentType(), r.QueryResourceDataByEx)
-			resources.POST("/query", r.verifyJsonContentType(), r.SQLQueryByEx)
-
-			resources.POST("/dataset/:id/docs", r.verifyJsonContentType(), r.CreateDatasetDocumentsByEx)
-			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByEx)
-			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByEx)
-			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByEx)
+			resources.DELETE("/:ids", r.DeleteResourcesByEx) // ids为资源ID，多个资源ID逗号分隔
+			resources.POST("/query", r.verifyJsonContentType(), r.RawQueryByEx)
 		}
 
 		// BuildTask APIs - External
@@ -167,21 +169,13 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		{
 			catalogs.GET("", r.ListCatalogsByIn)
 			catalogs.POST("", r.verifyJsonContentType(), r.CreateCatalogByIn)
-			catalogs.GET("/:ids", r.GetCatalogsByIn)
 			catalogs.PUT("/:id", r.verifyJsonContentType(), r.UpdateCatalogByIn)
-			catalogs.DELETE("/:ids", r.DeleteCatalogsByIn)
-			catalogs.GET("/:ids/health-status", r.GetCatalogHealthStatusByIn)
+			catalogs.GET("/:id/health-status", r.GetCatalogHealthStatusByIn)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByIn)
-
-			//
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByIn)
+			catalogs.GET("/:ids", r.GetCatalogsByIn)
+			catalogs.DELETE("/:ids", r.DeleteCatalogsByIn)
 
-			// 定时&策略采集相关
-			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByIn)
-			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByIn)
-			catalogs.POST("/:id/scheduled-discover/:task_id/start", r.StartScheduledDiscoverTaskByIn)
-			catalogs.POST("/:id/scheduled-discover/:task_id/stop", r.StopScheduledDiscoverTaskByIn)
-			catalogs.PUT("/:id/scheduled-discover/:task_id", r.verifyJsonContentType(), r.UpdateScheduledDiscoverTaskByIn)
 		}
 
 		// DiscoverTask APIs - Internal
@@ -192,22 +186,32 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			discoverTasks.DELETE("/:ids", r.DeleteDiscoverTasksByIn)
 		}
 
+		// DiscoverSchedule APIs - Internal
+		discoverSchedules := apiInV1.Group("/discover-schedules")
+		{
+			discoverSchedules.POST("", r.verifyJsonContentType(), r.CreateDiscoverScheduleByIn)
+			discoverSchedules.GET("", r.ListDiscoverSchedulesByIn)
+			discoverSchedules.GET("/:id", r.GetDiscoverScheduleByIn)
+			discoverSchedules.PUT("/:id", r.verifyJsonContentType(), r.UpdateDiscoverScheduleByIn)
+			discoverSchedules.DELETE("/:id", r.DeleteDiscoverScheduleByIn)
+			discoverSchedules.POST("/:id/enable", r.EnableDiscoverScheduleByIn)
+			discoverSchedules.POST("/:id/disable", r.DisableDiscoverScheduleByIn)
+		}
+
 		// Resource APIs - Internal
 		resources := apiInV1.Group("/resources")
 		{
 			resources.GET("", r.ListResourcesByIn)
 			resources.POST("", r.verifyJsonContentType(), r.CreateResourceByIn)
-			resources.GET("/:ids", r.GetResourcesByIn)
+			resources.POST("/:id/data", r.verifyJsonContentType(), r.PostResourceDataByIn)
+			resources.PUT("/:id/data", r.verifyJsonContentType(), r.PutResourceDataByIn)
+			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByIn)
+			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByIn)
+			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByIn)
+			resources.GET("/:ids", r.GetResourcesByIn) // ids为资源ID，多个资源ID逗号分隔
 			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByIn)
-			resources.DELETE("/:ids", r.DeleteResourcesByIn)
-
-			resources.POST("/:id/data", r.verifyJsonContentType(), r.QueryResourceDataByIn)
-			resources.POST("/query", r.verifyJsonContentType(), r.SQLQueryByIn)
-
-			resources.POST("/dataset/:id/docs", r.verifyJsonContentType(), r.CreateDatasetDocumentsByIn)
-			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByIn)
-			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByIn)
-			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByIn)
+			resources.DELETE("/:ids", r.DeleteResourcesByIn) // ids为资源ID，多个资源ID逗号分隔
+			resources.POST("/query", r.verifyJsonContentType(), r.RawQueryByIn)
 		}
 
 		// BuildTask APIs - Internal

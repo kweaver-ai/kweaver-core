@@ -12,9 +12,10 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"vega-backend/interfaces"
 
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+
+	"vega-backend/interfaces"
 )
 
 // ExtractTablesResult 存储表提取结果

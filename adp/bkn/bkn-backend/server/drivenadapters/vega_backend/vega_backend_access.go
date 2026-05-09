@@ -285,7 +285,7 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentByID(ctx context.Context, dat
 	span.SetAttributes(attr.Key("dataset_id").String(datasetID))
 	span.SetAttributes(attr.Key("doc_id").String(docID))
 
-	httpUrl := fmt.Sprintf("%s/resources/dataset/%s/docs/%s", vba.baseUrl, url.PathEscape(datasetID), url.PathEscape(docID))
+	httpUrl := fmt.Sprintf("%s/resources/%s/data/%s", vba.baseUrl, url.PathEscape(datasetID), url.PathEscape(docID))
 	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
 		HttpUrl:    httpUrl,
 		HttpMethod: http.MethodDelete,
@@ -318,8 +318,7 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentsByQuery(ctx context.Context,
 
 	span.SetAttributes(attr.Key("dataset_id").String(datasetID))
 
-	// Virtual URL for now, will be updated when vega-backend implements this endpoint
-	httpUrl := fmt.Sprintf("%s/resources/dataset/%s/docs/query", vba.baseUrl, url.PathEscape(datasetID))
+	httpUrl := fmt.Sprintf("%s/resources/%s/data", vba.baseUrl, url.PathEscape(datasetID))
 	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodPost,
@@ -405,7 +404,7 @@ func (vba *vegaBackendAccess) WriteDatasetDocuments(ctx context.Context, dataset
 	span.SetAttributes(attr.Key("dataset_id").String(datasetID))
 	span.SetAttributes(attr.Key("documents_count").Int(len(documents)))
 
-	httpUrl := fmt.Sprintf("%s/resources/dataset/%s/docs", vba.baseUrl, url.PathEscape(datasetID))
+	httpUrl := fmt.Sprintf("%s/resources/%s/data", vba.baseUrl, url.PathEscape(datasetID))
 	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodPost,
@@ -413,6 +412,7 @@ func (vba *vegaBackendAccess) WriteDatasetDocuments(ctx context.Context, dataset
 	})
 
 	headers := vba.buildHeaders(ctx)
+	headers[o11y.HTTP_HEADER_METHOD_OVERRIDE] = http.MethodPost
 	reqBodyJson, _ := sonic.Marshal(documents)
 	respCode, respData, err := vba.httpClient.PostNoUnmarshal(ctx, httpUrl, headers, documents)
 	logger.Debugf("WriteDatasetDocuments [%s] finished,	 request is [%s], response code is [%d], result is [%s], error is [%v]",

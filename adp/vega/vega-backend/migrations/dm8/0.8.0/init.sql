@@ -120,10 +120,10 @@ CREATE TABLE IF NOT EXISTS t_catalog (
     f_health_check_result     TEXT NOT NULL,
 
     -- 审计字段
-    f_creator                 VARCHAR(128 CHAR) NOT NULL DEFAULT '',
+    f_creator                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_creator_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
     f_create_time             BIGINT NOT NULL DEFAULT 0,
-    f_updater                 VARCHAR(128 CHAR) NOT NULL DEFAULT '',
+    f_updater                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_updater_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
     f_update_time             BIGINT NOT NULL DEFAULT 0,
 
@@ -140,38 +140,7 @@ CREATE INDEX IF NOT EXISTS idx_t_catalog_connector_type ON t_catalog(f_connector
 CREATE INDEX IF NOT EXISTS idx_t_catalog_health_check_status ON t_catalog(f_health_check_status);
 
 -- ==========================================
--- 2. t_catalog_discover_policy 发现与变更策略表
--- ==========================================
-CREATE TABLE IF NOT EXISTS t_catalog_discover_policy (
-    f_id                      VARCHAR(40 CHAR) NOT NULL DEFAULT '',
-
-    -- 状态
-    f_enabled                 TINYINT NOT NULL DEFAULT 0,
-
-    -- 发现策略配置
-    f_discover_mode          VARCHAR(20 CHAR) NOT NULL DEFAULT 'manual',
-    f_discover_cron          VARCHAR(100 CHAR) NOT NULL DEFAULT '',
-    f_discover_config        TEXT NOT NULL,
-
-    -- 变更处理策略
-    f_on_resource_added       VARCHAR(20 CHAR) NOT NULL DEFAULT 'auto_register',
-    f_on_resource_removed     VARCHAR(20 CHAR) NOT NULL DEFAULT 'mark_stale',
-    f_on_schema_changed       VARCHAR(20 CHAR) NOT NULL DEFAULT 'auto_update',
-    f_on_file_content_changed VARCHAR(20 CHAR) NOT NULL DEFAULT 'pending_review',
-
-    -- 策略详细配置
-    f_change_policy_config    TEXT NOT NULL,
-
-    -- 索引
-    CLUSTER PRIMARY KEY (f_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_t_catalog_discover_policy_discover_mode ON t_catalog_discover_policy(f_discover_mode);
-
-CREATE INDEX IF NOT EXISTS idx_t_catalog_discover_policy_enabled ON t_catalog_discover_policy(f_enabled);
-
--- ==========================================
--- 3. t_resource 数据资源主表
+-- 2. t_resource 数据资源主表
 -- ==========================================
 CREATE TABLE IF NOT EXISTS t_resource (
     -- 主键与基础信息
@@ -213,10 +182,10 @@ CREATE TABLE IF NOT EXISTS t_resource (
     f_sync_error_message      TEXT NOT NULL,
 
     -- 审计字段
-    f_creator                 VARCHAR(128 CHAR) NOT NULL DEFAULT '',
+    f_creator                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_creator_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
     f_create_time             BIGINT NOT NULL DEFAULT 0,
-    f_updater                 VARCHAR(128 CHAR) NOT NULL DEFAULT '',
+    f_updater                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_updater_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
     f_update_time             BIGINT NOT NULL DEFAULT 0,
 
@@ -364,7 +333,7 @@ CREATE TABLE IF NOT EXISTS t_discover_task (
     -- 主键与关联信息
     f_id                      VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_catalog_id              VARCHAR(40 CHAR) NOT NULL DEFAULT '',
-    f_scheduled_id            VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+    f_schedule_id             VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_strategies              VARCHAR(100 CHAR) NOT NULL DEFAULT '',
     f_trigger_type            VARCHAR(20 CHAR) NOT NULL DEFAULT 'manual',
 
@@ -381,7 +350,7 @@ CREATE TABLE IF NOT EXISTS t_discover_task (
     f_result                  TEXT NOT NULL,
 
     -- 审计字段
-    f_creator                 VARCHAR(128 CHAR) NOT NULL DEFAULT '',
+    f_creator                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_creator_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
     f_create_time             BIGINT NOT NULL DEFAULT 0,
 
@@ -392,6 +361,8 @@ CREATE TABLE IF NOT EXISTS t_discover_task (
 CREATE INDEX IF NOT EXISTS idx_t_discover_task_catalog_id ON t_discover_task (f_catalog_id);
 
 CREATE INDEX IF NOT EXISTS idx_t_discover_task_status ON t_discover_task (f_status);
+
+CREATE INDEX IF NOT EXISTS idx_t_discover_task_schedule_id ON t_discover_task (f_schedule_id);
 
 -- ==========================================
 -- 8. t_build_task 构建任务表
@@ -411,12 +382,12 @@ CREATE TABLE IF NOT EXISTS t_build_task (
     f_error_msg               TEXT DEFAULT NULL,
 
     -- 审计字段
-    f_creator_id              VARCHAR(40 CHAR) NOT NULL,
-    f_creator_type            VARCHAR(20 CHAR) NOT NULL,
-    f_create_time             BIGINT NOT NULL,
-    f_updater_id              VARCHAR(40 CHAR) NOT NULL,
-    f_updater_type            VARCHAR(20 CHAR) NOT NULL,
-    f_update_time             BIGINT NOT NULL,
+    f_creator                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+    f_creator_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
+    f_create_time             BIGINT NOT NULL DEFAULT 0,
+    f_updater                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+    f_updater_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
+    f_update_time             BIGINT NOT NULL DEFAULT 0,
 
     f_embedding_fields        VARCHAR(255 CHAR) NOT NULL DEFAULT '',
     f_build_key_fields        VARCHAR(255 CHAR) NOT NULL DEFAULT '',
@@ -436,9 +407,9 @@ CREATE INDEX IF NOT EXISTS idx_t_build_task_catalog_id ON t_build_task(f_catalog
 
 
 -- ==========================================
--- 9. t_scheduled_discover_task 定时发现任务表
+-- 9. t_discover_schedule 资源发现调度表
 -- ==========================================
-CREATE TABLE IF NOT EXISTS t_scheduled_discover_task (
+CREATE TABLE IF NOT EXISTS t_discover_schedule (
     -- 主键与关联信息
     f_id                      VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_catalog_id              VARCHAR(40 CHAR) NOT NULL DEFAULT '',
@@ -448,7 +419,7 @@ CREATE TABLE IF NOT EXISTS t_scheduled_discover_task (
     f_start_time              BIGINT NOT NULL DEFAULT 0,
     f_end_time                BIGINT NOT NULL DEFAULT 0,
 
-    -- 任务状态
+    -- 调度状态
     f_enabled                 TINYINT NOT NULL DEFAULT 0,
     f_strategies              VARCHAR(100 CHAR) NOT NULL DEFAULT '',
 
@@ -456,18 +427,17 @@ CREATE TABLE IF NOT EXISTS t_scheduled_discover_task (
     f_next_run                BIGINT NOT NULL DEFAULT 0,
 
     -- 审计字段
-    f_creator_id              VARCHAR(128 CHAR) NOT NULL DEFAULT '',
+    f_creator                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_creator_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
     f_create_time             BIGINT NOT NULL DEFAULT 0,
-    f_updater_id              VARCHAR(128 CHAR) NOT NULL DEFAULT '',
+    f_updater                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_updater_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
     f_update_time             BIGINT NOT NULL DEFAULT 0,
+
     -- 索引
     CLUSTER PRIMARY KEY (f_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_t_scheduled_discover_task_catalog_id ON t_scheduled_discover_task (f_catalog_id);
-CREATE INDEX IF NOT EXISTS idx_t_scheduled_discover_task_enabled ON t_scheduled_discover_task (f_enabled);
-CREATE INDEX IF NOT EXISTS idx_t_scheduled_discover_task_next_run ON t_scheduled_discover_task (f_next_run);
-
-
+CREATE INDEX IF NOT EXISTS idx_t_discover_schedule_catalog_id ON t_discover_schedule (f_catalog_id);
+CREATE INDEX IF NOT EXISTS idx_t_discover_schedule_enabled ON t_discover_schedule (f_enabled);
+CREATE INDEX IF NOT EXISTS idx_t_discover_schedule_next_run ON t_discover_schedule (f_next_run);

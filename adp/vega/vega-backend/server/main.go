@@ -29,8 +29,8 @@ import (
 	"vega-backend/driveradapters"
 	"vega-backend/logics"
 	"vega-backend/logics/connectors/factory"
+	"vega-backend/logics/discover_schedule"
 	"vega-backend/logics/discover_task"
-	"vega-backend/logics/scheduled_discover_task"
 	"vega-backend/worker"
 )
 
@@ -127,18 +127,18 @@ func main() {
 
 	// 初始化并启动调度器
 	dts := discover_task.NewDiscoverTaskService(appSetting)
-	sdtService := scheduled_discover_task.NewScheduledDiscoverTaskService(appSetting, dts)
-	scheduler := worker.NewScheduler(appSetting, sdtService)
-	if err := scheduler.Start(); err != nil {
+	dss := discover_schedule.NewDiscoverScheduleService(appSetting, dts)
+	sw := worker.NewScheduleWorker(appSetting, dss)
+	if err := sw.Start(); err != nil {
 		logger.Fatalf("Failed to start scheduler: %v", err)
 	}
 	logger.Info("VEGA Manager Init Scheduler Success")
-	defer scheduler.Stop()
+	defer sw.Stop()
 
 	// 创建并启动服务
 	server := &vegaService{
 		appSetting:  appSetting,
-		restHandler: driveradapters.NewRestHandler(appSetting, scheduler),
+		restHandler: driveradapters.NewRestHandler(appSetting, sw),
 	}
 	server.start()
 }
