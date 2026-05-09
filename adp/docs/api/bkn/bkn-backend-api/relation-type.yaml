@@ -56,11 +56,6 @@ paths:
           schema:
             type: string
           in: query
-        - name: group_id
-          description: 按概念分组过滤
-          schema:
-            type: string
-          in: query
         - name: source_object_type_id
           description: 起点对象类ID
           schema:

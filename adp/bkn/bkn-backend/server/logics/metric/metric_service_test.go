@@ -16,6 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"bkn-backend/common"
+	cond "bkn-backend/common/condition"
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
 	bmock "bkn-backend/interfaces/mock"
@@ -312,11 +313,13 @@ func Test_metricService_UpdateMetric(t *testing.T) {
 			So(errBegin, ShouldBeNil)
 
 			req := &interfaces.MetricDefinition{
-				ID:      "mid1",
-				KnID:    "kn1",
-				Branch:  interfaces.MAIN_BRANCH,
-				Name:    "n1",
-				Comment: "c",
+				ID:     "mid1",
+				KnID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+				Name:   "n1",
+				CommonInfo: interfaces.CommonInfo{
+					Comment: "c",
+				},
 				CalculationFormula: &interfaces.MetricCalculationFormula{
 					Aggregation: interfaces.MetricAggregation{Property: "p", Aggr: interfaces.MetricAggrSum},
 				},
@@ -382,23 +385,190 @@ func Test_metricService_DeleteMetricsByIDs(t *testing.T) {
 }
 
 func Test_metricService_SearchMetrics(t *testing.T) {
-	Convey("Test SearchMetrics permission\n", t, func() {
+	Convey("Test SearchMetrics\n", t, func() {
 		ctx := context.Background()
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
+		appSetting := &common.AppSetting{
+			ServerSetting: common.ServerSetting{
+				DefaultSmallModelEnabled: false,
+			},
+		}
 		ps := bmock.NewMockPermissionService(mockCtrl)
+		vba := bmock.NewMockVegaBackendAccess(mockCtrl)
+		cga := bmock.NewMockConceptGroupAccess(mockCtrl)
+
 		service := &metricService{
-			appSetting: &common.AppSetting{},
+			appSetting: appSetting,
 			ps:         ps,
+			vba:        vba,
+			cga:        cga,
 		}
 
-		q := &interfaces.ConceptsQuery{KNID: "kn1"}
-		ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).
-			Return(rest.NewHTTPError(ctx, 403, berrors.BknBackend_InternalError_CheckPermissionFailed))
+		Convey("permission denied\n", func() {
+			q := &interfaces.ConceptsQuery{KNID: "kn1"}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(rest.NewHTTPError(ctx, 403, berrors.BknBackend_InternalError_CheckPermissionFailed))
 
-		res, err := service.SearchMetrics(ctx, q)
-		So(err, ShouldNotBeNil)
-		So(res.Type, ShouldEqual, interfaces.MODULE_TYPE_METRIC)
+			res, err := service.SearchMetrics(ctx, q)
+			So(err, ShouldNotBeNil)
+			So(res.Type, ShouldEqual, interfaces.MODULE_TYPE_METRIC)
+		})
+
+		Convey("Success without concept groups\n", func() {
+			query := &interfaces.ConceptsQuery{
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+				Limit:  10,
+			}
+
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			datasetResp := &interfaces.DatasetQueryResponse{
+				Entries: []map[string]any{},
+			}
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+
+			result, err := service.SearchMetrics(ctx, query)
+			So(err, ShouldBeNil)
+			So(result.Entries, ShouldNotBeNil)
+			So(len(result.Entries), ShouldEqual, 0)
+		})
+
+		Convey("Success with concept groups\n", func() {
+			query := &interfaces.ConceptsQuery{
+				KNID:          "kn1",
+				Branch:        interfaces.MAIN_BRANCH,
+				Limit:         10,
+				ConceptGroups: []string{"cg1"},
+				ActualCondition: &cond.CondCfg{
+					Operation: "and",
+					SubConds: []*cond.CondCfg{
+						{
+							Field:     "name",
+							Operation: cond.OperationEq,
+							ValueOptCfg: cond.ValueOptCfg{
+								ValueFrom: "const",
+								Value:     "m1",
+							},
+						},
+					},
+				},
+			}
+
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().GetConceptGroupsTotal(gomock.Any(), gomock.Any()).Return(1, nil)
+			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"ot1"}, nil)
+			datasetResp := &interfaces.DatasetQueryResponse{
+				Entries: []map[string]any{},
+			}
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+
+			result, err := service.SearchMetrics(ctx, query)
+			So(err, ShouldBeNil)
+			So(result.Entries, ShouldNotBeNil)
+		})
+
+		Convey("Failed when concept groups not found\n", func() {
+			query := &interfaces.ConceptsQuery{
+				KNID:          "kn1",
+				Branch:        interfaces.MAIN_BRANCH,
+				NeedTotal:     false,
+				Limit:         10,
+				ConceptGroups: []string{"cg1"},
+			}
+
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().GetConceptGroupsTotal(gomock.Any(), gomock.Any()).Return(0, nil)
+
+			result, err := service.SearchMetrics(ctx, query)
+			So(err, ShouldNotBeNil)
+			So(len(result.Entries), ShouldEqual, 0)
+		})
+
+		Convey("Success with concept groups returning empty otIDs\n", func() {
+			query := &interfaces.ConceptsQuery{
+				KNID:          "kn1",
+				Branch:        interfaces.MAIN_BRANCH,
+				Limit:         10,
+				ConceptGroups: []string{"cg1"},
+			}
+
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().GetConceptGroupsTotal(gomock.Any(), gomock.Any()).Return(1, nil)
+			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil)
+
+			result, err := service.SearchMetrics(ctx, query)
+			So(err, ShouldBeNil)
+			So(len(result.Entries), ShouldEqual, 0)
+		})
+
+		Convey("filters entries by scope_ref when concept groups set\n", func() {
+			query := &interfaces.ConceptsQuery{
+				KNID:          "kn1",
+				Branch:        interfaces.MAIN_BRANCH,
+				Limit:         10,
+				ConceptGroups: []string{"cg1"},
+			}
+
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().GetConceptGroupsTotal(gomock.Any(), gomock.Any()).Return(1, nil)
+			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"ot_keep"}, nil)
+
+			inDoc := map[string]any{
+				"id":          "metric_drop",
+				"kn_id":       "kn1",
+				"branch":      interfaces.MAIN_BRANCH,
+				"module_type": interfaces.MODULE_TYPE_METRIC,
+				"name":        "x",
+				"scope_ref":   "ot_other",
+			}
+			keepDoc := map[string]any{
+				"id":          "metric_keep",
+				"kn_id":       "kn1",
+				"branch":      interfaces.MAIN_BRANCH,
+				"module_type": interfaces.MODULE_TYPE_METRIC,
+				"name":        "y",
+				"scope_ref":   "ot_keep",
+			}
+
+			datasetResp := &interfaces.DatasetQueryResponse{
+				Entries: []map[string]any{inDoc, keepDoc},
+			}
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+
+			result, err := service.SearchMetrics(ctx, query)
+			So(err, ShouldBeNil)
+			So(len(result.Entries), ShouldEqual, 1)
+			So(result.Entries[0].ID, ShouldEqual, "metric_keep")
+			So(result.Entries[0].ScopeRef, ShouldEqual, "ot_keep")
+		})
+
+		Convey("NeedTotal with concept groups uses batched scope_ref total\n", func() {
+			query := &interfaces.ConceptsQuery{
+				KNID:          "kn1",
+				Branch:        interfaces.MAIN_BRANCH,
+				NeedTotal:     true,
+				Limit:         5,
+				ConceptGroups: []string{"cg1"},
+			}
+
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().GetConceptGroupsTotal(gomock.Any(), gomock.Any()).Return(1, nil)
+			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"ot1"}, nil)
+
+			totalResp := &interfaces.DatasetQueryResponse{
+				TotalCount: 7,
+				Entries:    []map[string]any{},
+			}
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(totalResp, nil)
+			emptyPage := &interfaces.DatasetQueryResponse{Entries: []map[string]any{}}
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(emptyPage, nil)
+
+			result, err := service.SearchMetrics(ctx, query)
+			So(err, ShouldBeNil)
+			So(result.TotalCount, ShouldEqual, 7)
+			So(len(result.Entries), ShouldEqual, 0)
+		})
 	})
 }

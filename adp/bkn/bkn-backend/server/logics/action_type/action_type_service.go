@@ -959,8 +959,9 @@ func (ats *actionTypeService) SearchActionTypes(ctx context.Context, query *inte
 				cgCnt, len(query.ConceptGroups))
 			logger.Errorf(errStr)
 
-			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
-				berrors.BknBackend_ActionType_InternalError).
+			// 所有概念分组都不存在，报404，概念分组不存在
+			return response, rest.NewHTTPError(ctx, http.StatusNotFound,
+				berrors.BknBackend_ConceptGroup_ConceptGroupNotFound).
 				WithErrorDetails(errStr)
 		}
 

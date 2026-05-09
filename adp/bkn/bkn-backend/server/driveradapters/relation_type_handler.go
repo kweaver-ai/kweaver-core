@@ -638,7 +638,6 @@ func (r *restHandler) ListRelationTypes(c *gin.Context, visitor hydra.Visitor) {
 	// 获取分页参数
 	namePattern := c.Query("name_pattern")
 	tag := c.Query("tag")
-	groupID := c.Query("group_id")
 	sourceObjectTypeIDs := c.QueryArray("source_object_type_id")
 	targetObjectTypeIDs := c.QueryArray("target_object_type_id")
 	boundObjectTypeIDs := c.QueryArray("bound_object_type_id")
@@ -673,7 +672,6 @@ func (r *restHandler) ListRelationTypes(c *gin.Context, visitor hydra.Visitor) {
 		Tag:         tag,
 		Branch:      branch,
 		KNID:        knID,
-		GroupID:     groupID,
 	}
 
 	// 不为空时，赋值

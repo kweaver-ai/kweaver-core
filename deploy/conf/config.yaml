@@ -6,8 +6,11 @@ env:
   timezone: Asia/Shanghai
 image:
   registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+# accessAddress: sudo deploy.sh writes the real URL to $HOME/.kweaver-ai/config.yaml by default.
+# This file is an in-repo template. Leave host empty so onboard can auto-detect primary IPv4 when
+# CONFIG_YAML_PATH points here (e.g. ubuntu user without overriding CONFIG_YAML_PATH).
 accessAddress:
-  host: 10.4.175.152
+  host: ""
   port: 443
   scheme: https
   path: /

@@ -143,7 +143,6 @@ type ActionTypesQueryParams struct {
 	Tag           string
 	Branch        string
 	KNID          string
-	GroupID       string
 	ObjectTypeIDs []string
 	ActionType    string
 }

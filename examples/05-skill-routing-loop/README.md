@@ -1,0 +1,136 @@
+# 05 · Skill Routing Loop — KN-driven Skill Governance
+
+> [中文版](./README.zh.md)
+
+> 3 materials trigger the same critical alert; the Decision Agent picks 3 different
+> handling paths — each justified by the knowledge network.
+
+## The Story
+
+Continuing from example 03's procurement engineer: she now sees the disposition
+plan already chosen on each alert. Three materials. Three paths. Zero prompts
+edited. The `applicable_skill` relation in the business knowledge network is
+the single source of truth — the agent picks from whatever `find_skills`
+returns, nothing else.
+
+## What this shows
+
+Five components co-operate in a verifiable end-to-end loop:
+
+| Component | Role |
+|---|---|
+| **execution-factory** | registers and versions the 3 Skill packages |
+| **business knowledge network (BKN)** | binds Skills to materials via `applicable_skill` |
+| **Vega** | maps BKN ObjectTypes to MySQL tables (read-mostly) |
+| **context-loader (`find_skills`)** | recalls applicable skills per material instance |
+| **Decision Agent** | reads BKN evidence, picks a Skill, emits a verifiable decision |
+| **run.sh verifier** | asserts the Agent route, calls the mock business endpoint, checks logs |
+
+## Prerequisites
+
+- `kweaver` CLI ≥ 0.7.1 (`brew install kweaver-ai/tap/kweaver` or npm)
+- KWeaver platform with **Decision Agent + execution-factory + Vega** enabled
+  (use `kweaver auth login <platform-url> [--insecure]` first)
+- A MySQL instance reachable from the KWeaver platform (NOT from your laptop)
+  with CREATE/INSERT/SELECT/UPDATE on a chosen database
+- `python3` (Flask + mysql-connector-python — install via
+  `pip install -r tool_backend/requirements.txt`)
+- An LLM model registered in the platform's model factory (find its ID via
+  `kweaver call /api/mf-model-manager/v1/llm/list`)
+
+Quick self-check that platform components are reachable:
+
+```bash
+kweaver auth whoami                                      # logged in?
+kweaver call /api/mf-model-manager/v1/llm/list | head    # LLM factory reachable?
+kweaver call /api/agent-operator-integration/v1/mcp/     # execution-factory reachable?
+```
+
+## Quick Start
+
+```bash
+cd examples/05-skill-routing-loop
+cp env.sample .env
+vim .env                                    # fill PLATFORM_HOST, LLM_ID, DB_*
+pip install -r tool_backend/requirements.txt
+./run.sh                                    # ~5 minutes end-to-end
+./run.sh --bonus                            # also run the Bonus segment with verification
+```
+
+> **Concurrency caveat:** Do not run two instances of `./run.sh` concurrently.
+> The script uses a fixed `KN_ID` (`ex05_skill_routing`) AND fixed Skill names
+> (`standard_replenish` / `substitute_swap` / `supplier_expedite`); a second
+> run will collide on Skill registration and the cleanup of either run will
+> delete the other run's KN.
+
+## What you will see
+
+| Material | KN evidence | DA picks | Why |
+|---|---|---|---|
+| MAT-001 | binds to `substitute_swap`; SUB-001A/B in stock | substitute_swap | Python scorer ranks substitutes; calls MES |
+| MAT-002 | binds to `supplier_expedite`; SUP-2 capability=expedite | supplier_expedite | Supplier can rush — POST to supplier portal |
+| MAT-003 | binds to `standard_replenish` only | standard_replenish | Default path — issue PO via ERP |
+
+The script stores each Agent response in `.chat-<SKU>.log`, asserts that the
+expected Skill name appears, then calls the local mock business backend and
+checks `.tool_backend.log` for:
+
+```text
+[mes/swap]
+[supplier/expedite]
+[procurement]
+```
+
+Seeing `✓ mock backend observed MES, supplier, and ERP calls` means all three
+business actions reached the mock backend.
+
+If you also want `builtin_skill_execute_script` in the platform sandbox to hit
+the mock backend directly, set `TOOL_BACKEND_PUBLIC_URL` in `.env` to an address
+reachable from the platform/sandbox, such as `http://<host>:8765` on an internal
+network. The default `http://127.0.0.1:8765` is only guaranteed for the local
+verifier; `127.0.0.1` inside the platform sandbox is not your laptop.
+
+## Bonus — change business → KN rebuild → AI follows
+
+Run `./run.sh --bonus`. The script POSTs to the mock business backend's admin
+endpoint to re-bind MAT-002 from `supplier_expedite` to the newly registered
+`standard_replenish` Skill ID. This updates `materials.bound_skill_id` in
+MySQL, which drives the `applicable_skill` direct-mapping FK. It then triggers
+`kweaver bkn build` to
+refresh the underlying Vega resource snapshot, then re-asks the Agent about
+MAT-002. The Decision Agent's next `find_skills` call returns the new
+candidate set and it switches to `standard_replenish` — without any prompt
+edit or redeploy.
+
+> **Why the rebuild — and why it's not a platform requirement:** This example
+> uses Vega's **batch-mode** dataview, which serves graph queries from a
+> snapshot taken at build time. Direct-mapping relations like
+> `applicable_skill` are computed live at query time, but the underlying data
+> is the snapshot — so MySQL UPDATEs only surface after the next build. Vega
+> also supports a **streaming-mode** resource (Debezium CDC over Kafka) where
+> updates propagate in seconds with no manual rebuild; that's the production
+> path. We use batch here so the demo runs with just one MySQL — no Kafka,
+> no Debezium, no extra infra.
+
+## How it works (deeper read)
+
+See [`docs/superpowers/specs/2026-04-27-skill-routing-loop-example-design.md`](../../docs/superpowers/specs/2026-04-27-skill-routing-loop-example-design.md)
+for the full design including:
+- BKN schema and the `applicable_skill` direct-mapping FK
+- Why MCP server registration must include `X-Kn-ID` header
+- Why agent `mode` must be `"react"` (default mode skips tool wiring)
+- Why the script registers Skills first, then renders CSVs and agent config with real Skill IDs
+- The 3-step state machine for cleaning up MCPs and Skills
+
+## Troubleshooting
+
+If you see `builtin_skill_load returned 404` in the chat trace, the
+`skills.skill_id` values in BKN or the `skills[].skill_id` values in the agent
+config are not aligned with the real Skill IDs returned by execution-factory.
+The script now registers Skills first, then renders CSVs and agent config with
+those real IDs, so this should not happen in a healthy run.
+
+## Cleanup
+
+Resources (KN, MCP, Skills, Agent, Datasource, mock backend process) are
+deleted automatically on script exit, success or failure.

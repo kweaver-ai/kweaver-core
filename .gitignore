@@ -12,6 +12,9 @@ lib64/
 # Track deploy shell helpers (global `lib/` above would otherwise ignore this tree)
 !deploy/scripts/lib/
 !deploy/scripts/lib/**
+!deploy/dev/lib/
+!deploy/dev/lib/**
+deploy/scripts/lib/__pycache__/
 # Track example shell helpers
 !examples/*/lib/
 !examples/*/lib/**
@@ -54,6 +57,9 @@ logs/
 
 # Local/platform test reports and outputs (not versioned)
 reports/
+
+# macOS kind dev: local config contains generated passwords (copy from mac-config.yaml.example)
+deploy/dev/conf/mac-config.yaml
 
 # Database
 *.db

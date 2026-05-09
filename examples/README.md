@@ -10,6 +10,7 @@ End-to-end examples that demonstrate core KWeaver capabilities using the CLI.
 | [02-csv-to-kn](./02-csv-to-kn/) | *An HR director's scattered spreadsheets become a connected knowledge network she can traverse and query* | CSV → Knowledge Network → Subgraph Traversal → Agent Q&A |
 | [03-action-lifecycle](./03-action-lifecycle/) | *A procurement engineer arrives at 8am to find today's inventory alerts already generated — the knowledge network did it overnight* | CSV → Knowledge Network → Action → Schedule → Audit Log |
 | [04-multi-agent-session-id](./04-multi-agent-session-id/) | *A platform feature audit shows a custom input field travels intact through father → sons → SKILL, every step verifiable* | Dolphin orchestration → Multi-Agent → Custom Input → SKILL invocation |
+| [05-skill-routing-loop](./05-skill-routing-loop/) | *3 materials, 3 critical alerts, 3 different handling paths — each justified by the knowledge network* | MySQL → BKN (via Vega) → find_skills → Decision Agent → Skill → Action |
 
 ## Getting Started
 

@@ -289,7 +289,7 @@ func (c *AnyShareConnector) convertFilterConditionMatch(ctx context.Context, con
 
 	// Extract keyword
 	keyword := ""
-	if keywordStr, ok := cond.Cfg.ValueOptCfg.Value.(string); ok {
+	if keywordStr, ok := cond.Cfg.Value.(string); ok {
 		keyword = keywordStr
 	}
 
@@ -331,7 +331,7 @@ func (c *AnyShareConnector) convertFilterConditionMatchPhrase(ctx context.Contex
 
 	// Extract keyword
 	keyword := ""
-	if keywordStr, ok := cond.Cfg.ValueOptCfg.Value.(string); ok {
+	if keywordStr, ok := cond.Cfg.Value.(string); ok {
 		keyword = keywordStr
 	}
 

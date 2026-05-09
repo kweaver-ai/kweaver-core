@@ -167,7 +167,7 @@ func (c *PostgresqlConnector) Connect(ctx context.Context) error {
 	}
 
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 		return err
 	}
 
@@ -233,7 +233,7 @@ func (c *PostgresqlConnector) ExecuteRawSQL(ctx context.Context, sql string) (*i
 	if err != nil {
 		return nil, fmt.Errorf("execute query failed: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {

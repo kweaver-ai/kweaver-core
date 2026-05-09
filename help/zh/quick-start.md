@@ -1,6 +1,8 @@
 # 🚀 快速开始
 
-以下步骤假设 KWeaver Core 已按 [安装与部署](install.md) 文档完成安装及文中的安装后检查。
+以下步骤假设 KWeaver Core 已按 [安装与部署](install.md) 文档完成安装及文中的安装后检查。**完整安装以 Linux 为主**；可选 **macOS** + kind 流程见 [`deploy/dev/README.zh.md`](../../deploy/dev/README.zh.md)（[English](../../deploy/dev/README.md)）。
+
+> 新主机安装前，先在目标机上跑 **`sudo bash deploy/preflight.sh`**（仅检查 / 加 `--fix`）确认内核、sysctl、containerd、kubectl、helm、Node 与 `kweaver` CLI 都齐了；`deploy.sh kweaver-core install` 之后，再跑 **`sudo bash deploy/onboard.sh`**（Linux，与 `sudo deploy.sh` 对齐；macOS 开发路径用普通 `bash`）完成 LLM + embedding 注册、按需 patch BKN ConfigMap（仅在默认变化时执行），完整安装下还会建好业务用户 **`test`** 并导入 Context Loader 工具集。两者详见 [安装与部署 — 装机前体检：`preflight.sh`](install.md#-装机前体检--修复preflightsh) 与 [安装与部署 — Post-install：`onboard.sh`](install.md#post-installonboardsh安装后引导)。
 
 ---
 
@@ -14,37 +16,58 @@
 npm install -g @kweaver-ai/kweaver-sdk
 ```
 
-需要 Node.js 22+。也可用 `npx kweaver --help` 免安装试用。
+需要 Node.js 22+（与 [npm 上 kweaver-sdk](https://www.npmjs.com/package/@kweaver-ai/kweaver-sdk) 的 `engines` 一致）。也可用 `npx kweaver --help` 免安装试用。
 
-### 🛡️ 完整安装：先用 kweaver-admin 创建可登录用户
+### 🛡️ 完整安装：准备一个可登录的业务用户
 
-若你使用 **完整安装**（`./deploy.sh kweaver-core install`，未加 `--minimum`，已启用 `auth` 与 `businessDomain`），平台**必须鉴权**后才能使用业务能力。下文的 `kweaver` 登录需要**可登录的账号**；在多数部署中，**需要先用 `kweaver-admin` 创建业务用户**（并分配组织、角色等），再以该用户身份用 `kweaver` 完成后续「快速开始」。
+完整安装（`./deploy.sh kweaver-core install`，未加 `--minimum`，已启用 `auth` 与 `businessDomain`）下平台**必须鉴权**才能使用业务能力。下面有**两条路径**得到一个可登录账号，按你的喜好二选一即可：
+
+#### 路径 A（推荐）：让 `bash deploy/onboard.sh` 自动准备
+
+`onboard.sh` 在 ISF 全量下会**自动**完成：装/登录 `kweaver-admin` → 创建业务用户 **`test`**（默认密码 `111111`，可用 `ONBOARD_TEST_USER_PASSWORD` 覆盖）→ 把 `kweaver-admin role list` 中**所有**角色挂上 → 把本机 `~/.kweaver` 切到 `test`。
+
+```bash
+cd deploy
+sudo bash ./onboard.sh        # 交互模式（Linux，与 sudo deploy.sh 对齐）
+sudo bash ./onboard.sh -y     # 非交互（按默认）
+# macOS 开发路径： bash ./dev/mac.sh onboard       # 无需 sudo
+```
+
+> 加 `sudo` 是为了让 `onboard.sh` 读到 `sudo deploy.sh` 写到 `/root/.kweaver-ai/config.yaml` 的同一份 `$HOME/.kweaver-ai/config.yaml`，并把 `kweaver` 认证状态写到同一个 `$HOME/.kweaver`；macOS dev 用普通 `bash` 即可。详见 [安装与部署 — Post-install：`onboard.sh`](install.md#post-installonboardsh安装后引导)。
+
+跑完之后通常**什么都不用再做**，直接进入下节「[登录平台](#-登录平台)」；只需在新机器上重新登录即可。完整流程见 [安装与部署 — Post-install：`onboard.sh`](install.md#post-installonboardsh安装后引导)。
+
+#### 路径 B（进阶 / 手工）：直接用 `kweaver-admin`
+
+适用于：你想用别的用户名 / 你想细化角色 / 你不想跑 `onboard.sh`。
 
 ```bash
 npm install -g @kweaver-ai/kweaver-admin
-kweaver-admin auth login <平台地址> -k
-kweaver-admin org tree
-kweaver-admin user list
-kweaver-admin role list                        # 先查看平台内全部角色及 roleId（名称如 super_admin、normal_user 等，以输出为准）
-kweaver-admin user create --login <新用户名>
-# 默认初始密码为 123456，首次用 kweaver 登录时会被要求改密；见下方「登录平台」
-# 快速开始/验证：对 role list 中列出的每个 roleId 各执行一次 assign-role，为该用户挂齐全部角色，避免后续 API 因缺角色被拒
+kweaver-admin auth login <平台地址> -u admin -p eisoo.com -k   # 控制台默认账号
+kweaver-admin role list                                       # 列出全部角色及 roleId（如 super_admin、normal_user）
+kweaver-admin user create --login <新用户名>                  # 默认初始密码 123456，首次登录会被要求改密
+# 快速开始/POC：把 role list 中每个 roleId 都挂上，避免后续 API 因缺角色被拒
 kweaver-admin user assign-role <userId> <roleId>
-# … 对 role list 中每个角色重复上一行
-kweaver-admin user roles <userId>              # 确认已挂角色
+# … 对 role list 中每个角色重复
+kweaver-admin user roles <userId>                              # 确认已挂角色
 ```
 
-- **角色与权限**（`super_admin` / `sys_admin` / `sec_admin` / `audit_admin` / `org_manager` / `org_audit` / `normal_user` 等）以 `kweaver-admin role list` 的部署侧输出为准，赋权时一律使用其中的 **roleId**。
-- 命令详情、与 `--minimum` 的区别、三权分立内置账号、默认密码与重置方式见 [安装与部署 — 完整安装后的管理员工具（kweaver-admin）](install.md#-完整安装后的管理员工具kweaver-admin) 与 [ISF](isf.md#-管理员工具kweaver-admin)。生产环境请按最小权限**只赋必要角色**；上文「对 role list 中每个 roleId 挂齐」适用于本地/POC 与快速开始。
-- **最小化安装**（`--minimum`）下鉴权与业务域服务被裁剪，往往可用 `kweaver auth login <平台地址> --no-auth` 等路径快速试用，**不需要**本小节；以你的部署说明为准。
+- **路径 A 默认密码 `111111`**（onboard 给 `test` 设置的）；**路径 B 默认密码 `123456`**（ISF `Usrm_AddUser` 硬编码默认）。两者不同，请按实际路径取。
+- 角色与权限说明见 [安装与部署 — 完整安装后的管理员工具（kweaver-admin）](install.md#-完整安装后的管理员工具kweaver-admin) 与 [ISF](isf.md#-管理员工具kweaver-admin)。生产环境请只赋必要角色；上面「挂齐所有角色」适合本地 / POC / 快速开始。
+- **最小化安装**（`--minimum`）下鉴权与业务域服务被裁剪，**两条路径都不需要**：直接用 `kweaver auth login <平台地址> --no-auth` 即可。
 
-若你已从运维处获得**可登录的现有账号**（或安装文档给出的初始用户），可跳过本小节，直接进入下节「登录平台」。
+若你已从运维处拿到**可登录的现有账号**（或安装文档给出的初始用户），两条路径都可以跳过，直接进入下节「登录平台」。
 
 ### 🔑 登录平台
 
-```bash
-kweaver auth login <平台地址> -k
-```
+按你上一步走的是哪条路径选对应命令：
+
+| 你的情况 | 命令 |
+|---|---|
+| 跑过 `onboard.sh`（路径 A） | `kweaver auth status` 看一下，若已是 `test` 即可直接用；新机器上则：`kweaver auth login <平台地址> -u test -p '<密码>' -k` |
+| 手工建了用户（路径 B） | `kweaver auth login <平台地址> -u <你建的用户名> -p '<密码>' -k`（首次会被要求改密） |
+| 最小化安装（`--minimum`） | `kweaver auth login <平台地址> --no-auth` |
+| 想走浏览器 OAuth | `kweaver auth login <平台地址> -k`（默认行为；TTY 下打开本机浏览器） |
 
 - `<平台地址>` 是部署完成后 `deploy.sh` 输出的访问地址。
 - `-k` 用于自签名证书；正式证书可省略。
@@ -57,9 +80,9 @@ kweaver config show
 
 <a id="headless-auth"></a>
 
-> 💡 其它登录方式（无浏览器 **`--no-browser`**、CI 凭据 **export/重放**、HTTP 用户名密码等）的**分步说明与方式对照表**见 [en/quick-start.md 中 Step 1: Authenticate / How to sign in](en/quick-start.md#step-1-authenticate)；与安装环境、业务域、ISF 相关见 [安装与部署](install.md) 与 [认证与安全治理](isf.md)。SDK 补充说明见 [kweaver-sdk 认证](https://github.com/kweaver-ai/kweaver-sdk#authentication)。
+> 💡 **无浏览器 / CI 场景** 的更多登录方式（`--no-browser` 一次性 OAuth、`kweaver auth export` + 重放、HTTP 用户名密码等）见 [安装与部署 — Post-install：`onboard.sh`](install.md#post-installonboardsh安装后引导)（脚本内部用的就是 HTTP `-u`/`-p`）以及 [kweaver-sdk 认证文档](https://github.com/kweaver-ai/kweaver-sdk#authentication)。
 
-Core 安装完成后，`deploy.sh` 会尝试导入 Context Loader 工具集 ADP（可用环境变量关闭或覆盖路径，见仓库 `deploy/deploy.sh` 说明）。若要确认是否已在平台注册工具箱，可执行：
+Context Loader 工具集 ADP（用于 Decision Agent 调用知识网络）现在由 **`onboard.sh`** 通过 `kweaver call impex` 自动导入（不再走 `deploy.sh`）。要确认平台上是否已注册：
 
 ```bash
 kweaver call '/api/agent-operator-integration/v1/tool-box/list?name=contextloader&page=1&page_size=50' -bd bd_public --pretty
@@ -77,7 +100,11 @@ kweaver call '/api/agent-operator-integration/v1/tool-box/list?name=contextloade
 | 语义搜索 | Embedding（向量小模型） | 搜索报错，条件查询仍可用 |
 | Agent 对话 | LLM（大语言模型） | 创建成功但对话报错 |
 
-**不配模型也能走完数据源接入、知识网络创建和条件查询。** 语义搜索和 Agent 对话分别需要 Embedding 和 LLM；配置方法见 [模型管理](model.md)，注册 Embedding 后还需 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
+**不配模型也能走完数据源接入、知识网络创建和条件查询。** 语义搜索和 Agent 对话分别需要 Embedding 和 LLM。
+
+**推荐路径**：跑 `sudo bash deploy/onboard.sh`（macOS dev：`bash deploy/dev/mac.sh onboard`），它会**交互式**询问你要不要注册 LLM / Embedding，并在新增 Embedding 时按需 patch BKN ConfigMap 自动启用语义搜索；非交互场景用 `sudo bash deploy/onboard.sh --config=models.yaml`（参考 `deploy/conf/models.yaml.example`）。已存在的模型会自动跳过，可重复运行。
+
+**手工方式**：见 [模型管理](model.md)，注册 Embedding 后还需 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
 
 ---
 

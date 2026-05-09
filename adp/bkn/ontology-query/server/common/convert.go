@@ -276,6 +276,25 @@ func appLocationOrUTC() *time.Location {
 // AppLocationOrUTC is the exported form of appLocationOrUTC for callers outside package common.
 func AppLocationOrUTC() *time.Location { return appLocationOrUTC() }
 
+// isoWeekMonday returns Monday 00:00 of ISO year y, ISO week w in loc (matches FormatTimeMiliis / t.ISOWeek).
+func isoWeekMonday(y, w int, loc *time.Location) (time.Time, error) {
+	if w < 1 || w > 53 {
+		return time.Time{}, fmt.Errorf("invalid ISO week %d", w)
+	}
+	jan4 := time.Date(y, time.January, 4, 0, 0, 0, 0, loc)
+	d := int(jan4.Weekday())
+	if d == 0 {
+		d = 7
+	}
+	mondayW1 := jan4.AddDate(0, 0, -(d - 1))
+	t := mondayW1.AddDate(0, 0, (w-1)*7)
+	y2, w2 := t.ISOWeek()
+	if y2 != y || w2 != w {
+		return time.Time{}, fmt.Errorf("invalid week bucket for ISO year %d week %d", y, w)
+	}
+	return t, nil
+}
+
 func FormatTimeMiliis(ts int64, formatType string) string {
 	t := time.UnixMilli(ts).In(appLocationOrUTC())
 	switch formatType {
@@ -298,6 +317,88 @@ func FormatTimeMiliis(ts int64, formatType string) string {
 		return t.Format("2006")
 	default:
 		return FormatRFC3339Milli(ts)
+	}
+}
+
+// ParseCalendarBucketToMillis parses a calendar bucket label produced by resource/Vega date_histogram
+// into the bucket start instant in milliseconds. Layouts match FormatTimeMiliis for the same formatType.
+func ParseCalendarBucketToMillis(s, formatType string) (int64, error) {
+	s = strings.TrimSpace(s)
+	formatType = strings.TrimSpace(formatType)
+	if s == "" {
+		return 0, fmt.Errorf("empty calendar bucket string")
+	}
+	loc := appLocationOrUTC()
+	switch formatType {
+	case CALENDAR_STEP_MINUTE:
+		t, err := time.ParseInLocation("2006-01-02 15:04", s, loc)
+		if err != nil {
+			return 0, err
+		}
+		return t.UnixMilli(), nil
+	case CALENDAR_STEP_HOUR:
+		t, err := time.ParseInLocation("2006-01-02 15", s, loc)
+		if err != nil {
+			return 0, err
+		}
+		return t.UnixMilli(), nil
+	case CALENDAR_STEP_DAY:
+		t, err := time.ParseInLocation(time.DateOnly, s, loc)
+		if err != nil {
+			return 0, err
+		}
+		return t.UnixMilli(), nil
+	case CALENDAR_STEP_WEEK:
+		// ISO year-week, same as FormatTimeMiliis (e.g. 2025-46); bucket start = Monday 00:00 in loc.
+		parts := strings.Split(s, "-")
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid week bucket %q", s)
+		}
+		year, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return 0, err
+		}
+		week, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return 0, err
+		}
+		t, err := isoWeekMonday(year, week, loc)
+		if err != nil {
+			return 0, err
+		}
+		return t.UnixMilli(), nil
+	case CALENDAR_STEP_MONTH:
+		t, err := time.ParseInLocation("2006-01", s, loc)
+		if err != nil {
+			return 0, err
+		}
+		return t.UnixMilli(), nil
+	case CALENDAR_STEP_QUARTER:
+		// e.g. 2024-Q1
+		idx := strings.Index(s, "-Q")
+		if idx < 1 {
+			return 0, fmt.Errorf("invalid quarter bucket %q", s)
+		}
+		year, err := strconv.Atoi(s[:idx])
+		if err != nil {
+			return 0, err
+		}
+		qStr := s[idx+2:]
+		q, err := strconv.Atoi(qStr)
+		if err != nil || q < 1 || q > 4 {
+			return 0, fmt.Errorf("invalid quarter bucket %q", s)
+		}
+		month := time.Month((q-1)*3 + 1)
+		t := time.Date(year, month, 1, 0, 0, 0, 0, loc)
+		return t.UnixMilli(), nil
+	case CALENDAR_STEP_YEAR:
+		t, err := time.ParseInLocation("2006", s, loc)
+		if err != nil {
+			return 0, err
+		}
+		return t.UnixMilli(), nil
+	default:
+		return 0, fmt.Errorf("unsupported calendar step %q", formatType)
 	}
 }
 

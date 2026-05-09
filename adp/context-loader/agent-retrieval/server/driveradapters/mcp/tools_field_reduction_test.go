@@ -190,6 +190,7 @@ func TestHandleSearchSchema_IncludeMetricTypesPassedThrough(t *testing.T) {
 			"kn_id":           "kn-001",
 			"response_format": "json",
 			"search_scope": map[string]any{
+				"concept_groups":       []any{"supply_chain"},
 				"include_metric_types": true,
 			},
 		})
@@ -200,6 +201,7 @@ func TestHandleSearchSchema_IncludeMetricTypesPassedThrough(t *testing.T) {
 		convey.So(result.IsError, convey.ShouldBeFalse)
 		convey.So(stub.searchSchemaReq, convey.ShouldNotBeNil)
 		convey.So(stub.searchSchemaReq.SearchScope, convey.ShouldNotBeNil)
+		convey.So(stub.searchSchemaReq.SearchScope.ConceptGroups, convey.ShouldResemble, []string{"supply_chain"})
 		convey.So(stub.searchSchemaReq.SearchScope.IncludeMetricTypes, convey.ShouldNotBeNil)
 		convey.So(*stub.searchSchemaReq.SearchScope.IncludeMetricTypes, convey.ShouldBeTrue)
 	})

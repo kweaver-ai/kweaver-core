@@ -295,7 +295,6 @@ func (r *restHandler) ListMetrics(c *gin.Context, vis hydra.Visitor) {
 
 	namePattern := c.Query("name_pattern")
 	tag := strings.Trim(c.Query("tag"), " ")
-	groupID := c.Query("group_id")
 	offset := c.DefaultQuery("offset", interfaces.DEFAULT_OFFEST)
 	limit := c.DefaultQuery("limit", interfaces.DEFAULT_LIMIT)
 	sort := c.DefaultQuery("sort", "update_time")
@@ -316,7 +315,6 @@ func (r *restHandler) ListMetrics(c *gin.Context, vis hydra.Visitor) {
 		},
 		NamePattern: namePattern,
 		Tag:         tag,
-		GroupID:     groupID,
 		Branch:      branch,
 		KNID:        knID,
 	}
@@ -459,7 +457,7 @@ func (r *restHandler) UpdateMetric(c *gin.Context, vis hydra.Visitor) {
 	req.KnID = knID
 	req.Branch = branch
 
-	if err := ValidateUpdateMetricRequest(ctx, &req, strictMode); err != nil {
+	if err := ValidateMetricRequest(ctx, &req, strictMode); err != nil {
 		var httpErr *rest.HTTPError
 		if errors.As(err, &httpErr) {
 			rest.ReplyError(c, httpErr)

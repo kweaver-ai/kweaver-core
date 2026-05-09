@@ -330,9 +330,16 @@ install_cni() {
     local dns_attempts=0
     local dns_max_attempts=60
     while [[ ${dns_attempts} -lt ${dns_max_attempts} ]]; do
-        # Count ready pods using simple parsing
-        local ready_count
-        ready_count=$(kubectl get pods -n kube-system -l k8s-app=kube-dns --no-headers 2>/dev/null | grep -c "1/1.*Running" || echo "0")
+        # Count CoreDNS pods fully ready (N/N) and Running. grep -c exits 1 with 0
+        # matches — do not use `|| echo 0` or command substitution captures "0\n0".
+        # CoreDNS may be 1/1 or 2/2 (e.g. readiness sidecar) depending on cluster version.
+        ready_count=$(kubectl get pods -n kube-system -l k8s-app=kube-dns --no-headers 2>/dev/null | awk '
+            $3 == "Running" {
+                n = split($2, r, "/")
+                if (n == 2 && r[1] == r[2] && r[1] ~ /^[0-9]+$/ && r[1] > 0) c++
+            }
+            END { print c + 0 }
+        ')
         
         if [[ ${ready_count} -ge 2 ]]; then
             log_info "CoreDNS is ready (${ready_count} pods running)"
@@ -359,9 +366,20 @@ wait_for_dns() {
     log_info "CoreDNS is ready"
 }
 
+# Many distros configure sudo secure_path without /usr/local/bin while install_helm
+# places the binary under /usr/local/bin — sudo bash ./preflight.sh then fails `command -v helm`.
+# Same paths on Ubuntu and CentOS/RHEL (FHS); not package-manager-specific.
+_k8s_ensure_helm_usr_bin_copy() {
+    [[ -x /usr/local/bin/helm ]] || return 0
+    [[ -x /usr/bin/helm ]] && return 0
+    install -m 0755 /usr/local/bin/helm /usr/bin/helm || return 0
+    log_info "Copied /usr/local/bin/helm → /usr/bin (sudo secure_path compatibility)"
+}
+
 # Install Helm 3
 install_helm() {
     log_info "Installing Helm 3..."
+    _k8s_ensure_helm_usr_bin_copy
 
     local desired="${HELM_VERSION}"
     local existing=""
@@ -401,8 +419,9 @@ install_helm() {
     if curl -fsSLo "${tmpdir}/${tarball}" "${url}"; then
         tar -xzf "${tmpdir}/${tarball}" -C "${tmpdir}"
         install -m 0755 "${tmpdir}/linux-${arch}/helm" /usr/local/bin/helm
+        install -m 0755 "${tmpdir}/linux-${arch}/helm" /usr/bin/helm
         rm -rf "${tmpdir}" 2>/dev/null || true
-        log_info "Helm ${desired} installed successfully"
+        log_info "Helm ${desired} installed successfully (/usr/local/bin and /usr/bin)"
         return 0
     fi
     rm -rf "${tmpdir}" 2>/dev/null || true
@@ -413,9 +432,48 @@ install_helm() {
     else
         curl -fsSL "${HELM_INSTALL_SCRIPT_URL}" | bash
     fi
+    _k8s_ensure_helm_usr_bin_copy
 
     # Do not auto-add Helm repos here: modules add repos only when a local chart is not available.
     log_info "Helm 3 installed successfully"
+}
+
+# Docker CE .repo uses $releasever in paths. On HCE/openEuler, DNF expands that
+# from /etc/os-release to a product version (e.g. 2.0) instead of el major — Docker
+# mirrors only host centos/8,9,... Pin the .repo file to a valid tree.
+_fix_docker_ce_repo_releasever_for_distro() {
+    local repo_file="/etc/yum.repos.d/docker-ce.repo"
+    [[ -f "${repo_file}" ]] || return 0
+    [[ -f /etc/os-release ]] || return 0
+    # shellcheck source=/dev/null
+    . /etc/os-release
+    local is_hce="no"
+    [[ "${ID:-}" == "hce" ]] && is_hce="yes"
+    if [[ "${is_hce}" == "no" ]] && { [[ "${NAME:-}" == *"Huawei Cloud EulerOS"* ]] || [[ "${PRETTY_NAME:-}" == *"Huawei Cloud EulerOS"* ]]; }; then
+        is_hce="yes"
+    fi
+
+    case "${ID:-}" in
+        openEuler|openeuler)
+            log_info "Pinning Docker CE repo paths for openEuler..."
+            sed -i 's|\$releasever|9|g' "${repo_file}"
+            ;;
+        hce)
+            log_info "Pinning Docker CE repo paths for Huawei Cloud EulerOS (el8, not VERSION_ID)..."
+            sed -i 's|\$releasever|8|g' "${repo_file}"
+            # If the file was ever expanded or edited to literal HCE VERSION_ID paths, fix those too
+            sed -i 's|/linux/centos/2\.[0-9]*/|/linux/centos/8/|g' "${repo_file}"
+            sed -i 's|/linux/centos/2/|/linux/centos/8/|g' "${repo_file}"
+            ;;
+        *)
+            if [[ "${is_hce}" == "yes" ]]; then
+                log_info "Pinning Docker CE repo paths for Huawei Cloud EulerOS (detected via NAME/PRETTY_NAME)..."
+                sed -i 's|\$releasever|8|g' "${repo_file}"
+                sed -i 's|/linux/centos/2\.[0-9]*/|/linux/centos/8/|g' "${repo_file}"
+                sed -i 's|/linux/centos/2/|/linux/centos/8/|g' "${repo_file}"
+            fi
+            ;;
+    esac
 }
 
 # Install containerd container runtime
@@ -459,15 +517,8 @@ install_containerd() {
         # Replace official Docker download URLs with Tsinghua mirror
         log_info "Replacing Docker official URLs with Tsinghua mirror..."
         sed -i 's+https://download.docker.com+https://mirrors.tuna.tsinghua.edu.cn/docker-ce+g' /etc/yum.repos.d/docker-ce.repo
-        
-        # Fix for openEuler: replace $releasever with 9 in repo file
-        if [[ -f /etc/os-release ]]; then
-            source /etc/os-release
-            if [[ "${ID}" == "openEuler" ]] || [[ "${ID}" == "openeuler" ]]; then
-                log_info "Detected openEuler system, fixing Docker CE repo paths..."
-                sed -i 's|\$releasever|9|g' /etc/yum.repos.d/docker-ce.repo
-            fi
-        fi
+
+        _fix_docker_ce_repo_releasever_for_distro
         
         # Clean and makecache for the new repo
         ${PKG_MANAGER} clean all
@@ -506,24 +557,27 @@ install_containerd() {
             fi
         fi
         
-        # Configure Docker CE repo if not exists (Aliyun mirror only)
+        # Configure Docker CE repo (create if missing; always pin $releasever for HCE/openEuler)
         if [[ ! -f /etc/yum.repos.d/docker-ce.repo ]]; then
             log_info "Configuring Docker CE yum repo: ${DOCKER_CE_REPO_URL}"
             configure_docker_repo "${DOCKER_CE_REPO_URL}"
-            
-            set +e
-            ${PKG_MANAGER_UPDATE}
-            local update_rc=$?
-            set -e
+        else
+            log_info "Docker CE repo file already exists; applying distro-specific path fixes if needed"
+            _fix_docker_ce_repo_releasever_for_distro
+        fi
 
-            if [[ ${update_rc} -ne 0 ]]; then
-                log_error "Failed to update package metadata with Docker CE repo."
-                log_error "Please ensure network connectivity and try again, or manually install containerd.io package."
-                log_info "You can manually install containerd using one of these methods:"
-                log_info "  1. dnf install -y containerd.io (after configuring Docker repo)"
-                log_info "  2. Download and install RPM: https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/"
-                return 1
-            fi
+        set +e
+        ${PKG_MANAGER_UPDATE}
+        local update_rc=$?
+        set -e
+
+        if [[ ${update_rc} -ne 0 ]]; then
+            log_error "Failed to update package metadata with Docker CE repo."
+            log_error "Please ensure network connectivity and try again, or manually install containerd.io package."
+            log_info "You can manually install containerd using one of these methods:"
+            log_info "  1. dnf install -y containerd.io (after configuring Docker repo)"
+            log_info "  2. Download and install RPM: https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/"
+            return 1
         fi
 
         # Attempt installation with both base and docker-ce repos for CentOS 7
@@ -557,6 +611,10 @@ install_containerd() {
             if [[ -z "${rhel_version}" ]]; then
                 rhel_version="8"
             fi
+            # HCE VERSION_ID is product series (2.0), not RHEL major; use el8 packages
+            if [[ "${os_id}" == "hce" ]]; then
+                rhel_version="8"
+            fi
             
             local arch=$(uname -m)
             local rpm_url
@@ -564,21 +622,33 @@ install_containerd() {
             # Construct correct URL based on OS type
             if [[ "${os_id}" == "rhel" ]] || [[ "${os_id}" == "rocky" ]] || [[ "${os_id}" == "almalinux" ]]; then
                 # RHEL-based systems use /rhel/ path
-                rpm_url="https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/rhel/${rhel_version}/${arch}/stable/Packages/containerd.io-1.6.33-3.1.el${rhel_version}.${arch}.rpm"
+                rpm_url="https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/rhel/${rhel_version}/${arch}/stable/Packages/containerd.io-1.6.32-3.1.el${rhel_version}.${arch}.rpm"
             else
                 # CentOS uses /centos/ path
-                rpm_url="https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/${rhel_version}/${arch}/stable/Packages/containerd.io-1.6.33-3.1.el${rhel_version}.${arch}.rpm"
+                rpm_url="https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/${rhel_version}/${arch}/stable/Packages/containerd.io-1.6.32-3.1.el${rhel_version}.${arch}.rpm"
             fi
             
             local rpm_file="/tmp/containerd.io.rpm"
             
-            log_info "Downloading containerd.io v1.6.33 RPM from Tsinghua mirror..."
+            log_info "Downloading containerd.io v1.6.32 RPM from Tsinghua mirror..."
             log_info "URL: ${rpm_url}"
             
             set +e
             if curl -fsSLo "${rpm_file}" "${rpm_url}"; then
                 log_info "Downloaded RPM successfully, installing..."
-                ${PKG_MANAGER_INSTALL} "${rpm_file}"
+                # dnf still refreshes all *enabled* repos before a local RPM install; a broken
+                # docker-ce-stable (HCE $releasever→2.0) would fail the transaction — disable all
+                # docker-ce* repoids from the repo file while resolving deps from OS base repos.
+                local -a _dce_disable=()
+                if [[ -f /etc/yum.repos.d/docker-ce.repo ]]; then
+                    while IFS= read -r _line || [[ -n "${_line}" ]]; do
+                        if [[ "${_line}" =~ ^\[([^][]+)\] ]]; then
+                            _dce_disable+=( "--disablerepo=${BASH_REMATCH[1]}" )
+                        fi
+                    done < /etc/yum.repos.d/docker-ce.repo
+                fi
+                _fix_docker_ce_repo_releasever_for_distro
+                ${PKG_MANAGER_INSTALL} "${_dce_disable[@]}" --nogpgcheck "${rpm_file}"
                 install_rc=$?
                 rm -f "${rpm_file}"
                 
@@ -602,8 +672,8 @@ install_containerd() {
             log_error "Please install containerd manually using one of these methods:"
             log_error ""
             log_info "  Option 1: Download and install RPM directly"
-            log_info "    curl -fsSLo /tmp/containerd.io.rpm https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/\$(rpm -E %rhel)/\$(uname -m)/stable/Packages/containerd.io-1.6.33-3.1.el\$(rpm -E %rhel).\$(uname -m).rpm"
-            log_info "    dnf install -y /tmp/containerd.io.rpm"
+            log_info "    curl -fsSLo /tmp/containerd.io.rpm https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/\$(rpm -E %rhel)/\$(uname -m)/stable/Packages/containerd.io-1.6.32-3.1.el\$(rpm -E %rhel).\$(uname -m).rpm"
+            log_info "    dnf install -y --disablerepo=docker-ce-stable --disablerepo=docker-ce-test /tmp/containerd.io.rpm"
             log_error ""
             log_info "  Option 2: Install from Aliyun mirror"
             log_info "    dnf config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo"
@@ -806,6 +876,64 @@ EOF
     log_info "crictl installed successfully"
 }
 
+# kubernetes-cni (RPM/apt) or containernetworking/plugins tarball provides
+# /opt/cni/bin/{loopback,bridge,...}. If only kubeadm/kubelet were pre-installed,
+# this directory is empty and kubelet fails with: failed to find plugin "loopback".
+_k8s_ensure_cni_bin_plugins() {
+    if [[ -x /opt/cni/bin/loopback ]]; then
+        return 0
+    fi
+
+    log_warn "Missing /opt/cni/bin/loopback — installing CNI plugins for kubelet pod sandbox"
+    detect_package_manager
+
+    if [[ "${PKG_MANAGER}" == "dnf" ]] || [[ "${PKG_MANAGER}" == "yum" ]]; then
+        log_info "Trying package kubernetes-cni..."
+        if [[ "${PKG_MANAGER}" == "dnf" ]]; then
+            dnf install -y --disableexcludes=kubernetes kubernetes-cni 2>/dev/null \
+                || dnf install -y kubernetes-cni \
+                || true
+        else
+            yum install -y --disableexcludes=kubernetes kubernetes-cni 2>/dev/null \
+                || yum install -y kubernetes-cni \
+                || true
+        fi
+    elif [[ "${PKG_MANAGER}" == "apt" ]]; then
+        ${PKG_MANAGER_INSTALL} kubernetes-cni 2>/dev/null || true
+    fi
+
+    if [[ -x /opt/cni/bin/loopback ]]; then
+        log_info "CNI plugins available under /opt/cni/bin"
+        return 0
+    fi
+
+    local v="${CNI_PLUGINS_VERSION:-v1.4.0}"
+    local arch=""
+    case "$(uname -m)" in
+        x86_64|amd64) arch="amd64" ;;
+        aarch64|arm64) arch="arm64" ;;
+        *)
+            log_error "No loopback CNI and unsupported arch for tarball fallback: $(uname -m)"
+            return 1
+            ;;
+    esac
+
+    local tgz="cni-plugins-linux-${arch}-${v}.tgz"
+    local url="https://github.com/containernetworking/plugins/releases/download/${v}/${tgz}"
+    log_info "Fetching ${tgz} into /opt/cni/bin..."
+    mkdir -p /opt/cni/bin
+    if curl -fsSL "${url}" | tar -C /opt/cni/bin -xzf -; then
+        chmod a+x /opt/cni/bin/* 2>/dev/null || true
+        if [[ -x /opt/cni/bin/loopback ]]; then
+            log_info "Installed CNI plugins from containernetworking/plugins ${v}"
+            return 0
+        fi
+    fi
+
+    log_error "Still no /opt/cni/bin/loopback. Install kubernetes-cni (RPM/apt) or unpack CNI plugins there, then restart kubelet."
+    return 1
+}
+
 # Install Kubernetes components (kubeadm, kubelet, kubectl)
 install_kubernetes() {
     log_info "Installing Kubernetes components..."
@@ -830,11 +958,13 @@ EOF
     
     if ! command -v kubeadm &> /dev/null || ! command -v kubelet &> /dev/null || ! command -v kubectl &> /dev/null; then
         if [[ "${PKG_MANAGER}" == "dnf" ]] || [[ "${PKG_MANAGER}" == "yum" ]]; then
-            # For RHEL/CentOS/Fedora systems
-            ${PKG_MANAGER_INSTALL} kubeadm kubelet kubectl kubernetes-cni
-            # Only use hold command if it's available (dnf mark install works, yum versionlock may need plugin)
+            # RHEL-family only; Ubuntu/Debian use the apt branch below (no --disableexcludes).
+            # pkgs.k8s.io kubernetes.repo often sets exclude=kubeadm kubelet kubectl — match preflight UX.
             if [[ "${PKG_MANAGER}" == "dnf" ]]; then
+                dnf install -y --disableexcludes=kubernetes kubeadm kubelet kubectl kubernetes-cni
                 ${PKG_MANAGER_HOLD} kubeadm kubelet kubectl kubernetes-cni 2>/dev/null || true
+            else
+                yum install -y --disableexcludes=kubernetes kubeadm kubelet kubectl kubernetes-cni
             fi
         else
             # For Ubuntu/Debian systems
@@ -851,6 +981,8 @@ EOF
     else
         log_info "Kubernetes components are already installed"
     fi
+
+    _k8s_ensure_cni_bin_plugins || return 1
     
     # Install crictl (always install, even if K8s components already exist)
     install_crictl
@@ -905,20 +1037,34 @@ configure_system() {
 br_netfilter
 EOF
     
-    # Configure kernel parameters
+    # Separate file for IPv4 forwarding (50-* runs before many 99-* drops).
+    # Some hosts fail bridge keys in sysctl --system first pass; forwarding must never be skipped.
     log_info "Configuring kernel parameters..."
+    mkdir -p /etc/sysctl.d 2>/dev/null || true
+    cat > /etc/sysctl.d/50-kubernetes-ipv4-ipforward.conf <<'EOF'
+# K8s / CNI: pod traffic between interfaces (do not bundle with bridge keys only)
+net.ipv4.ip_forward = 1
+EOF
     cat > /etc/sysctl.d/99-kubernetes.conf <<EOF
 net.bridge.bridge-nf-call-iptables = 1
 net.bridge.bridge-nf-call-ip6tables = 1
-net.ipv4.ip_forward = 1
 EOF
-    
+
+    sysctl -w net.ipv4.ip_forward=1 2>/dev/null || echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null || true
+
     # Apply sysctl settings with timeout to avoid hanging
     timeout 10 sysctl --system 2>/dev/null || log_warn "sysctl configuration may have timed out"
-    
-    # Ensure ip_forward is enabled immediately (in case sysctl didn't apply it)
-    echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null || true
-    
+
+    sysctl -w net.ipv4.ip_forward=1 2>/dev/null || echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null || true
+
+    local _ipf
+    _ipf="$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo 0)"
+    if [[ "${_ipf}" != "1" ]]; then
+        log_warn "net.ipv4.ip_forward is still ${_ipf} after sysctl; Check /etc/sysctl.d/, firewalld, or cloud network agents overriding routing."
+    else
+        log_info "net.ipv4.ip_forward=1 (runtime confirmed)"
+    fi
+
     log_info "System configured for Kubernetes"
 }
 

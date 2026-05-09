@@ -17,8 +17,6 @@ type DiscoverTaskService interface {
 	Create(ctx context.Context, catalogID string, taskType ...string) (string, error)
 	// GetByID retrieves a DiscoverTask by ID.
 	GetByID(ctx context.Context, id string) (*DiscoverTask, error)
-	// GetByScheduledID retrieves DiscoverTasks by scheduled ID.
-	GetByScheduledID(ctx context.Context, scheduledID string) ([]*DiscoverTask, error)
 	// List lists DiscoverTasks for a catalog.
 	List(ctx context.Context, params DiscoverTaskQueryParams) ([]*DiscoverTask, int64, error)
 	// UpdateStatus updates a DiscoverTask's status.
@@ -28,4 +26,9 @@ type DiscoverTaskService interface {
 
 	// CheckExistByStatuses  checks if DiscoverTasks exists by catalog ID and statuses.
 	CheckExistByStatuses(ctx context.Context, catalogID string, statuses []string) (bool, error)
+
+	// Delete atomically deletes discover tasks by IDs.
+	// Pre-validates: any pending/running id returns 409 (cannot be skipped); any missing id returns 404
+	// unless ignoreMissing=true. Duplicate ids in the input are de-duplicated.
+	Delete(ctx context.Context, ids []string, ignoreMissing bool) error
 }

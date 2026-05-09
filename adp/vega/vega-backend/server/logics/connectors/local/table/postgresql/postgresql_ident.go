@@ -41,14 +41,3 @@ func quoteColumnName(name string) string {
 	}
 	return pgQuoteIdent(strings.TrimSpace(name))
 }
-
-// qualifyFieldForSQL 将 "alias.col" 转为带引号的限定名（用于 SELECT/ORDER BY/JOIN ON）。
-func qualifyFieldForSQL(field string) string {
-	field = strings.TrimSpace(field)
-	if idx := strings.Index(field, "."); idx >= 0 {
-		alias := field[:idx]
-		col := field[idx+1:]
-		return pgQuoteIdent(strings.TrimSpace(alias)) + "." + pgQuoteIdent(strings.TrimSpace(col))
-	}
-	return pgQuoteIdent(field)
-}

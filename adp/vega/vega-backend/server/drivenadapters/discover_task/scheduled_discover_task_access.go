@@ -427,7 +427,7 @@ func (sda *scheduledDiscoverTaskAccess) List(ctx context.Context, params interfa
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	tasks := []*interfaces.ScheduledDiscoverTask{}
 	for rows.Next() {
@@ -646,7 +646,7 @@ func (sda *scheduledDiscoverTaskAccess) GetEnabledTasks(ctx context.Context) ([]
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	tasks := []*interfaces.ScheduledDiscoverTask{}
 	for rows.Next() {

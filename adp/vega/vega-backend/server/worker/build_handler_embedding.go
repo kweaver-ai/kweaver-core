@@ -116,12 +116,6 @@ func (eh *embeddingHandler) HandleTask(ctx context.Context, task *asynq.Task) er
 		return embed_err
 	}
 
-	// Update task status to completed
-	err = eh.taskAccess.UpdateStatus(ctx, taskID, map[string]interface{}{"status": interfaces.BuildTaskStatusCompleted})
-	if err != nil {
-		return fmt.Errorf("update build task status failed: %w", err)
-	}
-
 	logger.Infof("Embedding completed for task: %s, resource: %s", taskID, buildTaskInfo.ResourceID)
 	return nil
 }
@@ -136,8 +130,13 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 	}
 
 	// Use the connector name as the Kafka topic prefix
-	topic := fmt.Sprintf("%s-%s-embedding", interfaces.BUILD_PREFIX, resource.ID)
+	topic := getEmbeddingTopic(resource.ID, buildTaskInfo.ID)
 	groupID := fmt.Sprintf("%s-embedding-%s", interfaces.BUILD_PREFIX, resource.ID)
+
+	// Create Kafka topic if it doesn't exist
+	if err := eh.kafkaAccess.CreateTopic(ctx, topic); err != nil {
+		return fmt.Errorf("failed to create Kafka topic %s: %w", topic, err)
+	}
 
 	// Create Kafka reader
 	reader, err := eh.kafkaAccess.NewReader(ctx, topic, groupID)
@@ -152,7 +151,6 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 	// Message processing loop
 	retryInterval := interfaces.BUILD_TASK_RETRY_INTERVAL * time.Second
 	totalProcessed := buildTaskInfo.VectorizedCount
-	const batchUpdateThreshold = 1000 // 每处理1000条消息更新一次
 	lastUpdateTime := time.Now()
 	updateInterval := 30 * time.Second // embedding速度慢，至少每30秒更新一次
 	for {
@@ -178,6 +176,7 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 
 		select {
 		case <-ctx.Done():
+			// context canceled(eg: process stopped by SIGTERM), exit the loop
 			logger.Infof("Kafka subscription context canceled, exiting")
 			// 最后一次更新任务状态
 			_ = eh.taskAccess.UpdateStatus(context.Background(), buildTaskInfo.ID, map[string]interface{}{"vectorizedCount": totalProcessed})
@@ -194,12 +193,13 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 					// 超时，检查是否需要更新任务状态
 					if totalProcessed > buildTaskInfo.VectorizedCount && time.Since(lastUpdateTime) > updateInterval {
 						_ = eh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"vectorizedCount": totalProcessed})
+						buildTaskInfo.VectorizedCount = totalProcessed
 						lastUpdateTime = time.Now()
 					}
 				} else {
 					logger.Errorf("Embedding task Failed to read message from Kafka: %v", err)
+					time.Sleep(retryInterval)
 				}
-				time.Sleep(retryInterval)
 				continue
 			}
 
@@ -233,6 +233,12 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 						logger.Errorf("Failed to update resource index name: %v", err)
 						time.Sleep(retryInterval)
 						continue
+					}
+
+					// Update task status to completed
+					err = eh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusCompleted})
+					if err != nil {
+						logger.Errorf("update build task status to completed failed: %w", buildTaskInfo.ID, err)
 					}
 
 					// Commit the message to avoid reprocessing
@@ -284,7 +290,7 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 				totalProcessed++
 
 				// 批量更新任务状态
-				if totalProcessed%batchUpdateThreshold == 0 || time.Since(lastUpdateTime) > updateInterval {
+				if time.Since(lastUpdateTime) > updateInterval {
 					_ = eh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"vectorizedCount": totalProcessed})
 					lastUpdateTime = time.Now()
 				}

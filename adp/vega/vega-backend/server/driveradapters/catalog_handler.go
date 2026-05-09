@@ -356,6 +356,21 @@ func (r *restHandler) updateCatalog(c *gin.Context, ctx context.Context, span tr
 		return
 	}
 
+	if req.ID == "" {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InvalidParameter_ID).
+			WithErrorDetails("body field 'id' is required and must equal path parameter")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if req.ID != id {
+		httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_Catalog_IDMismatch).
+			WithErrorDetails(fmt.Sprintf("path id %q != body id %q", id, req.ID))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	if err := ValidateCatalogRequest(ctx, &req); err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -386,7 +401,7 @@ func (r *restHandler) updateCatalog(c *gin.Context, ctx context.Context, span tr
 
 	// connector_config immutable fields: host, port, database, databases, schemas, paths, protocol
 	// These fields cannot be modified or removed if they exist in the original catalog
-	immutableFields := []string{"host", "port", "database", "databases", "schemas", "paths", "protocol"}
+	immutableFields := []string{"host", "port", "database", "databases", "schemas", "paths", "protocol", "concurrent"}
 	for _, field := range immutableFields {
 		if _, existsInCatalog := catalog.ConnectorCfg[field]; existsInCatalog {
 			if _, existsInReq := req.ConnectorCfg[field]; existsInReq {
@@ -673,12 +688,19 @@ func (r *restHandler) testConnection(c *gin.Context, ctx context.Context, span t
 		return
 	}
 
-	result, err := r.cs.TestConnection(ctx, catalog)
+	status, err := r.cs.TestConnection(ctx, catalog)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
+	}
+
+	// 映射缓存的健康状态为对外契约：
+	// 严格 healthy = success=true，其它（degraded / unhealthy / offline / disabled）= false。
+	result := map[string]any{
+		"success": status.HealthCheckStatus == interfaces.CatalogHealthStatusHealthy,
+		"message": status.HealthCheckResult,
 	}
 
 	logger.Debug("Handler TestConnection Success")
@@ -755,108 +777,6 @@ func (r *restHandler) discoverCatalogResources(c *gin.Context, ctx context.Conte
 	}
 
 	logger.Debug("Handler DiscoverCatalogResources Success - Task Created")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	rest.ReplyOK(c, http.StatusOK, result)
-}
-
-// ========== ListCatalogResources ==========
-
-// ListCatalogResourcesByEx handles GET /api/vega-backend/v1/catalogs/:ids/resources (External)
-func (r *restHandler) ListCatalogResourcesByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListCatalogResourcesByEx", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	// 外网接口：校验token
-	visitor, err := r.verifyOAuth(ctx, c)
-	if err != nil {
-		return
-	}
-	r.listCatalogResources(c, ctx, span, visitor)
-}
-
-// ListCatalogResourcesByIn handles GET /api/vega-backend/in/v1/catalogs/:ids/resources (Internal)
-func (r *restHandler) ListCatalogResourcesByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListCatalogResourcesByIn", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
-	r.listCatalogResources(c, ctx, span, visitor)
-}
-
-// listCatalogResources is the shared implementation
-func (r *restHandler) listCatalogResources(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	accountInfo := interfaces.AccountInfo{
-		ID:   visitor.ID,
-		Type: string(visitor.Type),
-	}
-	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
-
-	id := c.Param("ids")
-
-	// Check if id exists
-	exists, err := r.cs.CheckExistByID(ctx, id)
-	if err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
-			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-	if !exists {
-		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-
-	// 获取查询参数
-	category := c.Query("category")
-	status := c.Query("status")
-	database := c.Query("database")
-	offset := common.GetQueryOrDefault(c, "offset", interfaces.DEFAULT_OFFSET)
-	limit := common.GetQueryOrDefault(c, "limit", interfaces.DEFAULT_LIMIT)
-	sort := common.GetQueryOrDefault(c, "sort", "update_time")
-	direction := common.GetQueryOrDefault(c, "direction", interfaces.DESC_DIRECTION)
-
-	// 校验分页查询参数
-	pageParam, err := validatePaginationQueryParams(ctx,
-		offset, limit, sort, direction, interfaces.CATALOG_SORT)
-	if err != nil {
-		httpErr := err.(*rest.HTTPError)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-
-	params := interfaces.ResourcesQueryParams{
-		PaginationQueryParams: pageParam,
-		CatalogID:             id,
-		Category:              category,
-		Status:                status,
-		Database:              database,
-	}
-
-	entries, total, err := r.rs.List(ctx, params)
-	if err != nil {
-		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-
-	result := map[string]any{
-		"entries":     entries,
-		"total_count": total,
-	}
-
-	logger.Debug("Handler ListCatalogResources Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }

@@ -266,12 +266,13 @@ func ToADPRelationType(knID string, branch string, bknRel *bknsdk.BknRelationTyp
 			relType.MappingRules = mappings
 
 		case *bknsdk.InDirectMappingRule:
-			indirect := &interfaces.InDirectMapping{
-				BackingDataSource: &interfaces.ResourceInfo{
+			indirect := &interfaces.InDirectMapping{}
+			if rules.BackingDataSource != nil {
+				indirect.BackingDataSource = &interfaces.ResourceInfo{
 					Type: rules.BackingDataSource.Type,
 					ID:   rules.BackingDataSource.ID,
 					Name: rules.BackingDataSource.Name,
-				},
+				}
 			}
 			for _, rule := range rules.SourceMappingRules {
 				indirect.SourceMappingRules = append(indirect.SourceMappingRules, interfaces.Mapping{
@@ -334,12 +335,13 @@ func ToBKNRelationType(adpRel *interfaces.RelationType) *bknsdk.BknRelationType 
 			bknRel.MappingRules = mappingRules
 
 		case *interfaces.InDirectMapping:
-			indirectRules := &bknsdk.InDirectMappingRule{
-				BackingDataSource: &bknsdk.ResourceInfo{
+			indirectRules := &bknsdk.InDirectMappingRule{}
+			if rules.BackingDataSource != nil {
+				indirectRules.BackingDataSource = &bknsdk.ResourceInfo{
 					Type: rules.BackingDataSource.Type,
 					ID:   rules.BackingDataSource.ID,
 					Name: rules.BackingDataSource.Name,
-				},
+				}
 			}
 			for _, rule := range rules.SourceMappingRules {
 				indirectRules.SourceMappingRules = append(indirectRules.SourceMappingRules, bknsdk.MappingRule{

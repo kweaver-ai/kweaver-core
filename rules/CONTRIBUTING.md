@@ -537,7 +537,7 @@ KWeaver Core is polyglot. You only need the toolchain(s) for the module(s) you t
 - **Java** (JDK 17+) and Maven for most ADP / decision-agent backend modules
 - **Go** (1.23+) for `infra/oss-gateway-backend`, several CLIs and small services
 - **Python** (3.11+) for `infra/mf-model-manager`, model / data utilities
-- **Node.js** (18+) for `website/` and any TypeScript packages
+- **Node.js** — kweaver CLIs require **22+** (per [`@kweaver-ai/kweaver-sdk` on npm](https://www.npmjs.com/package/@kweaver-ai/kweaver-sdk)). For `website/`, use `package.json` `engines` (e.g. >= 20).
 - **Docker** + a Kubernetes (single-node K3s / kubeadm / Docker Desktop) for end-to-end testing
 - **MariaDB 11.4+** (or DM8), **OpenSearch 2.x**, **Redis**, **Kafka** when running services that need them — usually provided by `deploy.sh`
 

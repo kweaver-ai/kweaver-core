@@ -45,14 +45,14 @@ func (c *NotEqualCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 		}
 	}
 
-	if IsSlice(cfg.ValueOptCfg.Value) {
+	if IsSlice(cfg.Value) {
 		return nil, fmt.Errorf("condition [not_eq] only supports single value")
 	}
 
 	cond := &NotEqualCond{
 		Cfg:    cfg,
 		Lfield: field,
-		Value:  cfg.ValueOptCfg.Value,
+		Value:  cfg.Value,
 	}
 
 	if cfg.ValueFrom == interfaces.ValueFrom_Field {

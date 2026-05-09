@@ -35,7 +35,7 @@ func (s *knSearchService) SearchSchema(ctx context.Context, req *interfaces.Sear
 
 	metricTypes := []any{}
 	if scope.IncludeMetricTypes {
-		metricTypes, err = s.resolveMetricTypes(ctx, req, resp)
+		metricTypes, err = s.resolveMetricTypes(ctx, req, scope, resp)
 		if err != nil {
 			return nil, err
 		}
@@ -46,6 +46,7 @@ func (s *knSearchService) SearchSchema(ctx context.Context, req *interfaces.Sear
 
 // SearchSchemaScope holds the resolved boolean flags for output filtering.
 type SearchSchemaScope struct {
+	ConceptGroups        []string
 	IncludeObjectTypes   bool
 	IncludeRelationTypes bool
 	IncludeActionTypes   bool
@@ -59,7 +60,7 @@ func NormalizeSearchSchemaReq(req *interfaces.SearchSchemaReq) (*interfaces.KnSe
 		return nil, SearchSchemaScope{}, stderrors.New("failed to apply defaults: " + err.Error())
 	}
 
-	// SearchScope 为 nil 时（用户未传），默认三类全开；
+	// SearchScope 为 nil 时（用户未传），默认四类全开；
 	// 非 nil 时 defaults.Set 已填充子字段。
 	scope := SearchSchemaScope{
 		IncludeObjectTypes:   true,
@@ -68,6 +69,7 @@ func NormalizeSearchSchemaReq(req *interfaces.SearchSchemaReq) (*interfaces.KnSe
 		IncludeMetricTypes:   true,
 	}
 	if req.SearchScope != nil {
+		scope.ConceptGroups = normalizeConceptGroups(req.SearchScope.ConceptGroups)
 		scope.IncludeObjectTypes = *req.SearchScope.IncludeObjectTypes
 		scope.IncludeRelationTypes = *req.SearchScope.IncludeRelationTypes
 		scope.IncludeActionTypes = *req.SearchScope.IncludeActionTypes
@@ -103,8 +105,9 @@ func NormalizeSearchSchemaReq(req *interfaces.SearchSchemaReq) (*interfaces.KnSe
 		EnableRerank: req.EnableRerank,
 		RetrievalConfig: &interfaces.RetrievalConfig{
 			ConceptRetrieval: &interfaces.ConceptRetrievalConfig{
-				TopK:        *req.MaxConcepts,
-				SchemaBrief: *req.SchemaBrief,
+				ConceptGroups: scope.ConceptGroups,
+				TopK:          *req.MaxConcepts,
+				SchemaBrief:   *req.SchemaBrief,
 			},
 		},
 	}, scope, nil
@@ -126,7 +129,7 @@ func FilterSearchSchemaResp(resp *interfaces.KnSearchResp, metricTypes []any, sc
 	}
 	if scope.IncludeObjectTypes {
 		if scope.IncludeRelationTypes && len(relationTypes) > 0 {
-			objectTypes = filterObjectTypesByRelations(objectTypes, relationTypes)
+			objectTypes = mergeRelationEndpointObjectsWithDirectFill(objectTypes, relationTypes, maxConcepts)
 		} else {
 			objectTypes = limitAnySlice(objectTypes, maxConcepts)
 		}
@@ -153,13 +156,13 @@ func FilterSearchSchemaResp(resp *interfaces.KnSearchResp, metricTypes []any, sc
 	return result
 }
 
-func (s *knSearchService) resolveMetricTypes(ctx context.Context, req *interfaces.SearchSchemaReq, resp *interfaces.KnSearchResp) ([]any, error) {
+func (s *knSearchService) resolveMetricTypes(ctx context.Context, req *interfaces.SearchSchemaReq, scope SearchSchemaScope, resp *interfaces.KnSearchResp) ([]any, error) {
 	backend := newBknBackendAccess()
 	if backend == nil {
 		return []any{}, nil
 	}
 
-	directReq := buildMetricRecallQuery(strings.TrimSpace(req.KnID), strings.TrimSpace(req.Query), *req.MaxConcepts)
+	directReq := buildMetricRecallQuery(strings.TrimSpace(req.KnID), strings.TrimSpace(req.Query), *req.MaxConcepts, scope.ConceptGroups)
 	if strings.TrimSpace(req.XKnID) != "" {
 		directReq.KnID = strings.TrimSpace(req.XKnID)
 	}
@@ -172,7 +175,7 @@ func (s *knSearchService) resolveMetricTypes(ctx context.Context, req *interface
 	objectIDs := extractObjectCandidateIDs(resp)
 	expansionMetrics := []*interfaces.MetricType{}
 	if len(objectIDs) > 0 {
-		expansionReq := buildMetricExpansionQuery(directReq.KnID, strings.TrimSpace(req.Query), objectIDs, *req.MaxConcepts)
+		expansionReq := buildMetricExpansionQuery(directReq.KnID, strings.TrimSpace(req.Query), objectIDs, *req.MaxConcepts, scope.ConceptGroups)
 		expansionResp, expansionErr := backend.SearchMetricTypes(ctx, expansionReq)
 		if expansionErr != nil {
 			s.Logger.WithContext(ctx).Warnf("[SearchSchema] metric expansion failed, fallback to direct recall: %v", expansionErr)
@@ -189,9 +192,10 @@ func (s *knSearchService) resolveMetricTypes(ctx context.Context, req *interface
 	return toAnySlice(mergeMetricTypesByID(directMetrics, expansionMetrics, *req.MaxConcepts)), nil
 }
 
-func buildMetricRecallQuery(knID, query string, limit int) *interfaces.QueryConceptsReq {
+func buildMetricRecallQuery(knID, query string, limit int, conceptGroups []string) *interfaces.QueryConceptsReq {
 	return &interfaces.QueryConceptsReq{
-		KnID: knID,
+		KnID:          knID,
+		ConceptGroups: normalizeConceptGroups(conceptGroups),
 		Cond: &interfaces.KnCondition{
 			Operation: interfaces.KnOperationTypeOr,
 			SubConditions: []*interfaces.KnCondition{
@@ -219,9 +223,10 @@ func buildMetricRecallQuery(knID, query string, limit int) *interfaces.QueryConc
 	}
 }
 
-func buildMetricExpansionQuery(knID, query string, objectIDs []string, limit int) *interfaces.QueryConceptsReq {
+func buildMetricExpansionQuery(knID, query string, objectIDs []string, limit int, conceptGroups []string) *interfaces.QueryConceptsReq {
 	return &interfaces.QueryConceptsReq{
-		KnID: knID,
+		KnID:          knID,
+		ConceptGroups: normalizeConceptGroups(conceptGroups),
 		Cond: &interfaces.KnCondition{
 			Operation: interfaces.KnOperationTypeAnd,
 			SubConditions: []*interfaces.KnCondition{
@@ -237,7 +242,7 @@ func buildMetricExpansionQuery(knID, query string, objectIDs []string, limit int
 					Value:     objectIDs,
 					ValueFrom: interfaces.CondValueFromConst,
 				},
-				buildMetricRecallQuery(knID, query, limit).Cond,
+				buildMetricRecallQuery(knID, query, limit, conceptGroups).Cond,
 			},
 		},
 		Sort: []*interfaces.KnSortParams{
@@ -327,43 +332,78 @@ func limitAnySlice(items []any, limit int) []any {
 	return items[:limit]
 }
 
-const relationReferencedObjectTypes = 2
-
-func filterObjectTypesByRelations(objectTypes, relationTypes []any) []any {
-	if len(objectTypes) == 0 || len(relationTypes) == 0 {
+func mergeRelationEndpointObjectsWithDirectFill(objectTypes, relationTypes []any, limit int) []any {
+	if len(objectTypes) == 0 {
 		return objectTypes
 	}
-
-	referenced := make(map[string]struct{}, len(relationTypes)*relationReferencedObjectTypes)
-	for _, rel := range relationTypes {
-		relMap, ok := rel.(map[string]any)
-		if !ok {
-			continue
-		}
-		if sourceID, ok := relMap["source_object_type_id"].(string); ok && sourceID != "" {
-			referenced[sourceID] = struct{}{}
-		}
-		if targetID, ok := relMap["target_object_type_id"].(string); ok && targetID != "" {
-			referenced[targetID] = struct{}{}
-		}
-	}
-	if len(referenced) == 0 {
-		return objectTypes
+	if len(relationTypes) == 0 {
+		return limitAnySlice(objectTypes, limit)
 	}
 
-	filtered := make([]any, 0, len(objectTypes))
+	objectByID := make(map[string]any, len(objectTypes))
 	for _, obj := range objectTypes {
 		objMap, ok := obj.(map[string]any)
 		if !ok {
 			continue
 		}
 		conceptID, ok := objMap["concept_id"].(string)
+		if !ok || conceptID == "" {
+			continue
+		}
+		objectByID[conceptID] = obj
+	}
+
+	seen := make(map[string]struct{}, len(objectTypes))
+	out := make([]any, 0, len(objectTypes))
+	appendObjectByID := func(conceptID string) {
+		if conceptID == "" {
+			return
+		}
+		if _, ok := seen[conceptID]; ok {
+			return
+		}
+		obj, ok := objectByID[conceptID]
+		if !ok {
+			return
+		}
+		seen[conceptID] = struct{}{}
+		out = append(out, obj)
+	}
+
+	for _, rel := range relationTypes {
+		relMap, ok := rel.(map[string]any)
 		if !ok {
 			continue
 		}
-		if _, keep := referenced[conceptID]; keep {
-			filtered = append(filtered, obj)
+		sourceID, _ := relMap["source_object_type_id"].(string)
+		targetID, _ := relMap["target_object_type_id"].(string)
+		appendObjectByID(sourceID)
+		appendObjectByID(targetID)
+	}
+
+	remaining := limit - len(out)
+	if remaining <= 0 {
+		return out
+	}
+	for _, obj := range objectTypes {
+		objMap, ok := obj.(map[string]any)
+		if !ok {
+			continue
+		}
+		conceptID, ok := objMap["concept_id"].(string)
+		if !ok || conceptID == "" {
+			continue
+		}
+		if _, ok := seen[conceptID]; ok {
+			continue
+		}
+		seen[conceptID] = struct{}{}
+		out = append(out, obj)
+		remaining--
+		if remaining == 0 {
+			break
 		}
 	}
-	return filtered
+
+	return out
 }

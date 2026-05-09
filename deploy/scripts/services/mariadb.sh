@@ -37,6 +37,33 @@ update_rds_type_to_internal() {
     fi
 }
 
+# When values file used loopback RDS hosts (e.g. mac/kind samples), point depServices.rds at
+# the in-cluster MariaDB Service so Helm hooks and pods resolve MySQL correctly.
+sync_config_rds_for_in_cluster_mariadb() {
+    local config_file="${CONFIG_YAML_PATH:-}"
+    local ns="${MARIADB_NAMESPACE:-resource}"
+    local svc_host="mariadb.${ns}.svc.cluster.local"
+
+    [[ -f "${config_file}" ]] || return 0
+    if ! grep -A40 '^  rds:' "${config_file}" | grep -E '^[[:space:]]*host(Read)?:' | grep -qE "127\.0\.0\.1|'127\.0\.0\.1'|localhost|'localhost'"; then
+        return 0
+    fi
+
+    log_info "Updating ${config_file}: depServices.rds -> internal + ${svc_host} (replacing loopback placeholders)"
+    update_rds_type_to_internal || true
+
+    local tmp
+    tmp="$(mktemp)"
+    awk -v h="${svc_host}" '
+        /^  rds:/ { inr=1 }
+        inr && /^  [a-z]/ && $0 !~ /^  rds:/ { inr=0 }
+        inr && /^    host:/ { print "    host: '\''" h "'\''"; next }
+        inr && /^    hostRead:/ { print "    hostRead: '\''" h "'\''"; next }
+        { print }
+    ' "${config_file}" > "${tmp}"
+    mv "${tmp}" "${config_file}"
+}
+
 # Grant permissions to MariaDB user (always run for internal MariaDB)
 grant_mariadb_user_permissions() {
     local ns="${MARIADB_NAMESPACE}"
@@ -271,6 +298,8 @@ install_mariadb_helm() {
 
     # Create additional databases and grant permissions
     setup_mariadb_databases
+
+    sync_config_rds_for_in_cluster_mariadb
 
     if [[ "${fresh_install}" == "true" && "${AUTO_GENERATE_CONFIG}" == "true" ]]; then
         log_info "Updating conf/config.yaml after MariaDB fresh install..."

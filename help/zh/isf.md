@@ -13,7 +13,7 @@
 ISF 在**完整安装**下（启用 `auth.enabled=true` 与 `businessDomain.enabled=true`）的日常**管理面**（用户、组织、角色、模型、审计）通过独立 CLI [`@kweaver-ai/kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin) 操作 — 与本页下文面向终端用户的 `kweaver` CLI 互补。
 
 ```bash
-npm install -g @kweaver-ai/kweaver-admin           # Node.js 18+
+npm install -g @kweaver-ai/kweaver-admin           # Node.js 22+（与 kweaver-sdk 的 npm engines 一致）
 kweaver-admin auth login https://<访问地址> -k
 
 kweaver-admin org tree                              # 查看部门

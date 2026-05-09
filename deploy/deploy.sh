@@ -20,9 +20,9 @@ HELM_INSTALL_SCRIPT_PATH="${SCRIPT_DIR}/conf/get-helm-3"
 
 # Source all service libraries
 source "${SCRIPT_DIR}/scripts/lib/common.sh"
-source "${SCRIPT_DIR}/scripts/lib/context_loader_toolset_import.sh"
 source "${SCRIPT_DIR}/scripts/services/config.sh"
 source "${SCRIPT_DIR}/scripts/services/k8s.sh"
+source "${SCRIPT_DIR}/scripts/services/k3s.sh"
 source "${SCRIPT_DIR}/scripts/services/storage.sh"
 source "${SCRIPT_DIR}/scripts/services/mariadb.sh"
 source "${SCRIPT_DIR}/scripts/services/redis.sh"
@@ -44,12 +44,17 @@ usage() {
     echo "  k8s install                   Initialize K8s master node with CNI and DNS"
     echo "  k8s reset                     Reset Kubernetes cluster state (kubeadm reset -f + cleanup)"
     echo "  k8s status                    Show cluster status"
+    echo "  k3s install                   Install single-node k3s (Linux), Traefik disabled; uses ingress-nginx"
+    echo "  k3s uninstall                 Run k3s-uninstall.sh (removes k3s)"
+    echo "  k3s status                    Show cluster status (nodes and pods)"
     echo "  mariadb install               Install single-node MariaDB 11"
     echo "  mariadb uninstall             Uninstall MariaDB (optionally purge PVC)"
     echo "  redis install                 Install single-node Redis 7"
     echo "  redis uninstall               Uninstall Redis (PVCs will be deleted by default)"
     echo "  kafka install                 Install single-node Kafka"
     echo "  kafka uninstall               Uninstall Kafka (PVCs will be deleted by default)"
+    echo "  data-services install         Install MariaDB, Redis, Kafka, Zookeeper, OpenSearch (cluster must exist)"
+    echo "  data-services uninstall       Uninstall those bundles (kafka→zk order; ingress only if AUTO_INSTALL_INGRESS_NGINX=true)"
     echo "  opensearch install            Install single-node OpenSearch"
     echo "  opensearch uninstall          Uninstall OpenSearch (optionally purge PVC)"
     echo "  zookeeper install             Install single-node Zookeeper"
@@ -57,6 +62,7 @@ usage() {
     echo "  ingress-nginx install         Install ingress-nginx-controller"
     echo "  ingress-nginx uninstall       Uninstall ingress-nginx-controller"
     echo "  kweaver-core install          Install KWeaver Core services; auto-installs K8s/data services if missing"
+    echo "  kweaver-core install          On BYOK (KWEAVER_SKIP_PLATFORM_BOOTSTRAP=true), runs ensure_data_services first unless KWEAVER_SKIP_DATA_SERVICES_BUNDLE=true"
     echo "  kweaver-core install --minimum  Minimum install (skip auth & business-domain modules)"
     echo "  kweaver-core download         Download/update KWeaver Core charts into deploy/.tmp/charts"
     echo "  kweaver-core uninstall        Uninstall KWeaver Core services"
@@ -79,6 +85,8 @@ usage() {
     echo "  $0 k8s install                # Initialize K8s master node with default settings"
     echo "  $0 k8s reset                  # Reset cluster state before re-install"
     echo "  $0 k8s status                 # Show cluster status"
+    echo "  $0 k3s install                # Install single-node k3s + ingress-nginx (Linux)"
+    echo "  $0 --distro=k3s kweaver-core install --minimum  # k3s path; default is k8s/kubeadm (omit flag or KUBE_DISTRO=k8s)"
     echo "  POD_CIDR=10.0.0.0/16 $0 k8s install  # Initialize with custom POD_CIDR"
     echo "  $0 mariadb install            # Install MariaDB"
     echo "  $0 mariadb uninstall          # Uninstall MariaDB"
@@ -91,6 +99,9 @@ usage() {
     echo "  $0 kafka install              # Install Kafka"
     echo "  $0 kafka uninstall                         # Uninstall Kafka (PVCs deleted by default)"
     echo "  KAFKA_PURGE_PVC=false $0 kafka uninstall   # Uninstall Kafka but keep PVCs"
+    echo "  AUTO_INSTALL_INGRESS_NGINX=false $0 data-services install  # After kind/kubeadm + ingress already exist"
+    echo "  $0 data-services uninstall                        # Tear down bundled data-layer charts"
+    echo "  $0 data-services uninstall --delete-data           # Same; also purge MariaDB PVC (data loss!)"
     echo "  $0 opensearch install         # Install OpenSearch"
     echo "  $0 opensearch uninstall       # Uninstall OpenSearch"
     echo "  OPENSEARCH_PURGE_PVC=true $0 opensearch uninstall  # Uninstall OpenSearch and delete PVC (data loss!)"
@@ -116,12 +127,17 @@ usage() {
     echo "  $0 config generate            # Generate/update ~/.kweaver-ai/config.yaml"
     echo "  $0 all install                # Full initialization with all components"
     echo ""
-    echo "Global Options:"
+    echo "Global Options (must appear BEFORE <module> <action>, e.g. $0 --distro=k8s kweaver-core install --minimum):"
+    echo "                                Trailing flags like ... install --minimum --distro=k8s are NOT parsed here;"
+    echo "                                use env KUBE_DISTRO=k8s or move --distro (same rule as -y, --force-upgrade)."
     echo "  -y, --yes                     Skip all interactive prompts and use defaults"
     echo "  --force-upgrade               Always run helm upgrade even if installed chart version equals target."
     echo "                                Use this after editing config.yaml on a previously-installed cluster."
-    echo "  --config=<path>               Specify config.yaml path (values file for helm installs)"
-    echo "                                (default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var)"
+    echo "  --distro=k8s|k3s              Cluster bootstrap when modules auto-ensure K8s (default: k8s = kubeadm stack)."
+    echo "                                Same as env KUBE_DISTRO=k8s|k3s (legacy: kubeadm means k8s). Use k3s for single-node lightweight."
+    echo "  --config=<path>               Specify config.yaml path (values file for helm installs). May appear"
+    echo "                                before <module> (global) or on the module command line (e.g. kweaver-core)."
+    echo "                                Default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var"
     echo "  --charts_dir=<path>           Use a specific local chart directory for download/install"
     echo "                                install only uses local charts when this option is explicitly set"
     echo "  --version_file=<path>         Use an aggregate release manifest to resolve exact chart versions"
@@ -139,12 +155,8 @@ usage() {
     echo "                                Example: --set auth.enabled=false --set image.tag=latest"
     echo ""
     echo "Environment (optional, kweaver-core install):"
-    echo "  DEPLOY_PLATFORM_ACCESS_TOKEN  Optional Bearer for Context Loader toolset impex through accessAddress (ISF / OAuth on)."
-    echo "  IMPORT_CONTEXT_LOADER_TOOLSET Set to false to skip that import (default: run after Core install)."
-    echo "  DEPLOY_BUSINESS_DOMAIN        x-business-domain header (default: bd_public)."
-    echo "  CONTEXT_LOADER_TOOLSET_ADP_PATH  Override path to context_loader_toolset.adp."
-    echo "  CONTEXT_LOADER_PF_LOCAL_PORT  Local port for kubectl port-forward (default random 37100-37999)."
-    echo "  CONTEXT_LOADER_REMOTE_PORT     Pod containerPort for port-forward (default: read deploy public-port, else 9000)."
+    echo "  (Context Loader ADP import moved to deploy/onboard.sh after kweaver auth — kweaver call impex; see onboard -h.)"
+    echo "  DEPLOY_BUSINESS_DOMAIN        x-business-domain for kweaver/onboard (default: bd_public)."
     echo ""
     echo "  $0 kweaver-core install --minimum                 # Minimum install (skip auth & business-domain)"
     echo "  $0 kweaver-core install --set auth.enabled=false  # Install KWeaver Core without ISF"
@@ -165,6 +177,28 @@ usage() {
 
 _detect_node_ip() {
     local node_ip
+    local os
+    os="$(uname -s 2>/dev/null || true)"
+    # macOS (kind / Docker Desktop): no hostname -I / ip addr; use default route interface.
+    if [[ "${os}" == "Darwin" ]]; then
+        local iface
+        iface="$(route -n get default 2>/dev/null | awk '/interface:/{print $2}' | head -1)"
+        if [[ -n "${iface}" ]]; then
+            node_ip="$(ipconfig getifaddr "${iface}" 2>/dev/null || true)"
+        fi
+        if [[ -z "${node_ip}" ]]; then
+            for iface in en0 en1; do
+                node_ip="$(ipconfig getifaddr "${iface}" 2>/dev/null || true)"
+                [[ -n "${node_ip}" ]] && break
+            done
+        fi
+        if [[ -z "${node_ip}" ]]; then
+            node_ip="127.0.0.1"
+        fi
+        echo "${node_ip}"
+        return 0
+    fi
+
     node_ip="$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^127\.' | head -1 | tr -d '\n' || true)"
     if [[ -z "${node_ip}" ]] || [[ "${node_ip}" == "127.0.0.1" ]]; then
         node_ip="$(ip addr show 2>/dev/null | grep -oE 'inet [0-9]+(\.[0-9]+){3}' | awk '{print $2}' | grep -v '^127\.' | head -1 || true)"
@@ -247,6 +281,11 @@ confirm_access_address_before_install() {
         config_missing_before="true"
     fi
     if [[ "${confirm_switch}" == "false" ]]; then
+        # Still materialize CONFIG_YAML_PATH when missing so installs read namespace/accessAddress from one file.
+        if [[ "${config_missing_before}" == "true" ]] && [[ "${AUTO_GENERATE_CONFIG:-true}" == "true" ]]; then
+            log_info "Config not found, generating: ${CONFIG_YAML_PATH}"
+            generate_config_yaml
+        fi
         return 0
     fi
 
@@ -349,6 +388,19 @@ confirm_access_address_before_install() {
     log_info "accessAddress written to ${CONFIG_YAML_PATH}: ${scheme}://${host}:${port}${path}"
 }
 
+# Pure Helm/kubectl data-layer installs (MariaDB, Redis, …): host root is not required on macOS
+# or when using an existing cluster (kind, BYOK). Linux "full platform" installs still use root.
+require_root_for_helm_cluster_addons_only() {
+    local os
+    os="$(uname -s 2>/dev/null || true)"
+    if [[ "${os}" == "Darwin" ]]; then
+        return 0
+    fi
+    if [[ "${KWEAVER_BYOK_CLUSTER:-false}" == "true" ]] || [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" == "true" ]]; then
+        return 0
+    fi
+    check_root
+}
 
 # Main function
 main() {
@@ -357,9 +409,33 @@ main() {
         case "$1" in
             -y|--yes) ASSUME_YES="true"; shift ;;
             --force-upgrade) FORCE_UPGRADE="true"; shift ;;
+            --config=*)
+                CONFIG_YAML_PATH="${1#*=}"
+                shift
+                ;;
+            --config)
+                CONFIG_YAML_PATH="$2"
+                shift 2
+                ;;
+            --distro=k3s|--distro=k8s|--distro=kubeadm)
+                export KUBE_DISTRO="${1#*=}"
+                shift
+                ;;
+            --distro)
+                export KUBE_DISTRO="$2"
+                shift 2
+                ;;
             *) break ;;
         esac
     done
+
+    # Non-interactive apt post-hooks (Ubuntu needrestart prompts on some lib upgrades)
+    if [[ "${ASSUME_YES}" == "true" ]]; then
+        export DEBIAN_FRONTEND=noninteractive
+        export NEEDRESTART_MODE=a
+    fi
+
+    export KUBE_DISTRO="$(kweaver_normalize_kube_distro "${KUBE_DISTRO:-k8s}")"
 
     local module="${1:-}"
     local action="${2:-}"
@@ -464,16 +540,67 @@ main() {
         esac
         return 0
     fi
+
+    # Handle k3s module (single-node k3s on Linux; kubeadm path unchanged in k8s module)
+    if [[ "${module}" == "k3s" ]]; then
+        case "${action}" in
+            install|init)
+                check_root
+                install_helm || exit 1
+                install_k3s || exit 1
+                if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
+                    install_ingress_nginx || exit 1
+                fi
+                if [[ "${AUTO_GENERATE_CONFIG}" == "true" ]]; then
+                    generate_config_yaml || exit 1
+                fi
+                show_k3s_status
+                ;;
+            uninstall)
+                check_root
+                uninstall_k3s
+                ;;
+            status)
+                show_k3s_status
+                ;;
+            *)
+                log_error "Unknown k3s action: ${action}"
+                usage
+                exit 1
+                ;;
+        esac
+        return 0
+    fi
+
+    # Bundle: platform data services only (for bring-your-own kube, e.g. kind on macOS).
+    if [[ "${module}" == "data-services" ]]; then
+        case "${action}" in
+            install|init)
+                require_root_for_helm_cluster_addons_only
+                ensure_data_services || exit 1
+                ;;
+            uninstall)
+                require_root_for_helm_cluster_addons_only
+                uninstall_platform_data_services "$@"
+                ;;
+            *)
+                log_error "Unknown data-services action: ${action}"
+                usage
+                exit 1
+                ;;
+        esac
+        return 0
+    fi
     
     # Handle mariadb module
     if [[ "${module}" == "mariadb" ]]; then
         case "${action}" in
             install|init)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 install_mariadb
                 ;;
             uninstall)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 shift 2
                 uninstall_mariadb "$@"
                 ;;
@@ -490,12 +617,15 @@ main() {
     if [[ "${module}" == "redis" ]]; then
         case "${action}" in
             install|init)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 install_redis
                 ;;
             uninstall)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 uninstall_redis
+                ;;
+            fix-acl)
+                fix_redis_acl
                 ;;
             *)
                 log_error "Unknown redis action: ${action}"
@@ -510,11 +640,11 @@ main() {
     if [[ "${module}" == "opensearch" ]]; then
         case "${action}" in
             install|init)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 install_opensearch
                 ;;
             uninstall)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 uninstall_opensearch
                 ;;
             *)
@@ -550,11 +680,11 @@ main() {
     if [[ "${module}" == "zookeeper" ]]; then
         case "${action}" in
             install|init)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 install_zookeeper
                 ;;
             uninstall)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 uninstall_zookeeper
                 ;;
             *)
@@ -570,11 +700,11 @@ main() {
     if [[ "${module}" == "kafka" ]]; then
         case "${action}" in
             install|init)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 install_kafka
                 ;;
             uninstall)
-                check_root
+                require_root_for_helm_cluster_addons_only
                 uninstall_kafka
                 ;;
             *)
@@ -676,14 +806,18 @@ main() {
 
         case "${action}" in
             install|init)
-                check_root
+                if [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" != "true" ]]; then
+                    check_root
+                fi
                 CONFIG_FILE="${CONFIG_YAML_PATH}" bash "${etrino_script}" install "$@"
                 ;;
             status)
                 CONFIG_FILE="${CONFIG_YAML_PATH}" bash "${etrino_script}" status "$@"
                 ;;
             uninstall)
-                check_root
+                if [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" != "true" ]]; then
+                    check_root
+                fi
                 CONFIG_FILE="${CONFIG_YAML_PATH}" bash "${etrino_script}" uninstall "$@"
                 ;;
             *)

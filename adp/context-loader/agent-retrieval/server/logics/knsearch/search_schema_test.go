@@ -111,6 +111,46 @@ func hasMetricExpansionScopeTypeConstraint(req *interfaces.QueryConceptsReq) boo
 	return false
 }
 
+func stringSlicesEqual(got, want []string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func TestNormalizeSearchSchemaReq_NormalizesConceptGroups(t *testing.T) {
+	maxConcepts := 10
+	knReq, scope, err := NormalizeSearchSchemaReq(&interfaces.SearchSchemaReq{
+		Query:       "find schema",
+		KnID:        "kn-001",
+		MaxConcepts: &maxConcepts,
+		SearchScope: &interfaces.SearchSchemaScope{
+			ConceptGroups: []string{" supply_chain ", "supply_chain", "", "finance"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("NormalizeSearchSchemaReq returned error: %v", err)
+	}
+
+	want := []string{"supply_chain", "finance"}
+	if !stringSlicesEqual(scope.ConceptGroups, want) {
+		t.Fatalf("scope.ConceptGroups=%v, want %v", scope.ConceptGroups, want)
+	}
+
+	cfg, ok := knReq.RetrievalConfig.(*interfaces.RetrievalConfig)
+	if !ok || cfg == nil || cfg.ConceptRetrieval == nil {
+		t.Fatalf("expected typed retrieval config, got %#v", knReq.RetrievalConfig)
+	}
+	if !stringSlicesEqual(cfg.ConceptRetrieval.ConceptGroups, want) {
+		t.Fatalf("ConceptRetrieval.ConceptGroups=%v, want %v", cfg.ConceptRetrieval.ConceptGroups, want)
+	}
+}
+
 func TestSearchSchema_AppliesMaxConceptsPerResourceType(t *testing.T) {
 	maxConcepts := 1
 	service := &knSearchService{
@@ -220,6 +260,89 @@ func TestSearchSchema_LimitsObjectTypesWhenRelationTypesExcluded(t *testing.T) {
 		}
 		if got := len(resp.ActionTypes); got != 2 {
 			t.Fatalf("ActionTypes len=%d, want all actions", got)
+		}
+	})
+}
+
+func TestSearchSchema_RelationEndpointsTakePriorityAndDirectObjectsFillRemainingBudget(t *testing.T) {
+	maxConcepts := 10
+	service := &knSearchService{
+		Logger: infraLogger.DefaultLogger(),
+		LocalSearch: &stubSearchSchemaLocalService{
+			resp: &interfaces.KnSearchLocalResponse{
+				ObjectTypes: []*interfaces.KnSearchObjectType{
+					{ConceptID: "ot_resource_project", ConceptName: "项目base_resource"},
+					{ConceptID: "ot_project", ConceptName: "项目"},
+					{ConceptID: "ot_requirement", ConceptName: "需求"},
+				},
+				RelationTypes: []*interfaces.KnSearchRelationType{
+					{ConceptID: "rt_requirement_project", ConceptName: "需求所属项目", SourceObjectTypeID: "ot_requirement", TargetObjectTypeID: "ot_project"},
+				},
+			},
+		},
+	}
+
+	withStubSearchSchemaBknBackend(&stubSearchSchemaBknBackend{}, func() {
+		resp, err := service.SearchSchema(context.Background(), &interfaces.SearchSchemaReq{
+			Query:       "项目",
+			KnID:        "kn-001",
+			MaxConcepts: &maxConcepts,
+		})
+		if err != nil {
+			t.Fatalf("SearchSchema returned error: %v", err)
+		}
+
+		if got := len(resp.ObjectTypes); got != 3 {
+			t.Fatalf("ObjectTypes len=%d, want 3 endpoint objects plus direct object fill", got)
+		}
+		wantIDs := []string{"ot_requirement", "ot_project", "ot_resource_project"}
+		for i, want := range wantIDs {
+			if got := resp.ObjectTypes[i].(map[string]any)["concept_id"]; got != want {
+				t.Fatalf("ObjectTypes[%d] concept_id=%v, want %s", i, got, want)
+			}
+		}
+	})
+}
+
+func TestSearchSchema_RelationEndpointsMayExceedMaxConceptsForCompleteness(t *testing.T) {
+	maxConcepts := 1
+	service := &knSearchService{
+		Logger: infraLogger.DefaultLogger(),
+		LocalSearch: &stubSearchSchemaLocalService{
+			resp: &interfaces.KnSearchLocalResponse{
+				ObjectTypes: []*interfaces.KnSearchObjectType{
+					{ConceptID: "ot_resource_project", ConceptName: "项目base_resource"},
+					{ConceptID: "ot_project", ConceptName: "项目"},
+					{ConceptID: "ot_requirement", ConceptName: "需求"},
+				},
+				RelationTypes: []*interfaces.KnSearchRelationType{
+					{ConceptID: "rt_requirement_project", ConceptName: "需求所属项目", SourceObjectTypeID: "ot_requirement", TargetObjectTypeID: "ot_project"},
+				},
+			},
+		},
+	}
+
+	withStubSearchSchemaBknBackend(&stubSearchSchemaBknBackend{}, func() {
+		resp, err := service.SearchSchema(context.Background(), &interfaces.SearchSchemaReq{
+			Query:       "项目",
+			KnID:        "kn-001",
+			MaxConcepts: &maxConcepts,
+		})
+		if err != nil {
+			t.Fatalf("SearchSchema returned error: %v", err)
+		}
+
+		if got := len(resp.RelationTypes); got != 1 {
+			t.Fatalf("RelationTypes len=%d, want 1", got)
+		}
+		if got := len(resp.ObjectTypes); got != 2 {
+			t.Fatalf("ObjectTypes len=%d, want both relation endpoint objects", got)
+		}
+		wantIDs := []string{"ot_requirement", "ot_project"}
+		for i, want := range wantIDs {
+			if got := resp.ObjectTypes[i].(map[string]any)["concept_id"]; got != want {
+				t.Fatalf("ObjectTypes[%d] concept_id=%v, want %s", i, got, want)
+			}
 		}
 	})
 }
@@ -415,6 +538,69 @@ func TestSearchSchema_ExpansionQueryConstrainsScopeTypeToObjectType(t *testing.T
 	}
 }
 
+func TestSearchSchema_MetricQueriesCarryConceptGroups(t *testing.T) {
+	maxConcepts := 10
+	var directReq *interfaces.QueryConceptsReq
+	var expansionReq *interfaces.QueryConceptsReq
+	backend := &stubSearchSchemaBknBackend{
+		searchMetricTypesFunc: func(_ context.Context, req *interfaces.QueryConceptsReq) (*interfaces.MetricTypeConcepts, error) {
+			if isMetricExpansionQuery(req) {
+				expansionReq = req
+				return &interfaces.MetricTypeConcepts{
+					Entries: []*interfaces.MetricType{
+						{ID: "m_2", Name: "stock_turnover", MetricType: "atomic", ScopeType: "object_type", ScopeRef: "ot_1", CalculationFormula: map[string]any{"op": "avg"}},
+					},
+				}, nil
+			}
+			directReq = req
+			return &interfaces.MetricTypeConcepts{
+				Entries: []*interfaces.MetricType{
+					{ID: "m_1", Name: "inventory", MetricType: "atomic", ScopeType: "object_type", ScopeRef: "ot_1", CalculationFormula: map[string]any{"op": "sum"}},
+				},
+			}, nil
+		},
+	}
+
+	service := &knSearchService{
+		Logger: infraLogger.DefaultLogger(),
+		LocalSearch: &stubSearchSchemaLocalService{
+			resp: &interfaces.KnSearchLocalResponse{
+				ObjectTypes: []*interfaces.KnSearchObjectType{
+					{ConceptID: "ot_1", ConceptName: "Inventory"},
+				},
+			},
+		},
+	}
+
+	withStubSearchSchemaBknBackend(backend, func() {
+		_, err := service.SearchSchema(context.Background(), &interfaces.SearchSchemaReq{
+			Query:       "inventory metrics",
+			KnID:        "kn-001",
+			MaxConcepts: &maxConcepts,
+			SearchScope: &interfaces.SearchSchemaScope{
+				ConceptGroups: []string{"supply_chain"},
+			},
+		})
+		if err != nil {
+			t.Fatalf("SearchSchema returned error: %v", err)
+		}
+	})
+
+	want := []string{"supply_chain"}
+	if directReq == nil {
+		t.Fatal("expected direct metric recall query")
+	}
+	if !stringSlicesEqual(directReq.ConceptGroups, want) {
+		t.Fatalf("direct metric ConceptGroups=%v, want %v", directReq.ConceptGroups, want)
+	}
+	if expansionReq == nil {
+		t.Fatal("expected expansion metric recall query")
+	}
+	if !stringSlicesEqual(expansionReq.ConceptGroups, want) {
+		t.Fatalf("expansion metric ConceptGroups=%v, want %v", expansionReq.ConceptGroups, want)
+	}
+}
+
 func TestSearchSchema_DirectMetricRecallErrorReturnsError(t *testing.T) {
 	maxConcepts := 10
 	backend := &stubSearchSchemaBknBackend{
@@ -500,8 +686,8 @@ func TestSearchSchema_AllScopeDisabled_ReturnsBadRequest(t *testing.T) {
 	includeActionTypes := false
 	includeMetricTypes := false
 	service := &knSearchService{
-		Logger:         infraLogger.DefaultLogger(),
-		LocalSearch:    &stubSearchSchemaLocalService{},
+		Logger:      infraLogger.DefaultLogger(),
+		LocalSearch: &stubSearchSchemaLocalService{},
 	}
 
 	withStubSearchSchemaBknBackend(&stubSearchSchemaBknBackend{}, func() {

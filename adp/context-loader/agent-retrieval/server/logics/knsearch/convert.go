@@ -34,7 +34,25 @@ func KnSearchReqToLocal(req *interfaces.KnSearchReq) *interfaces.KnSearchLocalRe
 		local.EnableRerank = *req.EnableRerank
 	}
 	local.RetrievalConfig = retrievalConfigToLocal(req.RetrievalConfig)
+	applySearchScopeToLocalRetrievalConfig(local, req.SearchScope)
 	return local
+}
+
+func applySearchScopeToLocalRetrievalConfig(local *interfaces.KnSearchLocalRequest, scope *interfaces.SearchScopeConfig) {
+	if local == nil || scope == nil {
+		return
+	}
+	conceptGroups := normalizeConceptGroups(scope.ConceptGroups)
+	if len(conceptGroups) == 0 {
+		return
+	}
+	if local.RetrievalConfig == nil {
+		local.RetrievalConfig = &interfaces.KnSearchRetrievalConfig{}
+	}
+	if local.RetrievalConfig.ConceptRetrieval == nil {
+		local.RetrievalConfig.ConceptRetrieval = &interfaces.KnSearchConceptRetrievalConfig{}
+	}
+	local.RetrievalConfig.ConceptRetrieval.ConceptGroups = conceptGroups
 }
 
 // retrievalConfigToLocal 将 any 形式的 retrieval_config 转为 *KnSearchRetrievalConfig。
@@ -70,6 +88,7 @@ func retrievalConfigStructToLocal(rc *interfaces.RetrievalConfig) *interfaces.Kn
 	if rc.ConceptRetrieval != nil {
 		cr := rc.ConceptRetrieval
 		out.ConceptRetrieval = &interfaces.KnSearchConceptRetrievalConfig{
+			ConceptGroups:          normalizeConceptGroups(cr.ConceptGroups),
 			TopK:                   cr.TopK,
 			IncludeSampleData:      boolPtr(cr.IncludeSampleData),
 			SchemaBrief:            boolPtr(cr.SchemaBrief),

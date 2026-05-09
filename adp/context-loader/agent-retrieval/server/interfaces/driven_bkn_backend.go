@@ -140,6 +140,16 @@ type ActionType struct {
 	ObjectTypeID string `json:"object_type_id"` // Object type ID bound to action type
 }
 
+// ConceptGroup BKN concept group structure used by exported knowledge-network detail.
+type ConceptGroup struct {
+	ID            string          `json:"id"`
+	Name          string          `json:"name"`
+	ObjectTypeIDs []string        `json:"object_type_ids,omitempty"`
+	ObjectTypes   []*ObjectType   `json:"object_types,omitempty"`
+	RelationTypes []*RelationType `json:"relation_types,omitempty"`
+	ActionTypes   []*ActionType   `json:"action_types,omitempty"`
+}
+
 type KnCondValueFrom string
 
 const (
@@ -172,11 +182,12 @@ type KnSortParams struct {
 
 // QueryConceptsReq Query concepts request
 type QueryConceptsReq struct {
-	KnID      string          `json:"-"`         // Knowledge network ID
-	Cond      *KnCondition    `json:"condition"` // Retrieval condition
-	Sort      []*KnSortParams `json:"sort"`
-	Limit     int             `json:"limit"`      // Return count, default 10. Range 1-10000
-	NeedTotal bool            `json:"need_total"` // Whether total count is needed, default false
+	KnID          string          `json:"-"`                        // Knowledge network ID
+	ConceptGroups []string        `json:"concept_groups,omitempty"` // Concept group IDs
+	Cond          *KnCondition    `json:"condition"`                // Retrieval condition
+	Sort          []*KnSortParams `json:"sort"`
+	Limit         int             `json:"limit"`      // Return count, default 10. Range 1-10000
+	NeedTotal     bool            `json:"need_total"` // Whether total count is needed, default false
 }
 
 // Concepts Retrieved concepts list
@@ -296,6 +307,7 @@ type KnowledgeNetworkDetail struct {
 	ID            string          `json:"id"`             // Knowledge network ID
 	Name          string          `json:"name"`           // Knowledge network name
 	Comment       string          `json:"comment"`        // Comment/description
+	ConceptGroups []*ConceptGroup `json:"concept_groups"` // Concept groups
 	ObjectTypes   []*ObjectType   `json:"object_types"`   // Object types
 	RelationTypes []*RelationType `json:"relation_types"` // Relation types
 	ActionTypes   []*ActionType   `json:"action_types"`   // Action types

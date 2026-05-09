@@ -1,6 +1,8 @@
 # 🚀 Quick start
 
-This walkthrough assumes KWeaver Core is already [installed and deployed](install.md), including the post-install checks on that page.
+This walkthrough assumes KWeaver Core is already [installed and deployed](install.md), including the post-install checks on that page. **Full installs assume Linux**; optional **macOS** + kind flow: [`deploy/dev/README.md`](../../deploy/dev/README.md) ([中文](../../deploy/dev/README.zh.md)).
+
+> Before installing on a new host, run **`sudo bash deploy/preflight.sh`** (check / `--fix`) to validate kernel, sysctl, containerd, kubectl, helm, Node and the `kweaver` CLIs. After `deploy.sh kweaver-core install`, run **`sudo bash deploy/onboard.sh`** (Linux — matches `sudo deploy.sh`; macOS dev path uses plain `bash`) to register an LLM + embedding, patch the BKN ConfigMap (only when the default actually changes), and on a full install create the business user **`test`** + import the Context Loader toolset. Both are documented in [Install — Pre-install host check / fix: `preflight.sh`](install.md#-pre-install-host-check--fix-preflightsh) and [Install — Post-install: `onboard.sh`](install.md#post-install-onboardsh).
 
 > **Model configuration note**: **Register at least one LLM and one embedding (vector) small model** when possible: the LLM powers Agent chat and reasoning; the embedding model powers semantic search and vectorization. Semantic search (Step 4) and Agent chat (Step 5) depend on these; after registering an embedding, complete [Enable BKN semantic search](model.md#enable-bkn-semantic-search) in the cluster (ConfigMap / default small-model name). Other registration details are in [Model management](model.md). A `--minimum` install has no bundled models; see also [Install and deploy — Configure models](install.md#configure-models). Data source connection, knowledge network creation, and conditional queries work without models.
 
@@ -12,40 +14,67 @@ This walkthrough assumes KWeaver Core is already [installed and deployed](instal
 
 ### Step 1: Authenticate
 
-**Full install (not `--minimum`)** — The platform enforces auth. The `kweaver` login below needs a **user that can sign in** to use product features. In many deployments you must **create that business user with `kweaver-admin` first**, **inspect roles**, then **assign every role** from `role list` in this quick start (or your least-privilege set in production), then use `kweaver` with that user for this quick start.
+A **full install** (`./deploy.sh kweaver-core install`, no `--minimum`, with auth + business-domain enabled) requires a real user to sign in. Pick **one** of the two paths below to obtain a sign-in account:
+
+#### Path A (recommended): let `bash deploy/onboard.sh` prepare it
+
+On a full ISF install, `onboard.sh` automatically installs / signs in `kweaver-admin`, creates the business user **`test`** (password `111111` unless `ONBOARD_TEST_USER_PASSWORD` is set), assigns **every** role from `kweaver-admin role list`, and switches local `~/.kweaver` to `test`.
+
+```bash
+cd deploy
+sudo bash ./onboard.sh        # interactive (Linux — matches sudo deploy.sh)
+sudo bash ./onboard.sh -y     # non-interactive (defaults)
+# macOS dev path:  bash ./dev/mac.sh onboard       # no sudo needed
+```
+
+> `sudo` keeps `onboard.sh` reading the same `$HOME/.kweaver-ai/config.yaml` that `sudo deploy.sh` wrote (`/root/.kweaver-ai/`) and writing `kweaver` auth state to the same `$HOME/.kweaver`. Skip it on macOS dev. See [Install — Post-install: `onboard.sh`](install.md#post-install-onboardsh).
+
+After it finishes you usually do **nothing more** — jump to [Sign in](#sign-in) below; on a different machine just sign in again. Full sequence: [Install — Post-install: `onboard.sh`](install.md#post-install-onboardsh).
+
+#### Path B (manual): use `kweaver-admin` directly
+
+Use this when you want a custom username, custom role set, or simply prefer not to run `onboard.sh`.
 
 ```bash
 npm install -g @kweaver-ai/kweaver-admin
-kweaver-admin auth login <platform-url> -k
-kweaver-admin role list                          # all roles and roleIds (e.g. super_admin, normal_user — trust CLI output)
-kweaver-admin user create --login <new-username>   # default initial password 123456; first kweaver login will force a change
-# Quick start / lab: run user assign-role once per roleId from role list so the user has the full role set; avoids API 403s from missing roles
+kweaver-admin auth login <platform-url> -u admin -p eisoo.com -k   # console default account
+kweaver-admin role list                                            # all roles and roleIds (e.g. super_admin, normal_user)
+kweaver-admin user create --login <new-username>                   # default initial password 123456; first sign-in forces a change
+# Quick start / PoC: assign every roleId from role list to avoid API 403s due to missing roles
 kweaver-admin user assign-role <userId> <roleId>
 # … repeat for each role in role list
-kweaver-admin user roles <userId>                 # verify
+kweaver-admin user roles <userId>                                  # verify
 ```
 
-Use **roleId** values from `kweaver-admin role list` (see [Roles and permissions in kweaver-admin](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/product-specs/role-permission.md)). **Assigning every role** matches a “full product” trial path; in production, grant only the roles your policy requires.
+- **Path A default password is `111111`** (set by onboard for `test`); **Path B default password is `123456`** (ISF `Usrm_AddUser` hardcoded default). Use whichever matches the path you took.
+- Role / permission notes: [Install — Administrator tool after a full install (kweaver-admin)](install.md#-administrator-tool-after-a-full-install-kweaver-admin) and [ISF](isf.md#-administrator-tool-kweaver-admin). In production, grant least privilege; the "every role" pattern is for local / PoC / quick start.
+- **Minimum install** (`--minimum`): both paths are unnecessary — use `kweaver auth login <platform-url> --no-auth`.
 
-Details: [Install — Administrator tool after a full install (kweaver-admin)](install.md#-administrator-tool-after-a-full-install-kweaver-admin) and [ISF](isf.md#-administrator-tool-kweaver-admin). **Minimum install** can often use `kweaver auth login <platform-url> --no-auth` and typically **does not** need this step — follow your deployment guide. Skip the block above if you **already have** credentials from ops.
+If you already have a sign-in account from ops, skip both paths and go straight to "Sign in" below.
 
-> If the `kweaver` CLI is not yet installed, run `npm install -g @kweaver-ai/kweaver-sdk` first (or `npx kweaver --help` to try without a global install).
+<a id="sign-in"></a>
 
-```bash
-kweaver auth login <platform-url> -k
-```
+#### Sign in
+
+Pick the row matching the path you just took:
+
+| Your situation | Command |
+|---|---|
+| Ran `onboard.sh` (Path A) | `kweaver auth status` to confirm `~/.kweaver` is already `test`; on a different machine: `kweaver auth login <platform-url> -u test -p '<password>' -k` |
+| Built a user manually (Path B) | `kweaver auth login <platform-url> -u <new-username> -p '<password>' -k` (first sign-in forces a password change) |
+| Minimum install (`--minimum`) | `kweaver auth login <platform-url> --no-auth` |
+| Prefer browser OAuth | `kweaver auth login <platform-url> -k` (default; opens local browser on a TTY) |
 
 - `<platform-url>` is the access address printed by `deploy.sh` after installation completes.
 - `-k` skips TLS certificate verification — use it with self-signed certificates; omit if you have a valid cert.
 
-**How to sign in**
+**Headless / no-browser sign-in details** (extends the row "Prefer browser OAuth" above when no browser is available — SSH, CI, containers):
 
 | Scenario | What to use |
 |----------|-------------|
-| **Local browser (default)** | `kweaver auth login <platform-url>`; add `-k` for self-signed or untrusted TLS. |
 | **No browser — `--no-browser`** (interactive headless, recommended) | The CLI prints an OAuth URL; open it on another device, sign in, then paste the **full callback URL** from the address bar back into the terminal. |
 | **No browser — export & replay** (CI / fully automated) | After `kweaver auth login` on a machine with a browser: the **browser success page** shows **Headless machine** instructions and a one-line `kweaver auth login '<platform-url>' --client-id '…' --client-secret '…' --refresh-token '…'` (often with a **Copy command** button); or run **`kweaver auth export`** (or `--json`) in a terminal. On the **headless** host, run that one-line command to populate `~/.kweaver/`. |
-| **No browser — HTTP sign-in** | `kweaver auth login … -u <user> -p <password> -k` (optionally `--http-signin`). The CLI calls the platform's `/oauth2/signin` directly — no Node/Chromium required. Omit `-u`/`-p` to be prompted on stdin. |
+| **No browser — HTTP sign-in** | `kweaver auth login … -u <user> -p <password> -k` (optionally `--http-signin`). The CLI calls the platform's `/oauth2/signin` directly — no Node/Chromium required. Omit `-u`/`-p` to be prompted on stdin. This is exactly what `onboard.sh` uses internally. |
 
 After a successful browser login, the page states you can close the tab and explains what to run on a machine **without** a browser (SSH, CI, containers, etc.). **Keep the shown credentials secure** — anyone with the **refresh token** and **client secret** can obtain new access tokens; do not commit them to source control.
 
@@ -55,7 +84,7 @@ After a successful browser login, the page states you can close the tab and expl
 kweaver config show
 ```
 
-After Core installation, `deploy.sh` attempts to import the Context Loader toolset ADP (disable or override the path via environment variables; see `deploy/deploy.sh`). To verify the toolbox is registered:
+The Context Loader toolset ADP (used by Decision Agents to query knowledge networks) is now imported by **`onboard.sh`** via `kweaver call impex` (no longer by `deploy.sh`). To verify it is registered on the platform:
 
 ```bash
 kweaver call '/api/agent-operator-integration/v1/tool-box/list?name=contextloader&page=1&page_size=50' -bd bd_public --pretty

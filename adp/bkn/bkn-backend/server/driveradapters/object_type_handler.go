@@ -870,7 +870,6 @@ func (r *restHandler) ListObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 	// 获取分页参数
 	namePattern := c.Query("name_pattern")
 	tag := c.Query("tag")
-	groupID := c.Query("group_id")
 	offset := c.DefaultQuery("offset", interfaces.DEFAULT_OFFEST)
 	limit := c.DefaultQuery("limit", interfaces.DEFAULT_LIMIT)
 	sort := c.DefaultQuery("sort", "update_time")
@@ -901,7 +900,6 @@ func (r *restHandler) ListObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 		Tag:         tag,
 		Branch:      branch,
 		KNID:        knID,
-		CGroupID:    groupID,
 	}
 	parameter.Sort = pageParam.Sort
 	parameter.Direction = pageParam.Direction

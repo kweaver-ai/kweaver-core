@@ -206,7 +206,6 @@ type ObjectTypesQueryParams struct {
 	Tag         string
 	Branch      string
 	KNID        string
-	CGroupID    string
 	OTIDS       []string // 按对象类id过滤
 }
 

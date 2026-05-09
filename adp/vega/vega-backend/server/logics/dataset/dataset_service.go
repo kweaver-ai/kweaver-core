@@ -105,12 +105,12 @@ func (ds *datasetService) Update(ctx context.Context, res *interfaces.Resource) 
 }
 
 // Delete a Dataset.
-func (ds *datasetService) Delete(ctx context.Context, res *interfaces.Resource) error {
+func (ds *datasetService) Delete(ctx context.Context, id string) error {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Delete dataset")
 	defer span.End()
 
 	// Check dataset exist first
-	exist, err := ds.c.CheckExist(ctx, res.ID)
+	exist, err := ds.c.CheckExist(ctx, id)
 	if err != nil {
 		span.SetStatus(codes.Error, "Check dataset exist failed")
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
@@ -118,7 +118,7 @@ func (ds *datasetService) Delete(ctx context.Context, res *interfaces.Resource) 
 	}
 	if exist {
 		// Delete from storage
-		if err := ds.c.Delete(ctx, res.ID); err != nil {
+		if err := ds.c.Delete(ctx, id); err != nil {
 			span.SetStatus(codes.Error, "Delete dataset failed")
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_DeleteFailed).
 				WithErrorDetails(err.Error())
@@ -127,6 +127,22 @@ func (ds *datasetService) Delete(ctx context.Context, res *interfaces.Resource) 
 
 	span.SetStatus(codes.Ok, "")
 	return nil
+}
+
+// CheckExist checks if a dataset exists.
+func (ds *datasetService) CheckExist(ctx context.Context, id string) (bool, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Check dataset exist")
+	defer span.End()
+
+	exist, err := ds.c.CheckExist(ctx, id)
+	if err != nil {
+		span.SetStatus(codes.Error, "Check dataset exist failed")
+		return false, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
+			WithErrorDetails(err.Error())
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return exist, nil
 }
 
 // ListDocuments 列出 dataset 中的文档
@@ -209,7 +225,7 @@ func (ds *datasetService) UpsertDocuments(ctx context.Context, id string, update
 	}
 
 	span.SetStatus(codes.Ok, "")
-	return nil, nil
+	return docIDs, nil
 }
 
 // DeleteDocuments 批量删除 dataset 文档

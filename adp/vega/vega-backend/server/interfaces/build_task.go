@@ -50,10 +50,13 @@ type BuildTask struct {
 	BuildKeyFields  string      `json:"build_key_fields"`           // 构建中依赖的特殊键字段，如批量构建依赖的有时序性的字段，流式构建依赖的唯一标识某行的字段
 	EmbeddingModel  string      `json:"embedding_model,omitempty"`  // 嵌入模型
 	ModelDimensions int         `json:"model_dimensions,omitempty"` // 模型维度
+	CatalogID       string      `json:"catalog_id"`
 }
 
-// BuildTaskRequest represents create build task request.
-type BuildTaskRequest struct {
+// CreateBuildTaskRequest represents the request to create a build task.
+// Used as both the HTTP body for POST /build-tasks and the service input.
+type CreateBuildTaskRequest struct {
+	ResourceID      string `json:"resource_id" binding:"required"`                // 关联 Resource ID
 	Mode            string `json:"mode" binding:"required,oneof=streaming batch"` // 任务模式：streaming/batch
 	EmbeddingFields string `json:"embedding_fields,omitempty"`                    // 需向量化嵌入字段
 	BuildKeyFields  string `json:"build_key_fields"`                              // 构建中依赖的特殊键字段，如批量构建依赖的有时序性的字段，流式构建依赖的唯一标识某行的字段
@@ -65,6 +68,20 @@ type BuildTaskRequest struct {
 type UpdateBuildTaskStatusRequest struct {
 	Status      string `json:"status" binding:"required,oneof=running stopped"` // 修改任务状态，只允许 running 和 stopped
 	ExecuteType string `json:"execute_type,omitempty"`                          // 执行类型,for batch mode, default is "incremental"
+}
+
+// StartBuildTaskRequest represents the optional body for POST /build-tasks/{id}/start.
+type StartBuildTaskRequest struct {
+	ExecuteType string `json:"execute_type,omitempty"` // incremental / full; default incremental
+}
+
+// BuildTasksQueryParams holds filter + pagination parameters for listing build tasks.
+type BuildTasksQueryParams struct {
+	PaginationQueryParams
+	ResourceID string
+	CatalogID  string
+	Status     string
+	Mode       string
 }
 
 type KeyValue struct {

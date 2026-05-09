@@ -1,0 +1,36 @@
+# Copy to models.yaml and fill in. Run: ./onboard.sh --config models.yaml
+# ${VAR} is replaced from the environment (for CI: export the keys first).
+
+# Optional: Kubernetes namespace of KWeaver Core (default kweaver)
+# namespace: kweaver
+
+llm:
+  - model_name: deepseek-chat
+    model_series: deepseek
+    max_model_len: 8192
+    model_type: llm
+    api_key: ${DEEPSEEK_API_KEY}
+    api_model: deepseek-chat
+    api_url: https://api.deepseek.com/chat/completions
+
+embedding:
+  - model_name: bge-m3
+    model_type: embedding
+    api_key: ${SILICONFLOW_API_KEY}
+    api_url: https://api.siliconflow.cn/v1/embeddings
+    api_model: BAAI/bge-m3
+    batch_size: 32
+    max_tokens: 512
+    embedding_dim: 1024
+    # Mark one embedding as the default for BKN semantic search (bkn-backend + ontology-query)
+    set_as_bkn_default: true
+
+# Optional: reranker (same fields as above but model_type: reranker, no embedding_dim)
+# Example:
+# reranker:
+#   - model_name: bge-reranker-v2-m3
+#     model_type: reranker
+#     api_key: ${SILICONFLOW_API_KEY}
+#     api_url: https://api.siliconflow.cn/v1/rerank
+#     api_model: BAAI/bge-reranker-v2-m3
+reranker: []

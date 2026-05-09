@@ -50,7 +50,8 @@ func (k *knRetrievalServiceImpl) rerankByConceptType(conceptResults []*interface
 }
 
 func (k *knRetrievalServiceImpl) rerankConcepts(ctx context.Context, queryUnderstandResult *interfaces.QueryUnderstanding, conceptResults []*interfaces.ConceptResult,
-	action interfaces.KnowledgeRerankActionType, limit int) (rerankResults []*interfaces.ConceptResult, err error) {
+	action interfaces.KnowledgeRerankActionType, limit int,
+) (rerankResults []*interfaces.ConceptResult, err error) {
 	// 去重
 	conceptResults = k.deduplicateConcepts(conceptResults)
 

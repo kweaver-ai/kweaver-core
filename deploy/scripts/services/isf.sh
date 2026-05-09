@@ -2,6 +2,19 @@
 ISF_LOCAL_CHARTS_DIR="${ISF_LOCAL_CHARTS_DIR:-}"
 ISF_VERSION_MANIFEST_FILE="${ISF_VERSION_MANIFEST_FILE:-}"
 
+# Build the resource override --set list for ISF helm releases.
+# Empty when none of KWEAVER_ISF_{REQ,LIM}_{CPU,MEM} is set → chart defaults stay in effect
+# (chart defaults span limits 1-8Gi; mac/k3s defaults are layered upstream in
+# common.sh::kweaver_apply_k3s_lightweight_defaults and dev/lib/mac_common.sh).
+_isf_resource_set_args() {
+    local -a args=()
+    [[ -n "${KWEAVER_ISF_REQ_CPU:-}" ]] && args+=("--set" "resources.requests.cpu=${KWEAVER_ISF_REQ_CPU}")
+    [[ -n "${KWEAVER_ISF_REQ_MEM:-}" ]] && args+=("--set" "resources.requests.memory=${KWEAVER_ISF_REQ_MEM}")
+    [[ -n "${KWEAVER_ISF_LIM_CPU:-}" ]] && args+=("--set" "resources.limits.cpu=${KWEAVER_ISF_LIM_CPU}")
+    [[ -n "${KWEAVER_ISF_LIM_MEM:-}" ]] && args+=("--set" "resources.limits.memory=${KWEAVER_ISF_LIM_MEM}")
+    printf '%s\n' "${args[@]}"
+}
+
 # ISF databases list
 declare -a ISF_DATABASES=(
     "user_management"
@@ -196,8 +209,8 @@ install_isf() {
     fi
 
     # Get namespace from config.yaml
-    local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-kweaver-ai}"
+    local namespace=$(kweaver_values_namespace_from_config)
+    namespace="${namespace:-kweaver}"
     
     # Create namespace if not exists
     kubectl create namespace "${namespace}" 2>/dev/null || true
@@ -237,7 +250,7 @@ install_isf() {
     # Install each release
     local install_failed=0
     local -a release_names=()
-    mapfile -t release_names < <(_isf_release_names)
+    kweaver_mapfile_compat release_names _isf_release_names
     local release_name
     local release_version
     local chart_name
@@ -307,9 +320,12 @@ _install_isf_release_local() {
     fi
 
     log_info "Installing ${release_name} from local chart: $(basename "${chart_tgz}")..."
+    local -a _isf_res_args=()
+    while IFS= read -r line; do [[ -n "${line}" ]] && _isf_res_args+=("${line}"); done < <(_isf_resource_set_args)
     helm upgrade --install "${release_name}" "${chart_tgz}" \
         --namespace "${namespace}" \
         -f "${values_file}" \
+        "${_isf_res_args[@]}" \
         --devel --wait --timeout=600s
 }
 
@@ -349,8 +365,10 @@ install_isf_release() {
         helm_args+=("--version" "${release_version}")
     fi
     
+    while IFS= read -r line; do [[ -n "${line}" ]] && helm_args+=("${line}"); done < <(_isf_resource_set_args)
+
     helm_args+=("--devel" "--wait" "--timeout=600s")
-    
+
     # Execute Helm install/upgrade
     if helm "${helm_args[@]}"; then
         log_info "✓ ${release_name} installed successfully"
@@ -374,7 +392,7 @@ download_isf() {
     ensure_helm_repo "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
 
     local -a release_names=()
-    mapfile -t release_names < <(_isf_release_names)
+    kweaver_mapfile_compat release_names _isf_release_names
     local release_name
     local release_version
     local chart_name
@@ -391,12 +409,12 @@ uninstall_isf() {
     _isf_require_version_manifest || return 1
     
     # Get namespace from config.yaml
-    local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-kweaver-ai}"
+    local namespace=$(kweaver_values_namespace_from_config)
+    namespace="${namespace:-kweaver}"
     
     # Uninstall in reverse order
     local -a release_names=()
-    mapfile -t release_names < <(_isf_release_names)
+    kweaver_mapfile_compat release_names _isf_release_names
     for ((i=${#release_names[@]}-1; i>=0; i--)); do
         local release_name="${release_names[$i]}"
         log_info "Uninstalling ${release_name}..."
@@ -416,15 +434,15 @@ show_isf_status() {
     _isf_require_version_manifest || return 1
     
     # Get namespace from config.yaml
-    local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-kweaver-ai}"
+    local namespace=$(kweaver_values_namespace_from_config)
+    namespace="${namespace:-kweaver}"
     
     log_info "Namespace: ${namespace}"
     log_info ""
     
     # Check each release
     local -a release_names=()
-    mapfile -t release_names < <(_isf_release_names)
+    kweaver_mapfile_compat release_names _isf_release_names
     local release_name
     for release_name in "${release_names[@]}"; do
         if helm status "${release_name}" -n "${namespace}" >/dev/null 2>&1; then

@@ -41,10 +41,8 @@ const (
 	promptBufferPerConceptSize = 100
 )
 
-var (
-	// 预编译模板，init时执行 panic 确保模板无误
-	rerankTemplate = template.Must(template.New("rerank").Parse(rerankPromptTemplateStr))
-)
+// 预编译模板，init时执行 panic 确保模板无误
+var rerankTemplate = template.Must(template.New("rerank").Parse(rerankPromptTemplateStr))
 
 // promptData 模板渲染数据结构
 type promptData struct {

@@ -108,9 +108,15 @@ func (bh *batchBuildHandler) HandleTask(ctx context.Context, task *asynq.Task) e
 
 // executeBuild executes the build logic
 func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfaces.Resource, buildTaskInfo *interfaces.BuildTask, executeType string) error {
-	firstExecute := false
 	if buildTaskInfo.Status == interfaces.BuildTaskStatusInit {
-		firstExecute = true
+		if buildTaskInfo.EmbeddingFields != "" {
+			// send embedding task to queue
+			err := sendEmbeddingTask(bh.client, buildTaskInfo.ID)
+			if err != nil {
+				return fmt.Errorf("send embedding task failed: %w", err)
+			}
+			logger.Infof("Embedding task sent for task %s", buildTaskInfo.ID)
+		}
 		err := createLocalIndex(ctx, bh.ds, buildTaskInfo, resource)
 		if err != nil {
 			return fmt.Errorf("create local index failed: %w", err)
@@ -175,7 +181,7 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 	if err := connector.Connect(ctx); err != nil {
 		return fmt.Errorf("connect failed: %w", err)
 	}
-	defer connector.Close(ctx)
+	defer func() { _ = connector.Close(ctx) }()
 	tableConnector, ok := connector.(connectors.TableConnector)
 	if !ok {
 		return fmt.Errorf("connector is not a table connector")
@@ -191,7 +197,7 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 
 	var writer *kafka.Writer
 	if buildTaskInfo.EmbeddingFields != "" {
-		topic := fmt.Sprintf("%s-%s-embedding", interfaces.BUILD_PREFIX, resource.ID)
+		topic := getEmbeddingTopic(resource.ID, buildTaskInfo.ID)
 		// Create Kafka writer
 		writer, err = bh.kafkaAccess.NewWriter(ctx, topic)
 		if err != nil {
@@ -323,28 +329,9 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 
 			// Send document IDs to Kafka for embedding
 			if len(docIDs) > 0 && buildTaskInfo.EmbeddingFields != "" {
-				// Create messages
-				var messages []kafka.Message
-				for _, docID := range docIDs {
-					messageData := map[string]any{
-						"document_id": docID,
-					}
-					messageBytes, err := sonic.Marshal(messageData)
-					if err != nil {
-						return fmt.Errorf("failed to marshal message: %w", err)
-					}
-					messages = append(messages, kafka.Message{
-						Key:   []byte(docID),
-						Value: messageBytes,
-					})
-				}
-
-				// Write messages to Kafka
-				if len(messages) > 0 {
-					err = bh.kafkaAccess.WriteMessages(ctx, writer, messages...)
-					if err != nil {
-						return fmt.Errorf("failed to write messages to Kafka: %w", err)
-					}
+				err = sendEmbeddingMessage(ctx, writer, bh.kafkaAccess, docIDs)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -352,42 +339,20 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 		if readRows < batchSize {
 			if buildTaskInfo.EmbeddingFields != "" {
 				// sync complete, push a empty document to trigger embedding
-				messageData := map[string]any{
-					"document_id": interfaces.EmptyDocumentID,
-				}
-				messageBytes, err := sonic.Marshal(messageData)
+				err = sendEmbeddingMessage(ctx, writer, bh.kafkaAccess, []string{interfaces.EmptyDocumentID})
 				if err != nil {
-					return fmt.Errorf("failed to marshal message: %w", err)
-				}
-
-				err = bh.kafkaAccess.WriteMessages(ctx, writer, []kafka.Message{
-					{
-						Key:   []byte(interfaces.EmptyDocumentID),
-						Value: messageBytes,
-					},
-				}...)
-				if err != nil {
-					return fmt.Errorf("failed to write messages to Kafka: %w", err)
+					return err
 				}
 			}
 			break
 		}
 	}
 
-	if buildTaskInfo.EmbeddingFields != "" {
-		if firstExecute {
-			// send embedding task to queue
-			err = sendEmbeddingTask(bh.client, buildTaskInfo.ID)
-			if err != nil {
-				return fmt.Errorf("send embedding task failed: %w", err)
-			}
-			logger.Infof("Embedding task sent for task %s", buildTaskInfo.ID)
-		}
-	} else {
+	if buildTaskInfo.EmbeddingFields == "" {
 		// Update resource index name
 		err = updateResourceIndexName(ctx, resource, bh.resAccess, bh.ds, indexName)
 		if err != nil {
-			return fmt.Errorf("Failed to update resource index name: %v", err)
+			return fmt.Errorf("failed to update resource index name: %v", err)
 		}
 
 		// Update task status to completed

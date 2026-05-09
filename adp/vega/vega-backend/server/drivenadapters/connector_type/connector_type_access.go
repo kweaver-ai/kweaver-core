@@ -325,7 +325,7 @@ func (cta *connectorTypeAccess) List(ctx context.Context, params interfaces.Conn
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	connectorTypes := make([]*interfaces.ConnectorType, 0)
 	for rows.Next() {

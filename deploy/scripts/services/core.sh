@@ -1,6 +1,9 @@
 
 # Default kweaver-core namespace
-CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver-ai}"
+CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver}"
+
+# Set to true in parse_core_args when user passes --namespace/--namespace=… (overrides namespace: in YAML).
+CORE_NAMESPACE_FROM_CLI="${CORE_NAMESPACE_FROM_CLI:-false}"
 
 # Default local charts directory
 CORE_LOCAL_CHARTS_DIR="${CORE_LOCAL_CHARTS_DIR:-}"
@@ -74,10 +77,12 @@ parse_core_args() {
                 ;;
             --namespace=*)
                 CORE_NAMESPACE="${1#*=}"
+                CORE_NAMESPACE_FROM_CLI="true"
                 shift
                 ;;
             --namespace)
                 CORE_NAMESPACE="$2"
+                CORE_NAMESPACE_FROM_CLI="true"
                 shift 2
                 ;;
             --config=*)
@@ -131,6 +136,21 @@ parse_core_args() {
                 ;;
         esac
     done
+}
+
+# Target namespace: explicit --namespace overrides `namespace:` in CONFIG_YAML_PATH (avoids uninstall missing releases when YAML drifted from the cluster).
+_core_resolve_target_namespace() {
+    if [[ "${CORE_NAMESPACE_FROM_CLI:-false}" == true ]]; then
+        printf '%s' "${CORE_NAMESPACE}"
+        return 0
+    fi
+    local yaml_ns
+    yaml_ns="$(kweaver_values_namespace_from_config)"
+    if [[ -n "${yaml_ns}" ]]; then
+        printf '%s' "${yaml_ns}"
+    else
+        printf '%s' "${CORE_NAMESPACE}"
+    fi
 }
 
 # Resolve local charts directory for kweaver-core
@@ -228,7 +248,7 @@ init_core_databases() {
     fi
 
     local -a sql_modules=()
-    mapfile -t sql_modules < <(list_versioned_sql_modules "kweaver-core" "${HELM_CHART_VERSION:-}")
+    kweaver_mapfile_compat sql_modules list_versioned_sql_modules "kweaver-core" "${HELM_CHART_VERSION:-}"
     if [[ ${#sql_modules[@]} -eq 0 ]]; then
         log_info "Skipping KWeaver Core database initialization: no SQL module directories found in ${sql_base_dir}"
         return 0
@@ -268,25 +288,29 @@ download_core() {
     fi
 
     if [[ -n "${isf_dep_version}" ]]; then
-        log_info "ISF dependency found in manifest (version: ${isf_dep_version}), downloading ISF charts"
-        local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
-        local original_isf_manifest_file="${ISF_VERSION_MANIFEST_FILE:-}"
-        local original_chart_version="${HELM_CHART_VERSION:-}"
-        ISF_LOCAL_CHARTS_DIR="${charts_dir}"
-        HELM_CHART_VERSION="${isf_dep_version}"
-        ISF_VERSION_MANIFEST_FILE="${isf_dep_manifest}"
+        if is_dependency_enabled "${CORE_VERSION_MANIFEST_FILE}" "isf" "${CORE_SET_VALUES[@]}"; then
+            log_info "ISF dependency found in manifest (version: ${isf_dep_version}), downloading ISF charts"
+            local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
+            local original_isf_manifest_file="${ISF_VERSION_MANIFEST_FILE:-}"
+            local original_chart_version="${HELM_CHART_VERSION:-}"
+            ISF_LOCAL_CHARTS_DIR="${charts_dir}"
+            HELM_CHART_VERSION="${isf_dep_version}"
+            ISF_VERSION_MANIFEST_FILE="${isf_dep_manifest}"
 
-        download_isf
+            download_isf
 
-        ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
-        ISF_VERSION_MANIFEST_FILE="${original_isf_manifest_file}"
-        HELM_CHART_VERSION="${original_chart_version}"
+            ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+            ISF_VERSION_MANIFEST_FILE="${original_isf_manifest_file}"
+            HELM_CHART_VERSION="${original_chart_version}"
+        else
+            log_info "ISF in manifest but disabled for this profile (e.g. --minimum); skipping ISF chart download"
+        fi
     else
         log_info "No ISF dependency declared in manifest, skipping ISF download"
     fi
 
     local -a release_names=()
-    mapfile -t release_names < <(_core_release_names)
+    kweaver_mapfile_compat release_names _core_release_names
     local release_name
     local release_version
     local chart_name
@@ -424,6 +448,36 @@ _core_apply_default_set_values() {
         CORE_SET_VALUES+=("businessDomain.enabled=false")
         log_info "Default applied: --set businessDomain.enabled=false (override with --set businessDomain.enabled=true)"
     fi
+
+    # Lightweight resource overrides for resource-constrained environments (mac kind / k3s).
+    # All four envs are empty by default → k8s/kubeadm path stays at chart defaults
+    # (most app charts ship limits=4-8Gi which is over-provisioned for dev).
+    # Defaults are layered upstream:
+    #   - mac dev: see deploy/dev/lib/mac_common.sh (mac_common_init)
+    #   - k3s    : see kweaver_apply_k3s_lightweight_defaults in common.sh
+    # Apply uniformly to every Core release; per-release tuning (e.g. larger limit for
+    # ontology-query) can be added later if a service consistently OOMs at install time.
+    local _core_resource_set
+    _core_resource_set=0
+    if [[ -n "${KWEAVER_CORE_REQ_CPU:-}" ]]; then
+        CORE_SET_VALUES+=("resources.requests.cpu=${KWEAVER_CORE_REQ_CPU}")
+        _core_resource_set=1
+    fi
+    if [[ -n "${KWEAVER_CORE_REQ_MEM:-}" ]]; then
+        CORE_SET_VALUES+=("resources.requests.memory=${KWEAVER_CORE_REQ_MEM}")
+        _core_resource_set=1
+    fi
+    if [[ -n "${KWEAVER_CORE_LIM_CPU:-}" ]]; then
+        CORE_SET_VALUES+=("resources.limits.cpu=${KWEAVER_CORE_LIM_CPU}")
+        _core_resource_set=1
+    fi
+    if [[ -n "${KWEAVER_CORE_LIM_MEM:-}" ]]; then
+        CORE_SET_VALUES+=("resources.limits.memory=${KWEAVER_CORE_LIM_MEM}")
+        _core_resource_set=1
+    fi
+    if [[ "${_core_resource_set}" == "1" ]]; then
+        log_info "Core resource overrides applied (uniform): req cpu=${KWEAVER_CORE_REQ_CPU:-<chart>} mem=${KWEAVER_CORE_REQ_MEM:-<chart>} / lim cpu=${KWEAVER_CORE_LIM_CPU:-<chart>} mem=${KWEAVER_CORE_LIM_MEM:-<chart>}"
+    fi
 }
 
 # Install KWeaver Core services via Helm
@@ -437,9 +491,18 @@ install_core() {
         return 1
     fi
 
+    # macOS kind / BYOK: platform bootstrap is skipped, so ensure_data_services is not run above.
+    # Install the same bundled data layer as `deploy.sh data-services install` unless opted out.
+    if [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" == "true" ]] && [[ "${KWEAVER_SKIP_DATA_SERVICES_BUNDLE:-false}" != "true" ]]; then
+        log_info "Bring-your-own cluster: ensuring bundled data services before Core (skip with KWEAVER_SKIP_DATA_SERVICES_BUNDLE=true)"
+        if ! ensure_data_services; then
+            log_error "Failed to ensure data services before KWeaver Core"
+            return 1
+        fi
+    fi
+
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-${CORE_NAMESPACE}}"
+    namespace="$(_core_resolve_target_namespace)"
 
     kubectl create namespace "${namespace}" 2>/dev/null || true
 
@@ -513,7 +576,7 @@ install_core() {
     fi
 
     local -a release_names=()
-    mapfile -t release_names < <(_core_release_names)
+    kweaver_mapfile_compat release_names _core_release_names
     local release_version
     for release_name in "${release_names[@]}"; do
         release_version="$(_core_resolve_release_version "${release_name}")"
@@ -526,7 +589,7 @@ install_core() {
 
     log_info "KWeaver Core services installation completed."
 
-    maybe_import_context_loader_toolset_post_core "${namespace}" || true
+    log_info "Context Loader toolset import: run ./onboard.sh after kweaver auth (uses kweaver call impex), or set IMPORT_CONTEXT_LOADER_TOOLSET=false to skip that step in onboard."
 
     local _host _port _scheme
     _host="$(_read_access_address_field "host" 2>/dev/null || true)"
@@ -554,18 +617,20 @@ uninstall_core() {
     log_info "Uninstalling KWeaver Core services..."
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-${CORE_NAMESPACE}}"
+    namespace="$(_core_resolve_target_namespace)"
+    log_info "Helm target namespace: ${namespace}"
 
     local -a release_names=()
-    mapfile -t release_names < <(_core_release_names)
+    kweaver_mapfile_compat release_names _core_release_names
     for ((i=${#release_names[@]}-1; i>=0; i--)); do
         local release_name="${release_names[$i]}"
         log_info "Uninstalling ${release_name}..."
-        if helm uninstall "${release_name}" -n "${namespace}" 2>/dev/null; then
+        local helm_err
+        if helm_err=$(helm uninstall "${release_name}" -n "${namespace}" 2>&1); then
             log_info "✓ ${release_name} uninstalled"
         else
-            log_warn "⚠ ${release_name} not found or already uninstalled"
+            # Do not confuse "wrong namespace / no Helm metadata" with a silent no-op:
+            log_warn "⚠ ${release_name} uninstall skipped: ${helm_err}"
         fi
     done
 
@@ -575,6 +640,9 @@ uninstall_core() {
     log_warn "Deleting sandbox session pods (label: sandbox-type=execution)"
     kubectl delete pod -n "${namespace}" -l sandbox-type=execution --ignore-not-found >/dev/null 2>&1 || true
 
+    log_info "Deleting leftover Core Jobs in ${namespace} (e.g. data-migrator / chart hooks)"
+    kweaver_delete_jobs_name_match_ere_in_ns "${namespace}" 'migrator|data-migrator|mdl-data-model-job'
+
     log_info "KWeaver Core services uninstallation completed."
 }
 
@@ -583,14 +651,13 @@ show_core_status() {
     log_info "KWeaver Core services status:"
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-${CORE_NAMESPACE}}"
+    namespace="$(_core_resolve_target_namespace)"
 
     log_info "Namespace: ${namespace}"
     log_info ""
 
     local -a release_names=()
-    mapfile -t release_names < <(_core_release_names)
+    kweaver_mapfile_compat release_names _core_release_names
     for release_name in "${release_names[@]}"; do
         if helm status "${release_name}" -n "${namespace}" >/dev/null 2>&1; then
             local status

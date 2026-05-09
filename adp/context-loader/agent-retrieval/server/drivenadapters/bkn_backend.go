@@ -67,7 +67,7 @@ func (b *bknBackendAccess) GetKnowledgeNetworkDetail(ctx context.Context, knID s
 			fmt.Sprintf("[BknBackendAccess] GetKnowledgeNetworkDetail request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return result, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))
@@ -119,7 +119,7 @@ func (b *bknBackendAccess) SearchObjectTypes(ctx context.Context, query *interfa
 			fmt.Sprintf("[BknBackendAccess] SearchObjectTypes request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return objectTypes, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))
@@ -175,7 +175,7 @@ func (b *bknBackendAccess) GetObjectTypeDetail(ctx context.Context, knID string,
 			fmt.Sprintf("[BknBackendAccess] GetObjectTypeDetail request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return emptyObjectTypes, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))
@@ -223,14 +223,13 @@ func (b *bknBackendAccess) SearchRelationTypes(ctx context.Context, query *inter
 	header[rest.ContentTypeKey] = rest.ContentTypeJSON
 	header["x-http-method-override"] = "GET"
 	respCode, respBody, err := b.httpClient.PostNoUnmarshal(ctx, src, header, query)
-
 	if err != nil {
 		b.logger.WithContext(ctx).Errorf("[BknBackendAccess] SearchRelationTypes request failed, err: %v", err)
 		return nil, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] SearchRelationTypes request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return nil, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))
@@ -287,7 +286,7 @@ func (b *bknBackendAccess) GetRelationTypeDetail(ctx context.Context, knID strin
 			fmt.Sprintf("[BknBackendAccess] GetRelationTypeDetail request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return emptyRelationTypes, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))
@@ -333,14 +332,13 @@ func (b *bknBackendAccess) SearchActionTypes(ctx context.Context, query *interfa
 	header[rest.ContentTypeKey] = rest.ContentTypeJSON
 	header["x-http-method-override"] = "GET"
 	respCode, respBody, err := b.httpClient.PostNoUnmarshal(ctx, src, header, query)
-
 	if err != nil {
 		b.logger.WithContext(ctx).Errorf("[BknBackendAccess] SearchActionTypes request failed, err: %v", err)
 		return nil, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] SearchActionTypes request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return nil, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))
@@ -394,7 +392,7 @@ func (b *bknBackendAccess) SearchMetricTypes(ctx context.Context, query *interfa
 			fmt.Sprintf("[BknBackendAccess] SearchMetricTypes request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return metricTypes, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))
@@ -449,7 +447,7 @@ func (b *bknBackendAccess) GetActionTypeDetail(ctx context.Context, knID string,
 			fmt.Sprintf("[BknBackendAccess] GetActionTypeDetail request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return emptyActionTypes, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))
@@ -507,7 +505,7 @@ func (b *bknBackendAccess) CreateFullBuildOntologyJob(ctx context.Context, knID 
 			fmt.Sprintf("[BknBackendAccess] CreateFullBuildOntologyJob request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return nil, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))
@@ -575,7 +573,7 @@ func (b *bknBackendAccess) ListOntologyJobs(ctx context.Context, knID string, re
 			fmt.Sprintf("[BknBackendAccess] ListOntologyJobs request failed, err: %v", err))
 	}
 
-	if respCode == http.StatusNotFound {
+	if respCode == http.StatusNotFound && len(respBody) == 0 {
 		b.logger.WithContext(ctx).Warnf("[BknBackendAccess] request not found, [%s]", src)
 		return nil, infraErr.DefaultHTTPError(ctx, respCode,
 			fmt.Sprintf("[BknBackendAccess] request not found, [%s]", src))

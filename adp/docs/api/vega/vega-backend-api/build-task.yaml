@@ -1,0 +1,530 @@
+---
+openapi: 3.1.1
+info:
+  title: BuildTask
+  description: |
+    Vega Backend 构建任务（BuildTask）相关 API。
+
+    BuildTask 是顶级独立资源，每条 task 关联 1 个 Resource，对其执行 streaming /
+    batch / embedding 三种模式之一的构建。状态机：
+
+      init → running → stopping → stopped
+                    ↘ completed
+                    ↘ failed
+
+    外部仅可触发 `start` / `stop` 两个动作；其它状态由 worker 内部转移，外部只读。
+    `start` / `stop` 的 HTTP 200 仅表示"指令被接受"，**不**表示 status 已切换；
+    持久化 status 由 worker 实际执行时写入，客户端如需感知应轮询 GET。
+
+    端点设计遵循 [vega-backend/CLAUDE.md] 的"端点设计规则"：批量删除走 path
+    （`DELETE /build-tasks/{ids}`，逗号分隔），不提供 `/resources/{id}/build-tasks`
+    嵌套列表视图——按父资源过滤一律走 `GET /build-tasks?resource_id={id}`。
+  version: 0.1.0
+servers:
+  - url: /api/vega-backend/v1
+paths:
+  /api/vega-backend/v1/build-tasks:
+    get:
+      summary: 获取构建任务列表
+      description: 分页获取构建任务；支持按 resource_id / catalog_id / status / mode 过滤。
+      parameters:
+        - name: resource_id
+          description: 按归属 resource 过滤
+          in: query
+          schema:
+            type: string
+        - name: catalog_id
+          description: 按归属 catalog 过滤
+          in: query
+          schema:
+            type: string
+        - name: status
+          description: 按状态过滤
+          in: query
+          schema:
+            type: string
+            enum:
+              - init
+              - running
+              - stopping
+              - stopped
+              - completed
+              - failed
+        - name: mode
+          description: 按任务模式过滤
+          in: query
+          schema:
+            type: string
+            enum:
+              - streaming
+              - batch
+              - embedding
+        - name: offset
+          description: 分页偏移量，>=0，默认 0
+          in: query
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          description: 每页数量，默认 20
+          in: query
+          schema:
+            type: integer
+            format: int64
+            default: 20
+        - name: sort
+          description: 排序字段，默认 update_time
+          in: query
+          schema:
+            type: string
+            enum:
+              - create_time
+              - update_time
+              - status
+              - mode
+            default: update_time
+        - name: direction
+          description: 排序方向，默认 desc
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListBuildTasks"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      summary: 创建构建任务
+      description: |
+        为指定 Resource 创建构建任务。同一 Resource 同时只能有一个 BuildTask；
+        已存在时返回 400 `VegaBackend.BuildTask.Exist`。
+
+        - `streaming` 模式要求 Resource 在 `source_metadata.primary_keys` 中声明主键。
+        - `batch` 模式要求 `build_key_fields` 非空。
+        - 所有字段都需要在 Resource 的 schema 中存在；否则 400。
+        - 创建后 status = `init`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBuildTaskRequest"
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - resource_id
+                  - status
+                properties:
+                  id:
+                    description: 新建 BuildTask ID
+                    type: string
+                  resource_id:
+                    description: 关联 resource ID
+                    type: string
+                  status:
+                    description: 初始 status，恒为 `init`
+                    type: string
+                    enum:
+                      - init
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/build-tasks/{id}:
+    parameters:
+      - name: id
+        description: BuildTask ID
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: 获取构建任务详情
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildTask"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/build-tasks/{ids}:
+    parameters:
+      - name: ids
+        description: |
+          BuildTask ID 列表，逗号分隔（单条即长度为 1 的退化情形）。
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: 删除构建任务（整体事务）
+      description: |
+        整体事务语义：所有 id 通过预校验后才进入删除阶段，任一预校验失败整批不删。
+
+        预校验顺序：
+
+        1. 任一 id 处于 `running` / `stopping` → 409 `VegaBackend.BuildTask.HasRunningExecution`，
+           `error_details` 携带 `{ running_ids: [...] }`。状态拦截**不可绕过**，必须先 stop 再删。
+        2. 任一 id 不存在（且未启用 `ignore_missing`）→ 404 `VegaBackend.BuildTask.NotFound`，
+           `error_details` 携带 `{ missing_ids: [...] }`。
+        3. 全部通过 → 逐条删除，返回 204。
+      parameters:
+        - name: ignore_missing
+          description: |
+            放宽不存在性检查：缺失 id 视为已删除（静默跳过），其它 id 正常删。
+            **不影响** running/stopping 拦截。
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "204":
+          description: 删除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/build-tasks/{id}/start:
+    parameters:
+      - name: id
+        description: BuildTask ID
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: 启动构建任务
+      description: |
+        合法状态转移：`status ∈ {init, stopped}` → `running`。
+
+        **响应 status 滞后**：HTTP 200 表示"启动指令已被接受并入队"，**不**表示
+        status 已切换为 `running`。响应体里的 `status` 可能仍是 `init` 或 `stopped`，
+        worker 实际执行时才会写为 `running`。客户端如需确认应轮询 GET。
+
+        **非幂等**：对已 running 的 task 再次 start 返回 409
+        `VegaBackend.BuildTask.InvalidStateTransition`。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartBuildTaskRequest"
+      responses:
+        "200":
+          description: 启动指令已接受
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildTask"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/build-tasks/{id}/stop:
+    parameters:
+      - name: id
+        description: BuildTask ID
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: 停止构建任务
+      description: |
+        合法状态转移：`status == running` → `stopping`。
+
+        **响应 status 滞后**：HTTP 200 表示"停止指令已被记录"。`stopping → stopped`
+        由 worker 异步推进，客户端可轮询 GET 拿最新 status。
+
+        **非幂等**：对非 running 状态的 task 调 stop 返回 409
+        `VegaBackend.BuildTask.InvalidStateTransition`。
+      responses:
+        "200":
+          description: 停止指令已接受
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildTask"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  responses:
+    BadRequest:
+      description: 请求参数 / 请求体非法
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: 未授权（OAuth Token 校验失败）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotAcceptable:
+      description: Content-Type 不是 application/json
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: |
+        状态冲突：状态机不允许该转移，或 task 处于 running/stopping 无法删除
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: 服务内部错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      description: |
+        统一错误响应体。由 `kweaver-go-lib/rest.BaseError` JSON 序列化得到，
+        所有非 2xx 响应均返回该结构（Content-Type: application/json）。
+      type: object
+      required:
+        - error_code
+        - description
+        - solution
+        - error_link
+        - error_details
+      properties:
+        error_code:
+          description: 错误码，例如 `VegaBackend.BuildTask.NotFound`
+          type: string
+        description:
+          description: 错误描述（按请求语言本地化）
+          type: string
+        solution:
+          description: 解决方法（按请求语言本地化）
+          type: string
+        error_link:
+          description: 错误文档链接，可能为空字符串
+          type: string
+        error_details:
+          description: |
+            详细内容，类型不固定（字符串、对象、数组等）；无详情时为空字符串。
+
+            约定的结构化形态：
+
+            - DELETE 批量遇到 running/stopping：`{ running_ids: ["..."] }`
+            - DELETE 批量遇到不存在：`{ missing_ids: ["..."] }`
+    AccountInfo:
+      description: 操作者信息
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          description: 账户 ID
+          type: string
+        type:
+          description: 账户类型
+          type: string
+        name:
+          description: 显示名
+          type: string
+    BuildTask:
+      description: 构建任务实体
+      type: object
+      required:
+        - id
+        - resource_id
+        - catalog_id
+        - status
+        - mode
+        - total_count
+        - synced_count
+        - vectorized_count
+        - creator
+        - create_time
+        - updater
+        - update_time
+        - build_key_fields
+      properties:
+        id:
+          description: 全局唯一 ID
+          type: string
+        resource_id:
+          description: 关联 Resource ID
+          type: string
+        catalog_id:
+          description: 关联 Catalog ID（冗余存储以加速过滤）
+          type: string
+        status:
+          description: 状态
+          type: string
+          enum:
+            - init
+            - running
+            - stopping
+            - stopped
+            - completed
+            - failed
+        mode:
+          description: 任务模式
+          type: string
+          enum:
+            - streaming
+            - batch
+            - embedding
+        total_count:
+          description: 总数
+          type: integer
+          format: int64
+        synced_count:
+          description: 已同步数
+          type: integer
+          format: int64
+        vectorized_count:
+          description: 已向量化数
+          type: integer
+          format: int64
+        synced_mark:
+          description: 同步标记（增量构建用）
+          type: string
+        error_msg:
+          description: 错误信息（仅在 failed 状态下有意义）
+          type: string
+        creator:
+          $ref: "#/components/schemas/AccountInfo"
+        create_time:
+          description: 创建时间，毫秒级时间戳
+          type: integer
+          format: int64
+        updater:
+          $ref: "#/components/schemas/AccountInfo"
+        update_time:
+          description: 更新时间，毫秒级时间戳
+          type: integer
+          format: int64
+        embedding_fields:
+          description: 需向量化的字段，逗号分隔
+          type: string
+        build_key_fields:
+          description: |
+            构建中依赖的特殊键字段，逗号分隔。
+            - batch 模式：依赖具有时序性的字段（如 update_time）
+            - streaming 模式：依赖唯一标识某行的字段（如主键）
+          type: string
+        embedding_model:
+          description: 嵌入模型名
+          type: string
+        model_dimensions:
+          description: 模型向量维度
+          type: integer
+    CreateBuildTaskRequest:
+      description: 创建构建任务请求体
+      type: object
+      required:
+        - resource_id
+        - mode
+      properties:
+        resource_id:
+          description: 关联 Resource ID（必填）
+          type: string
+        mode:
+          description: 任务模式
+          type: string
+          enum:
+            - streaming
+            - batch
+            - embedding
+        embedding_fields:
+          description: 需向量化的字段，逗号分隔
+          type: string
+        build_key_fields:
+          description: 构建键字段，逗号分隔；batch 模式必填
+          type: string
+        embedding_model:
+          description: 嵌入模型名；为空且 embedding_fields 非空时使用默认模型
+          type: string
+        model_dimensions:
+          description: 模型向量维度；为 0 且 embedding_model 非空时按模型查询填入
+          type: integer
+    StartBuildTaskRequest:
+      description: 启动构建任务请求体（可选）
+      type: object
+      properties:
+        execute_type:
+          description: 执行类型；默认 incremental
+          type: string
+          enum:
+            - incremental
+            - full
+          default: incremental
+    ListBuildTasks:
+      description: 构建任务列表
+      type: object
+      required:
+        - entries
+        - total_count
+      properties:
+        entries:
+          description: 条目列表
+          type: array
+          items:
+            $ref: "#/components/schemas/BuildTask"
+        total_count:
+          description: 总条数
+          type: integer
+          format: int64

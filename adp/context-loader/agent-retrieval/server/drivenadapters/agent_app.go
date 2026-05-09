@@ -78,7 +78,8 @@ func (a *agentClient) APIChat(ctx context.Context, req *interfaces.ChatRequest) 
 
 // ConceptIntentionAnalysisAgent 概念意图识分析智能体 app
 func (a *agentClient) ConceptIntentionAnalysisAgent(ctx context.Context,
-	req *interfaces.ConceptIntentionAnalysisAgentReq) (queryUnderstandResult *interfaces.QueryUnderstanding, err error) {
+	req *interfaces.ConceptIntentionAnalysisAgentReq,
+) (queryUnderstandResult *interfaces.QueryUnderstanding, err error) {
 	customQuerys := make(map[string]any)
 	if len(req.PreviousQueries) > 0 {
 		customQuerys["previous_queries"] = req.PreviousQueries
@@ -122,7 +123,8 @@ func (a *agentClient) ConceptIntentionAnalysisAgent(ctx context.Context,
 
 // ConceptRetrievalStrategistAgent 概念召回策略智能体 app
 func (a *agentClient) ConceptRetrievalStrategistAgent(ctx context.Context,
-	req *interfaces.ConceptRetrievalStrategistReq) (queryStrategys []*interfaces.SemanticQueryStrategy, err error) {
+	req *interfaces.ConceptRetrievalStrategistReq,
+) (queryStrategys []*interfaces.SemanticQueryStrategy, err error) {
 	customQuerys := make(map[string]any)
 	if len(req.PreviousQueries) > 0 {
 		customQuerys["previous_queries"] = req.PreviousQueries

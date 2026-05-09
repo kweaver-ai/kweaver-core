@@ -22,6 +22,9 @@ const (
 	// 410 Gone - Session 过期
 	VegaBackend_Query_SessionExpired = "VegaBackend.Query.SessionExpired"
 
+	// 429 Too Many Requests - 并发限流
+	VegaBackend_Query_ConcurrencyLimitExceeded = "VegaBackend.Query.ConcurrencyLimitExceeded"
+
 	// 501 Not Implemented
 	VegaBackend_Query_MultiCatalogNotSupported = "VegaBackend.Query.MultiCatalogNotSupported"
 
@@ -38,6 +41,7 @@ var QueryErrCodeList = []string{
 	VegaBackend_Query_CatalogNotFound,
 	VegaBackend_Query_ResourceNotFound,
 	VegaBackend_Query_SessionExpired,
+	VegaBackend_Query_ConcurrencyLimitExceeded,
 	VegaBackend_Query_MultiCatalogNotSupported,
 	VegaBackend_Query_ExecuteFailed,
 }

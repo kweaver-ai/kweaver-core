@@ -20,6 +20,7 @@ import (
 	"vega-backend/logics/connectors/factory"
 	"vega-backend/logics/dataset"
 	"vega-backend/logics/filter_condition"
+	"vega-backend/logics/rate"
 	"vega-backend/logics/resource"
 	"vega-backend/logics/resource_data/logic_view"
 )
@@ -35,6 +36,7 @@ type resourceDataService struct {
 	cs         interfaces.CatalogService
 	rs         interfaces.ResourceService
 	lvs        interfaces.LogicViewService
+	cl         rate.ConcurrencyLimiter
 }
 
 // NewResourceDataService creates a new ResourceDataService.
@@ -47,6 +49,18 @@ func NewResourceDataService(appSetting *common.AppSetting) interfaces.ResourceDa
 			rs:         resource.NewResourceService(appSetting),
 			lvs:        logic_view.NewLogicViewService(appSetting),
 		}
+
+		// Initialize concurrency limiter if enabled
+		if appSetting.RateLimitingSetting.Concurrency.Enabled && appSetting.RateLimitingSetting.Concurrency.Global.MaxConcurrentQueries > 0 {
+			cfg := rate.ConcurrencyConfig{
+				Enabled: appSetting.RateLimitingSetting.Concurrency.Enabled,
+				Global: rate.GlobalConcurrencyConfig{
+					MaxConcurrentQueries: appSetting.RateLimitingSetting.Concurrency.Global.MaxConcurrentQueries,
+				},
+			}
+
+			rdService.(*resourceDataService).cl = rate.NewConcurrencyLimiter(cfg)
+		}
 	})
 	return rdService
 }
@@ -57,6 +71,50 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 	defer span.End()
 
 	logger.Debugf("Query, resourceID: %s, params: %v", resource.ID, params)
+
+	var catalog *interfaces.Catalog
+	maxConcurrentQueries := int64(0)
+	if resource.Category != interfaces.ResourceCategoryLogicView {
+		catalog, err := rds.cs.GetByID(ctx, resource.CatalogID, true)
+		if err != nil {
+			span.SetStatus(codes.Error, "Get catalog failed")
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
+				WithErrorDetails(fmt.Sprintf("failed to get catalog: %v", err))
+		}
+		if catalog == nil {
+			span.SetStatus(codes.Error, "Catalog not found")
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_CatalogNotFound).
+				WithErrorDetails(fmt.Sprintf("catalog %s not found", resource.CatalogID))
+		}
+		if concurrent, existsInCatalog := catalog.ConnectorCfg["concurrent"]; existsInCatalog {
+			maxConcurrentQueries = int64(concurrent.(float64))
+		}
+	}
+
+	// 并发控制
+	var release func()
+	if rds.cl != nil {
+		// 获取并发许可
+		var acquireErr error
+		release, acquireErr = rds.cl.Acquire(rate.AcquireParams{
+			CatalogID:            resource.CatalogID,
+			MaxConcurrentQueries: maxConcurrentQueries,
+		})
+		if acquireErr != nil {
+			logger.Warnf("Concurrency limit exceeded: catalog=%s, error=%v",
+				resource.CatalogID, acquireErr)
+			span.SetStatus(codes.Error, "concurrency limit exceeded")
+
+			// 返回限流错误
+			if rateErr, ok := acquireErr.(*rate.RateLimitError); ok {
+				return nil, 0, rest.NewHTTPError(ctx, rateErr.HTTPStatus, verrors.VegaBackend_Query_ConcurrencyLimitExceeded).
+					WithErrorDetails(rateErr.Message)
+			}
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusTooManyRequests, verrors.VegaBackend_Query_ConcurrencyLimitExceeded).
+				WithErrorDetails("Query concurrency limit exceeded, please retry later")
+		}
+		defer release() // 查询完成后释放许可
+	}
 
 	fieldMap := map[string]*interfaces.Property{}
 	for _, prop := range resource.SchemaDefinition {
@@ -95,7 +153,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		}
 		// 准备 sort参数
 		params = rds.prepareSortParams(resource, params)
-		data, total, err := rds.QueryData(ctx, resource, params)
+		data, total, err := rds.QueryData(ctx, catalog, resource, params)
 		if err != nil {
 			span.SetStatus(codes.Error, "Query table data failed")
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
@@ -104,7 +162,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		return data, total, nil
 
 	case interfaces.ResourceCategoryIndex:
-		data, total, err := rds.QueryData(ctx, resource, params)
+		data, total, err := rds.QueryData(ctx, catalog, resource, params)
 		if err != nil {
 			span.SetStatus(codes.Error, "Query index data failed")
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
@@ -125,7 +183,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		return data, total, nil
 
 	case interfaces.ResourceCategoryFileset:
-		data, total, err := rds.QueryData(ctx, resource, params)
+		data, total, err := rds.QueryData(ctx, catalog, resource, params)
 		if err != nil {
 			span.SetStatus(codes.Error, "Query fileset data failed")
 			return nil, 0, err
@@ -139,7 +197,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 	}
 }
 
-func (rds *resourceDataService) QueryData(ctx context.Context, resource *interfaces.Resource,
+func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfaces.Catalog, resource *interfaces.Resource,
 	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
 
 	ctx, span := ar_trace.Tracer.Start(ctx, "Query data")
@@ -147,18 +205,6 @@ func (rds *resourceDataService) QueryData(ctx context.Context, resource *interfa
 
 	logger.Debugf("QueryData, resourceID: %s, catalogID: %s, params: %v",
 		resource.ID, resource.CatalogID, params)
-
-	catalog, err := rds.cs.GetByID(ctx, resource.CatalogID, true)
-	if err != nil {
-		span.SetStatus(codes.Error, "Get catalog failed")
-		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
-			WithErrorDetails(fmt.Sprintf("failed to get catalog: %v", err))
-	}
-	if catalog == nil {
-		span.SetStatus(codes.Error, "Catalog not found")
-		return nil, 0, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_CatalogNotFound).
-			WithErrorDetails(fmt.Sprintf("catalog %s not found", resource.CatalogID))
-	}
 
 	connector, err := factory.GetFactory().CreateConnectorInstance(ctx, catalog.ConnectorType, catalog.ConnectorCfg)
 	if err != nil {
@@ -172,7 +218,7 @@ func (rds *resourceDataService) QueryData(ctx context.Context, resource *interfa
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 			WithErrorDetails(fmt.Sprintf("failed to connect to data source: %v", err))
 	}
-	defer connector.Close(ctx)
+	defer func() { _ = connector.Close(ctx) }()
 
 	switch resource.Category {
 	case interfaces.ResourceCategoryTable:

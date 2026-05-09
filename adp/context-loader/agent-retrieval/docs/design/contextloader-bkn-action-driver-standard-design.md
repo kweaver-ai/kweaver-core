@@ -3,7 +3,7 @@
 > 状态: Draft  
 > 负责人: @criller  
 > Reviewers: 待确认  
-> 关联 PRD: ../prd/issue-304-contextloader-bkn-action-driver-standard-prd.md  
+> 关联 PRD: ../prd/contextloader-bkn-action-driver-standard-prd.md  
 
 ---
 
@@ -589,7 +589,7 @@ sequenceDiagram
 # 🔗 7. 附录（Appendix）
 
 ## 相关文档
-- PRD: ../prd/issue-304-contextloader-bkn-action-driver-standard-prd.md
+- PRD: ../prd/contextloader-bkn-action-driver-standard-prd.md
 - BKN 行动执行接口文档: ../../../docs/api/bkn/ontology-query-ai/ontology-query.yaml
 
 ## 参考资料

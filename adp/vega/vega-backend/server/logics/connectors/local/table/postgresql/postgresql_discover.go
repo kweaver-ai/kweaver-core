@@ -55,7 +55,7 @@ ORDER BY nspname`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list schemas: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var schemas []string
 	for rows.Next() {
@@ -100,7 +100,7 @@ func (c *PostgresqlConnector) ListTables(ctx context.Context) ([]*interfaces.Tab
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tables []*interfaces.TableMeta
 	for rows.Next() {
@@ -213,7 +213,7 @@ ORDER BY ordinal_position`
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	pkSet, err := c.fetchPrimaryKeyColumns(ctx, table.Schema, table.Name)
 	if err != nil {
@@ -286,7 +286,7 @@ ORDER BY kcu.ordinal_position`
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	out := make(map[string]bool)
 	for rows.Next() {
@@ -320,7 +320,7 @@ ORDER BY i.relname, k.n`
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	indexMap := make(map[string]*interfaces.TableIndexMeta)
 	for rows.Next() {
@@ -373,7 +373,7 @@ ORDER BY c.conname, u1.ord1`
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	fkMap := make(map[string]*interfaces.TableForeignKeyMeta)
 	for rows.Next() {
@@ -423,7 +423,7 @@ WHERE name IN ('server_version','server_version_num','TimeZone','max_connections
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var k, v string
 		if err := rows.Scan(&k, &v); err != nil {

@@ -206,7 +206,7 @@ func (ka *kafkaAccess) CreateTopic(ctx context.Context, topicName string) error 
 		logger.Errorf("Failed to dial kafka with SASL: %v", err)
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	controller, err := conn.Controller()
 	if err != nil {
@@ -219,7 +219,7 @@ func (ka *kafkaAccess) CreateTopic(ctx context.Context, topicName string) error 
 		logger.Errorf("Failed to dial controller: %v", err)
 		return err
 	}
-	defer controllerConn.Close()
+	defer func() { _ = controllerConn.Close() }()
 
 	topicConfigs := []kafka.TopicConfig{
 		{

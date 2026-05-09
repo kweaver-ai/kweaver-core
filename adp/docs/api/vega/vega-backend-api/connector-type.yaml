@@ -1,0 +1,474 @@
+---
+openapi: 3.1.1
+info:
+  title: ConnectorType
+  description: |
+    Vega Backend 连接器类型（ConnectorType）相关 API。
+
+    连接器类型描述一个可注册的数据源驱动（如 mysql、postgresql、opensearch 等），
+    提供其元信息、字段配置（field_config，兼容 JSON Schema properties）以及
+    启用状态。Mode 区分本地（local，进程内运行）与远程（remote，独立服务通过
+    HTTP 调用），Category 区分数据源大类。
+  version: 0.1.0
+servers:
+  - url: /api/vega-backend/v1
+paths:
+  /api/vega-backend/v1/connector-types:
+    get:
+      summary: 获取连接器类型列表
+      description: 分页获取已注册的连接器类型；支持按 tag、mode、category、enabled 过滤。
+      parameters:
+        - name: tag
+          description: 按标签精确过滤，默认为空
+          in: query
+          schema:
+            type: string
+        - name: mode
+          description: 按运行模式过滤
+          in: query
+          schema:
+            type: string
+            enum:
+              - local
+              - remote
+        - name: category
+          description: 按分类过滤
+          in: query
+          schema:
+            type: string
+            enum:
+              - table
+              - index
+              - topic
+              - file
+              - fileset
+              - metric
+              - api
+        - name: enabled
+          description: 按启用状态过滤；不传表示不过滤
+          in: query
+          schema:
+            type: boolean
+        - name: offset
+          description: 分页偏移量，>=0，默认 0
+          in: query
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          description: 每页数量，1-1000，-1 表示不分页，默认 20
+          in: query
+          schema:
+            type: integer
+            format: int64
+            default: 20
+        - name: sort
+          description: 排序字段，默认 name
+          in: query
+          schema:
+            type: string
+            enum:
+              - name
+            default: name
+        - name: direction
+          description: 排序方向，默认 desc
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListConnectorTypes"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      summary: 注册连接器类型
+      description: 创建一个新的连接器类型。`type` 必须唯一，已存在时返回 409。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectorTypeReq"
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorTypeRef"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "409":
+          description: 同 type 的连接器类型已存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/connector-types/{type}:
+    parameters:
+      - name: type
+        description: 连接器类型标识（如 mysql、postgresql）
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: 获取连接器类型详情
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorType"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      summary: 修改连接器类型
+      description: |
+        全量更新指定连接器类型。连接器类型由路径参数 `type` 唯一确定（主键不可改）。
+
+        请求体的 `type` 字段**必填**，且必须与路径参数完全一致：
+        - 缺失 → 400 `VegaBackend.ConnectorType.InvalidParameter.Type`。
+        - 不一致 → 409 `VegaBackend.ConnectorType.TypeMismatch`。
+
+        修改 `name` 时若新名称已被其它类型占用，返回 409 `VegaBackend.ConnectorType.NameExists`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectorTypeReq"
+      responses:
+        "204":
+          description: 更新成功
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "409":
+          description: |
+            主键 / 名称冲突。具体场景：
+            - 请求体 `type` 与路径参数不一致 → `VegaBackend.ConnectorType.TypeMismatch`
+            - 新 `name` 已被其它连接器类型占用 → `VegaBackend.ConnectorType.NameExists`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: 删除连接器类型
+      description: 删除指定 type 的连接器类型。`mode=local` 的内置类型不可删除（403）。
+      responses:
+        "204":
+          description: 删除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: 不可删除（如 local 内置类型）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/connector-types/{type}/enable:
+    parameters:
+      - name: type
+        description: 连接器类型标识
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: 启用连接器类型
+      description: 启用指定连接器类型；幂等，重复调用不报错。
+      responses:
+        "204":
+          description: 启用成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/connector-types/{type}/disable:
+    parameters:
+      - name: type
+        description: 连接器类型标识
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: 停用连接器类型
+      description: 停用指定连接器类型；幂等，重复调用不报错。
+      responses:
+        "204":
+          description: 停用成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  responses:
+    BadRequest:
+      description: 请求参数 / 请求体非法
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: 未授权（OAuth Token 校验失败）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotAcceptable:
+      description: Content-Type 不是 application/json
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: 服务内部错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      description: |
+        统一错误响应体。由 `kweaver-go-lib/rest.BaseError` JSON 序列化得到，
+        所有非 2xx 响应均返回该结构（Content-Type: application/json）。
+      type: object
+      required:
+        - error_code
+        - description
+        - solution
+        - error_link
+        - error_details
+      properties:
+        error_code:
+          description: 错误码，例如 `VegaBackend.ConnectorType.NotFound`
+          type: string
+        description:
+          description: 错误描述（按请求语言本地化）
+          type: string
+        solution:
+          description: 解决方法（按请求语言本地化）
+          type: string
+        error_link:
+          description: 错误文档链接，可能为空字符串
+          type: string
+        error_details:
+          description: 详细内容，类型不固定（字符串、对象、数组等）；无详情时为空字符串
+    ConnectorFieldConfig:
+      description: 连接器配置字段元信息（兼容 JSON Schema properties）
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          description: 字段显示名
+          type: string
+        type:
+          description: 字段类型
+          type: string
+          enum:
+            - string
+            - integer
+            - number
+            - boolean
+            - object
+            - array
+        description:
+          description: 字段描述
+          type: string
+        required:
+          description: 是否必填
+          type: boolean
+          default: false
+        encrypted:
+          description: 是否需要加密存储（自定义扩展）
+          type: boolean
+          default: false
+    ConnectorType:
+      description: 已注册的连接器类型
+      type: object
+      required:
+        - type
+        - name
+        - mode
+        - category
+        - enabled
+      properties:
+        type:
+          description: 连接器类型标识，全局唯一
+          type: string
+        name:
+          description: 连接器类型显示名
+          type: string
+        tags:
+          description: 标签
+          type: array
+          items:
+            type: string
+        description:
+          description: 类型描述
+          type: string
+        mode:
+          description: 运行模式
+          type: string
+          enum:
+            - local
+            - remote
+        category:
+          description: 分类
+          type: string
+          enum:
+            - table
+            - index
+            - topic
+            - file
+            - fileset
+            - metric
+            - api
+        endpoint:
+          description: 仅 remote 模式下的远程服务地址
+          type: string
+        field_config:
+          description: 字段配置（兼容 JSON Schema properties），key 为字段标识
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ConnectorFieldConfig"
+        enabled:
+          description: 是否启用
+          type: boolean
+        operations:
+          description: 该连接器类型支持的操作集合
+          type: array
+          items:
+            type: string
+    ConnectorTypeReq:
+      description: |
+        连接器类型创建 / 更新请求体。
+
+        - `type` 在 POST 与 PUT 中都**必填**，且必须自描述资源主键。
+        - POST：全局唯一，已存在返回 409 `VegaBackend.ConnectorType.TypeExists`。
+        - PUT：必须与路径参数 `type` **完全一致**，缺失返回 400 `VegaBackend.ConnectorType.InvalidParameter.Type`，不一致返回 409 `VegaBackend.ConnectorType.TypeMismatch`。
+      type: object
+      required:
+        - type
+        - name
+        - mode
+        - category
+      properties:
+        type:
+          description: 连接器类型标识；POST 与 PUT 都必填，PUT 时必须与路径参数一致
+          type: string
+        name:
+          description: 连接器类型显示名
+          type: string
+        tags:
+          description: 标签
+          type: array
+          items:
+            type: string
+        description:
+          description: 类型描述
+          type: string
+        mode:
+          description: 运行模式
+          type: string
+          enum:
+            - local
+            - remote
+        category:
+          description: 分类
+          type: string
+          enum:
+            - table
+            - index
+            - topic
+            - file
+            - fileset
+            - metric
+            - api
+        endpoint:
+          description: 仅 remote 模式下的远程服务地址
+          type: string
+        field_config:
+          description: 字段配置（兼容 JSON Schema properties），key 为字段标识
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ConnectorFieldConfig"
+        enabled:
+          description: 是否启用
+          type: boolean
+          default: false
+    ListConnectorTypes:
+      description: 连接器类型列表
+      type: object
+      required:
+        - entries
+        - total_count
+      properties:
+        entries:
+          description: 条目列表
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectorType"
+        total_count:
+          description: 总条数
+          type: integer
+          format: int64
+    ConnectorTypeRef:
+      description: 连接器类型引用
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          description: 连接器类型标识
+          type: string

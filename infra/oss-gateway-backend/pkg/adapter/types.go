@@ -6,6 +6,7 @@ const (
 	VendorOSS   VendorType = "OSS"
 	VendorOBS   VendorType = "OBS"
 	VendorECEPH VendorType = "ECEPH"
+	VendorTOS   VendorType = "TOS"
 )
 
 type StorageConfig struct {

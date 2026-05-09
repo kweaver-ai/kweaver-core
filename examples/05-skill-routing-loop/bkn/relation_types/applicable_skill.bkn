@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: applicable_skill
+name: Applicable skill
+tags: [example-05]
+---
+
+## RelationType: Applicable skill
+
+Material → Skills, the find_skills recall edge.
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| material | skills | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| bound_skill_id | skill_id |

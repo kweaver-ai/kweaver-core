@@ -41,6 +41,7 @@ type metricService struct {
 	appSetting *common.AppSetting
 	db         *sql.DB
 	ma         interfaces.MetricAccess
+	cga        interfaces.ConceptGroupAccess
 	ps         interfaces.PermissionService
 	uma        interfaces.UserMgmtService
 	vba        interfaces.VegaBackendAccess
@@ -54,6 +55,7 @@ func NewMetricService(appSetting *common.AppSetting) interfaces.MetricService {
 			appSetting: appSetting,
 			db:         logics.DB,
 			ma:         logics.MA,
+			cga:        logics.CGA,
 			ps:         permission.NewPermissionService(appSetting),
 			uma:        logics.UMA,
 			vba:        logics.VBA,
@@ -62,11 +64,6 @@ func NewMetricService(appSetting *common.AppSetting) interfaces.MetricService {
 		}
 	})
 	return metricServiceInst
-}
-
-func buildMetricBKNRawContent(def *interfaces.MetricDefinition) string {
-	cf, _ := json.Marshal(def.CalculationFormula)
-	return strings.Join([]string{def.Name, def.Comment, string(cf)}, "\n")
 }
 
 func (ms *metricService) InsertDatasetData(ctx context.Context, metrics []*interfaces.MetricDefinition) error {
@@ -80,8 +77,11 @@ func (ms *metricService) InsertDatasetData(ctx context.Context, metrics []*inter
 	if ms.appSetting.ServerSetting.DefaultSmallModelEnabled && ms.mfa != nil {
 		words := make([]string, 0, len(metrics))
 		for _, m := range metrics {
-			m.BKNRawContent = buildMetricBKNRawContent(m)
-			words = append(words, m.BKNRawContent)
+			arr := []string{m.Name}
+			arr = append(arr, m.Tags...)
+			arr = append(arr, m.Comment, m.BKNRawContent)
+			word := strings.Join(arr, "\n")
+			words = append(words, word)
 		}
 		dftModel, err := ms.mfa.GetDefaultModel(ctx)
 		if err != nil {
@@ -105,9 +105,6 @@ func (ms *metricService) InsertDatasetData(ctx context.Context, metrics []*inter
 
 	documents := make([]map[string]any, 0, len(metrics))
 	for _, def := range metrics {
-		if def.BKNRawContent == "" {
-			def.BKNRawContent = buildMetricBKNRawContent(def)
-		}
 		docid := interfaces.GenerateConceptDocuemtnID(def.KnID, interfaces.MODULE_TYPE_METRIC, def.ID, def.Branch)
 		def.ModuleType = interfaces.MODULE_TYPE_METRIC
 
@@ -214,7 +211,9 @@ func (ms *metricService) CreateMetrics(ctx context.Context, tx *sql.Tx, entries 
 			}
 		}
 
-		m.BKNRawContent = buildMetricBKNRawContent(m)
+		// todo: Persist empty BKN raw content until metric serialization is available in BKN SDK.
+		// objectType.BKNRawContent = bknsdk.SerializeObjectType(bknObj)
+		m.BKNRawContent = ""
 	}
 
 	var creates []*interfaces.MetricDefinition
@@ -491,6 +490,10 @@ func (ms *metricService) UpdateMetric(ctx context.Context, tx *sql.Tx, req *inte
 	}
 	req.UpdateTime = time.Now().UnixMilli()
 
+	// todo: Persist empty BKN raw content until metric serialization is available in BKN SDK.
+	// objectType.BKNRawContent = bknsdk.SerializeObjectType(bknObj)
+	req.BKNRawContent = ""
+
 	err = ms.ma.UpdateMetric(ctx, tx, req)
 	if err != nil {
 		logger.Errorf("UpdateMetric error: %s", err.Error())
@@ -638,6 +641,8 @@ func (ms *metricService) SearchMetrics(ctx context.Context, query *interfaces.Co
 				}
 				result, err := ms.mfa.GetVector(ctx, dftModel, []string{word})
 				if err != nil {
+					logger.Errorf("GetVector error: %s", err.Error())
+					span.SetStatus(codes.Error, "vector embedding failed")
 					return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 						berrors.BknBackend_Metric_InternalError).
 						WithErrorDetails(err.Error())
@@ -645,56 +650,118 @@ func (ms *metricService) SearchMetrics(ctx context.Context, query *interfaces.Co
 				return result, nil
 			})
 		if err != nil {
-			return response, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_Condition).
-				WithErrorDetails(fmt.Sprintf("failed to convert condition to filter condition: %s", err.Error()))
+			return response, rest.NewHTTPError(ctx, http.StatusBadRequest,
+				berrors.BknBackend_InvalidParameter_Condition).
+				WithErrorDetails(fmt.Sprintf("failed to convert condition to filter condition, %s", err.Error()))
+		}
+	}
+
+	otIDMap := map[string]bool{}
+	var otIDs []string
+	if len(query.ConceptGroups) > 0 {
+		cgCnt, err := ms.cga.GetConceptGroupsTotal(ctx, interfaces.ConceptGroupsQueryParams{
+			KNID:   query.KNID,
+			Branch: query.Branch,
+			CGIDs:  query.ConceptGroups,
+		})
+		if err != nil {
+			logger.Errorf("GetConceptGroupsTotal in knowledge network[%s] error: %s", query.KNID, err.Error())
+			span.SetStatus(codes.Error, fmt.Sprintf("GetConceptGroupsTotal in knowledge network[%s], error: %v", query.KNID, err))
+
+			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				berrors.BknBackend_Metric_InternalError).WithErrorDetails(err.Error())
+		}
+		if cgCnt == 0 {
+			errStr := fmt.Sprintf("all concept group not found, expect concept group nums is [%d], actual concept group num is [%d]",
+				cgCnt, len(query.ConceptGroups))
+			logger.Errorf(errStr)
+
+			// 所有概念分组都不存在，报404，概念分组不存在
+			return response, rest.NewHTTPError(ctx, http.StatusNotFound,
+				berrors.BknBackend_ConceptGroup_ConceptGroupNotFound).
+				WithErrorDetails(errStr)
+		}
+
+		otIDArr, err := ms.cga.GetConceptIDsByConceptGroupIDs(ctx, query.KNID,
+			query.Branch, query.ConceptGroups, interfaces.MODULE_TYPE_OBJECT_TYPE)
+		if err != nil {
+			errStr := fmt.Sprintf("GetConceptIDsByConceptGroupIDs failed, kn_id:[%s],branch:[%s],cg_ids:[%v], error: %v",
+				query.KNID, query.Branch, query.ConceptGroups, err)
+			logger.Errorf(errStr)
+			span.SetStatus(codes.Error, errStr)
+
+			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				berrors.BknBackend_Metric_InternalError).WithErrorDetails(err.Error())
+		}
+
+		if len(otIDArr) == 0 {
+			return response, nil
+		}
+
+		for _, otID := range otIDArr {
+			if !otIDMap[otID] {
+				otIDMap[otID] = true
+				otIDs = append(otIDs, otID)
+			}
 		}
 	}
 
 	if query.NeedTotal {
-		params := &interfaces.ResourceDataQueryParams{
-			FilterCondition: filterCondition,
-			Offset:          0,
-			Limit:           1,
-			NeedTotal:       true,
+		if len(otIDMap) == 0 {
+			total, err := ms.getMetricDatasetTotal(ctx, filterCondition)
+			if err != nil {
+				return response, err
+			}
+			response.TotalCount = total
+		} else {
+			total, err := ms.getTotalWithLargeScopeRefs(ctx, filterCondition, otIDs)
+			if err != nil {
+				return response, err
+			}
+			response.TotalCount = total
 		}
-		datasetResp, err := ms.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
-		if err != nil {
-			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_Metric_InternalError).WithErrorDetails(err.Error())
-		}
-		response.TotalCount = datasetResp.TotalCount
 	}
 
-	offset := 0
 	limit := query.Limit
 	if limit == 0 {
 		limit = interfaces.SearchAfter_Limit
 	}
 
-	var entries []*interfaces.MetricDefinition
+	entries := make([]*interfaces.MetricDefinition, 0)
 
 	for {
 		params := &interfaces.ResourceDataQueryParams{
 			FilterCondition: filterCondition,
-			Offset:          offset,
 			Limit:           limit,
 			NeedTotal:       false,
+			SearchAfter:     query.SearchAfter,
 			Sort:            query.Sort,
 		}
 		datasetResp, err := ms.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 		if err != nil {
-			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_Metric_InternalError).WithErrorDetails(err.Error())
+			logger.Errorf("metric concept search query QueryResourceData error: %s", err.Error())
+			span.SetStatus(codes.Error, "metric concept search query failed")
+			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				berrors.BknBackend_Metric_InternalError).
+				WithErrorDetails(err.Error())
 		}
+
 		if len(datasetResp.Entries) == 0 {
 			break
 		}
+
 		for _, entry := range datasetResp.Entries {
 			jsonByte, err := json.Marshal(entry)
 			if err != nil {
-				return response, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InternalError_MarshalDataFailed).WithErrorDetails(err.Error())
+				return response, rest.NewHTTPError(ctx, http.StatusBadRequest,
+					berrors.BknBackend_InternalError_MarshalDataFailed).
+					WithErrorDetails(fmt.Sprintf("failed to Marshal dataset entry, %s", err.Error()))
 			}
 			var m interfaces.MetricDefinition
 			if err := json.Unmarshal(jsonByte, &m); err != nil {
-				return response, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InternalError_UnMarshalDataFailed).WithErrorDetails(err.Error())
+				return response, rest.NewHTTPError(ctx, http.StatusBadRequest,
+					berrors.BknBackend_InternalError_UnMarshalDataFailed).
+					WithErrorDetails(fmt.Sprintf("failed to Unmarshal dataset entry to MetricDefinition, %s", err.Error()))
 			}
 			if scoreVal, ok := entry["_score"]; ok {
 				if scoreFloat, ok := scoreVal.(float64); ok {
@@ -703,22 +770,95 @@ func (ms *metricService) SearchMetrics(ctx context.Context, query *interfaces.Co
 				}
 			}
 			m.Vector = nil
-			entries = append(entries, &m)
-			if query.Limit > 0 && len(entries) >= query.Limit {
-				break
+
+			if len(otIDMap) == 0 || otIDMap[m.ScopeRef] {
+				entries = append(entries, &m)
+				if query.Limit > 0 && len(entries) >= query.Limit {
+					break
+				}
 			}
 		}
+
 		query.SearchAfter = datasetResp.SearchAfter
+
 		if (query.Limit > 0 && len(entries) >= query.Limit) || len(datasetResp.Entries) < limit {
 			break
 		}
-		offset += limit
 	}
 
 	response.Entries = entries
 	response.SearchAfter = query.SearchAfter
 	span.SetStatus(codes.Ok, "")
 	return response, nil
+}
+
+// getMetricDatasetTotal returns total document count for the metric concept query (same pattern as object_type.GetTotal).
+func (ms *metricService) getMetricDatasetTotal(ctx context.Context, filterCondition map[string]any) (int64, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "logic layer: search metric concept total")
+	defer span.End()
+
+	params := &interfaces.ResourceDataQueryParams{
+		FilterCondition: filterCondition,
+		Offset:          0,
+		Limit:           1,
+		NeedTotal:       true,
+	}
+	datasetResp, err := ms.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
+	if err != nil {
+		span.SetStatus(codes.Error, "Search total metric documents count failed")
+		return 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_Metric_InternalError).
+			WithErrorDetails(err.Error())
+	}
+
+	span.SetStatus(codes.Ok, "")
+	if datasetResp == nil {
+		return 0, nil
+	}
+	return datasetResp.TotalCount, nil
+}
+
+func (ms *metricService) getTotalWithScopeRefs(ctx context.Context, filterCondition map[string]any, scopeRefs []string) (int64, error) {
+	srCondition := map[string]any{
+		"field":      "scope_ref",
+		"operation":  "in",
+		"value":      scopeRefs,
+		"value_from": "const",
+	}
+
+	var combinedCondition map[string]any
+	if filterCondition == nil {
+		combinedCondition = srCondition
+	} else {
+		combinedCondition = map[string]any{
+			"operation": "and",
+			"sub_conditions": []map[string]any{
+				filterCondition,
+				srCondition,
+			},
+		}
+	}
+
+	return ms.getMetricDatasetTotal(ctx, combinedCondition)
+}
+
+func (ms *metricService) getTotalWithLargeScopeRefs(ctx context.Context, filterCondition map[string]any, otIDs []string) (int64, error) {
+	total := int64(0)
+	for i := 0; i < len(otIDs); i += interfaces.GET_TOTAL_CONCEPTID_BATCH_SIZE {
+		end := i + interfaces.GET_TOTAL_CONCEPTID_BATCH_SIZE
+		if end > len(otIDs) {
+			end = len(otIDs)
+		}
+
+		batchIDs := otIDs[i:end]
+		batchTotal, err := ms.getTotalWithScopeRefs(ctx, filterCondition, batchIDs)
+		if err != nil {
+			return 0, err
+		}
+
+		total += batchTotal
+	}
+
+	return total, nil
 }
 
 func (ms *metricService) validateMetricStrictExternalDeps(ctx context.Context, tx *sql.Tx, metric *interfaces.MetricDefinition) error {

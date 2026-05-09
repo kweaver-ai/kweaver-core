@@ -13,7 +13,7 @@ With **`--minimum` install**, many auth components are disabled for a simpler la
 In a **full install** (with `auth.enabled=true` and `businessDomain.enabled=true`), ISF's day-to-day **management surface** — users, organizations, roles, models, audit — is handled via the standalone CLI [`@kweaver-ai/kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin), complementary to the end-user `kweaver` CLI shown below on this page.
 
 ```bash
-npm install -g @kweaver-ai/kweaver-admin           # Node.js 18+
+npm install -g @kweaver-ai/kweaver-admin           # Node.js 22+ (align with kweaver-sdk on npm)
 kweaver-admin auth login https://<access-address> -k
 
 kweaver-admin org tree                              # list departments

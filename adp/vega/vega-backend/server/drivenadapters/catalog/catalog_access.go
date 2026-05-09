@@ -284,7 +284,7 @@ func (ca *catalogAccess) GetByIDs(ctx context.Context, ids []string) ([]*interfa
 		span.SetStatus(codes.Error, "Query failed")
 		return []*interfaces.Catalog{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	catalogs := make([]*interfaces.Catalog, 0)
 	for rows.Next() {
@@ -483,7 +483,7 @@ func (ca *catalogAccess) ListIDs(ctx context.Context, params interfaces.Catalogs
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	ids := make([]string, 0)
 	for rows.Next() {
@@ -574,7 +574,7 @@ func (ca *catalogAccess) List(ctx context.Context, params interfaces.CatalogsQue
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	catalogs := make([]*interfaces.Catalog, 0)
 	for rows.Next() {
@@ -669,7 +669,7 @@ func (ca *catalogAccess) ListCatalogSrcsIDs(ctx context.Context, params interfac
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	ids := make([]string, 0)
 	for rows.Next() {
@@ -711,7 +711,7 @@ func (ca *catalogAccess) ListCatalogSrcsByIDs(ctx context.Context, ids []string)
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	entries := make([]*interfaces.ListCatalogEntry, 0)
 	for rows.Next() {
@@ -785,7 +785,7 @@ func (ca *catalogAccess) ListCatalogSrcs(ctx context.Context, params interfaces.
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	entries := make([]*interfaces.ListCatalogEntry, 0)
 	for rows.Next() {

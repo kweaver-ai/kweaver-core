@@ -1,0 +1,6 @@
+sku,name,current_stock,safety_stock,material_risk,supplier_id,bound_skill_id
+MAT-001,Battery Cell,40,100,critical,SUP-1,substitute_swap
+MAT-002,Power Module,30,120,critical,SUP-2,supplier_expedite
+MAT-003,Connector,15,80,critical,SUP-3,standard_replenish
+SUB-001A,Battery Cell Substitute,200,50,normal,SUP-1,
+SUB-001B,Battery Cell Alt,80,40,normal,SUP-1,

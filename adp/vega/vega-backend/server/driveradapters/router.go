@@ -23,11 +23,11 @@ import (
 	"vega-backend/common"
 	"vega-backend/interfaces"
 	"vega-backend/logics/auth"
+	"vega-backend/logics/build_task"
 	"vega-backend/logics/catalog"
 	"vega-backend/logics/connector_type"
 	"vega-backend/logics/dataset"
 	"vega-backend/logics/discover_task"
-	"vega-backend/logics/query"
 	"vega-backend/logics/resource"
 	"vega-backend/logics/resource_data"
 	scheduled_discover_task "vega-backend/logics/scheduled_discover_task"
@@ -40,39 +40,40 @@ type RestHandler interface {
 }
 
 type restHandler struct {
-	appSetting        *common.AppSetting
-	as                interfaces.AuthService
-	cs                interfaces.CatalogService
-	rs                interfaces.ResourceService
-	ds                interfaces.DatasetService
-	cts               interfaces.ConnectorTypeService
-	dts               interfaces.DiscoverTaskService
-	sdtService        interfaces.ScheduledDiscoverTaskService
-	scheduler         *worker.Scheduler
-	rds               interfaces.ResourceDataService
-	querySessionStore interfaces.QuerySessionStore
+	appSetting *common.AppSetting
+	as         interfaces.AuthService
+	cs         interfaces.CatalogService
+	rs         interfaces.ResourceService
+	bts        interfaces.BuildTaskService
+	ds         interfaces.DatasetService
+	cts        interfaces.ConnectorTypeService
+	dts        interfaces.DiscoverTaskService
+	sdtService interfaces.ScheduledDiscoverTaskService
+	scheduler  *worker.Scheduler
+	rds        interfaces.ResourceDataService
 }
 
 // NewRestHandler creates a new RestHandler.
 func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) RestHandler {
 	cs := catalog.NewCatalogService(appSetting)
 	rs := resource.NewResourceService(appSetting)
+	bts := build_task.NewBuildTaskService(appSetting)
 	ds := dataset.NewDatasetService(appSetting)
 	dts := discover_task.NewDiscoverTaskService(appSetting)
 	sdtService := scheduled_discover_task.NewScheduledDiscoverTaskService(appSetting, dts)
 
 	return &restHandler{
-		appSetting:        appSetting,
-		as:                auth.NewAuthService(appSetting),
-		cs:                cs,
-		rs:                rs,
-		ds:                ds,
-		cts:               connector_type.NewConnectorTypeService(appSetting),
-		dts:               dts,
-		sdtService:        sdtService,
-		scheduler:         scheduler,
-		rds:               resource_data.NewResourceDataService(appSetting),
-		querySessionStore: query.NewMemorySessionStore(0),
+		appSetting: appSetting,
+		as:         auth.NewAuthService(appSetting),
+		cs:         cs,
+		rs:         rs,
+		bts:        bts,
+		ds:         ds,
+		cts:        connector_type.NewConnectorTypeService(appSetting),
+		dts:        dts,
+		sdtService: sdtService,
+		scheduler:  scheduler,
+		rds:        resource_data.NewResourceDataService(appSetting),
 	}
 }
 
@@ -96,16 +97,24 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			catalogs.DELETE("/:ids", r.DeleteCatalogsByEx)
 			catalogs.GET("/:ids/health-status", r.GetCatalogHealthStatusByEx)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByEx)
+
+			// 资源发现
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByEx)
+
 			// 定时&策略采集相关
 			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByEx)
 			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByEx)
 			catalogs.POST("/:id/scheduled-discover/:task_id/start", r.StartScheduledDiscoverTaskByEx)
 			catalogs.POST("/:id/scheduled-discover/:task_id/stop", r.StopScheduledDiscoverTaskByEx)
 			catalogs.PUT("/:id/scheduled-discover/:task_id", r.verifyJsonContentType(), r.UpdateScheduledDiscoverTaskByEx)
-			//adp.t_discover_task
+		}
 
-			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByEx)
+		// DiscoverTask APIs - External
+		discoverTasks := apiV1.Group("/discover-tasks")
+		{
+			discoverTasks.GET("", r.ListDiscoverTasksByEx)
+			discoverTasks.GET("/:id", r.GetDiscoverTaskByEx)
+			discoverTasks.DELETE("/:ids", r.DeleteDiscoverTasksByEx)
 		}
 
 		// Resource APIs - External
@@ -124,12 +133,17 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByEx)
 			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByEx)
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByEx)
+		}
 
-			resources.POST("/buildtask/:id", r.CreateBuildTaskByEx)
-			resources.GET("/buildtask/:id/:taskid", r.GetBuildTaskByEx)
-			resources.PUT("/buildtask/:id/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByEx)
-			resources.GET("/buildtask", r.ListBuildTasksByEx)
-			resources.DELETE("/buildtask/:taskids", r.DeleteBuildTasksByEx)
+		// BuildTask APIs - External
+		buildTasks := apiV1.Group("/build-tasks")
+		{
+			buildTasks.POST("", r.verifyJsonContentType(), r.CreateBuildTaskByEx)
+			buildTasks.GET("", r.ListBuildTasksByEx)
+			buildTasks.GET("/:id", r.GetBuildTaskByEx)
+			buildTasks.DELETE("/:ids", r.DeleteBuildTasksByEx)
+			buildTasks.POST("/:id/start", r.StartBuildTaskByEx)
+			buildTasks.POST("/:id/stop", r.StopBuildTaskByEx)
 		}
 
 		// ConnectorType APIs - External
@@ -140,22 +154,8 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			connectorTypes.GET("/:type", r.GetConnectorType)
 			connectorTypes.PUT("/:type", r.verifyJsonContentType(), r.UpdateConnectorType)
 			connectorTypes.DELETE("/:type", r.DeleteConnectorType)
-			connectorTypes.POST("/:type/enabled", r.SetConnectorTypeEnabled)
-		}
-
-		// Query APIs - External
-		queryGroup := apiV1.Group("/query")
-		{
-			queryGroup.POST("/execute", r.verifyJsonContentType(), r.QueryExecuteByEx)
-		}
-
-		// DiscoverTask APIs - External
-		discoverTasks := apiV1.Group("/discover-tasks")
-		{
-			discoverTasks.GET("", r.ListDiscoverTasks)
-			discoverTasks.GET("/by-id/:id", r.GetDiscoverTask)
-			discoverTasks.GET("/by-schedule/:scheduleId", r.GetDiscoverTaskByScheduleId)
-
+			connectorTypes.POST("/:type/enable", r.EnableConnectorType)
+			connectorTypes.POST("/:type/disable", r.DisableConnectorType)
 		}
 	}
 
@@ -172,14 +172,24 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			catalogs.DELETE("/:ids", r.DeleteCatalogsByIn)
 			catalogs.GET("/:ids/health-status", r.GetCatalogHealthStatusByIn)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByIn)
+
+			//
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByIn)
+
 			// 定时&策略采集相关
 			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByIn)
 			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByIn)
 			catalogs.POST("/:id/scheduled-discover/:task_id/start", r.StartScheduledDiscoverTaskByIn)
 			catalogs.POST("/:id/scheduled-discover/:task_id/stop", r.StopScheduledDiscoverTaskByIn)
 			catalogs.PUT("/:id/scheduled-discover/:task_id", r.verifyJsonContentType(), r.UpdateScheduledDiscoverTaskByIn)
-			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByIn)
+		}
+
+		// DiscoverTask APIs - Internal
+		discoverTasks := apiInV1.Group("/discover-tasks")
+		{
+			discoverTasks.GET("", r.ListDiscoverTasksByIn)
+			discoverTasks.GET("/:id", r.GetDiscoverTaskByIn)
+			discoverTasks.DELETE("/:ids", r.DeleteDiscoverTasksByIn)
 		}
 
 		// Resource APIs - Internal
@@ -198,25 +208,17 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByIn)
 			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByIn)
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByIn)
-
-			resources.POST("/buildtask/:id", r.CreateBuildTaskByIn)
-			resources.GET("/buildtask/:id/:taskid", r.GetBuildTaskByIn)
-			resources.PUT("/buildtask/:id/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByIn)
-			resources.GET("/buildtask", r.ListBuildTasksByIn)
-			resources.DELETE("/buildtask/:taskids", r.DeleteBuildTasksByIn)
 		}
 
-		// Query APIs - Internal
-		queryGroup := apiInV1.Group("/query")
+		// BuildTask APIs - Internal
+		buildTasks := apiInV1.Group("/build-tasks")
 		{
-			queryGroup.POST("/execute", r.verifyJsonContentType(), r.QueryExecuteByIn)
-		}
-		// DiscoverTask APIs - Internal
-		discoverTasks := apiInV1.Group("/discover-tasks")
-		{
-			discoverTasks.GET("", r.ListDiscoverTasksByIn)
-			discoverTasks.GET("/by-id/:id", r.GetDiscoverTaskByIn)
-			discoverTasks.GET("/by-schedule/:scheduleId", r.GetDiscoverTaskByScheduleIdByIn)
+			buildTasks.POST("", r.verifyJsonContentType(), r.CreateBuildTaskByIn)
+			buildTasks.GET("", r.ListBuildTasksByIn)
+			buildTasks.GET("/:id", r.GetBuildTaskByIn)
+			buildTasks.DELETE("/:ids", r.DeleteBuildTasksByIn)
+			buildTasks.POST("/:id/start", r.StartBuildTaskByIn)
+			buildTasks.POST("/:id/stop", r.StopBuildTaskByIn)
 		}
 	}
 
