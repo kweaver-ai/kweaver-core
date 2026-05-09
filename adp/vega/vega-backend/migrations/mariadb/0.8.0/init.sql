@@ -399,6 +399,7 @@ CREATE TABLE IF NOT EXISTS t_discover_schedule (
     f_id                      VARCHAR(40) NOT NULL DEFAULT '' COMMENT '调度唯一标识',
     f_catalog_id              VARCHAR(40) NOT NULL DEFAULT '' COMMENT '所属catalog ID',
     f_cron_expr               VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'Cron表达式',
+
     -- 时间配置
     f_start_time              BIGINT(20) NOT NULL DEFAULT 0 COMMENT '开始时间（Unix毫秒时间戳）',
     f_end_time                BIGINT(20) NOT NULL DEFAULT 0 COMMENT '结束时间（Unix毫秒时间戳），0表示无结束时间',

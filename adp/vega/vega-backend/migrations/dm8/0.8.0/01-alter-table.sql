@@ -9,6 +9,7 @@
 
 SET SCHEMA kweaver;
 
+ALTER TABLE t_build_task ADD COLUMN IF NOT EXISTS f_catalog_id VARCHAR(40 CHAR) NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_t_build_task_catalog_id ON t_build_task(f_catalog_id);
 UPDATE t_build_task bt JOIN t_resource r ON bt.f_resource_id = r.f_id SET bt.f_catalog_id = r.f_catalog_id;
 

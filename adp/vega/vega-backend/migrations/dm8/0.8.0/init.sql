@@ -433,6 +433,7 @@ CREATE TABLE IF NOT EXISTS t_discover_schedule (
     f_updater                 VARCHAR(40 CHAR) NOT NULL DEFAULT '',
     f_updater_type            VARCHAR(20 CHAR) NOT NULL DEFAULT '',
     f_update_time             BIGINT NOT NULL DEFAULT 0,
+
     -- 索引
     CLUSTER PRIMARY KEY (f_id)
 );
@@ -440,5 +441,3 @@ CREATE TABLE IF NOT EXISTS t_discover_schedule (
 CREATE INDEX IF NOT EXISTS idx_t_discover_schedule_catalog_id ON t_discover_schedule (f_catalog_id);
 CREATE INDEX IF NOT EXISTS idx_t_discover_schedule_enabled ON t_discover_schedule (f_enabled);
 CREATE INDEX IF NOT EXISTS idx_t_discover_schedule_next_run ON t_discover_schedule (f_next_run);
-
-
