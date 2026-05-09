@@ -12,6 +12,7 @@ KWeaver Core 为**纯后台**平台，请通过 CLI、各语言 SDK 或 HTTP API
 | --- | --- |
 | [安装与部署](install.md) | 环境要求、`deploy.sh` 安装与安装后检查 |
 | [快速开始](quick-start.md) | 从部署到首次 BKN 与智能体操作的端到端路径 |
+| 📒 [Cookbook](cookbook/README.md) | 场景化、可复制可执行的操作手册 |
 
 ---
 

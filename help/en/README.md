@@ -12,6 +12,7 @@ KWeaver Core is a **backend-only** platform. Use the CLI, SDKs, or HTTP APIs to 
 | --- | --- |
 | [Install and deploy](install.md) | Prerequisites, `deploy.sh` install, and post-install checks |
 | [Quick start](quick-start.md) | End-to-end path from deploy to first BKN and agent actions |
+| [Cookbook](cookbook/README.md) | Task-oriented recipes you can copy and run |
 
 ---
 
