@@ -1,4 +1,21 @@
 # Changelog
+## 0.7.1
+
+### Bug Fixes
+
+- Fix built-in tool names to comply with DeepSeek tool naming rules
+  - issue: https://github.com/kweaver-ai/kweaver-core/issues/390
+  - Rename `获取agent详情` to `get_agent_detail` in agent_config.yaml
+  - Remove deprecated `Agent可观测数据查询API` tool (API endpoint offline)
+- Add tool name validation in tool registration to detect non-compliant names early
+  - Validate tool names only contain `a-z`, `A-Z`, `0-9`, `_`, `-` with max 64 chars
+  - Log warnings for non-compliant tool names that may fail with DeepSeek models
+
+### Refactoring & Cleanup
+
+- Optimize built-in tool box descriptions for better clarity
+  - Improve description text for search, memory, agent config, online search, and sandbox tools
+
 ## 0.7.0
 
 ### Features & Improvements

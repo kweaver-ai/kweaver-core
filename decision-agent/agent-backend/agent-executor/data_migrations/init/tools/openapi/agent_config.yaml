@@ -25,7 +25,7 @@ paths:
           schema:
             type: string
             description: Agent Key
-      summary: 获取agent详情
+      summary: get_agent_detail
       deprecated: false
       description: 获取agent详情
       tags:

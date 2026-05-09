@@ -1,3 +1,4 @@
+import re
 from typing import Dict, Optional, TYPE_CHECKING
 
 from dolphin.core.utils.tools import Tool
@@ -16,6 +17,28 @@ from .skill_contract_tools import build_builtin_skill_tools
 
 if TYPE_CHECKING:
     from ...logic.agent_core_logic_v2.agent_core_v2 import AgentCoreV2
+
+
+# DeepSeek tool name 规则：只能包含 a-z, A-Z, 0-9, _ 和 -，最大长度 64
+TOOL_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
+TOOL_NAME_MAX_LENGTH = 64
+
+
+def validate_tool_name(name: str) -> bool:
+    """
+    校验工具名称是否符合 DeepSeek 的 tool naming 规范。
+
+    Args:
+        name: 工具名称
+
+    Returns:
+        bool: 是否符合规范
+    """
+    if not name:
+        return False
+    if len(name) > TOOL_NAME_MAX_LENGTH:
+        return False
+    return bool(TOOL_NAME_PATTERN.match(name))
 
 
 @internal_span()
@@ -77,6 +100,7 @@ async def build_tools(
     }
     """
     tools: Dict[str, Tool] = {}  # tool_name: Tool
+    invalid_tool_names = []  # 记录不合规的工具名称
 
     # 处理API工具
     if skills.tools:
@@ -88,6 +112,15 @@ async def build_tools(
             tool_name = tool_info.get(
                 "name", f"tool_{tool_dict.get('tool_id', 'unknown')}"
             )
+
+            # 校验工具名称是否符合规范
+            if not validate_tool_name(tool_name):
+                invalid_tool_names.append(tool_name)
+                StandLogger.warn(
+                    f"Tool name '{tool_name}' does not conform to DeepSeek naming rules "
+                    f"(only a-z, A-Z, 0-9, _, - allowed, max 64 chars). "
+                    f"This may cause tool calling failures with DeepSeek models."
+                )
 
             if tool_name in tools:
                 StandLogger.warn(
@@ -104,6 +137,15 @@ async def build_tools(
 
             agent_name = agent_info.get("name", f"agent_{agent.agent_key}")
 
+            # 校验工具名称是否符合规范
+            if not validate_tool_name(agent_name):
+                invalid_tool_names.append(agent_name)
+                StandLogger.warn(
+                    f"Agent tool name '{agent_name}' does not conform to DeepSeek naming rules "
+                    f"(only a-z, A-Z, 0-9, _, - allowed, max 64 chars). "
+                    f"This may cause tool calling failures with DeepSeek models."
+                )
+
             if agent_name in tools:
                 StandLogger.warn(
                     f"agent_name {agent_name} already exists, use agent_key {agent.agent_key} instead"
@@ -119,6 +161,15 @@ async def build_tools(
             mcp_tools = await get_mcp_tools(mcp_dict)
 
             for tool_name, tool in mcp_tools.items():
+                # 校验工具名称是否符合规范
+                if not validate_tool_name(tool_name):
+                    invalid_tool_names.append(tool_name)
+                    StandLogger.warn(
+                        f"MCP tool name '{tool_name}' does not conform to DeepSeek naming rules "
+                        f"(only a-z, A-Z, 0-9, _, - allowed, max 64 chars). "
+                        f"This may cause tool calling failures with DeepSeek models."
+                    )
+
                 if tool_name in tools:
                     StandLogger.warn(
                         f"mcp_tool_name {tool_name} already exists, use mcp_tool_id {tool.name} instead"
@@ -146,6 +197,13 @@ async def build_tools(
     else:
         StandLogger.info_log(
             "[build_tools] Built-in skill contract tools are disabled by configuration"
+        )
+
+    # 汇总记录不合规的工具名称
+    if invalid_tool_names:
+        StandLogger.warn(
+            f"[build_tools] Found {len(invalid_tool_names)} tool name(s) not conforming to DeepSeek naming rules: "
+            f"{invalid_tool_names}. These tools may fail when used with DeepSeek models."
         )
 
     return tools
