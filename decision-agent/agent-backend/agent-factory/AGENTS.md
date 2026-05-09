@@ -209,6 +209,8 @@ func TestFunction_NonLocalDevMode(t *testing.T) {
 ## Important Notes
 
 - Always run `make all` before committing
+- Do not manually run formatters such as `gofmt`, `goimports`, `ruff format`, or `black`; only Makefile targets may trigger formatting when explicitly requested
+- Do not stage changes automatically with commands such as `git add` or `git rm --cached`; leave staging to the user unless explicitly requested
 - Use singleton pattern with `sync.Once` for service/repo instances
 - Follow hexagonal architecture: port interfaces separate domain from infrastructure
 - Use context propagation for request tracing

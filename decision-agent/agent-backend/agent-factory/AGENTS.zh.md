@@ -209,6 +209,8 @@ func TestFunction_NonLocalDevMode(t *testing.T) {
 ## 重要说明
 
 - 提交前务必运行 `make all`
+- 不要手动运行 `gofmt`、`goimports`、`ruff format`、`black` 等格式化命令；只有在用户明确要求执行 Makefile 目标时，才允许 Makefile 自身触发格式化
+- 不要自动执行 `git add`、`git rm --cached` 等暂存操作；除非用户明确要求，否则所有暂存交给用户处理
 - 服务/仓库实例使用 `sync.Once` 单例模式
 - 遵循六边形架构：端口接口分离领域和基础设施
 - 使用上下文传播进行请求追踪
