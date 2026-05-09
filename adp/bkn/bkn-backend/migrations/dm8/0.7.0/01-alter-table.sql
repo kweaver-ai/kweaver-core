@@ -70,13 +70,4 @@ UPDATE t_concept_group SET f_bkn_raw_content = '' WHERE f_bkn_raw_content IS NUL
 ALTER TABLE t_concept_group MODIFY f_bkn_raw_content TEXT NOT NULL;
 
 
--- ------------------------------------------
--- t_risk_type
--- ------------------------------------------
-ALTER TABLE t_risk_type MODIFY f_comment TEXT NOT NULL;
-
-ALTER TABLE t_risk_type ADD f_bkn_raw_content TEXT;
-
-UPDATE t_risk_type SET f_bkn_raw_content = '' WHERE f_bkn_raw_content IS NULL;
-
-ALTER TABLE t_risk_type MODIFY f_bkn_raw_content TEXT NOT NULL;
+-- t_risk_type 的重建逻辑见同目录 02-rebuild-risk-type.sql

@@ -63,7 +63,7 @@ func NewDiscoverTaskService(appSetting *common.AppSetting) interfaces.DiscoverTa
 // 返回值:
 //   - string: 创建的任务ID
 //   - error: 错误信息，如果创建失败则返回错误
-func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, scheduledTask ...string) (string, error) {
+func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, discoverSchedule ...string) (string, error) {
 	// 使用分布式追踪系统创建一个span，用于追踪服务调用
 	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.Create",
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -78,16 +78,16 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, sc
 	// 处理可选的taskType参数
 	// 默认根据上下文判断：如果是从定时任务服务调用，则默认为scheduled，否则为manual
 	triggerType := interfaces.DiscoverTaskTriggerManual
-	scheduledId := ""
+	scheduleID := ""
 	strategies := []string{}
-	if len(scheduledTask) > 0 && scheduledTask[0] != "" {
-		triggerType = scheduledTask[0]
-		if len(scheduledTask) > 1 {
-			scheduledId = scheduledTask[1]
+	if len(discoverSchedule) > 0 && discoverSchedule[0] != "" {
+		triggerType = discoverSchedule[0]
+		if len(discoverSchedule) > 1 {
+			scheduleID = discoverSchedule[1]
 		}
-		if len(scheduledTask) > 2 && scheduledTask[2] != "" {
+		if len(discoverSchedule) > 2 && discoverSchedule[2] != "" {
 			// 反序列化 strategies 字符串为 []string
-			if err := sonic.Unmarshal([]byte(scheduledTask[2]), &strategies); err != nil {
+			if err := sonic.Unmarshal([]byte(discoverSchedule[2]), &strategies); err != nil {
 				logger.Warnf("Failed to unmarshal strategies: %v", err)
 				strategies = []string{}
 			}
@@ -97,7 +97,7 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, sc
 	task := &interfaces.DiscoverTask{
 		ID:          xid.New().String(),
 		CatalogID:   catalogID,
-		ScheduleID: scheduledId,
+		ScheduleID:  scheduleID,
 		Strategies:  strategies,
 		TriggerType: triggerType,
 		Status:      interfaces.DiscoverTaskStatusPending,
@@ -141,7 +141,7 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, sc
 	return task.ID, nil
 }
 
-// CreateScheduled method removed - scheduled tasks are now managed by ScheduledDiscoverTaskService
+// CreateScheduled method removed - scheduled tasks are now managed by DiscoverScheduleService
 
 // GetByID retrieves a DiscoverTask by ID.
 func (dts *discoverTaskService) GetByID(ctx context.Context, id string) (*interfaces.DiscoverTask, error) {

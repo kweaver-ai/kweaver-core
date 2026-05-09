@@ -13,25 +13,25 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"vega-backend/interfaces"
-	mock_interfaces "vega-backend/interfaces/mock"
+	vmock "vega-backend/interfaces/mock"
 )
 
 // newTestService 使用 mockgen 生成的 mock 构建 resourceService
 func newTestService(t *testing.T) (*resourceService,
-	*mock_interfaces.MockResourceAccess,
-	*mock_interfaces.MockPermissionService,
-	*mock_interfaces.MockDatasetService,
-	*mock_interfaces.MockUserMgmtService,
-	*mock_interfaces.MockCatalogService,
-	*mock_interfaces.MockBuildTaskAccess) {
+	*vmock.MockResourceAccess,
+	*vmock.MockPermissionService,
+	*vmock.MockDatasetService,
+	*vmock.MockUserMgmtService,
+	*vmock.MockCatalogService,
+	*vmock.MockBuildTaskAccess) {
 
 	ctrl := gomock.NewController(t)
-	mockRA := mock_interfaces.NewMockResourceAccess(ctrl)
-	mockPS := mock_interfaces.NewMockPermissionService(ctrl)
-	mockDS := mock_interfaces.NewMockDatasetService(ctrl)
-	mockUMS := mock_interfaces.NewMockUserMgmtService(ctrl)
-	mockCS := mock_interfaces.NewMockCatalogService(ctrl)
-	mockBTA := mock_interfaces.NewMockBuildTaskAccess(ctrl)
+	mockRA := vmock.NewMockResourceAccess(ctrl)
+	mockPS := vmock.NewMockPermissionService(ctrl)
+	mockDS := vmock.NewMockDatasetService(ctrl)
+	mockUMS := vmock.NewMockUserMgmtService(ctrl)
+	mockCS := vmock.NewMockCatalogService(ctrl)
+	mockBTA := vmock.NewMockBuildTaskAccess(ctrl)
 
 	rs := &resourceService{
 		ra:  mockRA,

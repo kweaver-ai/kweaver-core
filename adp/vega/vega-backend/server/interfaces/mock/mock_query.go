@@ -17,41 +17,41 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockSQLQueryService is a mock of SQLQueryService interface.
-type MockSQLQueryService struct {
+// MockRawQueryService is a mock of RawQueryService interface.
+type MockRawQueryService struct {
 	ctrl     *gomock.Controller
-	recorder *MockSQLQueryServiceMockRecorder
+	recorder *MockRawQueryServiceMockRecorder
 	isgomock struct{}
 }
 
-// MockSQLQueryServiceMockRecorder is the mock recorder for MockSQLQueryService.
-type MockSQLQueryServiceMockRecorder struct {
-	mock *MockSQLQueryService
+// MockRawQueryServiceMockRecorder is the mock recorder for MockRawQueryService.
+type MockRawQueryServiceMockRecorder struct {
+	mock *MockRawQueryService
 }
 
-// NewMockSQLQueryService creates a new mock instance.
-func NewMockSQLQueryService(ctrl *gomock.Controller) *MockSQLQueryService {
-	mock := &MockSQLQueryService{ctrl: ctrl}
-	mock.recorder = &MockSQLQueryServiceMockRecorder{mock}
+// NewMockRawQueryService creates a new mock instance.
+func NewMockRawQueryService(ctrl *gomock.Controller) *MockRawQueryService {
+	mock := &MockRawQueryService{ctrl: ctrl}
+	mock.recorder = &MockRawQueryServiceMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockSQLQueryService) EXPECT() *MockSQLQueryServiceMockRecorder {
+func (m *MockRawQueryService) EXPECT() *MockRawQueryServiceMockRecorder {
 	return m.recorder
 }
 
 // Execute mocks base method.
-func (m *MockSQLQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryRequest) (*interfaces.SQLQueryResponse, error) {
+func (m *MockRawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryRequest) (*interfaces.RawQueryResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Execute", ctx, req)
-	ret0, _ := ret[0].(*interfaces.SQLQueryResponse)
+	ret0, _ := ret[0].(*interfaces.RawQueryResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Execute indicates an expected call of Execute.
-func (mr *MockSQLQueryServiceMockRecorder) Execute(ctx, req any) *gomock.Call {
+func (mr *MockRawQueryServiceMockRecorder) Execute(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockSQLQueryService)(nil).Execute), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockRawQueryService)(nil).Execute), ctx, req)
 }

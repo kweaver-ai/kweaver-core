@@ -120,10 +120,10 @@ CREATE TABLE IF NOT EXISTS t_catalog (
     f_health_check_result     TEXT NOT NULL COMMENT '健康检查结果',
 
     -- 审计字段
-    f_creator                 VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建者id',
+    f_creator                 VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
     f_creator_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '创建者类型',
     f_create_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间',
-    f_updater                 VARCHAR(128) NOT NULL DEFAULT ''COMMENT '更新者id',
+    f_updater                 VARCHAR(40) NOT NULL DEFAULT '' COMMENT '更新者id',
     f_updater_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '更新者类型',
     f_update_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '更新时间',
 
@@ -137,37 +137,7 @@ CREATE TABLE IF NOT EXISTS t_catalog (
 
 
 -- ==========================================
--- 2. t_catalog_discover_policy 发现与变更策略表
--- ==========================================
-CREATE TABLE IF NOT EXISTS t_catalog_discover_policy (
-    f_id                      VARCHAR(40) NOT NULL DEFAULT '' COMMENT '所属catalog ID',
-
-    -- 状态
-    f_enabled                 BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否启用',
-
-    -- 发现策略配置
-    f_discover_mode          VARCHAR(20) NOT NULL DEFAULT 'manual' COMMENT '数据资源发现模式: manual, scheduled, event_driven',
-    f_discover_cron          VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'scheduled模式的cron表达式',
-    f_discover_config        MEDIUMTEXT NOT NULL COMMENT '发现策略详细配置',
-
-    -- 变更处理策略
-    f_on_resource_added       VARCHAR(20) NOT NULL DEFAULT 'auto_register' COMMENT '新增数据资源策略: auto_register, pending_review, ignore',
-    f_on_resource_removed     VARCHAR(20) NOT NULL DEFAULT 'mark_stale' COMMENT '删除数据资源策略: auto_remove, mark_stale, ignore',
-    f_on_schema_changed       VARCHAR(20) NOT NULL DEFAULT 'auto_update' COMMENT 'Schema变更策略: auto_update, pending_review, ignore',
-    f_on_file_content_changed VARCHAR(20) NOT NULL DEFAULT 'pending_review' COMMENT '文件内容变更策略: pending_review, ignore',
-
-    -- 策略详细配置
-    f_change_policy_config    MEDIUMTEXT NOT NULL COMMENT '变更策略详细配置（如通知设置、审批流程等）',
-
-    -- 索引
-    PRIMARY KEY (f_id),
-    INDEX idx_discover_mode (f_discover_mode),
-    INDEX idx_enabled (f_enabled)
-)  ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT='Catalog发现与变更策略配置表';
-
-
--- ==========================================
--- 3. t_resource 数据资源主表
+-- 2. t_resource 数据资源主表
 -- ==========================================
 CREATE TABLE IF NOT EXISTS t_resource (
     -- 主键与基础信息
@@ -209,10 +179,10 @@ CREATE TABLE IF NOT EXISTS t_resource (
     f_sync_error_message      TEXT NOT NULL COMMENT '同步错误信息',
 
     -- 审计字段
-    f_creator                 VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建者id',
+    f_creator                 VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
     f_creator_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '创建者类型',
     f_create_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间',
-    f_updater                 VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新者id',
+    f_updater                 VARCHAR(40) NOT NULL DEFAULT '' COMMENT '更新者id',
     f_updater_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '更新者类型',
     f_update_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '更新时间',
 
@@ -354,7 +324,7 @@ CREATE TABLE IF NOT EXISTS t_discover_task (
     -- 主键与关联信息
     f_id                      VARCHAR(40) NOT NULL DEFAULT '' COMMENT '任务唯一标识',
     f_catalog_id              VARCHAR(40) NOT NULL DEFAULT '' COMMENT '所属catalog ID',
-    f_scheduled_id            VARCHAR(40) NOT NULL DEFAULT '' COMMENT '定时发现任务表ID',
+    f_schedule_id             VARCHAR(40) NOT NULL DEFAULT '' COMMENT '关联的 DiscoverSchedule ID',
     f_strategies              VARCHAR(100) NOT NULL DEFAULT '' COMMENT '策略',
     f_trigger_type            VARCHAR(20) NOT NULL DEFAULT 'manual' COMMENT '触发类型: manual(立即执行), scheduled(定时驱动)',
 
@@ -371,14 +341,15 @@ CREATE TABLE IF NOT EXISTS t_discover_task (
     f_result                  MEDIUMTEXT NOT NULL COMMENT '发现结果（JSON格式，包含发现的资源统计等）',
 
     -- 审计字段
-    f_creator                 VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建者id',
+    f_creator                 VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
     f_creator_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '创建者类型',
     f_create_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间',
 
     -- 索引
     PRIMARY KEY (f_id),
     INDEX idx_catalog_id (f_catalog_id),
-    INDEX idx_status (f_status)
+    INDEX idx_status (f_status),
+    INDEX idx_schedule_id (f_schedule_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT='发现任务表，记录异步资源发现任务的状态和结果';
 
 -- ==========================================
@@ -399,12 +370,12 @@ CREATE TABLE IF NOT EXISTS t_build_task (
     f_error_msg               TEXT DEFAULT NULL COMMENT '错误信息',
 
     -- 审计字段
-    f_creator_id              VARCHAR(40) NOT NULL COMMENT '创建人ID',
-    f_creator_type            VARCHAR(20) NOT NULL COMMENT '创建人类型',
-    f_create_time             BIGINT NOT NULL COMMENT '创建时间',
-    f_updater_id              VARCHAR(40) NOT NULL COMMENT '更新人ID',
-    f_updater_type            VARCHAR(20) NOT NULL COMMENT '更新人类型',
-    f_update_time             BIGINT NOT NULL COMMENT '更新时间',
+    f_creator                 VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
+    f_creator_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '创建者类型',
+    f_create_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间',
+    f_updater                 VARCHAR(40) NOT NULL DEFAULT '' COMMENT '更新者id',
+    f_updater_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '更新者类型',
+    f_update_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '更新时间',
 
     f_embedding_fields        VARCHAR(255) NOT NULL DEFAULT '' COMMENT '需要向量化嵌入字段',
     f_build_key_fields        VARCHAR(255) NOT NULL DEFAULT '' COMMENT '构建中依赖的特殊键字段',
@@ -421,18 +392,19 @@ CREATE TABLE IF NOT EXISTS t_build_task (
 
 
 -- ==========================================
--- 9. t_scheduled_discover_task 定时发现任务表
+-- 9. t_discover_schedule 资源发现调度表
 -- ==========================================
-CREATE TABLE IF NOT EXISTS t_scheduled_discover_task (
+CREATE TABLE IF NOT EXISTS t_discover_schedule (
     -- 主键与关联信息
-    f_id                      VARCHAR(40) NOT NULL DEFAULT '' COMMENT '任务唯一标识',
+    f_id                      VARCHAR(40) NOT NULL DEFAULT '' COMMENT '调度唯一标识',
     f_catalog_id              VARCHAR(40) NOT NULL DEFAULT '' COMMENT '所属catalog ID',
     f_cron_expr               VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'Cron表达式',
+
     -- 时间配置
     f_start_time              BIGINT(20) NOT NULL DEFAULT 0 COMMENT '开始时间（Unix毫秒时间戳）',
     f_end_time                BIGINT(20) NOT NULL DEFAULT 0 COMMENT '结束时间（Unix毫秒时间戳），0表示无结束时间',
 
-    -- 任务状态
+    -- 调度状态
     f_enabled                 TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否启用: 0-禁用, 1-启用',
     f_strategies              VARCHAR(100) NOT NULL DEFAULT '' COMMENT '策略',
 
@@ -440,10 +412,10 @@ CREATE TABLE IF NOT EXISTS t_scheduled_discover_task (
     f_next_run                BIGINT(20) NOT NULL DEFAULT 0 COMMENT '下次执行时间（Unix毫秒时间戳）',
 
     -- 审计字段
-    f_creator_id              VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建者id',
+    f_creator                 VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
     f_creator_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '创建者类型',
     f_create_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间',
-    f_updater_id              VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新者id',
+    f_updater                 VARCHAR(40) NOT NULL DEFAULT '' COMMENT '更新者id',
     f_updater_type            VARCHAR(20) NOT NULL DEFAULT '' COMMENT '更新者类型',
     f_update_time             BIGINT(20) NOT NULL DEFAULT 0 COMMENT '更新时间',
 
@@ -452,4 +424,4 @@ CREATE TABLE IF NOT EXISTS t_scheduled_discover_task (
     INDEX idx_catalog_id (f_catalog_id),
     INDEX idx_enabled (f_enabled),
     INDEX idx_next_run (f_next_run)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT='定时发现任务表，记录定时资源发现任务的配置和执行状态';
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT='资源发现调度表，记录定时资源发现的配置和执行状态';

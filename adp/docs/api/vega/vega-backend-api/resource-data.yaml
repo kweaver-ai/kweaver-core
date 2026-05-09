@@ -1,0 +1,385 @@
+---
+openapi: 3.1.1
+info:
+  title: Resource Data
+  description: |
+    Vega Backend Resource 数据子资源（`/resources/{id}/data`）相关 API。
+
+    本规范覆盖两类语义：
+
+    1. **通用资源数据查询**：`POST /resources/{id}/data` + `X-HTTP-Method-Override: GET`，
+       对任意 category 的 Resource 执行数据查询（filter + 分页）。
+    2. **dataset documents 的写/删/单条访问**：`PUT` / `GET single` / `DELETE` 与
+       `POST` 的 `Override: POST` / `Override: DELETE` 分支，仅对 `Resource.category=dataset` 生效。
+
+    **dataset 不顶层化**：dataset 在系统中只是 `Resource.category=dataset` 的特化形态，
+    无独立 ID 体系。CRUD 走 `/resources/{id}`，仅 documents 子资源（即本规范）独立 API surface。
+
+    端点设计遵循 [vega-backend/CLAUDE.md] 的"端点设计规则"。`POST /data` 用
+    `X-HTTP-Method-Override` 头多分发，是为了兼容现有 query 语义并在同一条路径上
+    暴露 create / delete-by-filter，避免在仓库内引入新的"动作端点"形态。
+
+    **错误码复用 Resource 系列**：本规范不引入 `Dataset.*` 专属错误码；单条文档不存在
+    与 resource 不存在共用 `VegaBackend.Resource.NotFound`，靠 `error_details` 区分。
+  version: 0.1.0
+servers:
+  - url: /api/vega-backend/v1
+paths:
+  /api/vega-backend/v1/resources/{id}/data:
+    parameters:
+      - name: id
+        description: Resource ID
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Resource 数据多分发端点
+      description: |
+        **必须**带 `X-HTTP-Method-Override` 头，值是 `GET` / `POST` / `DELETE` 之一
+        （大小写不敏感）；缺失或值非法返回 400 `VegaBackend.InvalidParameter.OverrideMethod`。
+
+        三种分支：
+
+        | Override | 行为 | category 限制 | body schema |
+        |---|---|---|---|
+        | `GET` | 列表 / 查询文档 | 任意（兼容现有通用查询） | `ResourceDataQueryParams` |
+        | `POST` | 批量创建文档 | **dataset 强制** | `DocumentArray`（每条 id 可选，无则后端生成） |
+        | `DELETE` | 按 filter 删除文档 | **dataset 强制** | `ResourceDataQueryParams`（`filter_condition` 必填非空） |
+
+        **`Override: GET` 响应**：200 + `{ entries, total_count? }`。`total_count` 仅在
+        `ResourceDataQueryParams.need_total=true` 时返回（保留现有行为）。
+
+        **`Override: POST` 响应**：201 + `{ ids: [...] }`。后端为无 id 的文档生成 id。
+
+        **`Override: DELETE` 响应**：204。空 `filter_condition` 拒绝 400 避免误删全表。
+
+        非 dataset category 的 resource 调 Override=POST/DELETE → 400
+        `VegaBackend.Resource.InternalError.InvalidCategory`。
+      parameters:
+        - name: X-HTTP-Method-Override
+          description: 必填；值为 GET / POST / DELETE 之一
+          in: header
+          required: true
+          schema:
+            type: string
+            enum:
+              - GET
+              - POST
+              - DELETE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/ResourceDataQueryParams"
+                - $ref: "#/components/schemas/DocumentArray"
+      responses:
+        "200":
+          description: Override=GET 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListResponse"
+        "201":
+          description: Override=POST 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdsResponse"
+        "204":
+          description: Override=DELETE 删除成功
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      summary: 批量 update（upsert）文档
+      description: |
+        批量更新 dataset 文档，**id 强制**：body 数组中每条文档必须带 `id` 字段，缺失整批拒绝。
+
+        语义：upsert——id 存在则替换，不存在则按该 id 创建（service 层调 `UpsertDocuments`）。
+
+        category 限制：仅 `dataset`，否则 400 `VegaBackend.Resource.InternalError.InvalidCategory`。
+        空数组 body 拒绝 400 `VegaBackend.InvalidParameter.RequestBody`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentArray"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/resources/{id}/data/{doc_ids}:
+    parameters:
+      - name: id
+        description: Resource ID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: doc_ids
+        description: |
+          文档 ID 列表，逗号分隔（单条即长度 1 的退化情形）。
+          缺失 id 静默跳过；本端点不接受 `?ignore_missing` 参数。
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: 按 ids 批量删除 dataset 文档（best-effort）
+      description: |
+        批量删除 dataset 文档。**best-effort 语义**：
+        - 缺失 id 静默跳过，不返回 404 / 4xx
+        - 不接受 `ignore_missing` 选项
+
+        与 `/build-tasks/{ids}` / `/discover-tasks/{ids}` 的"整体事务 + ignore_missing"
+        不同；documents 场景的 missing 容忍度高，统一行为更简洁。
+
+        category 限制：仅 `dataset`。
+      responses:
+        "204":
+          description: 删除成功
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/resources/{id}/data/{doc_id}:
+    parameters:
+      - name: id
+        description: Resource ID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: doc_id
+        description: 文档 ID
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: 获取单条文档
+      description: |
+        category 限制：仅 `dataset`。
+
+        文档不存在返回 404 `VegaBackend.Resource.NotFound`（与 resource 不存在共用同一
+        errcode；靠 `error_details: "document {doc_id} not found"` 区分）。
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      summary: 单条 update（upsert）文档
+      description: |
+        单条文档更新。**doc_id 以 path 为准**——body 不需要 `id` 字段，即使携带也以 path
+        覆盖（path 与 body id 不一致时仅记 warn log，不报错）。
+
+        语义同批量 PUT：upsert（id 存在则替换，不存在则按该 id 创建）。
+
+        category 限制：仅 `dataset`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Document"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  responses:
+    BadRequest:
+      description: |
+        请求参数 / 请求体非法。常见 errcode：
+        - `VegaBackend.InvalidParameter.OverrideMethod`：POST 缺/错 Override 头
+        - `VegaBackend.InvalidParameter.RequestBody`：body schema / 必填字段不合法
+        - `VegaBackend.InvalidParameter.FilterCondition`：filter_condition 解析失败
+        - `VegaBackend.Resource.InternalError.InvalidCategory`：写/删/单条 GET 操作针对非 dataset resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: 未授权（OAuth Token 校验失败）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: |
+        Resource 或文档不存在。errcode `VegaBackend.Resource.NotFound`；
+        通过 `error_details` 字符串区分是 resource 还是 document 找不到。
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotAcceptable:
+      description: Content-Type 不是 application/json
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: 服务内部错误（如底层 OpenSearch / 索引故障）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      description: |
+        统一错误响应体。由 `kweaver-go-lib/rest.BaseError` JSON 序列化得到，
+        所有非 2xx 响应均返回该结构。
+      type: object
+      required:
+        - error_code
+        - description
+        - solution
+        - error_link
+        - error_details
+      properties:
+        error_code:
+          description: 错误码
+          type: string
+        description:
+          description: 错误描述（按请求语言本地化）
+          type: string
+        solution:
+          description: 解决方法（按请求语言本地化）
+          type: string
+        error_link:
+          description: 错误文档链接
+          type: string
+        error_details:
+          description: 详细内容，类型不固定（字符串、对象、数组等）；无详情时为空字符串
+    Document:
+      description: |
+        文档对象。content 字段集开放，由具体 dataset schema 决定。
+        - 单条 PUT 时不应携带 `id`；如携带，以 path 为准（仅记 warn log）。
+        - 批量 PUT 时**必须**携带 `id`。
+        - 批量 POST（创建）时 `id` 可选，无则后端生成。
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          description: 文档 ID
+          type: string
+    DocumentArray:
+      description: 文档数组
+      type: array
+      items:
+        $ref: "#/components/schemas/Document"
+    ResourceDataQueryParams:
+      description: |
+        查询 / 删除参数。`Override: GET` 用 filter+分页查询；`Override: DELETE` 用
+        `filter_condition` 删除（filter 必须非空，否则 400）。
+      type: object
+      properties:
+        filter_condition:
+          description: |
+            过滤条件，结构由 `FilterCondCfg` 决定。Override=DELETE 时必填且非空。
+          type: object
+          additionalProperties: true
+        offset:
+          description: 分页偏移量，>=0
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+        limit:
+          description: 每页数量
+          type: integer
+          format: int64
+          default: 20
+        sort:
+          description: 排序字段
+          type: string
+        direction:
+          description: 排序方向
+          type: string
+          enum:
+            - asc
+            - desc
+        need_total:
+          description: 是否在响应里携带 total_count
+          type: boolean
+          default: false
+    ListResponse:
+      description: |
+        查询响应。`total_count` 仅在请求 `need_total=true` 时返回。
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          description: 文档条目
+          type: array
+          items:
+            $ref: "#/components/schemas/Document"
+        total_count:
+          description: 总条数（仅 need_total=true 时返回）
+          type: integer
+          format: int64
+    IdsResponse:
+      description: 写入操作的响应，含成功的文档 ID 数组
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          description: 文档 ID 列表
+          type: array
+          items:
+            type: string

@@ -12,8 +12,8 @@ const (
 	QueryType_Stream   = "stream"   // 流式查询
 )
 
-// SQLQueryRequest SQL查询请求
-type SQLQueryRequest struct {
+// RawQueryRequest SQL查询请求
+type RawQueryRequest struct {
 	Query        any    `json:"query"`                   // SQL查询语句（字符串）或OpenSearch DSL查询（JSON对象）
 	QueryType    string `json:"query_type,omitempty"`    // 可选，指定查询类型（如"standard"、"stream"）
 	QueryID      string `json:"query_id,omitempty"`      // 可选，指定查询 ID，用于游标 session
@@ -22,8 +22,8 @@ type SQLQueryRequest struct {
 	QueryTimeout int    `json:"query_timeout,omitempty"` // 查询超时时间（秒），默认60，最小1，最大3600
 }
 
-// SQLQueryResponse SQL查询响应
-type SQLQueryResponse struct {
+// RawQueryResponse SQL查询响应
+type RawQueryResponse struct {
 	Columns    []ColumnInfo     `json:"columns"`     // 列信息
 	Entries    []map[string]any `json:"entries"`     // 查询结果
 	Stats      QueryStats       `json:"stats"`       // 查询统计
@@ -47,8 +47,8 @@ type QueryStats struct {
 
 //go:generate mockgen -source ../interfaces/query.go -destination ../interfaces/mock/mock_query.go
 
-// SQLQueryService SQL查询服务接口
-type SQLQueryService interface {
+// RawQueryService SQL查询服务接口
+type RawQueryService interface {
 	// Execute 执行SQL查询
-	Execute(ctx context.Context, req *SQLQueryRequest) (*SQLQueryResponse, error)
+	Execute(ctx context.Context, req *RawQueryRequest) (*RawQueryResponse, error)
 }
