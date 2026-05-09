@@ -249,7 +249,7 @@ paths:
         与 `health-status`（异步定时检查的最近结果）不同，本端点是**同步实时探测**。
 
         探测结果通过响应体 `success` 字段返回；连不通**不**视为 HTTP 错误：
-        - 连通 → 200 `{ success: true, latency_ms }`
+        - 连通 → 200 `{ success: true, message }`
         - 连不通 → 200 `{ success: false, message }`
         - 非 2xx 仅用于"请求 / 鉴权 / 服务内部"问题，与目标连通性无关。
       responses:
@@ -497,7 +497,3 @@ components:
         message:
           description: 详情（失败时为错误信息）
           type: string
-        latency_ms:
-          description: 探测耗时（毫秒）
-          type: integer
-          format: int64
