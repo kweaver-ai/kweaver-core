@@ -92,7 +92,7 @@ kweaver call '/api/agent-operator-integration/v1/tool-box/list?name=contextloade
 
 (This differs from `kweaver context-loader tools`: the former lists Operator toolboxes; the latter lists MCP tools.)
 
-A minimal “analysis assistant” Agent import template is at [`sample-agent.import.json`](../examples/sample-agent.import.json).
+A minimal “analysis assistant” Agent import template is at [`sample-agent.import.json`](./examples/sample-agent.import.json).
 
 If later commands return empty results, the domain may be wrong. The next two commands — **`kweaver config list-bd`** and **`kweaver config set-bd`** — require the platform’s **business-domain management service**. **`--minimum` / minimal installs omit that service**, so **these two CLI subcommands are not available** (e.g. `list-bd` returns **404**). That does **not** mean there is no business domain or that `config show` is wrong — on minimal installs **do not run** the commands below; trust `config show`. Use them only on a **full install** when you need to **list or switch** among multiple domains:
 

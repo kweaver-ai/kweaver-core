@@ -1,4 +1,4 @@
-# 示例与模板
+# 示例与模板（中文版）
 
 ## `sample-agent.import.json`
 

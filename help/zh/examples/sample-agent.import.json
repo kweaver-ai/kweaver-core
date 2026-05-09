@@ -1,0 +1,25 @@
+{
+  "agents": [
+    {
+      "id": "",
+      "name": "分析助手",
+      "key": "minimal-analysis-assistant-context-loader",
+      "profile": "轻量分析 / 检索助手：无 Dolphin；已预绑 Context Loader 工具箱内全部工具（与仓库 context_loader_toolset.adp 一致）。导入后请在 Studio 替换模型名并绑定业务知识网络后发布。",
+      "product_key": "dip",
+      "avatar_type": 1,
+      "avatar": "5",
+      "status": "unpublished",
+      "is_built_in": 0,
+      "is_system_agent": 0,
+      "created_at": 0,
+      "updated_at": 0,
+      "created_by": "",
+      "updated_by": "",
+      "deleted_at": 0,
+      "deleted_by": "",
+      "config": "{\"input\":{\"fields\":[{\"name\":\"query\",\"type\":\"string\",\"desc\":\"用户问题\"},{\"name\":\"history\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"header\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"self_config\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"tool\",\"type\":\"object\",\"desc\":\"\"}],\"rewrite\":{\"enable\":false,\"llm_config\":{\"id\":\"\",\"name\":\"REPLACE_WITH_YOUR_LLM_NAME\",\"model_type\":\"llm\",\"temperature\":0.5,\"top_p\":1,\"top_k\":1,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":4096}},\"augment\":{\"enable\":false,\"data_source\":{\"kg\":[]}}},\"system_prompt\":\"你是数据分析与知识检索助手。\\n在 Studio 中为该智能体绑定业务知识网络。导入配置已包含 Context Loader 工具箱中的全部工具（ID 与平台导入的 contextloader 工具集一致）；请优先使用工具返回的事实作答，无工具结果时不要编造业务数据。\\n回答力求简洁，必要时用列表或小标题组织结论。\\n\",\"dolphin\":\"\",\"is_dolphin_mode\":0,\"data_source\":{\"kg\":[],\"doc\":[],\"metric\":[],\"kn_entry\":[],\"knowledge_network\":[],\"advanced_config\":{\"kg\":null,\"doc\":null}},\"skills\":{\"tools\":[{\"tool_id\":\"05275bb1-46e2-4727-9c6f-97d9ea0af94b\",\"tool_box_id\":\"e521d454-4a0b-4dc9-8a28-d0986de1cef9\",\"tool_timeout\":0,\"tool_input\":[],\"intervention\":false,\"intervention_confirmation_message\":\"\",\"result_process_strategies\":null},{\"tool_id\":\"2fd071fa-a696-4fee-91e1-5b2dc190e88b\",\"tool_box_id\":\"e521d454-4a0b-4dc9-8a28-d0986de1cef9\",\"tool_timeout\":0,\"tool_input\":[],\"intervention\":false,\"intervention_confirmation_message\":\"\",\"result_process_strategies\":null},{\"tool_id\":\"52b35175-cee3-41ea-91c0-1d70e8371f9c\",\"tool_box_id\":\"e521d454-4a0b-4dc9-8a28-d0986de1cef9\",\"tool_timeout\":0,\"tool_input\":[],\"intervention\":false,\"intervention_confirmation_message\":\"\",\"result_process_strategies\":null},{\"tool_id\":\"5467284c-f25a-4665-8f05-a320dd6e1ec3\",\"tool_box_id\":\"e521d454-4a0b-4dc9-8a28-d0986de1cef9\",\"tool_timeout\":0,\"tool_input\":[],\"intervention\":false,\"intervention_confirmation_message\":\"\",\"result_process_strategies\":null},{\"tool_id\":\"3c78c9da-0bd5-48b4-b23b-960972d4d2af\",\"tool_box_id\":\"e521d454-4a0b-4dc9-8a28-d0986de1cef9\",\"tool_timeout\":0,\"tool_input\":[],\"intervention\":false,\"intervention_confirmation_message\":\"\",\"result_process_strategies\":null},{\"tool_id\":\"8542b7c2-f82a-4c1e-ab8c-83e2e73ccfdf\",\"tool_box_id\":\"e521d454-4a0b-4dc9-8a28-d0986de1cef9\",\"tool_timeout\":0,\"tool_input\":[],\"intervention\":false,\"intervention_confirmation_message\":\"\",\"result_process_strategies\":null},{\"tool_id\":\"f46fa5df-f371-447f-8451-2d2f34cc78e9\",\"tool_box_id\":\"e521d454-4a0b-4dc9-8a28-d0986de1cef9\",\"tool_timeout\":0,\"tool_input\":[],\"intervention\":false,\"intervention_confirmation_message\":\"\",\"result_process_strategies\":null},{\"tool_id\":\"00929c5f-3375-4ddc-9fb0-c48a24707f39\",\"tool_box_id\":\"e521d454-4a0b-4dc9-8a28-d0986de1cef9\",\"tool_timeout\":0,\"tool_input\":[],\"intervention\":false,\"intervention_confirmation_message\":\"\",\"result_process_strategies\":null},{\"tool_id\":\"74498bbd-2bdf-4db3-a4da-a90133c7fb65\",\"tool_box_id\":\"e521d454-4a0b-4dc9-8a28-d0986de1cef9\",\"tool_timeout\":0,\"tool_input\":[],\"intervention\":false,\"intervention_confirmation_message\":\"\",\"result_process_strategies\":null}],\"agents\":[],\"mcps\":[]},\"llms\":[{\"is_default\":true,\"llm_config\":{\"id\":\"\",\"name\":\"REPLACE_WITH_YOUR_LLM_NAME\",\"model_type\":\"llm\",\"temperature\":0.5,\"top_p\":1,\"top_k\":1,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":4096}}],\"is_data_flow_set_enabled\":0,\"opening_remark_config\":{\"type\":\"fixed\",\"fixed_opening_remark\":\"你好，我是分析助手。绑定业务知识网络后即可开始提问。\",\"dynamic_opening_remark_prompt\":\"\"},\"preset_questions\":[{\"question\":\"当前知识网络里有哪些对象类？\"}],\"output\":{\"default_format\":\"markdown\"},\"memory\":{\"is_enabled\":false},\"related_question\":{\"is_enabled\":false},\"metadata\":{\"config_tpl_version\":\"v1\",\"config_last_set_timestamp\":0}}",
+      "created_type": "import",
+      "create_from": "dip"
+    }
+  ]
+}
