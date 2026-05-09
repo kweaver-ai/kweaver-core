@@ -2,6 +2,8 @@ package drivenadapters
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,12 +26,28 @@ func init() {
 
 func TestVegaBackend_WriteDatasetDocuments(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 内部 API 路径: /v1/resources/dataset/:id/docs
-		assert.Equal(t, "/v1/resources/dataset/test-dataset-id/docs", r.URL.Path)
+		assert.Equal(t, "/v1/resources/test-dataset-id/data", r.URL.Path)
 		assert.Equal(t, http.MethodPost, r.Method)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		assert.Equal(t, "test-user-id", r.Header.Get("X-Account-ID"))
 		assert.Equal(t, "user", r.Header.Get("X-Account-Type"))
+		assert.Equal(t, http.MethodPost, r.Header.Get("X-HTTP-Method-Override"))
+
+		body, err := io.ReadAll(r.Body)
+		assert.Equal(t, nil, err)
+		defer r.Body.Close()
+
+		var payload map[string]any
+		err = json.Unmarshal(body, &payload)
+		if err == nil {
+			t.Fatalf("expected array body, got object: %#v", payload)
+		}
+
+		var documents []map[string]any
+		err = json.Unmarshal(body, &documents)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, 1, len(documents))
+		assert.Equal(t, "doc1", documents[0]["id"])
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"success": true}`))
 	}))

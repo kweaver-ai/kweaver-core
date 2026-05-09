@@ -47,12 +47,13 @@ type vegaBackend struct {
 func (v *vegaBackend) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any, userID string, userType string) error {
 	log := traceLog.WithContext(ctx)
 
-	// 使用内部 API 路径: /api/vega-backend/in/v1/resources/dataset/:id/docs
-	src := fmt.Sprintf("%s/v1/resources/dataset/%s/docs", v.baseURL, url.PathEscape(datasetID))
+	// 使用内部 API 路径: /api/vega-backend/in/v1/resources/:id/data
+	src := fmt.Sprintf("%s/v1/resources/%s/data", v.baseURL, url.PathEscape(datasetID))
 	headers := map[string]string{
-		"Content-Type":   "application/json",
-		"X-Account-ID":   userID,
-		"X-Account-Type": userType,
+		"Content-Type":            "application/json",
+		"X-Account-ID":            userID,
+		"X-Account-Type":          userType,
+		"X-HTTP-Method-Override": http.MethodPost,
 	}
 
 	log.Infof("WriteDatasetDocuments: dataset_id=%s, documents=%d, url=%s, user_id=%s", datasetID, len(documents), src, userID)
