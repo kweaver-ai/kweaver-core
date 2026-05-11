@@ -102,6 +102,25 @@ func (ats *actionTypeService) CheckActionTypeExistByName(ctx context.Context, kn
 	return actionTypeID, exist, nil
 }
 
+// checkImpactContractObjectTypes：strict 下校验每条 impact_contract 指向的对象类存在。
+func (ats *actionTypeService) checkImpactContractObjectTypes(ctx context.Context, tx *sql.Tx,
+	knID, branch string, contracts []interfaces.ImpactContractItem, batch *interfaces.BatchIDIndex) error {
+
+	for i := range contracts {
+		otID := strings.TrimSpace(contracts[i].ObjectTypeID)
+		if otID == "" {
+			continue
+		}
+		if batch != nil && batchindex.HasObjectTypeID(otID, batch) {
+			continue
+		}
+		if _, err := ats.ots.GetObjectTypeByID(ctx, tx, knID, branch, otID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // validateActionSourceStrict checks tool-box / MCP tool existence when strict_mode applies (via agent-operator-integration internal APIs).
 func (ats *actionTypeService) validateActionSourceStrict(ctx context.Context, at *interfaces.ActionType) error {
 	if at == nil {
@@ -205,6 +224,11 @@ func (ats *actionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx,
 					return []string{}, err
 				}
 			}
+			err = ats.checkImpactContractObjectTypes(ctx, tx, actionType.KNID,
+				actionType.Branch, actionType.ImpactContracts, nil)
+			if err != nil {
+				return []string{}, err
+			}
 			err = ats.validateActionSourceStrict(ctx, actionType)
 			if err != nil {
 				return []string{}, err
@@ -300,6 +324,10 @@ func (ats *actionTypeService) ValidateActionTypes(ctx context.Context, knID stri
 						return err
 					}
 				}
+			}
+			err = ats.checkImpactContractObjectTypes(ctx, nil, knID, branch, actionType.ImpactContracts, batch)
+			if err != nil {
+				return err
 			}
 			err = ats.validateActionSourceStrict(ctx, actionType)
 			if err != nil {
@@ -488,6 +516,11 @@ func (ats *actionTypeService) UpdateActionType(ctx context.Context, tx *sql.Tx, 
 			if err != nil {
 				return err
 			}
+		}
+		err = ats.checkImpactContractObjectTypes(ctx, tx, actionType.KNID,
+			actionType.Branch, actionType.ImpactContracts, nil)
+		if err != nil {
+			return err
 		}
 		err = ats.validateActionSourceStrict(ctx, actionType)
 		if err != nil {

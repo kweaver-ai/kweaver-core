@@ -639,8 +639,32 @@ components:
           enum:
             - const
           type: string
+    ExpectedImpactOperation:
+      description: 与 `action_intent` / `action_type` 一致；`impact_contracts[].expected_operation` 必填；`affect.expected_operation` 若填则须合法。
+      type: string
+      enum:
+        - add
+        - modify
+        - delete
+    ImpactContractItem:
+      description: |
+        行动影响契约单条（与 `action-type.yaml`、`f_impact_contracts` 一致）；DESIGN §7。
+      type: object
+      properties:
+        object_type_id:
+          type: string
+        expected_operation:
+          $ref: "#/components/schemas/ExpectedImpactOperation"
+        description:
+          type: string
+        affected_fields:
+          type: array
+          items:
+            type: string
     Affect:
-      description: 行动影响
+      deprecated: true
+      description: |
+        **[已废弃]** 请改用 `impact_contracts`。DESIGN §5.9。
       required:
         - object_type
         - comment
@@ -652,6 +676,15 @@ components:
         comment:
           description: 影响描述
           type: string
+        expected_operation:
+          allOf:
+            - $ref: "#/components/schemas/ExpectedImpactOperation"
+          description: 若填写须为 add / modify / delete 之一（与行动类 `action_intent` 一致）；可省略。
+        affected_fields:
+          description: 预期牵涉的数据属性名列表
+          type: array
+          items:
+            type: string
     Schedule:
       description: 执行频率配置项
       required:
@@ -1279,7 +1312,16 @@ components:
           items:
             $ref: "#/components/schemas/ConceptGroup"
         action_type:
-          description: 行动类型
+          deprecated: true
+          description: |
+            **[已废弃]** 优先 `action_intent`（取值 add/modify/delete）；双写须一致。
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        action_intent:
+          description: 推荐写入的行动意图枚举。
           enum:
             - add
             - modify
@@ -1292,8 +1334,14 @@ components:
           $ref: "#/components/schemas/ActionCondition"
           description: 行动条件
         affect:
-          $ref: "#/components/schemas/Affect"
-          description: 行动影响
+          deprecated: true
+          description: "**[已废弃]** 使用 `impact_contracts`。"
+          allOf:
+            - $ref: "#/components/schemas/Affect"
+        impact_contracts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactContractItem"
         action_source:
           $ref: "#/components/schemas/DataSource"
           description: 绑定的行动的资源
@@ -1345,7 +1393,15 @@ components:
           items:
             $ref: "#/components/schemas/ConceptGroup"
         action_type:
-          description: 行动类型
+          deprecated: true
+          description: "**[已废弃]** 优先 `action_intent`。"
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        action_intent:
+          description: 服务端持久化字段 `f_action_intent`。
           enum:
             - add
             - modify
@@ -1358,8 +1414,14 @@ components:
           $ref: "#/components/schemas/ActionCondition"
           description: 行动条件
         affect:
-          $ref: "#/components/schemas/Affect"
-          description: 行动影响
+          deprecated: true
+          description: "**[已废弃]** `impact_contracts`。"
+          allOf:
+            - $ref: "#/components/schemas/Affect"
+        impact_contracts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactContractItem"
         action_source:
           $ref: "#/components/schemas/DataSource"
           description: 绑定的行动的资源
@@ -1434,7 +1496,14 @@ components:
           items:
             $ref: "#/components/schemas/ConceptGroup"
         action_type:
-          description: 行动类型
+          deprecated: true
+          description: "**[已废弃]** 等价于 `action_intent`。"
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        action_intent:
           enum:
             - add
             - modify
@@ -1450,8 +1519,14 @@ components:
           $ref: "#/components/schemas/ActionCondition"
           description: 行动条件
         affect:
-          $ref: "#/components/schemas/Affect"
-          description: 行动影响
+          deprecated: true
+          allOf:
+            - $ref: "#/components/schemas/Affect"
+          description: "**[已废弃]** 单行影响；参见 `impact_contracts`。"
+        impact_contracts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactContractItem"
         action_source:
           $ref: "#/components/schemas/DataSource"
           description: 绑定的行动的资源

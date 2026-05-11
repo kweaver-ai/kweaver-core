@@ -1724,6 +1724,48 @@ func Test_actionTypeService_ValidateActionTypes(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
+		Convey("strictMode true validates ImpactContracts ObjectTypeID\n", func() {
+			httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_ObjectType_InternalError)
+			actionTypes := []*interfaces.ActionType{
+				{
+					ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+						ATName: "at1",
+						ImpactContracts: []interfaces.ImpactContractItem{
+							{ObjectTypeID: "ic_ot_missing", ExpectedOperation: interfaces.ExpectedOperationModify},
+						},
+					},
+					KNID:   "kn1",
+					Branch: interfaces.MAIN_BRANCH,
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectATImportOK()
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, httpErr)
+			err := service.ValidateActionTypes(ctx, "kn1", interfaces.MAIN_BRANCH, actionTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("strictMode true skips DB for ImpactContracts when batch contains object type id\n", func() {
+			actionTypes := []*interfaces.ActionType{
+				{
+					ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+						ATName: "at1",
+						ImpactContracts: []interfaces.ImpactContractItem{
+							{ObjectTypeID: "ot_ic_batch", ExpectedOperation: interfaces.ExpectedOperationDelete},
+						},
+					},
+					KNID:   "kn1",
+					Branch: interfaces.MAIN_BRANCH,
+				},
+			}
+			batch := batchindex.NewBatchIDIndex("kn1", interfaces.MAIN_BRANCH)
+			batch.ObjectTypes["ot_ic_batch"] = &interfaces.ObjectType{}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectATImportOK()
+			err := service.ValidateActionTypes(ctx, "kn1", interfaces.MAIN_BRANCH, actionTypes, true, batch, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
 		Convey("strictMode true fails when tool binding check fails\n", func() {
 			aoa := bmock.NewMockAgentOperatorAccess(mockCtrl)
 			svc := &actionTypeService{

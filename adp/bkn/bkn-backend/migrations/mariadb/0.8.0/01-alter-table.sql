@@ -27,3 +27,13 @@ UPDATE t_metric_definition SET f_bkn_raw_content = '' WHERE f_bkn_raw_content IS
 
 ALTER TABLE t_metric_definition
   MODIFY COLUMN f_bkn_raw_content MEDIUMTEXT NOT NULL COMMENT 'BKNRawContent' AFTER f_color;
+
+-- ==========================================
+-- t_action_type：行动意图、影响契约（与代码 DTO 对齐）
+-- 使用 IF NOT EXISTS：兼容已通过 init.sql 建表的环境（已有这些列）。
+-- ==========================================
+ALTER TABLE t_action_type
+  ADD COLUMN IF NOT EXISTS f_action_intent VARCHAR(40) NOT NULL DEFAULT '' COMMENT '行动意图' AFTER f_action_type;
+
+ALTER TABLE t_action_type
+  ADD COLUMN IF NOT EXISTS f_impact_contracts TEXT DEFAULT NULL COMMENT '行动影响契约' AFTER f_action_intent;

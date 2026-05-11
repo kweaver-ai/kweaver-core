@@ -181,6 +181,13 @@ func (ata *actionTypeAccess) CreateActionType(ctx context.Context, tx *sql.Tx, a
 		return err
 	}
 
+	// 2.5 序列化 impact_contracts（为空则入库 NULL）
+	impactContractsBytes, err := marshalImpactContractsJSON(actionType)
+	if err != nil {
+		logger.Errorf("Failed to marshal ImpactContracts, err: %v", err.Error())
+		return err
+	}
+
 	sqlStr, vals, err := sq.Insert(AT_TABLE_NAME).
 		Columns(
 			"f_id",
@@ -193,6 +200,8 @@ func (ata *actionTypeAccess) CreateActionType(ctx context.Context, tx *sql.Tx, a
 			"f_kn_id",
 			"f_branch",
 			"f_action_type",
+			"f_action_intent",
+			"f_impact_contracts",
 			"f_object_type_id",
 			"f_condition",
 			"f_affect",
@@ -217,6 +226,8 @@ func (ata *actionTypeAccess) CreateActionType(ctx context.Context, tx *sql.Tx, a
 			actionType.KNID,
 			actionType.Branch,
 			actionType.ActionType,
+			actionType.ActionIntent,
+			impactContractsBytes,
 			actionType.ObjectTypeID,
 			conditionBytes,
 			affectBytes,
@@ -269,6 +280,8 @@ func (ata *actionTypeAccess) ListActionTypes(ctx context.Context, query interfac
 		"f_kn_id",
 		"f_branch",
 		"f_action_type",
+		"f_action_intent",
+		"f_impact_contracts",
 		"f_object_type_id",
 		"f_condition",
 		"f_affect",
@@ -313,11 +326,12 @@ func (ata *actionTypeAccess) ListActionTypes(ctx context.Context, query interfac
 		}
 		tagsStr := ""
 		var (
-			conditionBytes    []byte
-			affectBytes       []byte
-			actionSourceBytes []byte
-			parametersBytes   []byte
-			scheduleBytes     []byte
+			conditionBytes     []byte
+			affectBytes        []byte
+			actionSourceBytes  []byte
+			parametersBytes    []byte
+			scheduleBytes      []byte
+			impactContractsRaw []byte
 		)
 		err := rows.Scan(
 			&actionType.ATID,
@@ -330,6 +344,8 @@ func (ata *actionTypeAccess) ListActionTypes(ctx context.Context, query interfac
 			&actionType.KNID,
 			&actionType.Branch,
 			&actionType.ActionType,
+			&actionType.ActionIntent,
+			&impactContractsRaw,
 			&actionType.ObjectTypeID,
 			&conditionBytes,
 			&affectBytes,
@@ -379,6 +395,12 @@ func (ata *actionTypeAccess) ListActionTypes(ctx context.Context, query interfac
 		err = sonic.Unmarshal(scheduleBytes, &actionType.Schedule)
 		if err != nil {
 			otellog.LogError(ctx, "Failed to unmarshal Schedule after getting action type, err", err)
+			return []*interfaces.ActionType{}, err
+		}
+		if err = unmarshalImpactContractsJSON(impactContractsRaw, &actionType); err != nil {
+			logger.Errorf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error())
+			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error()))
+			span.SetStatus(codes.Error, "Failed to unmarshal ImpactContracts after getting action type")
 			return []*interfaces.ActionType{}, err
 		}
 
@@ -441,6 +463,8 @@ func (ata *actionTypeAccess) GetActionTypesByIDs(ctx context.Context, knID strin
 		"f_kn_id",
 		"f_branch",
 		"f_action_type",
+		"f_action_intent",
+		"f_impact_contracts",
 		"f_object_type_id",
 		"f_condition",
 		"f_affect",
@@ -480,11 +504,12 @@ func (ata *actionTypeAccess) GetActionTypesByIDs(ctx context.Context, knID strin
 		}
 		tagsStr := ""
 		var (
-			conditionBytes    []byte
-			affectBytes       []byte
-			actionSourceBytes []byte
-			parametersBytes   []byte
-			scheduleBytes     []byte
+			conditionBytes     []byte
+			affectBytes        []byte
+			actionSourceBytes  []byte
+			parametersBytes    []byte
+			scheduleBytes      []byte
+			impactContractsRaw []byte
 		)
 
 		err := rows.Scan(
@@ -498,6 +523,8 @@ func (ata *actionTypeAccess) GetActionTypesByIDs(ctx context.Context, knID strin
 			&actionType.KNID,
 			&actionType.Branch,
 			&actionType.ActionType,
+			&actionType.ActionIntent,
+			&impactContractsRaw,
 			&actionType.ObjectTypeID,
 			&conditionBytes,
 			&affectBytes,
@@ -548,6 +575,12 @@ func (ata *actionTypeAccess) GetActionTypesByIDs(ctx context.Context, knID strin
 		err = sonic.Unmarshal(scheduleBytes, &actionType.Schedule)
 		if err != nil {
 			otellog.LogError(ctx, "Failed to unmarshal Schedule after getting action type, err", err)
+			return []*interfaces.ActionType{}, err
+		}
+		if err = unmarshalImpactContractsJSON(impactContractsRaw, &actionType); err != nil {
+			logger.Errorf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error())
+			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error()))
+			span.SetStatus(codes.Error, "Failed to unmarshal ImpactContracts after getting action type")
 			return []*interfaces.ActionType{}, err
 		}
 
@@ -604,23 +637,34 @@ func (ata *actionTypeAccess) UpdateActionType(ctx context.Context, tx *sql.Tx, a
 		return err
 	}
 
+	// 2.5 序列化 impact_contracts（为空则入库 NULL）
+	impactContractsBytes, err := marshalImpactContractsJSON(actionType)
+	if err != nil {
+		logger.Errorf("Failed to marshal ImpactContracts, err: %v", err.Error())
+		o11y.Error(ctx, fmt.Sprintf("Failed to marshal ImpactContracts, err: %v", err.Error()))
+		span.SetStatus(codes.Error, "Failed to marshal ImpactContracts")
+		return err
+	}
+
 	data := map[string]any{
-		"f_name":            actionType.ATName,
-		"f_tags":            tagsStr,
-		"f_comment":         actionType.Comment,
-		"f_icon":            actionType.Icon,
-		"f_color":           actionType.Color,
-		"f_bkn_raw_content": actionType.BKNRawContent,
-		"f_action_type":     actionType.ActionType,
-		"f_object_type_id":  actionType.ObjectTypeID,
-		"f_condition":       conditionBytes,
-		"f_affect":          affectBytes,
-		"f_action_source":   actionSourceBytes,
-		"f_parameters":      parameterBytes,
-		"f_schedule":        scheduleBytes,
-		"f_updater":         actionType.Updater.ID,
-		"f_updater_type":    actionType.Updater.Type,
-		"f_update_time":     actionType.UpdateTime,
+		"f_name":             actionType.ATName,
+		"f_tags":             tagsStr,
+		"f_comment":          actionType.Comment,
+		"f_icon":             actionType.Icon,
+		"f_color":            actionType.Color,
+		"f_bkn_raw_content":  actionType.BKNRawContent,
+		"f_action_type":      actionType.ActionType,
+		"f_action_intent":    actionType.ActionIntent,
+		"f_impact_contracts": impactContractsBytes,
+		"f_object_type_id":   actionType.ObjectTypeID,
+		"f_condition":        conditionBytes,
+		"f_affect":           affectBytes,
+		"f_action_source":    actionSourceBytes,
+		"f_parameters":       parameterBytes,
+		"f_schedule":         scheduleBytes,
+		"f_updater":          actionType.Updater.ID,
+		"f_updater_type":     actionType.Updater.Type,
+		"f_update_time":      actionType.UpdateTime,
 	}
 	sqlStr, vals, err := sq.Update(AT_TABLE_NAME).
 		SetMap(data).
@@ -846,6 +890,8 @@ func (ata *actionTypeAccess) GetAllActionTypesByKnID(ctx context.Context, knID s
 		"f_kn_id",
 		"f_branch",
 		"f_action_type",
+		"f_action_intent",
+		"f_impact_contracts",
 		"f_object_type_id",
 		"f_condition",
 		"f_affect",
@@ -885,11 +931,12 @@ func (ata *actionTypeAccess) GetAllActionTypesByKnID(ctx context.Context, knID s
 		}
 		tagsStr := ""
 		var (
-			conditionBytes    []byte
-			affectBytes       []byte
-			actionSourceBytes []byte
-			parametersBytes   []byte
-			scheduleBytes     []byte
+			conditionBytes     []byte
+			affectBytes        []byte
+			actionSourceBytes  []byte
+			parametersBytes    []byte
+			scheduleBytes      []byte
+			impactContractsRaw []byte
 		)
 		err := rows.Scan(
 			&actionType.ATID,
@@ -902,6 +949,8 @@ func (ata *actionTypeAccess) GetAllActionTypesByKnID(ctx context.Context, knID s
 			&actionType.KNID,
 			&actionType.Branch,
 			&actionType.ActionType,
+			&actionType.ActionIntent,
+			&impactContractsRaw,
 			&actionType.ObjectTypeID,
 			&conditionBytes,
 			&affectBytes,
@@ -953,10 +1002,31 @@ func (ata *actionTypeAccess) GetAllActionTypesByKnID(ctx context.Context, knID s
 			otellog.LogError(ctx, "Failed to unmarshal Schedule after getting action type, err", err)
 			return map[string]*interfaces.ActionType{}, err
 		}
+		if err = unmarshalImpactContractsJSON(impactContractsRaw, &actionType); err != nil {
+			logger.Errorf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error())
+			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error()))
+			span.SetStatus(codes.Error, "Failed to unmarshal ImpactContracts after getting action type")
+			return map[string]*interfaces.ActionType{}, err
+		}
 
 		actionTypes[actionType.ATID] = &actionType
 	}
 
 	span.SetStatus(codes.Ok, "")
 	return actionTypes, nil
+}
+
+func marshalImpactContractsJSON(actionType *interfaces.ActionType) ([]byte, error) {
+	if len(actionType.ImpactContracts) == 0 {
+		return nil, nil
+	}
+	return sonic.Marshal(actionType.ImpactContracts)
+}
+
+func unmarshalImpactContractsJSON(raw []byte, actionType *interfaces.ActionType) error {
+	if len(raw) == 0 {
+		actionType.ImpactContracts = nil
+		return nil
+	}
+	return sonic.Unmarshal(raw, &actionType.ImpactContracts)
 }
