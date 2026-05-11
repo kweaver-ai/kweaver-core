@@ -1,9 +1,16 @@
 # BKN 外部资源支持（方案四）：DESIGN2 + DESIGN3 合并 + Vega 语义外移 + rid
 
-> **状态**：草案
-> **版本**：0.4.0
-> **日期**：2026-05-06
+> **状态**：已采纳
+> **版本**：1.0.0
+> **日期**：2026-05-11
 > **相关 Ticket**：#433
+>
+> **版本变更历史：**
+> - **v1.0.0**（2026-05-11）：状态从「草案」升级为「已采纳」；新增落地前置条件与开放决策项章节；完善风险矩阵；更新参考文档链接
+> - **v0.4.0**（2026-05-06）：完成 DESIGN2 + DESIGN3 合并逻辑；新增 rid logic property 设计；明确语义召回外移到 Vega 数据集
+> - **v0.3.0**（2026-04-30）：确定核心架构；完成 scope_binding source 双路径设计
+> - **v0.2.0**（2026-04-25）：初步方案构思；确定不扩展顶层类型的方向
+> - **v0.1.0**（2026-04-20）：方案启动，分析 DESIGN2/DESIGN3 取舍点
 >
 > **承袭线（本方案不是从单一前序方案扩展而来，而是 DESIGN2 与 DESIGN3 的合并体加两项增量）：**
 > - **资源承载承袭 [DESIGN3](./DESIGN3.md)**：不引入新顶层类型；资源走现有 ObjectType；ObjectType 数据绑定支持 `filter` 收窄
@@ -448,11 +455,57 @@ DESIGN4 作为 DESIGN2 + DESIGN3 的合并体加两项增量，与最近邻 DESI
 
 ---
 
+## 6. 术语表
+
+| 术语 | 定义 |
+|------|------|
+| **rid（Resource ID）** | 逻辑属性类型，用于表达业务 ObjectType 对外部资源的跨数据集引用；结构为 `(kind, field)`，基于已有物理字段的类型化标注，不新增独立列 |
+| **资源载体型 ObjectType** | 绑定执行工厂 Vega 数据集的 ObjectType，承载外部资源的轻元数据；主键为数据集业务主键，不持 rid |
+| **业务 ObjectType** | 承载业务数据的现有 ObjectType；可挂 rid property 引用外部资源 |
+| **scope_binding** | RelationType 下的 mapping type，描述资源对业务对象的作用范围；source 可为任意 ObjectType(+filter) |
+| **TargetRule** | 作用域规则，定义 scope、id、condition 三要素，在 RelationType schema 级声明 |
+| **kind** | 资源类别标识（如 skill、tool、operator、agent），用于路由到对应 Vega 数据集 |
+| **作用域召回** | 通过查询 scope_binding 关系类获取资源标识集合的过程 |
+| **语义召回** | 通过语义匹配获取资源标识集合的过程，由 Vega 数据集层承担 |
+| **context-loader** | 调用 bkn-backend 获取资源标识列表，再调 Vega 数据集取详情组装上下文的组件 |
+
+---
+
+## 7. 落地前置条件
+
+本方案的落地依赖以下外部条件，需在实施前确认：
+
+| 前置条件 | 说明 |
+|----------|------|
+| 执行工厂注册为 Vega 数据源 | 执行工厂必须将 skill / tool / operator / agent 等资源暴露为 Vega 数据集（每数据集 = 资源 metadata 表） |
+| 资源数据集声明语义检索实现 | 每个资源数据集必须在 Vega 注册阶段声明语义检索实现（本地索引 / 透传上游），承担语义召回能力 |
+| rid 全局唯一且不可变 | `rid` 值需全局唯一且稳定；执行工厂负责 rid 分配；资源被删除时需配合 Vega 数据集同步 |
+| 上游语义检索能力 | 当采用透传上游模式时，上游外部系统必须支持 Vega 所声明的语义检索级别（或按降级链退化到关键字匹配） |
+
+---
+
+## 8. 开放决策项（已收敛）
+
+以下为方案开放决策项的收敛结论：
+
+| 决策项 | 收敛结论 |
+|--------|----------|
+| rid property type 实现方式 | **已确定**：rid 作为独立的 logic property type 实现，与 `string`/`number`/`date`/`ref` 等并列 |
+| 资源载体型 ObjectType 默认排除规则 | **不考虑**：由调用方（ontology-query / kn_schema_search 等）在调用层决定，BKN 不在框架层做隐式分流 |
+| 执行工厂 Vega 数据集字段契约 | **不需要**：BKN 仅消费 Vega 数据集的外部契约（`kind → dataset_id` 路由 + 按行键批量取行），不规定内部字段结构 |
+| Vega 数据集语义检索 API 契约 | **不在 BKN 范围内**：由 Vega 数据源注册规范定义，BKN 仅调用其对外暴露的统一接口 |
+| rid 值与 ObjectType 主键关系约束 | **已确定**：rid 值与 ObjectType 主键没有强关联性；rid 是基于已有字段的逻辑标注，不强制与主键绑定 |
+| Vega 数据集语义供给路径 | **不在 BKN 设计范围内**：由 Vega 数据集注册阶段声明，BKN 不感知其内部实现（本地索引 / 透传上游） |
+| ObjectType 业务子图参与性 | **不考虑**：BKN 不在框架层做隐式分流，由调用方按业务需要在调用层决定 |
+
+---
+
 ## 参考
 
 - [DESIGN.md（SkillBinding 方案）](./DESIGN.md)
-- [DESIGN2.md（ResourceType + scope_binding 方案，已采纳）](./DESIGN2.md)
+- [DESIGN2.md（ResourceType + scope_binding 方案）](./DESIGN2.md)
 - [DESIGN3.md（ObjectType + 数据驱动 scope_binding 方案）](./DESIGN3.md)
+- [DESIGN5.md（metadata-only ObjectType role 方案）](./DESIGN5.md)
 - [COMPARISON.md（五方案横向对比 v0.7.0）](./COMPARISON.md)
 - [filtered_cross_join DESIGN.md](../filtered_cross_join/DESIGN.md)
 - [BKN 数据绑定支持 Vega Resource DESIGN.md](../BKN数据绑定支持resource/DESIGN.md)
