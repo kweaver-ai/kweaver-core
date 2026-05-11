@@ -1,0 +1,19 @@
+---
+type: concept_group
+id: worldcup_events
+name: 场上事件
+tags: [worldcup, fjelstul]
+---
+
+## ConceptGroup: 场上事件
+
+进球、点球、换人、得牌等可回放事件——回答「谁进球、何时换人」等问题。
+
+### Object Types
+
+| ID | Name | Description |
+|----|------|-------------|
+| goals | 进球事件 | 见 object_types/goals.bkn |
+| penalty_kicks | 点球事件 | 见 object_types/penalty_kicks.bkn |
+| substitutions | 换人事件 | 见 object_types/substitutions.bkn |
+| bookings | 黄牌红牌记录 | 见 object_types/bookings.bkn |

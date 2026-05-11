@@ -68,17 +68,13 @@ kweaver auth login https://<your-platform-url>
 # 4. curl (for download.sh)
 ```
 
-### Branch workflow: CSV import → DS scan → BKN export → Agent
-
-For **`ds import-csv` (CSV → MySQL) → `ds tables` → `.bkn` tree via `bkn pull` → `validate` / `push` → optional Agent**, see **[WORKFLOW-BRANCH.zh.md](./WORKFLOW-BRANCH.zh.md)** (Chinese narrative; command list is language-agnostic). Entry point:
-
-```bash
-cp env.sample .env && vim .env   # DB_*, branch BKN + agent fields
-./download.sh
-./run-branch-bkn.sh
-```
+Checked-in offline BKN with **Vega `resource`** placeholders: **[`worldcup-bkn-vega/`](./worldcup-bkn-vega)** (~**29** relation edges, semantic `rel_*` ids). Run **`kweaver bkn validate ./worldcup-bkn-vega`** before push (needs writable **`TMPDIR`** on some hosts — see [`worldcup-bkn-vega/README.zh.md`](./worldcup-bkn-vega/README.zh.md)).
 
 (Optional CSV backup-only rsync lives in `./upload-data.sh`; it does **not** load data into MySQL.)
+
+### Vega Catalog path (no Dataview)
+
+Set **`VEGA_CATALOG_NAME`** (and optional **`VEGA_MYSQL_*`**) in `.env`, then run **`./run-branch-vega.sh`** (`catalog create` + **`discover --wait`**). Next: fill **`worldcup-bkn-vega/`** Resource placeholders or run **`kweaver bkn object-type create … --dataview-id <vega-resource-uuid>`** per table. Use the Node **`kweaver`** from **`@kweaver-ai/kweaver-sdk`** — ensure **`which kweaver`** does not resolve to a broken **`/usr/local/bin/kweaver`** stub. **`./run-branch-vega.sh --dry-run`** prints the plan only. Docs: **[WORKFLOW-BRANCH-VEGA.md](./WORKFLOW-BRANCH-VEGA.md)** / **[WORKFLOW-BRANCH-VEGA.zh.md](./WORKFLOW-BRANCH-VEGA.zh.md)**.
 
 ## Quick start
 
@@ -90,7 +86,7 @@ vim .env   # DB_HOST / DB_NAME / DB_USER / DB_PASS (+ optional AGENT_ID, WORLDCU
 ./run.sh
 ```
 
-> **MySQL:** `create-from-csv` / `import-csv` defaults can hit Error 1118 on wide CSVs; `run.sh` slims `matches` / `team_appearances` before import by default (`WORKFLOW-BRANCH.zh.md`, `SLIM_WIDE_CSV_FOR_MYSQL`).
+> **MySQL:** `create-from-csv` / `import-csv` defaults can hit Error 1118 on wide CSVs; `run.sh` slims `matches` / `team_appearances` before import by default (`SLIM_WIDE_CSV_FOR_MYSQL` in `.env`; see Troubleshooting tables in this README).
 
 ### Agent provisioning
 

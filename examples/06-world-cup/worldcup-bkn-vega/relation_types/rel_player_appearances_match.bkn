@@ -1,0 +1,26 @@
+---
+type: relation_type
+id: rel_player_appearances_match
+name: 球员每场比赛出场·场次→比赛场次
+tags: [worldcup, fjelstul, backbone]
+---
+
+## RelationType: 球员每场比赛出场·场次→比赛场次
+
+**语义**：在「球员每场比赛出场」事实中，字段 `match_id` 引用「比赛场次」的主键 `match_id`，表示该事件或统计发生在哪一场比赛。
+
+**建模用途**：多表联接、Agent 问答与统计时的 join 路径；请同时利用同名 `_name` 列做可读展示。
+
+**技术映射**：`player_appearances.match_id` → `matches.match_id`（direct）。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| player_appearances | matches | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| match_id | match_id |

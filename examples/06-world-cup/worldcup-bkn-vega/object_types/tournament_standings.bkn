@@ -1,0 +1,38 @@
+---
+type: object_type
+id: tournament_standings
+name: 赛事总积分榜
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: 赛事总积分榜
+
+来自 `data/tournament_standings.csv`（Fjelstul World Cup Database，CC-BY-SA 4.0）。
+
+**领域语义**：整届赛事视角的排行/积分汇总（数据源因届次略有差异）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | `key_id`：`tournament_standings` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | key_id |
+| tournament_id | 届次赛事 ID | string | 外键→届次世界杯赛事（tournaments） | tournament_id |
+| tournament_name | Tournament Name | string | `tournament_name`：`tournament_standings` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | tournament_name |
+| position | Position | integer | `position`：`tournament_standings` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | position |
+| team_id | 球队 ID | string | 外键→国家队（teams） | team_id |
+| team_name | Team Name | string | `team_name`：`tournament_standings` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | team_name |
+| team_code | Team Code | string | `team_code`：`tournament_standings` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | team_code |
+
+### Keys
+
+Primary Keys: key_id
+Display Key: tournament_name
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| resource | {{TOURNAMENT_STANDINGS_RES_ID}} | wc_tournament_standings |

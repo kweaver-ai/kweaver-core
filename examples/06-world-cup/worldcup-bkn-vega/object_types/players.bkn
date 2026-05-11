@@ -1,0 +1,44 @@
+---
+type: object_type
+id: players
+name: 球员
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: 球员
+
+来自 `data/players.csv`（Fjelstul World Cup Database，CC-BY-SA 4.0）。
+
+**领域语义**：球员维度；经由出场 / 进球 / 得牌等事实连接到比赛与球队。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | `key_id`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | key_id |
+| player_id | 球员 ID | string | 外键→球员（players） | player_id |
+| family_name | Family Name | string | `family_name`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | family_name |
+| given_name | Given Name | string | `given_name`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | given_name |
+| birth_date | Birth Date | string | `birth_date`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | birth_date |
+| female | Female | integer | `female`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | female |
+| goal_keeper | Goal Keeper | integer | `goal_keeper`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | goal_keeper |
+| defender | Defender | integer | `defender`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | defender |
+| midfielder | Midfielder | integer | `midfielder`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | midfielder |
+| forward | Forward | integer | `forward`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | forward |
+| count_tournaments | Count Tournaments | integer | `count_tournaments`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | count_tournaments |
+| list_tournaments | List Tournaments | string | `list_tournaments`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | list_tournaments |
+| player_wikipedia_link | Player Wikipedia Link | string | `player_wikipedia_link`：`players` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | player_wikipedia_link |
+
+### Keys
+
+Primary Keys: key_id
+Display Key: family_name
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| resource | {{PLAYERS_RES_ID}} | wc_players |

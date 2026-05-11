@@ -1,0 +1,41 @@
+---
+type: object_type
+id: referees
+name: 裁判员
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: 裁判员
+
+来自 `data/referees.csv`（Fjelstul World Cup Database，CC-BY-SA 4.0）。
+
+**领域语义**：裁判员主档案。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | `key_id`：`referees` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | key_id |
+| referee_id | Referee Id | string | 外键→裁判（referees） | referee_id |
+| family_name | Family Name | string | `family_name`：`referees` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | family_name |
+| given_name | Given Name | string | `given_name`：`referees` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | given_name |
+| female | Female | integer | `female`：`referees` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | female |
+| country_name | Country Name | string | `country_name`：`referees` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | country_name |
+| confederation_id | 联合会 ID | string | 外键→联合会（confederations） | confederation_id |
+| confederation_name | Confederation Name | string | `confederation_name`：`referees` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | confederation_name |
+| confederation_code | Confederation Code | string | `confederation_code`：`referees` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | confederation_code |
+| referee_wikipedia_link | Referee Wikipedia Link | string | `referee_wikipedia_link`：`referees` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | referee_wikipedia_link |
+
+### Keys
+
+Primary Keys: key_id
+Display Key: confederation_name
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| resource | {{REFEREES_RES_ID}} | wc_referees |

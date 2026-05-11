@@ -1,0 +1,23 @@
+---
+type: concept_group
+id: worldcup_competition
+name: 赛会与赛程
+tags: [worldcup, fjelstul]
+---
+
+## ConceptGroup: 赛会与赛程
+
+赛事、阶段、场次、球场、东道主与小组结构——回答「哪一届、哪一场、在哪踢」等问题。
+
+### Object Types
+
+| ID | Name | Description |
+|----|------|-------------|
+| tournaments | 世界杯赛事 | 见 object_types/tournaments.bkn |
+| tournament_stages | 赛事阶段 | 见 object_types/tournament_stages.bkn |
+| matches | 比赛场次 | 见 object_types/matches.bkn |
+| stadiums | 比赛球场 | 见 object_types/stadiums.bkn |
+| host_countries | 东道主国家 | 见 object_types/host_countries.bkn |
+| groups | 小组 | 见 object_types/groups.bkn |
+| group_standings | 小组积分榜 | 见 object_types/group_standings.bkn |
+| tournament_standings | 赛事总积分榜 | 见 object_types/tournament_standings.bkn |

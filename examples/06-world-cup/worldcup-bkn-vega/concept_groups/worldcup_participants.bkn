@@ -1,0 +1,28 @@
+---
+type: concept_group
+id: worldcup_participants
+name: 球队与人员
+tags: [worldcup, fjelstul]
+---
+
+## ConceptGroup: 球队与人员
+
+国家队、球员、教练、裁判及其任命/出场/执法记录——回答「谁、代表谁、何时上场」等问题。
+
+### Object Types
+
+| ID | Name | Description |
+|----|------|-------------|
+| teams | 国家队 | 见 object_types/teams.bkn |
+| players | 球员 | 见 object_types/players.bkn |
+| managers | 主教练 | 见 object_types/managers.bkn |
+| referees | 裁判员 | 见 object_types/referees.bkn |
+| confederations | 足球联合会 | 见 object_types/confederations.bkn |
+| squads | 阵容名单 | 见 object_types/squads.bkn |
+| qualified_teams | 出线球队资格 | 见 object_types/qualified_teams.bkn |
+| manager_appointments | 主帅执教任命 | 见 object_types/manager_appointments.bkn |
+| referee_appointments | 裁判指派 | 见 object_types/referee_appointments.bkn |
+| team_appearances | 球队每届参赛记录 | 见 object_types/team_appearances.bkn |
+| player_appearances | 球员每场比赛出场 | 见 object_types/player_appearances.bkn |
+| manager_appearances | 教练临场指挥记录 | 见 object_types/manager_appearances.bkn |
+| referee_appearances | 裁判执法场次 | 见 object_types/referee_appearances.bkn |

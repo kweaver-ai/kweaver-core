@@ -1,0 +1,39 @@
+---
+type: object_type
+id: stadiums
+name: 比赛球场
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: 比赛球场
+
+来自 `data/stadiums.csv`（Fjelstul World Cup Database，CC-BY-SA 4.0）。
+
+**领域语义**：球场静态信息（容量、城市名等）；经 matches 挂载到赛程。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | `key_id`：`stadiums` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | key_id |
+| stadium_id | 球场 ID | string | 外键→球场（stadiums） | stadium_id |
+| stadium_name | Stadium Name | string | `stadium_name`：`stadiums` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | stadium_name |
+| city_name | City Name | string | `city_name`：`stadiums` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | city_name |
+| country_name | Country Name | string | `country_name`：`stadiums` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | country_name |
+| stadium_capacity | Stadium Capacity | integer | `stadium_capacity`：`stadiums` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | stadium_capacity |
+| stadium_wikipedia_link | Stadium Wikipedia Link | string | `stadium_wikipedia_link`：`stadiums` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | stadium_wikipedia_link |
+| city_wikipedia_link | City Wikipedia Link | string | `city_wikipedia_link`：`stadiums` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | city_wikipedia_link |
+
+### Keys
+
+Primary Keys: key_id
+Display Key: stadium_name
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| resource | {{STADIUMS_RES_ID}} | wc_stadiums |

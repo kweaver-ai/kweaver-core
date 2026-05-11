@@ -1,0 +1,26 @@
+---
+type: relation_type
+id: rel_award_winners_award
+name: 奖项得主·奖项→奖项定义
+tags: [worldcup, fjelstul, backbone]
+---
+
+## RelationType: 奖项得主·奖项→奖项定义
+
+**语义**：在「奖项得主」事实中，字段 `award_id` 引用「奖项定义」的主键 `award_id`，表示奖项类型。
+
+**建模用途**：多表联接、Agent 问答与统计时的 join 路径；请同时利用同名 `_name` 列做可读展示。
+
+**技术映射**：`award_winners.award_id` → `awards.award_id`（direct）。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| award_winners | awards | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| award_id | award_id |

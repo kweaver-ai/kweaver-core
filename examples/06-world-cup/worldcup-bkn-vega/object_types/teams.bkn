@@ -1,0 +1,45 @@
+---
+type: object_type
+id: teams
+name: 国家队
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: 国家队
+
+来自 `data/teams.csv`（Fjelstul World Cup Database，CC-BY-SA 4.0）。
+
+**领域语义**：国家队主数据；与联合会、阵容、场次主客队及积分榜条目关联。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | `key_id`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | key_id |
+| team_id | 球队 ID | string | 外键→国家队（teams） | team_id |
+| team_name | Team Name | string | `team_name`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | team_name |
+| team_code | Team Code | string | `team_code`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | team_code |
+| mens_team | Mens Team | integer | `mens_team`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | mens_team |
+| womens_team | Womens Team | integer | `womens_team`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | womens_team |
+| federation_name | Federation Name | string | `federation_name`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | federation_name |
+| region_name | Region Name | string | `region_name`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | region_name |
+| confederation_id | 联合会 ID | string | 外键→联合会（confederations） | confederation_id |
+| confederation_name | Confederation Name | string | `confederation_name`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | confederation_name |
+| confederation_code | Confederation Code | string | `confederation_code`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | confederation_code |
+| mens_team_wikipedia_link | Mens Team Wikipedia Link | string | `mens_team_wikipedia_link`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | mens_team_wikipedia_link |
+| womens_team_wikipedia_link | Womens Team Wikipedia Link | string | `womens_team_wikipedia_link`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | womens_team_wikipedia_link |
+| federation_wikipedia_link | Federation Wikipedia Link | string | `federation_wikipedia_link`：`teams` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | federation_wikipedia_link |
+
+### Keys
+
+Primary Keys: key_id
+Display Key: team_name
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| resource | {{TEAMS_RES_ID}} | wc_teams |

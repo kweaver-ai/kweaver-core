@@ -44,8 +44,10 @@ DB_NAME="${DB_NAME:?Set DB_NAME in .env}"
 DB_USER="${DB_USER:?Set DB_USER in .env}"
 DB_PASS="${DB_PASS:?Set DB_PASS in .env}"
 
-EXPECTED_CSV=27
 DATA_DIR="$SCRIPT_DIR/data"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/scripts/worldcup_dataset_stems.inc.sh"
+EXPECTED_CSV=${#WORLD_CUP_DATASET_STEMS[@]}
 count_csvs() {
     shopt -s nullglob
     local a=("$DATA_DIR"/*.csv)

@@ -13,35 +13,10 @@ DATA_DIR="$SCRIPT_DIR/data"
 REF="${WORLDCUP_REF:-master}"
 BASE="https://raw.githubusercontent.com/jfjelstul/worldcup/${REF}/data-csv"
 
-DATASETS=(
-    tournaments
-    confederations
-    teams
-    players
-    managers
-    referees
-    stadiums
-    matches
-    awards
-    qualified_teams
-    squads
-    manager_appointments
-    referee_appointments
-    team_appearances
-    player_appearances
-    manager_appearances
-    referee_appearances
-    goals
-    penalty_kicks
-    bookings
-    substitutions
-    host_countries
-    tournament_stages
-    groups
-    group_standings
-    tournament_standings
-    award_winners
-)
+# Stems aligned with scripts/worldcup_dataset_stems.inc.sh (CSV names / wc_* tables).
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/scripts/worldcup_dataset_stems.inc.sh"
+DATASETS=("${WORLD_CUP_DATASET_STEMS[@]}")
 
 mkdir -p "$DATA_DIR"
 echo "Downloading ${#DATASETS[@]} CSVs from jfjelstul/worldcup@${REF} → $DATA_DIR"

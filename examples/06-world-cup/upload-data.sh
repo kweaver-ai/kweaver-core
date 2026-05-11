@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Optional: rsync ./data/*.csv → REMOTE_* （仅备份/运维；不向 MySQL 灌数据）。
-# 灌库请用 ./run-branch-bkn.sh（或等价）里的 kweaver ds import-csv。
+# For loading MySQL, use ./run.sh (create-from-csv) or run kweaver ds import-csv yourself.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

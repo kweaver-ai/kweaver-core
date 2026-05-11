@@ -1,0 +1,43 @@
+---
+type: object_type
+id: squads
+name: 阵容名单
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: 阵容名单
+
+来自 `data/squads.csv`（Fjelstul World Cup Database，CC-BY-SA 4.0）。
+
+**领域语义**：某国家队在某届的官方名单：球员 ∪ 代表队维度。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | `key_id`：`squads` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | key_id |
+| tournament_id | 届次赛事 ID | string | 外键→届次世界杯赛事（tournaments） | tournament_id |
+| tournament_name | Tournament Name | string | `tournament_name`：`squads` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | tournament_name |
+| team_id | 球队 ID | string | 外键→国家队（teams） | team_id |
+| team_name | Team Name | string | `team_name`：`squads` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | team_name |
+| team_code | Team Code | string | `team_code`：`squads` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | team_code |
+| player_id | 球员 ID | string | 外键→球员（players） | player_id |
+| family_name | Family Name | string | `family_name`：`squads` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | family_name |
+| given_name | Given Name | string | `given_name`：`squads` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | given_name |
+| shirt_number | Shirt Number | integer | `shirt_number`：`squads` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | shirt_number |
+| position_name | Position Name | string | `position_name`：`squads` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | position_name |
+| position_code | Position Code | string | `position_code`：`squads` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | position_code |
+
+### Keys
+
+Primary Keys: key_id
+Display Key: tournament_name
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| resource | {{SQUADS_RES_ID}} | wc_squads |

@@ -38,4 +38,4 @@ EOS
 echo "=== Next on laptop: slim CSV then re-import ==="
 echo "    python3 $ROOT/scripts/slim_wide_tables_for_mysql_import.py --data-dir $ROOT/data"
 echo "    cd $ROOT && kweaver ds import-csv <DS_ID> --files \"./data/*.csv\" --table-prefix wc_ --recreate"
-echo "    (or run full ./run-branch-bkn.sh which slims + import)"
+echo "    (or run ./run.sh which slims + create-from-csv)"

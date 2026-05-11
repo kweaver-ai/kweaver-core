@@ -1,0 +1,26 @@
+---
+type: relation_type
+id: rel_group_standings_team
+name: 小组积分榜·球队→国家队
+tags: [worldcup, fjelstul, backbone]
+---
+
+## RelationType: 小组积分榜·球队→国家队
+
+**语义**：在「小组积分榜」事实中，字段 `team_id` 引用「国家队」的主键 `team_id`，表示所指的国家队主体。
+
+**建模用途**：多表联接、Agent 问答与统计时的 join 路径；请同时利用同名 `_name` 列做可读展示。
+
+**技术映射**：`group_standings.team_id` → `teams.team_id`（direct）。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| group_standings | teams | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| team_id | team_id |

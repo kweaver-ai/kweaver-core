@@ -1,0 +1,58 @@
+---
+type: object_type
+id: matches
+name: 比赛场次
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: 比赛场次
+
+来自 `data/matches.csv`（Fjelstul World Cup Database，CC-BY-SA 4.0）。
+
+**领域语义**：单场比赛：主客队、比分、阶段、日期时间、球场与城市。串联进球、换人、得牌及球员上场等明细。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | `key_id`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | key_id |
+| tournament_id | 届次赛事 ID | string | 外键→届次世界杯赛事（tournaments） | tournament_id |
+| match_id | 场次 ID | string | 外键→比赛场次（matches） | match_id |
+| group_stage | Group Stage | integer | `group_stage`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | group_stage |
+| knockout_stage | Knockout Stage | integer | `knockout_stage`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | knockout_stage |
+| replayed | Replayed | integer | `replayed`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | replayed |
+| replay | Replay | integer | `replay`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | replay |
+| match_date | Match Date | string | `match_date`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | match_date |
+| match_time | Match Time | string | `match_time`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | match_time |
+| stadium_id | 球场 ID | string | 外键→球场（stadiums） | stadium_id |
+| home_team_id | 主队 ID | string | 外键→主场国家队（teams） | home_team_id |
+| home_team_code | Home Team Code | string | `home_team_code`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | home_team_code |
+| away_team_id | 客队 ID | string | 外键→客场国家队（teams） | away_team_id |
+| away_team_code | Away Team Code | string | `away_team_code`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | away_team_code |
+| score | Score | string | `score`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | score |
+| home_team_score | Home Team Score | integer | `home_team_score`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | home_team_score |
+| away_team_score | Away Team Score | integer | `away_team_score`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | away_team_score |
+| home_team_score_margin | Home Team Score Margin | integer | `home_team_score_margin`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | home_team_score_margin |
+| away_team_score_margin | Away Team Score Margin | integer | `away_team_score_margin`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | away_team_score_margin |
+| extra_time | Extra Time | integer | `extra_time`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | extra_time |
+| penalty_shootout | Penalty Shootout | integer | `penalty_shootout`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | penalty_shootout |
+| score_penalties | Score Penalties | string | `score_penalties`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | score_penalties |
+| home_team_score_penalties | Home Team Score Penalties | integer | `home_team_score_penalties`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | home_team_score_penalties |
+| away_team_score_penalties | Away Team Score Penalties | integer | `away_team_score_penalties`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | away_team_score_penalties |
+| home_team_win | Home Team Win | integer | `home_team_win`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | home_team_win |
+| away_team_win | Away Team Win | integer | `away_team_win`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | away_team_win |
+| draw | Draw | integer | `draw`：`matches` 表度量或描述字段；展示优先用同源 `*_name` / 布尔列语义。 | draw |
+
+### Keys
+
+Primary Keys: key_id
+Display Key: match_id
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| resource | {{MATCHES_RES_ID}} | wc_matches |

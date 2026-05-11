@@ -1,0 +1,26 @@
+---
+type: relation_type
+id: rel_matches_tournament
+name: 比赛场次·届次赛事→世界杯赛事
+tags: [worldcup, fjelstul, backbone]
+---
+
+## RelationType: 比赛场次·届次赛事→世界杯赛事
+
+**语义**：在「比赛场次」事实中，字段 `tournament_id` 引用「世界杯赛事」的主键 `tournament_id`，表示该记录隶属于哪一届世界杯赛事。
+
+**建模用途**：多表联接、Agent 问答与统计时的 join 路径；请同时利用同名 `_name` 列做可读展示。
+
+**技术映射**：`matches.tournament_id` → `tournaments.tournament_id`（direct）。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| matches | tournaments | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| tournament_id | tournament_id |

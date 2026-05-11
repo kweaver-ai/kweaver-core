@@ -1,0 +1,26 @@
+---
+type: relation_type
+id: rel_team_appearances_opponent
+name: 球队每届参赛记录·对手球队→国家队
+tags: [worldcup, fjelstul, backbone]
+---
+
+## RelationType: 球队每届参赛记录·对手球队→国家队
+
+**语义**：在「球队每届参赛记录」事实中，字段 `opponent_id` 引用「国家队」的主键 `team_id`，表示该场比赛的对手球队。
+
+**建模用途**：多表联接、Agent 问答与统计时的 join 路径；请同时利用同名 `_name` 列做可读展示。
+
+**技术映射**：`team_appearances.opponent_id` → `teams.team_id`（direct）。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| team_appearances | teams | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| opponent_id | team_id |

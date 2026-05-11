@@ -10,6 +10,8 @@
 
 本示例一次性把 **27 份 CSV** 建成一个知识网络（`kweaver bkn create-from-csv`），抽样查询 `matches` / `players` / `goals` 三类对象，可选地用 Context Loader 做 **schema 语义检索**，最后用 **Agent 对话**（把 schema 摘要 + 抽样行放进提示词）。
 
+仓库中的 **`worldcup-bkn-vega/`** 为 **Vega `resource`** 占位符版离线 BKN（约 **29** 条语义化 `rel_*` 关系）。填齐 Resource UUID 后 **`kweaver bkn validate ./worldcup-bkn-vega`** / **`push`**；个别环境须可写 **`TMPDIR`**（见该目录 **`README.zh.md`**）。CSV 入库走 **`./run.sh`**（`create-from-csv`）或自行 **`ds import-csv`**。
+
 ## 示例在做什么
 
 ```
@@ -63,17 +65,14 @@ kweaver auth login https://<你的平台地址>
 # curl：用于 download.sh
 ```
 
-### 分支流程：CSV 入库 + 扫描 DS + 导出/推送 BKN + Agent
+### Vega Catalog · 离线 BKN（不经 Dataview）
 
-若要按 **「CSV `import-csv` 写入 MySQL → 扫描数据源 → 导出 `.bkn` → push → 绑定 Agent」** 走，见 **[WORKFLOW-BRANCH.zh.md](./WORKFLOW-BRANCH.zh.md)**。快速入口：
+若 **`wc_*` 已在 MySQL** 且希望 **在 Vega 注册物理 Catalog → discover 表 Resource**，先在 `.env` 配 **`VEGA_CATALOG_NAME`**（按需 **`VEGA_MYSQL_*`**），执行 **`./run-branch-vega.sh`**（只做 catalog create + **`discover --wait`**）；再按文档为每张 **`wc_*`** 填 **`worldcup-bkn-vega/`** Resource 占位符或用 **`kweaver bkn object-type create … --dataview-id <resource-uuid>`**（CLI 参数名仍为 `--dataview-id`，填入 **Vega Resource**，不是 mdl Dataview）。
 
-```bash
-cp env.sample .env && vim .env     # 含 DB_*、AGENT_LLM_ID、BKN_* 等
-./download.sh
-./run-branch-bkn.sh
-```
+- **CLI**：使用 Node SDK 的 **`kweaver`**，避免 **`which kweaver`** 落到无效的 **`/usr/local/bin/kweaver`**。
+- **`./run-branch-vega.sh --dry-run`**：只打印计划。
 
-（如需单独 rsync CSV 备份，与灌库无关，见该文档「可选备份」、`./upload-data.sh`。）
+详见 **[WORKFLOW-BRANCH-VEGA.zh.md](./WORKFLOW-BRANCH-VEGA.zh.md)**。
 
 ## 快速开始
 
@@ -85,7 +84,7 @@ vim .env   # 填写 DB_HOST / DB_NAME / DB_USER / DB_PASS，可选 AGENT_ID、WO
 ./run.sh
 ```
 
-> **MySQL：**`create-from-csv` / `import-csv` 会令宽表易触发 Error 1118；`run.sh` 默认在灌库前瘦身 `matches` / `team_appearances`（见 `WORKFLOW-BRANCH.zh.md`、`SLIM_WIDE_CSV_FOR_MYSQL`）。
+> **MySQL：**`create-from-csv` / `import-csv` 会令宽表易触发 Error 1118；`run.sh` 默认在灌库前瘦身 `matches` / `team_appearances`（见 `.env` 中 `SLIM_WIDE_CSV_FOR_MYSQL` 与本 README 「故障排查」）。
 
 ### Agent 准备
 
