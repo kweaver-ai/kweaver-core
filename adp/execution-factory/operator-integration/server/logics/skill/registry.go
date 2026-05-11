@@ -195,11 +195,6 @@ func (r *skillRegistry) UpdateSkillMetadata(ctx context.Context, req *interfaces
 	if err = r.AuthService.CheckModifyPermission(ctx, accessor, req.SkillID, interfaces.AuthResourceTypeSkill); err != nil {
 		return nil, err
 	}
-	if req.Name != skill.Name {
-		if err = r.checkSkillDuplicateName(ctx, req.Name, req.SkillID); err != nil {
-			return nil, err
-		}
-	}
 	if req.Category != "" && !r.CategoryManager.CheckCategory(req.Category) {
 		return nil, errors.NewHTTPError(ctx, http.StatusBadRequest, errors.ErrExtSkillCategoryNotFound,
 			fmt.Sprintf(" %s category not found", req.Category))
@@ -292,11 +287,6 @@ func (r *skillRegistry) UpdateSkillPackage(ctx context.Context, req *interfaces.
 	})
 	if err != nil {
 		return nil, err
-	}
-	if parsedSkill.Name != skill.Name {
-		if err = r.checkSkillDuplicateName(ctx, parsedSkill.Name, req.SkillID); err != nil {
-			return nil, err
-		}
 	}
 	replaceCurrentVersion := skill.Status == interfaces.BizStatusEditing.String() ||
 		skill.Status == interfaces.BizStatusUnpublish.String()
