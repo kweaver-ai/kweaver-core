@@ -6,8 +6,10 @@
 #   GET       /api/vega-backend/v1/catalogs/{ids}/health-status
 #   POST      /api/vega-backend/v1/catalogs/{id}/test-connection
 #   GET       /api/vega-backend/v1/discover-tasks
+#             (query: catalog_id, schedule_id, status, trigger_type, offset, limit, sort, direction)
 #   GET       /api/vega-backend/v1/discover-tasks/{id}
 #   DELETE    /api/vega-backend/v1/discover-tasks/{ids}
+#             (query: ignore_missing)
 #   POST      /api/vega-backend/v1/catalogs/{id}/discover
 
 
@@ -358,14 +360,20 @@
               "id": "discover_task_id",
               "catalog_id": "catalog_id",
               "schedule_id": "",
-              "strategies": ["insert"],
+              "strategies": [],
               "trigger_type": "manual",
-              "status": "pending",
-              "progress": 0,
+              "status": "completed",
+              "progress": 100,
               "message": "",
               "start_time": 0,
               "finish_time": 0,
-              "result": null,
+              "result": {
+                "catalog_id": "catalog_id",
+                "new_count": 0,
+                "stale_count": 0,
+                "unchanged_count": 0,
+                "message": ""
+              },
               "creator": {"id": "", "type": "", "name": ""},
               "create_time": 0
             }
@@ -380,7 +388,7 @@
         404: >-
             {
               "error_code": "",
-              "description": "任务不存在",
+              "description": "资源不存在",
               "solution": "",
               "error_link": "",
               "error_details": ""
@@ -415,7 +423,7 @@
         404: >-
             {
               "error_code": "",
-              "description": "任务不存在",
+              "description": "资源不存在",
               "solution": "",
               "error_link": "",
               "error_details": ""
@@ -423,7 +431,7 @@
         409: >-
             {
               "error_code": "",
-              "description": "状态冲突",
+              "description": "状态冲突，任务处于 pending/running 无法删除",
               "solution": "",
               "error_link": "",
               "error_details": ""

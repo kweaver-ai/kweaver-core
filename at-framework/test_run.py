@@ -11,6 +11,7 @@ import os
 import random
 import re
 import string as _str
+import time
 from datetime import datetime, timedelta
 
 import allure
@@ -711,6 +712,10 @@ def test_case(feature, story, case_name, case_info):
                         print("WARNING: next_case '%s' failed: %s" % (case_info["next_case"], e))
                     # 若存在同名用例，仅执行第一个匹配项
                     break
+
+    # 针对部分异步用例，设置等待时长，单位s
+    if "next_wait" in case_info:
+        time.sleep(int(case_info["next_wait"]))
 
 
 if __name__ == '__main__':

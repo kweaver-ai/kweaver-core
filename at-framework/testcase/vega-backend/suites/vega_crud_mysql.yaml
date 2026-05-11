@@ -453,6 +453,7 @@ cases:
             {
                 "discover_id": "$.id"
             }
+        next_wait: 1
 
     -   name: "Positive_检索任务列表_参数缺省_请求成功"
         url: "获取发现任务列表"

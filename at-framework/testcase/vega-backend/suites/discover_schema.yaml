@@ -61,6 +61,7 @@ cases:
                 "discover_id": "$.id"
             }
         code_check: "200"
+        next_wait: 1
 
     -   name: "Negative_即时检索_参数校验_id不存在"
         url: "catalog资源发现"
@@ -92,7 +93,7 @@ cases:
                 "catalog_id": "${catalog_id}"
             }
         code_check: "200"
-        resp_values: >-
+        resp_check: >-
             {
                 "$.entries[0].id": "${discover_id}"
             }
@@ -104,7 +105,7 @@ cases:
                 "catalog_id": "00000000000000000000"
             }
         code_check: "200"
-        resp_values: >-
+        resp_check: >-
             {
                 "$.total_count": 0
             }
@@ -135,7 +136,7 @@ cases:
             {
                 "ids": "${discover_id}"
             }
-        code_check: "404"
+        code_check: "204"
 
     -   name: "Negative_删除检索任务_参数校验_id不存在_请求失败"
         url: "删除发现任务"
@@ -152,6 +153,18 @@ cases:
                 "ids": "${discover_id}"
             }
         code_check: "404"
+
+    -   name: "Positive_删除检索任务_参数校验_放宽id检查_请求成功"
+        url: "删除发现任务"
+        path_params: >-
+            {
+                "ids": "${discover_id},00000000000000000000"
+            }
+        query_params:  >-
+            {
+                "ignore_missing": true
+            }
+        code_check: "204"
 
     -   name: "Negative_查看检索任务详情_参数校验_id已删除_请求失败"
         url: "获取发现任务详情"
@@ -184,7 +197,7 @@ cases:
                 "catalog_id": "${catalog_id}"
             }
         code_check: "200"
-        resp_values: >-
+        resp_check: >-
             {
                 "$.total_count": 0
             }
