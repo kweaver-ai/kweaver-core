@@ -264,7 +264,7 @@ func validateObjectTypeLogicProperties(ctx context.Context, objectType *interfac
 			}
 			if !interfaces.IsValidRidKind(prop.Kind) {
 				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的 kind[%s]无效，只支持 skill, tool, operator, agent", objectType.OTName, prop.Name, prop.Kind))
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的 kind[%s]无效，只支持 skill", objectType.OTName, prop.Name, prop.Kind))
 			}
 			if prop.Field == "" {
 				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).

@@ -843,7 +843,7 @@ func Test_ValidateRidLogicProperty(t *testing.T) {
 		})
 
 		Convey("Success with all valid rid kinds\n", func() {
-			validKinds := []string{"skill", "tool", "operator", "agent"}
+			validKinds := []string{"skill"}
 			for _, kind := range validKinds {
 				ot := &interfaces.ObjectType{
 					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
