@@ -973,7 +973,7 @@ func (r *skillRegistry) assembleMarketSkillInfoList(ctx context.Context, release
 	var userIDs []string
 	skillInfos = []*interfaces.SkillInfo{}
 	for _, relese := range releaseDB {
-		skillInfos = append(skillInfos, convertSkillMarketDetail(relese))
+		skillInfos = append(skillInfos, convertSkillMarketDetail(relese, r.CategoryManager.GetCategoryName(ctx, interfaces.BizCategory(relese.Category))))
 		userIDs = append(userIDs, relese.CreateUser, relese.UpdateUser, relese.ReleaseUser)
 	}
 	// 获取用户名称
@@ -987,7 +987,6 @@ func (r *skillRegistry) assembleMarketSkillInfoList(ctx context.Context, release
 		skill.UpdateUser = utils.GetValueOrDefault(userMap, skill.UpdateUser, interfaces.UnknownUser)
 		skill.ReleaseUser = utils.GetValueOrDefault(userMap, skill.ReleaseUser, interfaces.UnknownUser)
 		skill.BusinessDomainID = utils.GetValueOrDefault(resourceToBdMap, skill.SkillID, businessDomainIDStr)
-		skill.CategoryName = r.CategoryManager.GetCategoryName(ctx, skill.Category)
 	}
 	return
 }
@@ -997,7 +996,7 @@ func (r *skillRegistry) assembleSkillInfoList(ctx context.Context, skillDBs []*m
 	var userIDs []string
 	skillInfos = []*interfaces.SkillInfo{}
 	for _, skill := range skillDBs {
-		skillInfos = append(skillInfos, convertSkillDetail(skill))
+		skillInfos = append(skillInfos, convertSkillDetail(skill, r.CategoryManager.GetCategoryName(ctx, interfaces.BizCategory(skill.Category))))
 		userIDs = append(userIDs, skill.CreateUser, skill.UpdateUser)
 	}
 	// 获取用户名称
@@ -1010,7 +1009,6 @@ func (r *skillRegistry) assembleSkillInfoList(ctx context.Context, skillDBs []*m
 		skill.CreateUser = utils.GetValueOrDefault(userMap, skill.CreateUser, interfaces.UnknownUser)
 		skill.UpdateUser = utils.GetValueOrDefault(userMap, skill.UpdateUser, interfaces.UnknownUser)
 		skill.BusinessDomainID = utils.GetValueOrDefault(resourceToBdMap, skill.SkillID, businessDomainIDStr)
-		skill.CategoryName = r.CategoryManager.GetCategoryName(ctx, skill.Category)
 	}
 	return
 }
@@ -1289,7 +1287,7 @@ func (r *skillRegistry) GetSkillMarketDetail(ctx context.Context, req *interface
 		err = errors.DefaultHTTPError(ctx, http.StatusNotFound, fmt.Sprintf("skill not found: %s", req.SkillID))
 		return nil, err
 	}
-	skillInfo := convertSkillMarketDetail(release)
+	skillInfo := convertSkillMarketDetail(release, r.CategoryManager.GetCategoryName(ctx, interfaces.BizCategory(release.Category)))
 	userNames, err := r.UserMgnt.GetUsersName(ctx, []string{release.CreateUser, release.UpdateUser, release.ReleaseUser})
 	if err != nil {
 		return nil, err
@@ -1324,7 +1322,7 @@ func (r *skillRegistry) GetSkillDetail(ctx context.Context, req *interfaces.GetS
 	if skill == nil || skill.IsDeleted {
 		return nil, fmt.Errorf("skill not found: %s", req.SkillID)
 	}
-	skillInfo := convertSkillDetail(skill)
+	skillInfo := convertSkillDetail(skill, r.CategoryManager.GetCategoryName(ctx, interfaces.BizCategory(skill.Category)))
 	// 获取用户信息
 	userNames, err := r.UserMgnt.GetUsersName(ctx, []string{skill.CreateUser, skill.UpdateUser})
 	if err != nil {
@@ -1335,12 +1333,14 @@ func (r *skillRegistry) GetSkillDetail(ctx context.Context, req *interfaces.GetS
 	return skillInfo, nil
 }
 
-func convertSkillDetail(skill *model.SkillRepositoryDB) *interfaces.SkillInfo {
+func convertSkillDetail(skill *model.SkillRepositoryDB, categoryName string) *interfaces.SkillInfo {
 	return &interfaces.SkillInfo{
 		SkillID:      skill.SkillID,
 		Name:         skill.Name,
 		Description:  skill.Description,
 		Version:      skill.Version,
+		Category:     interfaces.BizCategory(skill.Category),
+		CategoryName: categoryName,
 		Status:       interfaces.BizStatus(skill.Status),
 		Source:       skill.Source,
 		Dependencies: utils.JSONToObject[map[string]interface{}](skill.Dependencies),
@@ -1352,12 +1352,14 @@ func convertSkillDetail(skill *model.SkillRepositoryDB) *interfaces.SkillInfo {
 	}
 }
 
-func convertSkillMarketDetail(skill *model.SkillReleaseDB) *interfaces.SkillInfo {
+func convertSkillMarketDetail(skill *model.SkillReleaseDB, categoryName string) *interfaces.SkillInfo {
 	return &interfaces.SkillInfo{
 		SkillID:      skill.SkillID,
 		Name:         skill.Name,
 		Description:  skill.Description,
 		Version:      skill.Version,
+		Category:     interfaces.BizCategory(skill.Category),
+		CategoryName: categoryName,
 		Status:       interfaces.BizStatus(skill.Status),
 		Source:       skill.Source,
 		Dependencies: utils.JSONToObject[map[string]interface{}](skill.Dependencies),

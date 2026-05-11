@@ -1540,6 +1540,11 @@ components:
         update_time:
           type: integer
           format: int64
+        category:
+          type: string
+          enum: ["other_category", "system"]
+        category_name:
+          type: string
 
     SkillInfoData:
       type: object
@@ -1573,6 +1578,11 @@ components:
         update_time:
           type: integer
           format: int64
+        category:
+          type: string
+          enum: ["other_category", "system"]
+        category_name:
+          type: string
 
     SkillFileSummary:
       type: object
