@@ -3,12 +3,14 @@
 
 定义获取会话的查询对象。
 """
+
 from dataclasses import dataclass
 
 
 @dataclass
 class GetSessionQuery:
     """获取会话查询"""
+
     session_id: str
 
     def __post_init__(self):

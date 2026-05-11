@@ -3,6 +3,7 @@
 
 定义模板数据传输对象。
 """
+
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Dict
@@ -13,6 +14,7 @@ from src.domain.entities.template import Template
 @dataclass
 class TemplateDTO:
     """模板数据传输对象"""
+
     id: str
     name: str
     image_url: str
@@ -37,18 +39,18 @@ class TemplateDTO:
                 return default
 
             # Remove any non-numeric characters except decimal point
-            numeric_str = re.sub(r'[^0-9.]', '', value)
+            numeric_str = re.sub(r"[^0-9.]", "", value)
             if not numeric_str:
                 return default
 
             numeric = float(numeric_str)
 
             # Convert to MB based on unit
-            if 'Gi' in value or 'GB' in value or 'G' in value:
+            if "Gi" in value or "GB" in value or "G" in value:
                 return int(numeric * 1024)
-            elif 'Mi' in value or 'MB' in value or 'M' in value:
+            elif "Mi" in value or "MB" in value or "M" in value:
                 return int(numeric)
-            elif 'Ki' in value or 'KB' in value or 'K' in value:
+            elif "Ki" in value or "KB" in value or "K" in value:
                 return int(numeric / 1024)
             else:
                 # Assume MB if no unit
@@ -59,7 +61,9 @@ class TemplateDTO:
             name=template.name,
             image_url=template.image,  # Map image to image_url
             runtime_type="python3.11",  # Default, should be from entity if available
-            default_cpu_cores=float(template.default_resources.cpu) if template.default_resources.cpu else 0.5,
+            default_cpu_cores=(
+                float(template.default_resources.cpu) if template.default_resources.cpu else 0.5
+            ),
             default_memory_mb=parse_resource(template.default_resources.memory, 512, "memory"),
             default_disk_mb=parse_resource(template.default_resources.disk, 1024, "disk"),
             default_timeout_sec=template.default_timeout_sec,

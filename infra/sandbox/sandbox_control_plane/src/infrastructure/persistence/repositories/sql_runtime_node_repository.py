@@ -4,6 +4,7 @@
 使用 SQLAlchemy 实现运行时节点仓储接口。
 按照数据表命名规范使用 f_ 前缀字段名。
 """
+
 import time
 from typing import List, Optional
 from decimal import Decimal
@@ -27,6 +28,7 @@ class SqlRuntimeNodeRepository(IRuntimeNodeRepository):
     async def save(self, node) -> None:
         """保存节点（创建或更新）"""
         import json
+
         model = await self._session.get(RuntimeNodeModel, node.node_id)
         now_ms = int(time.time() * 1000)
 
@@ -40,7 +42,11 @@ class SqlRuntimeNodeRepository(IRuntimeNodeRepository):
             model.f_total_cpu_cores = Decimal(str(node.total_cpu_cores))
             model.f_total_memory_mb = node.total_memory_mb
             model.f_max_containers = node.max_sessions
-            model.f_cached_images = json.dumps(node.cached_templates, ensure_ascii=False) if node.cached_templates else "[]"
+            model.f_cached_images = (
+                json.dumps(node.cached_templates, ensure_ascii=False)
+                if node.cached_templates
+                else "[]"
+            )
             model.f_updated_at = now_ms
         else:
             # 创建新记录
@@ -54,7 +60,11 @@ class SqlRuntimeNodeRepository(IRuntimeNodeRepository):
                 f_total_cpu_cores=Decimal(str(node.total_cpu_cores)),
                 f_total_memory_mb=node.total_memory_mb,
                 f_max_containers=node.max_sessions,
-                f_cached_images=json.dumps(node.cached_templates, ensure_ascii=False) if node.cached_templates else "[]",
+                f_cached_images=(
+                    json.dumps(node.cached_templates, ensure_ascii=False)
+                    if node.cached_templates
+                    else "[]"
+                ),
                 f_labels="{}",
                 f_running_containers=0,
                 f_allocated_cpu_cores=Decimal("0"),
@@ -88,11 +98,7 @@ class SqlRuntimeNodeRepository(IRuntimeNodeRepository):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def find_all(
-        self,
-        offset: int = 0,
-        limit: int = 100
-    ) -> List:
+    async def find_all(self, offset: int = 0, limit: int = 100) -> List:
         """查找所有节点"""
         stmt = (
             select(RuntimeNodeModel)
@@ -103,11 +109,7 @@ class SqlRuntimeNodeRepository(IRuntimeNodeRepository):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def update_status(
-        self,
-        node_id: str,
-        status: str
-    ) -> None:
+    async def update_status(self, node_id: str, status: str) -> None:
         """更新节点状态"""
         stmt = (
             update(RuntimeNodeModel)
@@ -127,18 +129,14 @@ class SqlRuntimeNodeRepository(IRuntimeNodeRepository):
         await self._session.execute(stmt)
         await self._session.flush()
 
-    async def allocate_resources(
-        self,
-        node_id: str,
-        cpu_cores: float,
-        memory_mb: int
-    ) -> None:
+    async def allocate_resources(self, node_id: str, cpu_cores: float, memory_mb: int) -> None:
         """分配资源"""
         stmt = (
             update(RuntimeNodeModel)
             .where(RuntimeNodeModel.f_node_id == node_id)
             .values(
-                f_allocated_cpu_cores=RuntimeNodeModel.f_allocated_cpu_cores + Decimal(str(cpu_cores)),
+                f_allocated_cpu_cores=RuntimeNodeModel.f_allocated_cpu_cores
+                + Decimal(str(cpu_cores)),
                 f_allocated_memory_mb=RuntimeNodeModel.f_allocated_memory_mb + memory_mb,
                 f_updated_at=int(time.time() * 1000),
             )
@@ -146,18 +144,14 @@ class SqlRuntimeNodeRepository(IRuntimeNodeRepository):
         await self._session.execute(stmt)
         await self._session.flush()
 
-    async def release_resources(
-        self,
-        node_id: str,
-        cpu_cores: float,
-        memory_mb: int
-    ) -> None:
+    async def release_resources(self, node_id: str, cpu_cores: float, memory_mb: int) -> None:
         """释放资源"""
         stmt = (
             update(RuntimeNodeModel)
             .where(RuntimeNodeModel.f_node_id == node_id)
             .values(
-                f_allocated_cpu_cores=RuntimeNodeModel.f_allocated_cpu_cores - Decimal(str(cpu_cores)),
+                f_allocated_cpu_cores=RuntimeNodeModel.f_allocated_cpu_cores
+                - Decimal(str(cpu_cores)),
                 f_allocated_memory_mb=RuntimeNodeModel.f_allocated_memory_mb - memory_mb,
                 f_updated_at=int(time.time() * 1000),
             )

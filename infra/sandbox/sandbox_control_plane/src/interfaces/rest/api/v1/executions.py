@@ -3,6 +3,7 @@
 
 定义执行相关的 HTTP 端点。
 """
+
 import asyncio
 import fastapi
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -17,7 +18,7 @@ from src.interfaces.rest.schemas.request import ExecuteCodeRequest
 from src.interfaces.rest.schemas.response import (
     ExecutionResponse,
     ExecuteCodeResponse,
-    ErrorResponse
+    ErrorResponse,
 )
 from src.infrastructure.dependencies import (
     USE_SQL_REPOSITORIES,
@@ -35,11 +36,15 @@ router = APIRouter(prefix="/executions", tags=["executions"])
 _get_session_service = get_session_service_db if USE_SQL_REPOSITORIES else get_mock_session_service
 
 
-@router.post("/sessions/{session_id}/execute", response_model=ExecuteCodeResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/sessions/{session_id}/execute",
+    response_model=ExecuteCodeResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def submit_execution(
     session_id: str,
     request: ExecuteCodeRequest,
-    service: SessionService = Depends(_get_session_service)
+    service: SessionService = Depends(_get_session_service),
 ):
     """
     提交代码执行
@@ -65,7 +70,7 @@ async def submit_execution(
         execution_id=execution_dto.id,
         session_id=execution_dto.session_id,
         status=execution_dto.status,
-        created_at=execution_dto.created_at
+        created_at=execution_dto.created_at,
     )
 
 
@@ -73,9 +78,13 @@ async def submit_execution(
 async def execute_code_sync(
     session_id: str,
     request: ExecuteCodeRequest,
-    poll_interval: float = Query(default=0.5, ge=0.1, le=10.0, description="Polling interval in seconds"),
-    sync_timeout: int = Query(default=300, ge=10, le=3600, description="Maximum wait time in seconds"),
-    service: SessionService = Depends(_get_session_service)
+    poll_interval: float = Query(
+        default=0.5, ge=0.1, le=10.0, description="Polling interval in seconds"
+    ),
+    sync_timeout: int = Query(
+        default=300, ge=10, le=3600, description="Maximum wait time in seconds"
+    ),
+    service: SessionService = Depends(_get_session_service),
 ):
     """
     Synchronous code execution endpoint
@@ -112,12 +121,15 @@ async def execute_code_sync(
         ExecutionStatus.COMPLETED.value,
         ExecutionStatus.FAILED.value,
         ExecutionStatus.TIMEOUT.value,
-        ExecutionStatus.CRASHED.value
+        ExecutionStatus.CRASHED.value,
     }
 
     import logging
+
     logger = logging.getLogger(__name__)
-    logger.info(f"Starting sync polling loop: execution_id={execution_id}, USE_SQL_REPOSITORIES={USE_SQL_REPOSITORIES}")
+    logger.info(
+        f"Starting sync polling loop: execution_id={execution_id}, USE_SQL_REPOSITORIES={USE_SQL_REPOSITORIES}"
+    )
 
     while True:
         # Check timeout
@@ -125,7 +137,7 @@ async def execute_code_sync(
         if elapsed >= sync_timeout:
             raise HTTPException(
                 status_code=status.HTTP_408_REQUEST_TIMEOUT,
-                detail=f"Synchronous execution timeout after {sync_timeout}s"
+                detail=f"Synchronous execution timeout after {sync_timeout}s",
             )
 
         # Get current status - use a fresh database session for each poll
@@ -153,21 +165,23 @@ async def _get_execution_with_fresh_session(execution_id: str) -> ExecutionDTO:
     MySQL's REPEATABLE-READ transaction isolation. Each poll needs to
     see the latest committed data from the executor callback.
     """
-    from src.infrastructure.persistence.repositories.sql_execution_repository import SqlExecutionRepository
+    from src.infrastructure.persistence.repositories.sql_execution_repository import (
+        SqlExecutionRepository,
+    )
 
     async with db_manager.get_session() as session:
         repo = SqlExecutionRepository(session)
         execution = await repo.find_by_id(execution_id)
         if not execution:
             from src.shared.errors.domain import NotFoundError
+
             raise NotFoundError(f"Execution not found: {execution_id}")
         return ExecutionDTO.from_entity(execution)
 
 
 @router.get("/{execution_id}/status", response_model=ExecutionResponse)
 async def get_execution_status(
-    execution_id: str,
-    service: SessionService = Depends(_get_session_service)
+    execution_id: str, service: SessionService = Depends(_get_session_service)
 ):
     """获取执行状态"""
     query = GetExecutionQuery(execution_id=execution_id)
@@ -177,8 +191,7 @@ async def get_execution_status(
 
 @router.get("/{execution_id}/result", response_model=ExecutionResponse)
 async def get_execution_result(
-    execution_id: str,
-    service: SessionService = Depends(_get_session_service)
+    execution_id: str, service: SessionService = Depends(_get_session_service)
 ):
     """获取执行结果"""
     query = GetExecutionQuery(execution_id=execution_id)
@@ -191,17 +204,12 @@ async def list_executions(
     session_id: str,
     limit: int = 50,
     offset: int = 0,
-    service: SessionService = Depends(_get_session_service)
+    service: SessionService = Depends(_get_session_service),
 ):
     """列出会话的所有执行"""
     executions = await service.list_executions(session_id=session_id, limit=limit)
 
-    return {
-        "items": executions,
-        "total": len(executions),
-        "limit": limit,
-        "offset": offset
-    }
+    return {"items": executions, "total": len(executions), "limit": limit, "offset": offset}
 
 
 def _map_dto_to_response(dto: ExecutionDTO) -> ExecutionResponse:
@@ -220,5 +228,5 @@ def _map_dto_to_response(dto: ExecutionDTO) -> ExecutionResponse:
         metrics=dto.metrics,
         created_at=dto.created_at,
         started_at=dto.started_at,
-        completed_at=dto.completed_at
+        completed_at=dto.completed_at,
     )

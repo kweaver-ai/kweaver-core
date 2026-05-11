@@ -1,10 +1,10 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`runtime/executor/` contains the code execution daemon. The service is split into `application/` for use-case orchestration, `domain/` for core models and ports, `infrastructure/` for isolation, HTTP, logging, and persistence adapters, and `interfaces/` for external entry points. Tests live under `tests/`, while longer-form developer docs are in `docs/`. Container build assets are defined by `Dockerfile` and the local `Makefile`.
+`runtime/executor/` contains the code execution daemon. The service is split into `application/` for use-case orchestration, `domain/` for core models and ports, `infrastructure/` for isolation, HTTP, logging, and persistence adapters, and `interfaces/` for external entry points. Tests live under `tests/`, while longer-form developer docs are in `docs/`. Container image build assets live under the repository-level `images/` directory.
 
 ## Build, Test, and Development Commands
-Use `make build` to build the executor base image and `make run` to launch it locally on port `8080`. Run `make test-unit` for the unit suite and `make test-cov` for coverage-checked tests. Use `uv run pytest tests/unit/ -v --tb=short` directly when you need a narrower loop. `make test` performs a basic image import check, and `make shell` opens a shell inside the built container.
+Use `make build` as a convenience wrapper for the repository-level `images/build.sh` template build. Run `make test-unit` for the unit suite and `make test-cov` for coverage-checked tests. Use `uv run pytest tests/unit/ -v --tb=short` directly when you need a narrower loop. `make test` performs a basic import check in the local Python environment.
 
 ## Coding Style & Naming Conventions
 Target Python 3.11 with 4-space indentation and explicit typing for new code. Black enforces a 100-character line length; Mypy is enabled, and existing config still includes Flake8 in the dev dependencies. Name modules in `snake_case` and keep service or port names aligned with their responsibilities, for example `heartbeat_service.py` or `callback_port.py`. Keep platform-specific isolation details contained in `infrastructure/isolation/`.

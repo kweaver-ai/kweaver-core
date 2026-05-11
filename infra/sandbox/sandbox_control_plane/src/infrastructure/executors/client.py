@@ -3,6 +3,7 @@
 
 用于与沙箱容器内的执行器进行 HTTP 通信。
 """
+
 import asyncio
 import logging
 from typing import Optional
@@ -118,7 +119,9 @@ class ExecutorClient:
             working_directory=working_directory,
         )
 
-        logger.info(f"Submitting execution request: executor_url={executor_url}, execution_id={execution_id}, language={language}")
+        logger.info(
+            f"Submitting execution request: executor_url={executor_url}, execution_id={execution_id}, language={language}"
+        )
 
         for attempt in range(self._max_retries):
             try:
@@ -130,19 +133,21 @@ class ExecutorClient:
 
                 if response.status_code == 200:
                     result = ExecutorExecuteResponse(**response.json())
-                    logger.info(f"Execution submitted successfully: execution_id={execution_id}, status={result.status}")
+                    logger.info(
+                        f"Execution submitted successfully: execution_id={execution_id}, status={result.status}"
+                    )
                     return result.execution_id
 
                 elif response.status_code == 400:
                     # Validation error - don't retry
-                    raise ExecutorValidationError(
-                        executor_url, response.json().get("errors", [])
-                    )
+                    raise ExecutorValidationError(executor_url, response.json().get("errors", []))
 
                 elif response.status_code >= 500:
                     # Server error - retry
                     if attempt < self._max_retries - 1:
-                        logger.warning(f"Executor returned {response.status_code}, retrying... attempt={attempt + 1}")
+                        logger.warning(
+                            f"Executor returned {response.status_code}, retrying... attempt={attempt + 1}"
+                        )
                         await asyncio.sleep(self._retry_delay * (attempt + 1))
                         continue
                     else:
@@ -161,7 +166,9 @@ class ExecutorClient:
 
             except httpx.ConnectError as e:
                 if attempt < self._max_retries - 1:
-                    logger.warning(f"Failed to connect to executor, retrying... executor_url={executor_url}, attempt={attempt + 1}, error={e}")
+                    logger.warning(
+                        f"Failed to connect to executor, retrying... executor_url={executor_url}, attempt={attempt + 1}, error={e}"
+                    )
                     await asyncio.sleep(self._retry_delay * (attempt + 1))
                     continue
                 else:
@@ -199,9 +206,7 @@ class ExecutorClient:
             if response.status_code == 200:
                 return ExecutorHealthResponse(**response.json())
             else:
-                raise ExecutorUnavailableError(
-                    executor_url, f"status_code={response.status_code}"
-                )
+                raise ExecutorUnavailableError(executor_url, f"status_code={response.status_code}")
 
         except httpx.ConnectError as e:
             raise ExecutorConnectionError(executor_url, str(e))
@@ -216,10 +221,12 @@ class ExecutorClient:
         python_package_index_url: str,
         dependencies: list[str],
         sync_mode: str,
+        executor_timeout: float | None = None,
     ) -> ExecutorSyncSessionConfigResponse:
         """同步会话依赖配置到 executor。"""
         client = self._get_client()
         url = f"{executor_url}/internal/session-config/sync"
+        effective_timeout = executor_timeout or self._timeout
         request = ExecutorSyncSessionConfigRequest(
             session_id=session_id,
             language_runtime=language_runtime,
@@ -233,11 +240,12 @@ class ExecutorClient:
                 url,
                 json=request.model_dump(),
                 headers={"Content-Type": "application/json"},
+                timeout=effective_timeout,
             )
         except httpx.ConnectError as e:
             raise ExecutorConnectionError(executor_url, str(e))
         except httpx.TimeoutException:
-            raise ExecutorTimeoutError(executor_url, self._timeout)
+            raise ExecutorTimeoutError(executor_url, effective_timeout)
 
         if response.status_code == 200:
             return ExecutorSyncSessionConfigResponse(**response.json())

@@ -3,6 +3,7 @@
 
 提供默认数据定义和初始化逻辑。
 """
+
 from src.infrastructure.persistence.seed.default_data import (
     get_default_runtime_nodes,
     get_default_templates,

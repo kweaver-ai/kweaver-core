@@ -21,6 +21,8 @@ from executor.infrastructure.isolation.code_wrapper import normalize_shell_code
 
 logger = logging.getLogger(__name__)
 
+EXECUTION_PATH = "/usr/local/go/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
+
 
 class SubprocessRunner:
     """
@@ -183,7 +185,7 @@ class SubprocessRunner:
         env_args = os.environ.copy()
         # Override specific variables
         env_args.update({
-            "PATH": "/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin",
+            "PATH": EXECUTION_PATH,
             "HOME": str(self.workspace_path),
             "USER": "sandbox",
             "WORKSPACE_PATH": str(self.workspace_path),

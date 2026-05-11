@@ -4,6 +4,7 @@
 SQLAlchemy 模型定义，用于数据库持久化。
 按照数据表命名规范: t_{module}_{entity}, f_{field_name}
 """
+
 from datetime import datetime
 from decimal import Decimal
 
@@ -20,6 +21,7 @@ class TemplateModel(Base):
 
     这是基础设施层的实现细节，映射到数据库表。
     """
+
     __tablename__ = "t_sandbox_template"
 
     # Primary fields
@@ -108,24 +110,25 @@ class TemplateModel(Base):
                 return 512  # 默认值
 
             # 提取数字部分
-            numeric_str = re.sub(r'[^0-9.]', '', value)
+            numeric_str = re.sub(r"[^0-9.]", "", value)
             if not numeric_str:
                 return 512
 
             numeric = float(numeric_str)
 
             # 根据单位转换
-            if 'Gi' in value or 'GB' in value or 'G' in value:
+            if "Gi" in value or "GB" in value or "G" in value:
                 return int(numeric * 1024)
-            elif 'Mi' in value or 'MB' in value or 'M' in value:
+            elif "Mi" in value or "MB" in value or "M" in value:
                 return int(numeric)
-            elif 'Ki' in value or 'KB' in value or 'K' in value:
+            elif "Ki" in value or "KB" in value or "K" in value:
                 return int(numeric / 1024)
             else:
                 # 如果没有单位，假设是 MB
                 return int(numeric)
 
         import json
+
         now_ms = int(datetime.now().timestamp() * 1000)
 
         return cls(
@@ -134,7 +137,9 @@ class TemplateModel(Base):
             f_description="",
             f_image_url=template.image,
             f_base_image=template.base_image,
-            f_pre_installed_packages=json.dumps(template.pre_installed_packages, ensure_ascii=False),
+            f_pre_installed_packages=json.dumps(
+                template.pre_installed_packages, ensure_ascii=False
+            ),
             f_runtime_type="python3.11",  # Default, should be inferred
             f_default_cpu_cores=Decimal(template.default_resources.cpu),
             f_default_memory_mb=parse_mb_value(template.default_resources.memory),
@@ -143,9 +148,13 @@ class TemplateModel(Base):
             f_default_env_vars="",
             f_security_context=json.dumps(template.security_context, ensure_ascii=False),
             f_is_active=1,
-            f_created_at=int(template.created_at.timestamp() * 1000) if template.created_at else now_ms,
+            f_created_at=(
+                int(template.created_at.timestamp() * 1000) if template.created_at else now_ms
+            ),
             f_created_by="",
-            f_updated_at=int(template.updated_at.timestamp() * 1000) if template.updated_at else now_ms,
+            f_updated_at=(
+                int(template.updated_at.timestamp() * 1000) if template.updated_at else now_ms
+            ),
             f_updated_by="",
             f_deleted_at=0,
             f_deleted_by="",
@@ -157,6 +166,7 @@ class TemplateModel(Base):
             return None
         try:
             import json
+
             return json.loads(value)
         except (json.JSONDecodeError, ValueError):
             return None

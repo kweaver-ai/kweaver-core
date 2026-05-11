@@ -3,6 +3,7 @@
 
 负责同步 Session 状态与实际容器状态，支持启动时同步和定时健康检查。
 """
+
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -64,7 +65,7 @@ class StateSyncService:
             "takeover_recreated": 0,
             "takeover_skipped": 0,
             "interrupted_executions": 0,
-            "errors": []
+            "errors": [],
         }
 
         try:
@@ -78,7 +79,9 @@ class StateSyncService:
                     await self._take_over_session_on_startup(session, stats)
                 else:
                     if not session.container_id:
-                        logger.warning("Session has no container_id, skipping", session_id=session.id)
+                        logger.warning(
+                            "Session has no container_id, skipping", session_id=session.id
+                        )
                         continue
 
                     await self._check_and_recover_session(session, stats)
@@ -104,7 +107,9 @@ class StateSyncService:
     def _is_kubernetes_takeover_enabled(self) -> bool:
         """仅在 K8s 调度路径启用启动接管。"""
         cluster_node = getattr(self._scheduler, "_cluster_node", None)
-        return bool(cluster_node is not None and getattr(cluster_node, "type", None) == "kubernetes")
+        return bool(
+            cluster_node is not None and getattr(cluster_node, "type", None) == "kubernetes"
+        )
 
     def _get_current_owner_uid(self) -> Optional[str]:
         owner_context = getattr(self._scheduler, "_owner_context", None)
@@ -161,7 +166,9 @@ class StateSyncService:
                     stats["failed"] += 1
                 return
 
-            ownership = await self._container_scheduler.get_container_ownership(session.container_id)
+            ownership = await self._container_scheduler.get_container_ownership(
+                session.container_id
+            )
             if ownership is None:
                 logger.warning(
                     "Executor pod missing during startup takeover, recreating executor",
@@ -187,7 +194,9 @@ class StateSyncService:
             )
 
             if owner_matches:
-                is_running = await self._container_scheduler.is_container_running(session.container_id)
+                is_running = await self._container_scheduler.is_container_running(
+                    session.container_id
+                )
                 if is_running:
                     stats["healthy"] += 1
                     stats["takeover_skipped"] += 1
@@ -299,7 +308,7 @@ class StateSyncService:
             "unhealthy": 0,
             "recovered": 0,
             "failed": 0,
-            "errors": []
+            "errors": [],
         }
 
         try:
@@ -482,23 +491,17 @@ class StateSyncService:
         """
         session = await self._session_repo.find_by_id(session_id)
         if not session:
-            return {
-                "session_id": session_id,
-                "status": "not_found",
-                "error": "Session not found"
-            }
+            return {"session_id": session_id, "status": "not_found", "error": "Session not found"}
 
         if not session.container_id:
             return {
                 "session_id": session_id,
                 "status": "no_container",
-                "error": "Session has no container_id"
+                "error": "Session has no container_id",
             }
 
         try:
-            is_running = await self._container_scheduler.is_container_running(
-                session.container_id
-            )
+            is_running = await self._container_scheduler.is_container_running(session.container_id)
 
             return {
                 "session_id": session_id,

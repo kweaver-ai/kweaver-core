@@ -167,7 +167,7 @@ flowchart TD
 
 ### Build Images
 
-Before starting the services, build the executor base image and template images:
+Before starting the services, build the versioned executor/template images:
 
 ```bash
 cd images
@@ -175,22 +175,42 @@ cd images
 ```
 
 The build script creates:
-- `sandbox-executor-base:latest` - Base executor image
-- `sandbox-template-python-basic:latest` - Python basic template
+- `sandbox-template-python-basic:<VERSION>` - Python executor template
+- `sandbox-template-multi-language:<VERSION>` - Python, Go, and Bash executor template
 
+Stable runtime base images are rebuilt only when runtime dependencies change:
+
+```bash
+cd images
+./build.sh --build-bases
+```
+
+This creates:
+- `sandbox-python-executor-base:python3.11-v1` - Stable Python runtime base without executor code
+- `sandbox-multi-executor-base:go1.25-python3.11-v1` - Stable Python, Go, and Bash runtime base without executor code
+
+To push multi-arch base images to Huawei Cloud SWR, install `skopeo` and use Docker Buildx. The script exports `linux/amd64,linux/arm64` OCI archives and copies them to SWR:
+
+```bash
+cd images
+./build.sh --build-bases --push-swr-bases \
+  --swr-registry swr.cn-east-3.myhuaweicloud.com \
+  --swr-namespace kweaver-ai/sandbox \
+  --swr-creds '<username>:<password>'
+```
 
 ### Using Mirror Sources (Optional)
 
 If you're building images in a network environment with limited access to official repositories (e.g., mainland China), you can use mirror sources:
 
 ```bash
-# Build executor images with mirror support
+# Build versioned executor/template images with mirror support
 cd images
 USE_MIRROR=true ./build.sh
 
-# Build Control Plane with mirror
-cd ../sandbox_control_plane
-docker build --build-arg USE_MIRROR=true -t sandbox-control-plane .
+# Build Control Plane with mirror from the repository root so VERSION is included
+cd ..
+docker build -f sandbox_control_plane/Dockerfile --build-arg USE_MIRROR=true -t sandbox-control-plane .
 
 # Build Web Console with mirror
 cd ../sandbox_web
@@ -199,6 +219,8 @@ docker build --build-arg USE_MIRROR=true -t sandbox-web .
 
 Available mirror sources:
 - **Default**: USTC mirrors (Debian/APT, Alpine/APK, Python/pip)
+- **Python base image**: `--use-mirror` switches `python:3.11-slim` to `docker.m.daocloud.io/library/python:3.11-slim`
+- **Go tarballs**: `--use-mirror` switches Go downloads from `https://go.dev/dl` to `https://mirrors.ustc.edu.cn/golang`
 - **Custom**: Use `--build-arg APT_MIRROR=your-mirror` to specify a custom mirror
 
 ### Start Services
@@ -213,6 +235,23 @@ docker-compose -f deploy/docker-compose/docker-compose.yml logs -f control-plane
 # Check service status
 docker-compose -f deploy/docker-compose/docker-compose.yml ps
 ```
+
+Docker Compose configures the Control Plane default template images through `TEMPLATE_IMAGE_TAG`.
+If `TEMPLATE_IMAGE_TAG` is not set, the Control Plane reads `/app/VERSION` and uses that value as the template image tag. For branch builds, pass the full generated template image tag and recreate the Control Plane container:
+
+```bash
+TEMPLATE_IMAGE_TAG=0.4.0-feature-sandbox-20260512.git-4188ba2-opensource \
+docker-compose -f deploy/docker-compose/docker-compose.yml up -d --force-recreate control-plane
+```
+
+This expands to:
+
+```text
+swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip/sandbox-template-python-basic:<TEMPLATE_IMAGE_TAG>
+swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip/sandbox-template-multi-language:<TEMPLATE_IMAGE_TAG>
+```
+
+You can also override `DEFAULT_TEMPLATE_IMAGE` and `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE` directly when different repositories or tags are required.
 
 ### Kubernetes Deployment (Production)
 
@@ -346,7 +385,9 @@ sandbox/
 │   └── Dockerfile            # Executor container image
 │
 ├── images/                    # Container image build scripts
-│   └── build.sh              # Build executor base and template images
+│   ├── bases/                # Stable runtime base images without executor code
+│   ├── templates/            # Versioned executor/template image definitions
+│   └── build.sh              # Build runtime bases and versioned template images
 │
 ├── scripts/                  # Utility scripts
 ├── specs/                    # Implementation specifications

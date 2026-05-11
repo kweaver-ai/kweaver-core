@@ -3,9 +3,11 @@
 
 编排文件上传下载相关的用例。
 """
+
 import io
 import mimetypes
 import re
+import stat
 import zipfile
 from pathlib import PurePosixPath
 from typing import Dict, List, Any
@@ -27,16 +29,20 @@ class FileService:
         self,
         session_repo: ISessionRepository,
         storage_service: IStorageService,
+        max_extracted_file_count: int = 10000,
+        max_extracted_total_size_mb: int = 512,
     ):
         self._session_repo = session_repo
         self._storage_service = storage_service
+        self._max_extracted_file_count = max_extracted_file_count
+        self._max_extracted_total_size_bytes = max_extracted_total_size_mb * 1024 * 1024
 
     async def upload_file(
         self,
         session_id: str,
         path: str,
         content: bytes,
-        content_type: str = "application/octet-stream"
+        content_type: str = "application/octet-stream",
     ) -> str:
         """
         上传文件用例
@@ -58,9 +64,7 @@ class FileService:
 
         s3_path = f"{session.workspace_path}/{normalized_path}"
         await self._storage_service.upload_file(
-            s3_path=s3_path,
-            content=content,
-            content_type=content_type
+            s3_path=s3_path, content=content, content_type=content_type
         )
 
         return normalized_path
@@ -91,16 +95,34 @@ class FileService:
         except zipfile.BadZipFile as exc:
             raise ValidationError("Invalid ZIP archive") from exc
 
-        extracted_file_count = 0
-        skipped_file_count = 0
-
         with archive:
+            entries: list[tuple[zipfile.ZipInfo, str, str]] = []
+            total_uncompressed_size = 0
+
             for zip_info in archive.infolist():
                 if zip_info.is_dir():
                     continue
 
-                entry_path = self._validate_zip_entry_path(zip_info.filename)
-                destination_path = self._join_paths(extract_path, entry_path)
+                entry_path = self._validate_zip_entry_path(zip_info)
+                total_uncompressed_size += zip_info.file_size
+
+                if len(entries) + 1 > self._max_extracted_file_count:
+                    raise ValidationError("ZIP archive contains too many files")
+                if total_uncompressed_size > self._max_extracted_total_size_bytes:
+                    raise ValidationError("ZIP archive uncompressed size exceeds limit")
+
+                entries.append(
+                    (
+                        zip_info,
+                        entry_path,
+                        self._join_paths(extract_path, entry_path),
+                    )
+                )
+
+            extracted_file_count = 0
+            skipped_file_count = 0
+
+            for zip_info, entry_path, destination_path in entries:
                 s3_path = f"{session.workspace_path}/{destination_path}"
 
                 if not overwrite and await self._storage_service.file_exists(s3_path):
@@ -165,10 +187,7 @@ class FileService:
         }
 
     async def list_files(
-        self,
-        session_id: str,
-        path: str = None,
-        limit: int = 1000
+        self, session_id: str, path: str = None, limit: int = 1000
     ) -> List[Dict[str, Any]]:
         """
         列出 session 下的文件
@@ -214,7 +233,7 @@ class FileService:
             # key 格式: sessions/{session_id}/conversation-1231/uploads/temparea/test.csv
             # s3_key_prefix 格式: sessions/{session_id}/
             if key.startswith(s3_key_prefix):
-                relative_path = key[len(s3_key_prefix):].lstrip("/")
+                relative_path = key[len(s3_key_prefix) :].lstrip("/")
             else:
                 relative_path = key.lstrip("/")
 
@@ -225,13 +244,15 @@ class FileService:
             # 容器内挂载路径: /workspace/{relative_path}
             container_path = f"/workspace/{relative_path}"
 
-            result.append({
-                "name": relative_path,
-                "container_path": container_path,
-                "size": file["size"],
-                "modified_time": file.get("last_modified"),
-                "etag": file.get("etag")
-            })
+            result.append(
+                {
+                    "name": relative_path,
+                    "container_path": container_path,
+                    "size": file["size"],
+                    "modified_time": file.get("last_modified"),
+                    "etag": file.get("etag"),
+                }
+            )
 
         return result
 
@@ -260,10 +281,14 @@ class FileService:
         normalized = self._validate_relative_path(path)
         return normalized.rstrip("/")
 
-    def _validate_zip_entry_path(self, path: str) -> str:
+    def _validate_zip_entry_path(self, zip_info: zipfile.ZipInfo) -> str:
+        path = zip_info.filename
         if not path:
             raise ValidationError("Invalid ZIP entry path")
         if path.startswith("/") or "\\" in path or re.match(r"^[A-Za-z]:", path):
+            raise ValidationError("Invalid ZIP entry path")
+        mode = zip_info.external_attr >> 16
+        if stat.S_ISLNK(mode):
             raise ValidationError("Invalid ZIP entry path")
 
         normalized = PurePosixPath(path).as_posix()

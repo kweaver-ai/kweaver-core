@@ -3,6 +3,7 @@
 
 负责定期清理空闲会话和过期会话，自动销毁关联的容器和删除关联的文件。
 """
+
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional
@@ -52,8 +53,12 @@ class SessionCleanupService:
         self._session_repo = session_repo
         self._scheduler = scheduler
         self._storage_service = storage_service
-        self._idle_timeout = None if idle_timeout_minutes == -1 else timedelta(minutes=idle_timeout_minutes)
-        self._max_lifetime = None if max_lifetime_hours == -1 else timedelta(hours=max_lifetime_hours)
+        self._idle_timeout = (
+            None if idle_timeout_minutes == -1 else timedelta(minutes=idle_timeout_minutes)
+        )
+        self._max_lifetime = (
+            None if max_lifetime_hours == -1 else timedelta(hours=max_lifetime_hours)
+        )
 
     async def cleanup_idle_sessions(self) -> Dict[str, int]:
         """
@@ -70,12 +75,7 @@ class SessionCleanupService:
                 - expired_cleaned: 过期清理的会话数
                 - errors: 错误列表
         """
-        stats = {
-            "total_checked": 0,
-            "idle_cleaned": 0,
-            "expired_cleaned": 0,
-            "errors": []
-        }
+        stats = {"total_checked": 0, "idle_cleaned": 0, "expired_cleaned": 0, "errors": []}
 
         try:
             now = datetime.now()
@@ -94,11 +94,15 @@ class SessionCleanupService:
             for session in active_sessions:
                 try:
                     # 检查是否超过最大生命周期（如果启用）
-                    if max_lifetime_threshold and session.created_at and session.created_at < max_lifetime_threshold:
+                    if (
+                        max_lifetime_threshold
+                        and session.created_at
+                        and session.created_at < max_lifetime_threshold
+                    ):
                         await self._cleanup_session(
                             session,
                             reason="max_lifetime_exceeded",
-                            detail=f"Session created at {session.created_at} exceeded max lifetime of {self._max_lifetime}"
+                            detail=f"Session created at {session.created_at} exceeded max lifetime of {self._max_lifetime}",
                         )
                         stats["expired_cleaned"] += 1
                         continue
@@ -111,7 +115,7 @@ class SessionCleanupService:
                             await self._cleanup_session(
                                 session,
                                 reason="idle_timeout",
-                                detail=f"Session last activity at {last_activity} exceeded idle timeout of {self._idle_timeout}"
+                                detail=f"Session last activity at {last_activity} exceeded idle timeout of {self._idle_timeout}",
                             )
                             stats["idle_cleaned"] += 1
                             continue
@@ -142,11 +146,7 @@ class SessionCleanupService:
         Returns:
             dict: 清理统计信息
         """
-        stats = {
-            "total_checked": 0,
-            "cleaned": 0,
-            "errors": []
-        }
+        stats = {"total_checked": 0, "cleaned": 0, "errors": []}
 
         try:
             # 查询失败和超时的会话
@@ -163,7 +163,7 @@ class SessionCleanupService:
                         await self._cleanup_session(
                             session,
                             reason="orphaned_cleanup",
-                            detail=f"Session in {session.status} status with container {session.container_id}"
+                            detail=f"Session in {session.status} status with container {session.container_id}",
                         )
                         stats["cleaned"] += 1
                     except Exception as e:
@@ -184,11 +184,7 @@ class SessionCleanupService:
 
         return stats
 
-    async def cleanup_session_files(
-        self,
-        session: Session,
-        reason: str
-    ) -> int:
+    async def cleanup_session_files(self, session: Session, reason: str) -> int:
         """
         删除会话关联的所有文件
 
@@ -200,7 +196,9 @@ class SessionCleanupService:
             删除的文件数量
         """
         if not self._storage_service:
-            logger.debug(f"Storage service not configured, skipping file cleanup for session {session.id}")
+            logger.debug(
+                f"Storage service not configured, skipping file cleanup for session {session.id}"
+            )
             return 0
 
         if not session.workspace_path:
@@ -220,7 +218,7 @@ class SessionCleanupService:
 
             # 构建删除前缀（包含存储桶路径）
             # 例如: s3://sandbox-workspace/sessions/sess_abc123/
-            delete_prefix = session.workspace_path.rstrip('/')
+            delete_prefix = session.workspace_path.rstrip("/")
 
             # 删除所有带该前缀的文件
             deleted_count = await self._storage_service.delete_prefix(delete_prefix)
@@ -233,18 +231,10 @@ class SessionCleanupService:
             return deleted_count
 
         except Exception as e:
-            logger.error(
-                f"Error cleaning up files for session {session.id}: {e}",
-                exc_info=True
-            )
+            logger.error(f"Error cleaning up files for session {session.id}: {e}", exc_info=True)
             return 0
 
-    async def _cleanup_session(
-        self,
-        session: Session,
-        reason: str,
-        detail: str
-    ) -> None:
+    async def _cleanup_session(self, session: Session, reason: str, detail: str) -> None:
         """
         清理会话并销毁容器
 
@@ -261,11 +251,9 @@ class SessionCleanupService:
         )
 
         # 销毁容器（如果调度器支持且容器存在）
-        if session.container_id and hasattr(self._scheduler, 'destroy_container'):
+        if session.container_id and hasattr(self._scheduler, "destroy_container"):
             try:
-                await self._scheduler.destroy_container(
-                    container_id=session.container_id
-                )
+                await self._scheduler.destroy_container(container_id=session.container_id)
                 logger.info(f"Destroyed container {session.container_id} for session {session.id}")
             except Exception as e:
                 # 记录错误但不中断流程
@@ -292,12 +280,7 @@ class SessionCleanupService:
         Returns:
             dict: 清理统计信息
         """
-        stats = {
-            "total": len(session_ids),
-            "cleaned": 0,
-            "not_found": 0,
-            "errors": []
-        }
+        stats = {"total": len(session_ids), "cleaned": 0, "not_found": 0, "errors": []}
 
         for session_id in session_ids:
             try:
@@ -307,9 +290,7 @@ class SessionCleanupService:
                     continue
 
                 await self._cleanup_session(
-                    session,
-                    reason="manual_cleanup",
-                    detail=f"Manual cleanup requested"
+                    session, reason="manual_cleanup", detail=f"Manual cleanup requested"
                 )
                 stats["cleaned"] += 1
 

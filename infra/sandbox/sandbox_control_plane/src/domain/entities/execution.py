@@ -3,6 +3,7 @@
 
 表示一次代码执行，是会话聚合的一部分。
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -17,6 +18,7 @@ class Execution:
 
     表示一次代码执行的完整生命周期。
     """
+
     id: str
     session_id: str
     code: str
@@ -61,16 +63,13 @@ class Execution:
         execution_time: float,
         artifacts: list[Artifact] | None = None,
         return_value: dict | None = None,
-        metrics: dict | None = None
+        metrics: dict | None = None,
     ) -> None:
         """标记为已完成"""
         if self.state.status != ExecutionStatus.RUNNING:
             raise ValueError(f"Cannot mark execution as completed from status: {self.state.status}")
 
-        self.state = ExecutionState(
-            status=ExecutionStatus.COMPLETED,
-            exit_code=exit_code
-        )
+        self.state = ExecutionState(status=ExecutionStatus.COMPLETED, exit_code=exit_code)
         self.stdout = stdout
         self.stderr = stderr
         self.execution_time = execution_time
@@ -89,9 +88,7 @@ class Execution:
     ) -> None:
         """标记为失败"""
         self.state = ExecutionState(
-            status=ExecutionStatus.FAILED,
-            exit_code=exit_code,
-            error_message=error_message
+            status=ExecutionStatus.FAILED, exit_code=exit_code, error_message=error_message
         )
         self.stdout = stdout or ""
         self.stderr = stderr or ""

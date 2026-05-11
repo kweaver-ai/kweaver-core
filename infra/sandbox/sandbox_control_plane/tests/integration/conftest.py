@@ -8,7 +8,7 @@ import asyncio
 import os
 import pytest
 import httpx
-from typing import AsyncGenerator, Dict, Any, List, Set
+from typing import AsyncGenerator, Dict, Any, List, Optional, Set
 from datetime import datetime
 
 
@@ -28,6 +28,84 @@ TEST_TEMPLATE_IMAGE = "sandbox-template-python-basic:latest"
 _created_sessions: Set[str] = set()
 
 
+HAPPY_PATH_TESTS: Set[str] = {
+    # Health and internal contract smoke tests
+    "tests/integration/api/test_health_api.py::TestHealthAPI::test_detailed_health_check",
+    "tests/integration/api/test_health_api.py::TestHealthAPI::test_manual_state_sync",
+    "tests/integration/api/test_internal_api.py::TestInternalAPIContract::test_container_ready_callback_contract",
+    "tests/integration/api/test_internal_api.py::TestInternalAPIContract::test_container_exited_callback_contract",
+    "tests/integration/api/test_internal_api.py::TestInternalAPIContract::test_execution_heartbeat_contract",
+    # Template API happy path
+    "tests/integration/api/test_templates_api.py::TestTemplatesAPI::test_create_template",
+    "tests/integration/api/test_templates_api.py::TestTemplatesAPI::test_list_templates",
+    "tests/integration/api/test_templates_api.py::TestTemplatesAPI::test_get_template",
+    "tests/integration/api/test_templates_api.py::TestTemplatesAPI::test_update_template",
+    "tests/integration/api/test_templates_api.py::TestTemplatesAPI::test_delete_template",
+    # Session API happy path
+    "tests/integration/api/test_sessions_api.py::TestSessionsAPI::test_create_session",
+    "tests/integration/api/test_sessions_api.py::TestSessionsAPI::test_create_session_with_defaults",
+    "tests/integration/api/test_sessions_api.py::TestSessionsAPI::test_get_session",
+    "tests/integration/api/test_sessions_api.py::TestSessionsAPI::test_list_sessions",
+    "tests/integration/api/test_sessions_api.py::TestSessionsAPI::test_terminate_session",
+    "tests/integration/api/test_sessions_api.py::TestSessionsAPI::test_health_check",
+    "tests/integration/api/test_sessions_api.py::TestSessionStatusTransitions::test_session_status_running_when_startup_succeeds",
+    # Async execution happy path
+    "tests/integration/api/test_executions_api.py::TestExecutionsAPI::test_execute_python_code",
+    "tests/integration/api/test_executions_api.py::TestExecutionsAPI::test_execute_python_with_event",
+    "tests/integration/api/test_executions_api.py::TestExecutionsAPI::test_execute_shell_code",
+    "tests/integration/api/test_executions_api.py::TestExecutionsAPI::test_get_execution_status",
+    "tests/integration/api/test_executions_api.py::TestExecutionsAPI::test_get_execution_result",
+    "tests/integration/api/test_executions_api.py::TestExecutionsAPI::test_execution_with_return_value",
+    "tests/integration/api/test_executions_api.py::TestExecutionsAPI::test_list_session_executions",
+    # Sync execution happy path
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_valid_parameters",
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_default_parameters",
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_with_event_data",
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_shell_script",
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_return_dict",
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_use_json_stdlib",
+    # Workspace happy path
+    "tests/integration/test_e2e_s3_workspace.py::test_file_upload",
+    "tests/integration/test_e2e_s3_workspace.py::test_file_download",
+    "tests/integration/test_e2e_s3_workspace.py::test_execute_code_read_file",
+    "tests/integration/test_e2e_s3_workspace.py::test_execute_code_write_file",
+    "tests/integration/test_e2e_s3_workspace.py::test_nested_directory_upload",
+    "tests/integration/test_e2e_s3_workspace.py::test_list_files",
+    "tests/integration/test_e2e_s3_workspace.py::test_zip_upload_and_extract",
+}
+
+
+SLOW_TEST_FILES: Set[str] = {
+    "tests/integration/test_background_tasks.py",
+    "tests/integration/test_dependency_installation.py",
+    "tests/integration/test_e2e_workflow.py",
+    "tests/integration/test_state_sync.py",
+    "tests/integration/test_stdlib_execution.py",
+    "tests/integration/api/test_session_create_with_dependencies_api.py",
+    "tests/integration/api/test_session_dependency_installation_api.py",
+}
+
+
+SLOW_TESTS: Set[str] = {
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_use_requests_third_party",
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_use_click_third_party",
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_execution_timeout",
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_large_response",
+    "tests/integration/api/test_execute_sync_api.py::TestExecuteSyncAPI::test_execute_sync_multiple_executions_same_session",
+}
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(items):
+    """Attach integration selection markers used by local and CI commands."""
+    for item in items:
+        if item.nodeid in HAPPY_PATH_TESTS:
+            item.add_marker(pytest.mark.happy_path)
+
+        if item.nodeid in SLOW_TESTS or any(item.nodeid.startswith(path) for path in SLOW_TEST_FILES):
+            item.add_marker(pytest.mark.slow)
+
+
 def track_session(session_id: str) -> None:
     """Track a session ID for cleanup."""
     _created_sessions.add(session_id)
@@ -36,6 +114,73 @@ def track_session(session_id: str) -> None:
 def untrack_session(session_id: str) -> None:
     """Untrack a session ID (e.g., if already cleaned up)."""
     _created_sessions.discard(session_id)
+
+
+async def _list_session_ids(http_client: httpx.AsyncClient) -> Optional[Set[str]]:
+    """
+    Return all visible session IDs, or None if the control plane is unavailable.
+
+    Use absolute URLs so this cleanup still works for modules that override
+    the http_client fixture without a base_url.
+    """
+    session_ids: Set[str] = set()
+    limit = 200
+    offset = 0
+
+    try:
+        while True:
+            response = await http_client.get(
+                f"{API_BASE_URL}/sessions",
+                params={"limit": limit, "offset": offset},
+            )
+            if response.status_code != 200:
+                return None
+
+            payload = response.json()
+            if isinstance(payload, dict):
+                sessions = payload.get("items", [])
+                total = payload.get("total", len(sessions))
+                has_more = payload.get("has_more", offset + len(sessions) < total)
+            else:
+                # Backward compatibility with older list API shape.
+                sessions = payload
+                has_more = False
+
+            for session in sessions:
+                session_id = session.get("id")
+                if session_id:
+                    session_ids.add(session_id)
+
+            if not has_more or not sessions:
+                break
+            offset += limit
+    except Exception as e:
+        print(f"[Cleanup] Could not list sessions: {e}")
+        return None
+
+    return session_ids
+
+
+async def _delete_sessions(http_client: httpx.AsyncClient, session_ids: Set[str]) -> None:
+    """Best-effort hard-delete sessions and untrack them."""
+    if not session_ids:
+        return
+
+    print(f"[Cleanup] Cleaning up {len(session_ids)} session(s): {session_ids}")
+    for session_id in sorted(session_ids):
+        try:
+            response = await http_client.delete(f"{API_BASE_URL}/sessions/{session_id}")
+            if response.status_code in (200, 202, 204, 404):
+                print(f"[Cleanup] Deleted session: {session_id}")
+            else:
+                print(
+                    f"[Cleanup] Failed to delete {session_id}: "
+                    f"HTTP {response.status_code} - {response.text[:100]}"
+                )
+        except Exception as e:
+            print(f"[Cleanup] Error deleting {session_id}: {e}")
+        finally:
+            untrack_session(session_id)
 
 
 # ============== Fixtures ==============
@@ -59,30 +204,22 @@ async def auto_cleanup_sessions(http_client: httpx.AsyncClient, request):
 
     autouse=True 确保此 fixture 在每个测试函数后自动运行。
     """
-    # 记录测试开始前已存在的 sessions
-    sessions_before_test = set(_created_sessions)
+    # 记录测试开始前已存在的 sessions。清理时只删除本测试新增的
+    # sessions，避免误删运行环境中已有的手工 session。
+    sessions_before_test = await _list_session_ids(http_client)
+    tracked_before_test = set(_created_sessions)
 
     yield  # 测试运行
 
-    # 获取测试期间创建的新 sessions
-    new_sessions = _created_sessions - sessions_before_test
+    tracked_new_sessions = _created_sessions - tracked_before_test
 
-    # 清理测试中创建的 session
-    if new_sessions:
-        print(f"[Cleanup] Cleaning up {len(new_sessions)} session(s): {new_sessions}")
-        for session_id in list(new_sessions):
-            try:
-                response = await http_client.delete(f"/sessions/{session_id}")
-                if response.status_code in (200, 202, 204):
-                    print(f"[Cleanup] Terminated session: {session_id}")
-                else:
-                    print(f"[Cleanup] Failed to terminate {session_id}: HTTP {response.status_code} - {response.text[:100]}")
-                # Always untrack to avoid accumulation in the set
-                untrack_session(session_id)
-            except Exception as e:
-                print(f"[Cleanup] Error terminating {session_id}: {e}")
-                # Still untrack even on error to avoid accumulation
-                untrack_session(session_id)
+    sessions_after_test = await _list_session_ids(http_client)
+    if sessions_before_test is not None and sessions_after_test is not None:
+        api_new_sessions = sessions_after_test - sessions_before_test
+    else:
+        api_new_sessions = set()
+
+    await _delete_sessions(http_client, tracked_new_sessions | api_new_sessions)
 
 
 @pytest.fixture(scope="function")
@@ -119,13 +256,14 @@ async def cleanup_test_data(http_client: httpx.AsyncClient) -> None:
 
     # Cleanup: Delete test sessions
     try:
-        response = await http_client.get("/sessions")
+        response = await http_client.get(f"{API_BASE_URL}/sessions")
         if response.status_code == 200:
-            sessions = response.json()
+            payload = response.json()
+            sessions = payload.get("items", []) if isinstance(payload, dict) else payload
             for session in sessions:
                 session_id = session.get("id", "")
                 if session_id.startswith("test_"):
-                    await http_client.delete(f"/sessions/{session_id}")
+                    await http_client.delete(f"{API_BASE_URL}/sessions/{session_id}")
     except Exception:
         pass  # Best effort cleanup
 
@@ -350,4 +488,3 @@ async def wait_for_container_ready(
         await asyncio.sleep(1)
 
     return False
-

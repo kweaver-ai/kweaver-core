@@ -138,6 +138,7 @@ addopts = [
 # 注册自定义 pytest markers
 markers = [
     "contract: Contract tests for API endpoints",
+    "happy_path: Core integration happy path smoke tests",
     "integration: Integration tests requiring external services",
     "unit: Unit tests that don't require external services",
     "slow: Tests that take a long time to run",

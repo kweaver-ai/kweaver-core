@@ -3,6 +3,7 @@
 
 定义健康检查和系统监控相关的 HTTP 端点。
 """
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Optional
@@ -18,6 +19,7 @@ _start_time = time.time()
 
 class SystemStatus(BaseModel):
     """系统状态"""
+
     status: str
     version: str
     uptime: float
@@ -30,11 +32,7 @@ async def health_check() -> HealthResponse:
 
     返回系统状态和运行时间。
     """
-    return HealthResponse(
-        status="healthy",
-        version="2.1.0",
-        uptime=time.time() - _start_time
-    )
+    return HealthResponse(status="healthy", version="2.1.0", uptime=time.time() - _start_time)
 
 
 @router.get("/detailed")
@@ -52,11 +50,7 @@ async def detailed_health_check() -> dict:
         "status": "healthy",
         "version": "2.1.0",
         "uptime": time.time() - _start_time,
-        "dependencies": {
-            "database": "healthy",
-            "storage": "healthy",
-            "runtime_nodes": "healthy"
-        }
+        "dependencies": {"database": "healthy", "storage": "healthy", "runtime_nodes": "healthy"},
     }
 
 
@@ -72,8 +66,4 @@ async def trigger_state_sync() -> dict:
     state_sync_service = get_state_sync_service()
     result = await state_sync_service.periodic_health_check()
 
-    return {
-        "status": "success",
-        "message": "State sync completed",
-        "result": result
-    }
+    return {"status": "success", "message": "State sync completed", "result": result}

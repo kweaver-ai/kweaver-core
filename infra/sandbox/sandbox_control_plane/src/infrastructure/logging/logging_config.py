@@ -14,12 +14,12 @@ from structlog.types import EventDict, Processor
 
 # Color codes for terminal output
 COLORS = {
-    "debug": "\033[36m",     # Cyan
-    "info": "\033[32m",      # Green
-    "warning": "\033[33m",   # Yellow
-    "error": "\033[31m",     # Red
+    "debug": "\033[36m",  # Cyan
+    "info": "\033[32m",  # Green
+    "warning": "\033[33m",  # Yellow
+    "error": "\033[31m",  # Red
     "critical": "\033[35m",  # Magenta
-    "reset": "\033[0m",      # Reset
+    "reset": "\033[0m",  # Reset
 }
 
 
@@ -47,11 +47,7 @@ def add_color(logger: Any, method_name: str, event_dict: EventDict) -> EventDict
     return event_dict
 
 
-def human_readable_renderer(
-    logger: Any,
-    method_name: str,
-    event_dict: EventDict
-) -> str:
+def human_readable_renderer(logger: Any, method_name: str, event_dict: EventDict) -> str:
     """
     Human-readable log format renderer.
 
@@ -103,9 +99,7 @@ def human_readable_renderer(
 
 
 def configure_logging(
-    log_level: str = "INFO",
-    log_format: str = "text",
-    json_format: bool = False
+    log_level: str = "INFO", log_format: str = "text", json_format: bool = False
 ) -> None:
     """
     Configure structlog for the application.

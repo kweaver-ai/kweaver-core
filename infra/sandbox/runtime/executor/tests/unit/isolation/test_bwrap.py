@@ -108,6 +108,17 @@ class TestBubblewrapRunnerInit:
         # Check for common isolation flags
         assert "--unshare-pid" in args or "--unshare-all" in args
 
+    def test_base_args_include_go_path(self):
+        """Test that Go installed under /usr/local/go/bin is available inside bwrap."""
+        from pathlib import Path
+        from executor.infrastructure.isolation.bwrap import BubblewrapRunner
+
+        runner = BubblewrapRunner(Path("/tmp/workspace"))
+        args = runner._base_args
+
+        path_index = args.index("PATH")
+        assert "/usr/local/go/bin" in args[path_index + 1]
+
     def test_base_args_bind_dependency_install_path(self):
         """Test that session dependency install path is available inside bwrap."""
         from pathlib import Path

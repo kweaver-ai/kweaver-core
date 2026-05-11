@@ -1,289 +1,99 @@
-# Sandbox Platform Helm Chart
+# Sandbox Core Component Helm Chart
 
-This Helm chart deploys the Sandbox Platform - a secure code execution platform with isolated container environments for AI agent applications.
+This chart deploys Sandbox as a Kweaver Core component.
 
-## Introduction
+Use this chart when Sandbox is installed by, or packaged into, Kweaver Core. It follows the Core component values format and expects shared platform services, especially the database service, to be provided by Core.
 
-The Sandbox Platform consists of:
-- **Control Plane**: FastAPI-based management service handling API requests, scheduling, session management
-- **Web Console**: React-based web application for visual management of sessions, templates, and executions
-- **MariaDB**: Database for session, execution, and template storage
-- **MinIO**: S3-compatible object storage for workspace files
+For a self-contained Sandbox deployment with MariaDB and the web console, use `deploy/helm/sandbox_standalone`.
+
+## Components
+
+- **Control Plane**: FastAPI management service for sessions, templates, scheduling, and storage access.
+- **MinIO**: S3-compatible workspace object storage when enabled by this chart.
+- **Default template metadata**: Initializes `python-basic` and `multi-language` template records through Control Plane environment variables.
+
+This chart does not deploy `sandbox_web` or MariaDB.
 
 ## Prerequisites
 
 - Kubernetes 1.24+
 - Helm 3.0+
-- PV provisioner support in the underlying infrastructure
+- Kweaver Core deployment environment
+- Core-provided database service through `depServices.rds`
 
-## Installing the Chart
+## Installing
 
-### Install with default values
+From the repository root:
 
 ```bash
-helm install sandbox ./sandbox --namespace sandbox-system --create-namespace
+helm install sandbox deploy/helm/sandbox --namespace anyshare --create-namespace
 ```
 
-### Install with custom values file
+With an override file:
 
 ```bash
-helm install sandbox ./sandbox --namespace sandbox-system --create-namespace -f custom-values.yaml
-```
-
-### Install with specific parameters
-
-```bash
-helm install sandbox ./sandbox \
-  --namespace sandbox-system \
+helm install sandbox deploy/helm/sandbox \
+  --namespace anyshare \
   --create-namespace \
-  --set controlPlane.replicaCount=3 \
-  --set controlPlane.resources.limits.cpu=1
+  -f custom-values.yaml
 ```
 
-## Uninstalling the Chart
+## Default Template Images
 
-```bash
-helm uninstall sandbox --namespace sandbox-system
+The Control Plane seeds two default template rows into `t_sandbox_template`:
+
+- `python-basic`
+- `multi-language`
+
+The chart exposes both image tags independently:
+
+```yaml
+image:
+  defaultTemplates:
+    pythonBasic:
+      repository: dip/sandbox-template-python-basic
+      tag: ""
+    multiLanguage:
+      repository: dip/sandbox-template-multi-language
+      tag: ""
 ```
 
-## Configuration
+An empty `tag` means the Control Plane reads `/app/VERSION` at startup and uses that value as the template image tag. Set the tag only when deploying branch or custom template images.
 
-The following table lists the configurable parameters of the Sandbox chart and their default values.
+The deprecated `image.defaultTemplate` value is still accepted as a compatibility fallback for `python-basic`.
 
-### Global Parameters
+## Key Values
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `namespace` | Namespace for all resources | `sandbox-system` |
-| `image.registry` | Shared image registry used by chart images | `""` |
-| `imagePullPolicy` | Global image pull policy | `IfNotPresent` |
-| `image.controlPlane.repository` | Control Plane image repository | `sandbox-control-plane` |
+| `namespace` | Kubernetes namespace | `anyshare` |
+| `imagePullPolicy` | Executor Pod image pull policy | `IfNotPresent` |
+| `imagePullSecrets` | Executor Pod image pull secret names | `[]` |
+| `image.registry` | Shared image registry prefix | `acr.aishu.cn` |
+| `image.controlPlane.repository` | Control Plane image repository | `dip/sandbox-control-plane` |
 | `image.controlPlane.tag` | Control Plane image tag | `latest` |
-| `image.defaultTemplate.repository` | Default sandbox template image repository | `sandbox-template-python-basic` |
-| `image.defaultTemplate.tag` | Default sandbox template image tag | `v1.0.0` |
-| `image.web.repository` | Web Console image repository | `sandbox-web` |
-| `image.web.tag` | Web Console image tag | `latest` |
-| `image.mariadb.repository` | MariaDB image repository | `mariadb` |
-| `image.mariadb.tag` | MariaDB image tag | `11.2` |
-| `image.minio.repository` | MinIO image repository | `quay.io/minio/minio` |
-| `image.minio.tag` | MinIO image tag | `latest` |
-| `image.busybox.repository` | BusyBox image repository for init containers | `busybox` |
-| `image.busybox.tag` | BusyBox image tag for init containers | `1.36` |
+| `image.defaultTemplates.pythonBasic.repository` | Python template image repository | `dip/sandbox-template-python-basic` |
+| `image.defaultTemplates.pythonBasic.tag` | Python template image tag; empty uses `/app/VERSION` | `""` |
+| `image.defaultTemplates.multiLanguage.repository` | Multi-language template image repository | `dip/sandbox-template-multi-language` |
+| `image.defaultTemplates.multiLanguage.tag` | Multi-language template image tag; empty uses `/app/VERSION` | `""` |
+| `controlPlane.env.ENVIRONMENT` | Control Plane environment | `staging` |
+| `depServices.rds` | Core-provided database service configuration | enabled by values |
 
-### Control Plane Parameters
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `controlPlane.enabled` | Enable Control Plane deployment | `true` |
-| `controlPlane.replicaCount` | Number of replicas | `1` |
-| `controlPlane.service.type` | Kubernetes service type | `ClusterIP` |
-| `controlPlane.service.port` | Service port | `8000` |
-| `controlPlane.resources.requests.cpu` | CPU request | `200m` |
-| `controlPlane.resources.requests.memory` | Memory request | `256Mi` |
-| `controlPlane.resources.limits.cpu` | CPU limit | `500m` |
-| `controlPlane.resources.limits.memory` | Memory limit | `512Mi` |
-
-### Web Console Parameters
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `web.enabled` | Enable Web Console deployment | `true` |
-| `web.replicaCount` | Number of replicas | `1` |
-| `web.service.port` | Service port | `80` |
-| `web.env.VITE_API_BASE_URL` | API base URL for web console | `http://sandbox-control-plane.sandbox-system.svc.cluster.local:8000` |
-
-### MariaDB Parameters
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `mariadb.enabled` | Enable MariaDB deployment | `true` |
-| `mariadb.replicaCount` | Number of replicas | `1` |
-| `mariadb.auth.rootPassword` | MariaDB root password | `password` |
-| `mariadb.auth.database` | Database name | `sandbox` |
-| `mariadb.persistence.enabled` | Enable persistence | `true` |
-| `mariadb.persistence.size` | Persistent volume size | `10Gi` |
-
-### MinIO Parameters
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `minio.enabled` | Enable MinIO deployment | `true` |
-| `minio.replicaCount` | Number of replicas | `1` |
-| `minio.auth.rootUser` | MinIO root user | `minioadmin` |
-| `minio.auth.rootPassword` | MinIO root password | `minioadmin` |
-| `minio.defaultBuckets` | Default buckets to create | `["sandbox-workspace"]` |
-| `minio.persistence.enabled` | Enable persistence | `true` |
-| `minio.persistence.size` | Persistent volume size | `10Gi` |
-
-## Accessing the Services
-
-After installation, you can access the services using port-forwarding:
+## Rendering
 
 ```bash
-# Control Plane API
-kubectl port-forward svc/sandbox-control-plane 8000:8000 -n sandbox-system
-
-# Web Console
-kubectl port-forward svc/sandbox-web 1101:80 -n sandbox-system
-
-# MinIO Console
-kubectl port-forward svc/minio 9001:9001 -n sandbox-system
+helm template sandbox deploy/helm/sandbox
 ```
 
-Or use the provided port-forward script:
+To verify manual template versions:
 
 ```bash
-cd ../../scripts
-./port-forward.sh start --all --background
+helm template sandbox deploy/helm/sandbox \
+  --show-only templates/configmap.yaml \
+  --set image.defaultTemplates.pythonBasic.tag=dev-python \
+  --set image.defaultTemplates.multiLanguage.tag=dev-multi
 ```
 
-## Upgrading
+## Related Chart
 
-### Upgrade the chart
-
-```bash
-helm upgrade sandbox ./sandbox --namespace sandbox-system
-```
-
-### Upgrade with new values
-
-```bash
-helm upgrade sandbox ./sandbox \
-  --namespace sandbox-system \
-  --set controlPlane.replicaCount=3 \
-  --reuse-values
-```
-
-## Rollback
-
-### Rollback to a previous revision
-
-```bash
-helm rollback sandbox <revision> --namespace sandbox-system
-```
-
-## Development
-
-### Template generation
-
-Generate the Kubernetes manifests without installing:
-
-```bash
-make template
-# or
-helm template sandbox ./sandbox > helm-template-gen.yaml
-```
-
-### Linting
-
-Lint the chart for syntax errors:
-
-```bash
-make lint
-# or
-helm lint ./sandbox
-```
-
-### Dry-run installation
-
-Test the installation without actually deploying:
-
-```bash
-make test
-# or
-helm install sandbox ./sandbox --namespace sandbox-system --dry-run --debug
-```
-
-## Custom Values Examples
-
-### Production deployment
-
-```yaml
-# production-values.yaml
-controlPlane:
-  replicaCount: 3
-  resources:
-    requests:
-      cpu: 500m
-      memory: 512Mi
-    limits:
-      cpu: 2
-      memory: 2Gi
-
-web:
-  replicaCount: 2
-
-mariadb:
-  persistence:
-    size: 50Gi
-
-minio:
-  persistence:
-    size: 100Gi
-```
-
-Install with production values:
-
-```bash
-helm install sandbox ./sandbox \
-  --namespace sandbox-system \
-  --create-namespace \
-  -f production-values.yaml
-```
-
-### External database and storage
-
-```yaml
-# external-values.yaml
-mariadb:
-  enabled: false
-
-minio:
-  enabled: false
-
-controlPlane:
-  env:
-    DATABASE_URL: "mysql+aiomysql://user:pass@external-mariadb:3306/sandbox"
-  s3:
-    endpointUrl: "https://s3.amazonaws.com"
-    bucket: "my-sandbox-bucket"
-
-secret:
-  s3:
-    accessKeyId: "YOUR_ACCESS_KEY"
-    secretAccessKey: "YOUR_SECRET_KEY"
-```
-
-## Troubleshooting
-
-### Check pod status
-
-```bash
-kubectl get pods -n sandbox-system
-```
-
-### View logs
-
-```bash
-# Control Plane logs
-kubectl logs -f deployment/sandbox-control-plane -n sandbox-system
-
-# Web Console logs
-kubectl logs -f deployment/sandbox-web -n sandbox-system
-
-# MariaDB logs
-kubectl logs -f deployment/mariadb -n sandbox-system
-
-# MinIO logs
-kubectl logs -f deployment/minio -n sandbox-system
-```
-
-### Check events
-
-```bash
-kubectl get events -n sandbox-system --sort-by='.lastTimestamp'
-```
-
-## License
-
-Copyright © 2025
+See `deploy/helm/README.md` for the comparison between `sandbox` and `sandbox_standalone`.

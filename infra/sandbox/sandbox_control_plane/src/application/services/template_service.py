@@ -3,6 +3,7 @@
 
 编排模板相关的用例。
 """
+
 from typing import List, Optional
 
 from src.domain.entities.template import Template
@@ -76,16 +77,9 @@ class TemplateService:
 
         return TemplateDTO.from_entity(template)
 
-    async def list_templates(
-        self,
-        limit: int = 50,
-        offset: int = 0
-    ) -> List[TemplateDTO]:
+    async def list_templates(self, limit: int = 50, offset: int = 0) -> List[TemplateDTO]:
         """列出所有模板"""
-        templates = await self._template_repo.find_all(
-            limit=limit,
-            offset=offset
-        )
+        templates = await self._template_repo.find_all(limit=limit, offset=offset)
 
         return [TemplateDTO.from_entity(t) for t in templates]
 
@@ -121,9 +115,21 @@ class TemplateService:
         if any([command.default_cpu_cores, command.default_memory_mb, command.default_disk_mb]):
             from src.domain.value_objects.resource_limit import ResourceLimit
 
-            cpu = str(command.default_cpu_cores) if command.default_cpu_cores else template.default_resources.cpu
-            memory = f"{command.default_memory_mb}Mi" if command.default_memory_mb else template.default_resources.memory
-            disk = f"{command.default_disk_mb}Mi" if command.default_disk_mb else template.default_resources.disk
+            cpu = (
+                str(command.default_cpu_cores)
+                if command.default_cpu_cores
+                else template.default_resources.cpu
+            )
+            memory = (
+                f"{command.default_memory_mb}Mi"
+                if command.default_memory_mb
+                else template.default_resources.memory
+            )
+            disk = (
+                f"{command.default_disk_mb}Mi"
+                if command.default_disk_mb
+                else template.default_resources.disk
+            )
 
             template.default_resources = ResourceLimit(
                 cpu=cpu,

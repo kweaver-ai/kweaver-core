@@ -3,6 +3,7 @@
 
 测试 ExecutorClient 的功能。
 """
+
 import pytest
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 import httpx
@@ -23,11 +24,7 @@ class TestExecutorClient:
     @pytest.fixture
     def client(self):
         """创建执行器客户端"""
-        return ExecutorClient(
-            timeout=30.0,
-            max_retries=3,
-            retry_delay=0.1
-        )
+        return ExecutorClient(timeout=30.0, max_retries=3, retry_delay=0.1)
 
     @pytest.fixture
     def mock_httpx_client(self):
@@ -48,11 +45,7 @@ class TestExecutorClient:
 
     def test_init_custom_params(self):
         """测试自定义参数初始化"""
-        client = ExecutorClient(
-            timeout=60.0,
-            max_retries=5,
-            retry_delay=1.0
-        )
+        client = ExecutorClient(timeout=60.0, max_retries=5, retry_delay=1.0)
 
         assert client._timeout == 60.0
         assert client._max_retries == 5
@@ -102,7 +95,7 @@ class TestExecutorClient:
         mock_response.json.return_value = {
             "execution_id": "exec-123",
             "status": "submitted",
-            "message": ""
+            "message": "",
         }
         mock_httpx_client.post.return_value = mock_response
 
@@ -114,7 +107,7 @@ class TestExecutorClient:
             language="python",
             event={},
             timeout=60,
-            env_vars={}
+            env_vars={},
         )
 
         assert result == "exec-123"
@@ -139,7 +132,7 @@ class TestExecutorClient:
                 language="python",
                 event={},
                 timeout=60,
-                env_vars={}
+                env_vars={},
             )
 
         assert "Invalid code" in str(exc_info.value.validation_errors)
@@ -162,7 +155,7 @@ class TestExecutorClient:
         mock_response_200.json.return_value = {
             "execution_id": "exec-123",
             "status": "submitted",
-            "message": ""
+            "message": "",
         }
 
         mock_httpx_client.post.side_effect = [mock_response_500, mock_response_200]
@@ -175,7 +168,7 @@ class TestExecutorClient:
             language="python",
             event={},
             timeout=60,
-            env_vars={}
+            env_vars={},
         )
 
         assert result == "exec-123"
@@ -200,7 +193,7 @@ class TestExecutorClient:
                 language="python",
                 event={},
                 timeout=60,
-                env_vars={}
+                env_vars={},
             )
 
         # Should have tried max_retries times
@@ -218,13 +211,13 @@ class TestExecutorClient:
         mock_response.json.return_value = {
             "execution_id": "exec-123",
             "status": "submitted",
-            "message": ""
+            "message": "",
         }
 
         mock_httpx_client.post.side_effect = [
             httpx.ConnectError("Connection refused"),
             httpx.ConnectError("Connection refused"),
-            mock_response
+            mock_response,
         ]
 
         result = await client.submit_execution(
@@ -235,7 +228,7 @@ class TestExecutorClient:
             language="python",
             event={},
             timeout=60,
-            env_vars={}
+            env_vars={},
         )
 
         assert result == "exec-123"
@@ -257,7 +250,7 @@ class TestExecutorClient:
                 language="python",
                 event={},
                 timeout=60,
-                env_vars={}
+                env_vars={},
             )
 
         assert mock_httpx_client.post.call_count == 3
@@ -278,7 +271,7 @@ class TestExecutorClient:
                 language="python",
                 event={},
                 timeout=60,
-                env_vars={}
+                env_vars={},
             )
 
     @pytest.mark.asyncio
@@ -300,7 +293,7 @@ class TestExecutorClient:
                 language="python",
                 event={},
                 timeout=60,
-                env_vars={}
+                env_vars={},
             )
 
         assert exc_info.value.status_code == 404
@@ -312,10 +305,7 @@ class TestExecutorClient:
 
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "status": "healthy",
-            "version": "1.0.0"
-        }
+        mock_response.json.return_value = {"status": "healthy", "version": "1.0.0"}
         mock_httpx_client.get.return_value = mock_response
 
         result = await client.health_check("http://localhost:8080")
@@ -373,3 +363,31 @@ class TestExecutorClient:
         c = client._get_client()
 
         assert c is mock_httpx_client
+
+    @pytest.mark.asyncio
+    async def test_sync_session_config_uses_request_timeout(self, client, mock_httpx_client):
+        """测试同步依赖配置时使用本次请求超时。"""
+        client._client = mock_httpx_client
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "status": "completed",
+            "installed_dependencies": [],
+            "started_at": "2026-03-09T12:00:00+00:00",
+            "completed_at": "2026-03-09T12:00:05+00:00",
+        }
+        mock_httpx_client.post.return_value = mock_response
+
+        result = await client.sync_session_config(
+            executor_url="http://localhost:8080",
+            session_id="sess-456",
+            language_runtime="python3.11",
+            python_package_index_url="https://pypi.org/simple/",
+            dependencies=["requests==2.31.0"],
+            sync_mode="merge",
+            executor_timeout=900,
+        )
+
+        assert result.status == "completed"
+        assert mock_httpx_client.post.call_args.kwargs["timeout"] == 900

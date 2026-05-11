@@ -4,6 +4,7 @@
 使用 SQLAlchemy 实现会话仓储接口。
 按照数据表命名规范使用 f_ 前缀字段名。
 """
+
 import time
 from typing import List, Optional
 from datetime import datetime
@@ -29,13 +30,16 @@ class SqlSessionRepository(ISessionRepository):
     async def save(self, session: Session) -> None:
         """保存会话"""
         import json
+
         model = await self._session.get(SessionModel, session.id)
         now_ms = int(time.time() * 1000)
 
         if model:
             # 更新现有记录
             model.f_template_id = session.template_id
-            model.f_status = session.status.value if hasattr(session.status, 'value') else session.status
+            model.f_status = (
+                session.status.value if hasattr(session.status, "value") else session.status
+            )
             model.f_runtime_type = session.runtime_type
             model.f_runtime_node = session.runtime_node or ""
             model.f_container_id = session.container_id or ""
@@ -44,15 +48,27 @@ class SqlSessionRepository(ISessionRepository):
             model.f_resources_cpu = session.resource_limit.cpu
             model.f_resources_memory = session.resource_limit.memory
             model.f_resources_disk = session.resource_limit.disk
-            model.f_env_vars = json.dumps(session.env_vars, ensure_ascii=False) if session.env_vars else ""
+            model.f_env_vars = (
+                json.dumps(session.env_vars, ensure_ascii=False) if session.env_vars else ""
+            )
             model.f_timeout = session.timeout
             model.f_python_package_index_url = session.python_package_index_url
-            model.f_last_activity_at = int(session.last_activity_at.timestamp() * 1000) if session.last_activity_at else now_ms
+            model.f_last_activity_at = (
+                int(session.last_activity_at.timestamp() * 1000)
+                if session.last_activity_at
+                else now_ms
+            )
             model.f_updated_at = now_ms
-            model.f_completed_at = int(session.completed_at.timestamp() * 1000) if session.completed_at else 0
+            model.f_completed_at = (
+                int(session.completed_at.timestamp() * 1000) if session.completed_at else 0
+            )
 
             # 依赖安装字段
-            model.f_requested_dependencies = json.dumps(session.requested_dependencies, ensure_ascii=False) if session.requested_dependencies else ""
+            model.f_requested_dependencies = (
+                json.dumps(session.requested_dependencies, ensure_ascii=False)
+                if session.requested_dependencies
+                else ""
+            )
             if session.installed_dependencies:
                 deps_list = [
                     {
@@ -67,8 +83,16 @@ class SqlSessionRepository(ISessionRepository):
                 model.f_installed_dependencies = json.dumps(deps_list, ensure_ascii=False)
             model.f_dependency_install_status = session.dependency_install_status
             model.f_dependency_install_error = session.dependency_install_error or ""
-            model.f_dependency_install_started_at = int(session.dependency_install_started_at.timestamp() * 1000) if session.dependency_install_started_at else 0
-            model.f_dependency_install_completed_at = int(session.dependency_install_completed_at.timestamp() * 1000) if session.dependency_install_completed_at else 0
+            model.f_dependency_install_started_at = (
+                int(session.dependency_install_started_at.timestamp() * 1000)
+                if session.dependency_install_started_at
+                else 0
+            )
+            model.f_dependency_install_completed_at = (
+                int(session.dependency_install_completed_at.timestamp() * 1000)
+                if session.dependency_install_completed_at
+                else 0
+            )
         else:
             # 创建新记录
             model = SessionModel.from_entity(session)
@@ -90,11 +114,7 @@ class SqlSessionRepository(ISessionRepository):
 
     async def find_by_status(self, status: str, limit: int = 100) -> List[Session]:
         """根据状态查找会话"""
-        stmt = (
-            select(SessionModel)
-            .where(SessionModel.f_status == status)
-            .limit(limit)
-        )
+        stmt = select(SessionModel).where(SessionModel.f_status == status).limit(limit)
         result = await self._session.execute(stmt)
         return [model.to_entity() for model in result.scalars().all()]
 
@@ -107,12 +127,9 @@ class SqlSessionRepository(ISessionRepository):
     async def find_idle_sessions(self, idle_threshold: datetime) -> List[Session]:
         """查找空闲会话"""
         threshold_ms = int(idle_threshold.timestamp() * 1000)
-        stmt = (
-            select(SessionModel)
-            .where(
-                SessionModel.f_status.in_(["creating", "running"]),
-                SessionModel.f_last_activity_at < threshold_ms
-            )
+        stmt = select(SessionModel).where(
+            SessionModel.f_status.in_(["creating", "running"]),
+            SessionModel.f_last_activity_at < threshold_ms,
         )
         result = await self._session.execute(stmt)
         return [model.to_entity() for model in result.scalars().all()]
@@ -149,11 +166,7 @@ class SqlSessionRepository(ISessionRepository):
 
     async def count_by_status(self, status: str) -> int:
         """统计指定状态的会话数量"""
-        stmt = (
-            select(func.count())
-            .select_from(SessionModel)
-            .where(SessionModel.f_status == status)
-        )
+        stmt = select(func.count()).select_from(SessionModel).where(SessionModel.f_status == status)
         result = await self._session.execute(stmt)
         return result.scalar() or 0
 
@@ -173,7 +186,7 @@ class SqlSessionRepository(ISessionRepository):
         status: Optional[str] = None,
         template_id: Optional[str] = None,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[Session]:
         """
         查找会话列表（支持筛选和分页）
@@ -201,20 +214,13 @@ class SqlSessionRepository(ISessionRepository):
             stmt = stmt.where(SessionModel.f_template_id == template_id)
 
         # 排序和分页
-        stmt = (
-            stmt
-            .order_by(SessionModel.f_created_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
+        stmt = stmt.order_by(SessionModel.f_created_at.desc()).limit(limit).offset(offset)
 
         result = await self._session.execute(stmt)
         return [model.to_entity() for model in result.scalars().all()]
 
     async def count_sessions(
-        self,
-        status: Optional[str] = None,
-        template_id: Optional[str] = None
+        self, status: Optional[str] = None, template_id: Optional[str] = None
     ) -> int:
         """
         统计会话数量（支持筛选）

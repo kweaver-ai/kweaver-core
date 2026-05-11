@@ -3,6 +3,7 @@
 
 定义会话持久化的抽象接口（Port）。
 """
+
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from datetime import datetime
@@ -33,11 +34,7 @@ class ISessionRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_by_status(
-        self,
-        status: str,
-        limit: int = 100
-    ) -> List[Session]:
+    async def find_by_status(self, status: str, limit: int = 100) -> List[Session]:
         """根据状态查找会话"""
         pass
 
@@ -47,18 +44,12 @@ class ISessionRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_idle_sessions(
-        self,
-        idle_threshold: datetime
-    ) -> List[Session]:
+    async def find_idle_sessions(self, idle_threshold: datetime) -> List[Session]:
         """查找空闲会话（用于自动清理）"""
         pass
 
     @abstractmethod
-    async def find_expired_sessions(
-        self,
-        created_before: datetime
-    ) -> List[Session]:
+    async def find_expired_sessions(self, created_before: datetime) -> List[Session]:
         """查找过期会话（用于自动清理）"""
         pass
 
@@ -88,7 +79,7 @@ class ISessionRepository(ABC):
         status: Optional[str] = None,
         template_id: Optional[str] = None,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[Session]:
         """
         查找会话列表（支持筛选和分页）
@@ -106,9 +97,7 @@ class ISessionRepository(ABC):
 
     @abstractmethod
     async def count_sessions(
-        self,
-        status: Optional[str] = None,
-        template_id: Optional[str] = None
+        self, status: Optional[str] = None, template_id: Optional[str] = None
     ) -> int:
         """
         统计会话数量（支持筛选）

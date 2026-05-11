@@ -3,6 +3,7 @@
 
 定义创建模板的命令 DTO。
 """
+
 from dataclasses import dataclass
 from typing import Optional, Dict
 
@@ -10,6 +11,7 @@ from typing import Optional, Dict
 @dataclass
 class CreateTemplateCommand:
     """创建模板命令"""
+
     template_id: str
     name: str
     image_url: str

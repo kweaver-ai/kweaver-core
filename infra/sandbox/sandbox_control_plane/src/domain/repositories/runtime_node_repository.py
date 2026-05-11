@@ -3,6 +3,7 @@
 
 定义运行时节点持久化的抽象接口（Port）。
 """
+
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
@@ -35,20 +36,12 @@ class IRuntimeNodeRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_all(
-        self,
-        offset: int = 0,
-        limit: int = 100
-    ) -> List:
+    async def find_all(self, offset: int = 0, limit: int = 100) -> List:
         """查找所有节点"""
         pass
 
     @abstractmethod
-    async def update_status(
-        self,
-        node_id: str,
-        status: str
-    ) -> None:
+    async def update_status(self, node_id: str, status: str) -> None:
         """更新节点状态"""
         pass
 
@@ -58,22 +51,12 @@ class IRuntimeNodeRepository(ABC):
         pass
 
     @abstractmethod
-    async def allocate_resources(
-        self,
-        node_id: str,
-        cpu_cores: float,
-        memory_mb: int
-    ) -> None:
+    async def allocate_resources(self, node_id: str, cpu_cores: float, memory_mb: int) -> None:
         """分配资源"""
         pass
 
     @abstractmethod
-    async def release_resources(
-        self,
-        node_id: str,
-        cpu_cores: float,
-        memory_mb: int
-    ) -> None:
+    async def release_resources(self, node_id: str, cpu_cores: float, memory_mb: int) -> None:
         """释放资源"""
         pass
 

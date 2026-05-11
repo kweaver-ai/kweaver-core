@@ -3,6 +3,7 @@
 
 提供统一的种子数据初始化逻辑，可以在应用启动或独立脚本中调用。
 """
+
 from sqlalchemy import select
 from structlog import get_logger
 
@@ -34,8 +35,7 @@ async def seed_runtime_nodes(force: bool = False) -> int:
 
         if existing_nodes and not force:
             logger.info(
-                "Runtime nodes already exist, skipping initialization",
-                count=len(existing_nodes)
+                "Runtime nodes already exist, skipping initialization", count=len(existing_nodes)
             )
             return 0
 
@@ -84,13 +84,14 @@ async def seed_templates(force: bool = False) -> int:
                     existing_template = existing_template_map[template_id]
                     # 更新镜像地址和其他可能变化的字段
                     if existing_template.f_image_url != default_template.f_image_url:
+                        old_image_url = existing_template.f_image_url
                         existing_template.f_image_url = default_template.f_image_url
                         updated_count += 1
                         logger.info(
                             "Updated template image URL",
                             template_id=template_id,
-                            old_image=existing_template.f_image_url,
-                            new_image=default_template.f_image_url
+                            old_image=old_image_url,
+                            new_image=default_template.f_image_url,
                         )
 
             # 创建新模板（默认模板中有但数据库中没有的）
@@ -101,11 +102,7 @@ async def seed_templates(force: bool = False) -> int:
                     created_count += 1
 
             await session.flush()
-            logger.info(
-                "Templates synced",
-                updated=updated_count,
-                created=created_count
-            )
+            logger.info("Templates synced", updated=updated_count, created=created_count)
             return updated_count + created_count
 
         # 如果 force=True，删除现有模板并重新创建
@@ -120,7 +117,7 @@ async def seed_templates(force: bool = False) -> int:
             logger.info(
                 "Creating template with image URL",
                 template_id=template.f_id,
-                f_image_url=template.f_image_url
+                f_image_url=template.f_image_url,
             )
             session.add(template)
 
@@ -147,7 +144,7 @@ async def seed_default_data(force: bool = False) -> dict:
     result = {
         "runtime_nodes": node_count,
         "templates": template_count,
-        "total": node_count + template_count
+        "total": node_count + template_count,
     }
 
     logger.info("Completed default data seeding", **result)

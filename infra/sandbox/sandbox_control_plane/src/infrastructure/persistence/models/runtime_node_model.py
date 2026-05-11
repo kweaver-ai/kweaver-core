@@ -4,6 +4,7 @@
 SQLAlchemy 模型定义，用于数据库持久化。
 按照数据表命名规范: t_{module}_{entity}, f_{field_name}
 """
+
 from datetime import datetime
 from decimal import Decimal
 
@@ -20,6 +21,7 @@ class RuntimeNodeModel(Base):
 
     这是基础设施层的实现细节，映射到数据库表。
     """
+
     __tablename__ = "t_sandbox_runtime_node"
 
     # Primary fields
@@ -61,7 +63,12 @@ class RuntimeNodeModel(Base):
 
     # Indexes
     __table_args__ = (
-        Index("t_sandbox_runtime_node_uk_hostname_deleted_at", "f_hostname", "f_deleted_at", unique=True),
+        Index(
+            "t_sandbox_runtime_node_uk_hostname_deleted_at",
+            "f_hostname",
+            "f_deleted_at",
+            unique=True,
+        ),
         Index("t_sandbox_runtime_node_idx_status", "f_status"),
         Index("t_sandbox_runtime_node_idx_runtime_type", "f_runtime_type"),
         Index("t_sandbox_runtime_node_idx_created_at", "f_created_at"),
@@ -111,6 +118,7 @@ class RuntimeNodeModel(Base):
             return None
         try:
             import json
+
             return json.loads(value)
         except (json.JSONDecodeError, ValueError):
             return None

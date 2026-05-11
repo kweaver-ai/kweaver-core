@@ -3,6 +3,7 @@
 
 定义执行记录持久化的抽象接口（Port）。
 """
+
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from datetime import datetime
@@ -32,36 +33,22 @@ class IExecutionRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_by_session_id(
-        self,
-        session_id: str,
-        limit: int = 100
-    ) -> List[Execution]:
+    async def find_by_session_id(self, session_id: str, limit: int = 100) -> List[Execution]:
         """根据会话 ID 查找执行记录"""
         pass
 
     @abstractmethod
-    async def find_by_status(
-        self,
-        status: str,
-        limit: int = 100
-    ) -> List[Execution]:
+    async def find_by_status(self, status: str, limit: int = 100) -> List[Execution]:
         """根据状态查找执行记录"""
         pass
 
     @abstractmethod
-    async def find_crashed_executions(
-        self,
-        max_retry_count: int
-    ) -> List[Execution]:
+    async def find_crashed_executions(self, max_retry_count: int) -> List[Execution]:
         """查找可重试的崩溃执行"""
         pass
 
     @abstractmethod
-    async def find_heartbeat_timeouts(
-        self,
-        timeout_threshold: datetime
-    ) -> List[Execution]:
+    async def find_heartbeat_timeouts(self, timeout_threshold: datetime) -> List[Execution]:
         """查找心跳超时的执行"""
         pass
 

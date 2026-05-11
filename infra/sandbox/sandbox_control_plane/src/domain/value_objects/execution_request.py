@@ -3,6 +3,7 @@
 
 表示提交给沙箱执行器的代码执行请求。
 """
+
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 import re
@@ -41,9 +42,7 @@ class ExecutionRequest:
             raise ValueError(f"unsupported language: {self.language}")
 
         if self.working_directory is not None:
-            self.working_directory = self._normalize_working_directory(
-                self.working_directory
-            )
+            self.working_directory = self._normalize_working_directory(self.working_directory)
 
     @staticmethod
     def _normalize_working_directory(path: str) -> str:
