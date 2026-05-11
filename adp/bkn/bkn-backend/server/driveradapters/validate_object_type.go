@@ -234,6 +234,7 @@ func validateObjectTypeLogicProperties(ctx context.Context, objectType *interfac
 	}
 
 	ifSystemGen := true
+	dataPropMap := buildDataPropMap(objectType.DataProperties)
 	for i, prop := range objectType.LogicProperties {
 		// 校验属性名合法性（支持大写字母，规则与 id 不同）
 		if err := ValidatePropertyName(ctx, prop.Name); err != nil {
@@ -270,11 +271,16 @@ func validateObjectTypeLogicProperties(ctx context.Context, objectType *interfac
 			}
 			if !interfaces.IsValidRidKind(prop.Kind) {
 				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的 kind[%s]无效，只支持 skill", objectType.OTName, prop.Name, prop.Kind))
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的 kind[%s]无效，只支持 %s",
+						objectType.OTName, prop.Name, prop.Kind, strings.Join(interfaces.ValidRidKindList(), ", ")))
 			}
 			if prop.Field == "" {
 				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
 					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的 field 不能为空", objectType.OTName, prop.Name))
+			}
+			if _, ok := dataPropMap[prop.Field]; !ok {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的 field[%s]不存在", objectType.OTName, prop.Name, prop.Field))
 			}
 			// rid 类型不需要 data_source，跳过后续 data_source 校验
 			continue

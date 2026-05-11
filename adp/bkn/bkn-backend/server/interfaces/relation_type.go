@@ -14,6 +14,15 @@ const (
 	RELATION_TYPE_SCOPE_BINDING       = "scope_binding"
 )
 
+const (
+	SCOPE_BINDING_SCOPE_KN            = "kn"
+	SCOPE_BINDING_SCOPE_OBJECT_TYPE   = "object_type"
+	SCOPE_BINDING_SCOPE_RELATION_TYPE = "relation_type"
+	SCOPE_BINDING_SCOPE_RISK_TYPE     = "risk_type"
+	SCOPE_BINDING_SCOPE_CONCEPT_GROUP = "concept_group"
+	SCOPE_BINDING_SCOPE_ACTION_TYPE   = "action_type"
+)
+
 var (
 	RELATION_TYPE_SORT = map[string]string{
 		"name":        "f_name",

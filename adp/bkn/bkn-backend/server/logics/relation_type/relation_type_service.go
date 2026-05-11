@@ -134,6 +134,8 @@ func (rts *relationTypeService) CreateRelationTypes(ctx context.Context, tx *sql
 
 	currentTime := time.Now().UnixMilli()
 	for _, relationType := range relationTypes {
+		normalizeScopeBindingRelationType(relationType)
+
 		// 若提交的模型id为空，生成分布式ID
 		if relationType.RTID == "" {
 			relationType.RTID = xid.New().String()
@@ -226,6 +228,8 @@ func (rts *relationTypeService) ValidateRelationTypes(ctx context.Context, knID 
 	}
 
 	for _, relationType := range relationTypes {
+		normalizeScopeBindingRelationType(relationType)
+
 		relationType.KNID = knID
 		relationType.Branch = branch
 		err = rts.validateDependency(ctx, nil, relationType, strictMode, batch)
@@ -559,6 +563,8 @@ func (rts *relationTypeService) UpdateRelationType(ctx context.Context, tx *sql.
 	}
 	relationType.Updater = accountInfo
 
+	normalizeScopeBindingRelationType(relationType)
+
 	currentTime := time.Now().UnixMilli() // 关系类的update_time是int类型
 	relationType.UpdateTime = currentTime
 
@@ -624,6 +630,14 @@ func (rts *relationTypeService) UpdateRelationType(ctx context.Context, tx *sql.
 
 	span.SetStatus(codes.Ok, "")
 	return nil
+}
+
+func normalizeScopeBindingRelationType(relationType *interfaces.RelationType) {
+	if relationType == nil || relationType.Type != interfaces.RELATION_TYPE_SCOPE_BINDING {
+		return
+	}
+	relationType.SourceObjectTypeID = ""
+	relationType.TargetObjectTypeID = ""
 }
 
 func (rts *relationTypeService) DeleteRelationTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, rtIDs []string) error {
@@ -1324,7 +1338,121 @@ func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.
 						WithErrorDetails(fmt.Sprintf("分侧过滤全连接终点条件无效: %s", err.Error()))
 				}
 			}
+		case interfaces.RELATION_TYPE_SCOPE_BINDING:
+			rules := relationType.MappingRules.(*interfaces.ScopeBindingMapping)
+			if err := rts.validateScopeBindingSource(ctx, relationType, rules, resolveOT); err != nil {
+				return err
+			}
+			if err := rts.validateScopeBindingTargetRules(ctx, relationType, rules, resolveOT); err != nil {
+				return err
+			}
 		}
+	}
+	return nil
+}
+
+func (rts *relationTypeService) validateScopeBindingSource(ctx context.Context,
+	relationType *interfaces.RelationType, rules *interfaces.ScopeBindingMapping,
+	resolveOT func(string) (*interfaces.ObjectType, error)) error {
+
+	if rules == nil || rules.Source == nil {
+		return nil
+	}
+
+	sourceObjectType, err := resolveOT(rules.Source.ObjectTypeID)
+	if err != nil {
+		return err
+	}
+	if sourceObjectType == nil {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 source.object_type_id[%s]不存在或缺少 schema 信息",
+				relationType.RTID, rules.Source.ObjectTypeID))
+	}
+
+	if rules.Source.Condition != nil {
+		if err := validateConditionFieldsExist(rules.Source.Condition, objectTypeToCondFieldsMap(sourceObjectType)); err != nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 source.filter 无效: %s", relationType.RTID, err.Error()))
+		}
+	}
+
+	ridProps := make(map[string]*interfaces.LogicProperty)
+	for _, prop := range sourceObjectType.LogicProperties {
+		if prop == nil || prop.Type != interfaces.LOGIC_PROPERTY_TYPE_RID {
+			continue
+		}
+		ridProps[prop.Name] = prop
+	}
+
+	if rules.Source.RidProperty != "" {
+		if _, ok := ridProps[rules.Source.RidProperty]; !ok {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 rid_property[%s]不是 source 对象类[%s]上的 rid 逻辑属性",
+					relationType.RTID, rules.Source.RidProperty, sourceObjectType.OTName))
+		}
+		return nil
+	}
+
+	if len(ridProps) > 1 {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 source 对象类[%s]包含多个 rid 逻辑属性，rid_property 不能为空",
+				relationType.RTID, sourceObjectType.OTName))
+	}
+
+	return nil
+}
+
+func (rts *relationTypeService) validateScopeBindingTargetRules(ctx context.Context,
+	relationType *interfaces.RelationType, rules *interfaces.ScopeBindingMapping,
+	resolveOT func(string) (*interfaces.ObjectType, error)) error {
+
+	if rules == nil {
+		return nil
+	}
+	for i, targetRule := range rules.TargetRules {
+		if targetRule == nil || targetRule.Condition == nil {
+			continue
+		}
+		if targetRule.Scope != interfaces.SCOPE_BINDING_SCOPE_OBJECT_TYPE {
+			continue
+		}
+
+		targetObjectType, err := resolveOT(targetRule.ID)
+		if err != nil {
+			return err
+		}
+		if targetObjectType == nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 target_rules[%d].id[%s]不存在或缺少 schema 信息",
+					relationType.RTID, i, targetRule.ID))
+		}
+		if err := validateConditionFieldsExist(targetRule.Condition, objectTypeToCondFieldsMap(targetObjectType)); err != nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 target_rules[%d].condition 无效: %s",
+					relationType.RTID, i, err.Error()))
+		}
+	}
+
+	return nil
+}
+
+func validateConditionFieldsExist(cfg *cond.CondCfg, fieldsMap map[string]*cond.FieldCfg) error {
+	if cfg == nil {
+		return nil
+	}
+	if cfg.Operation == cond.OperationAnd || cfg.Operation == cond.OperationOr {
+		for _, subCond := range cfg.SubConds {
+			if err := validateConditionFieldsExist(subCond, fieldsMap); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if cfg.Field == cond.AllField {
+		return nil
+	}
+	if _, ok := fieldsMap[cfg.Field]; !ok {
+		return fmt.Errorf("field[%s]不存在", cfg.Field)
 	}
 	return nil
 }

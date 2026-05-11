@@ -843,8 +843,7 @@ func Test_ValidateRidLogicProperty(t *testing.T) {
 		})
 
 		Convey("Success with all valid rid kinds\n", func() {
-			validKinds := []string{"skill"}
-			for _, kind := range validKinds {
+			for _, kind := range interfaces.ValidRidKindList() {
 				ot := &interfaces.ObjectType{
 					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
 						OTID:   "ot1",
@@ -961,6 +960,35 @@ func Test_ValidateRidLogicProperty(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
+		Convey("Failed with field not found in data properties\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "skill_id",
+							Type:        "string",
+							DisplayName: "Skill ID",
+						},
+					},
+					PrimaryKeys: []string{"skill_id"},
+					DisplayKey:  "skill_id",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "skillRef",
+							DisplayName: "Skill Reference",
+							Type:        "rid",
+							Kind:        "skill",
+							Field:       "missing_skill_id",
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldNotBeNil)
+		})
+
 		Convey("Failed with invalid rid type\n", func() {
 			ot := &interfaces.ObjectType{
 				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
@@ -1021,6 +1049,42 @@ func Test_ValidateRidLogicProperty(t *testing.T) {
 							Parameters: []interfaces.Parameter{
 								{Name: "param1", Type: "string"},
 							},
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Success with multiple rid properties sharing one data field\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "skill_id",
+							Type:        "string",
+							DisplayName: "Skill ID",
+						},
+					},
+					PrimaryKeys: []string{"skill_id"},
+					DisplayKey:  "skill_id",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "primarySkillRef",
+							DisplayName: "Primary Skill Reference",
+							Type:        "rid",
+							Kind:        "skill",
+							Field:       "skill_id",
+						},
+						{
+							Name:        "backupSkillRef",
+							DisplayName: "Backup Skill Reference",
+							Type:        "rid",
+							Kind:        "skill",
+							Field:       "skill_id",
 						},
 					},
 				},
