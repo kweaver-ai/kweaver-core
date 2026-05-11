@@ -97,8 +97,8 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			catalogs.GET("/:id/health-status", r.GetCatalogHealthStatusByEx)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByEx)
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByEx)
-			catalogs.GET("/:ids", r.GetCatalogsByEx)
-			catalogs.DELETE("/:ids", r.DeleteCatalogsByEx)
+			catalogs.GET("/:id", r.GetCatalogsByEx)
+			catalogs.DELETE("/:id", r.DeleteCatalogsByEx)
 		}
 
 		// DiscoverTask APIs - External
@@ -131,9 +131,9 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByEx)
 			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByEx)
 			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByEx)
-			resources.GET("/:ids", r.GetResourcesByEx) // ids为资源ID，多个资源ID逗号分隔
+			resources.GET("/:id", r.GetResourcesByEx) // id为资源ID，多个资源ID逗号分隔
 			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByEx)
-			resources.DELETE("/:ids", r.DeleteResourcesByEx) // ids为资源ID，多个资源ID逗号分隔
+			resources.DELETE("/:id", r.DeleteResourcesByEx) // id为资源ID，多个资源ID逗号分隔
 			resources.POST("/query", r.verifyJsonContentType(), r.RawQueryByEx)
 		}
 
@@ -173,8 +173,8 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			catalogs.GET("/:id/health-status", r.GetCatalogHealthStatusByIn)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByIn)
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByIn)
-			catalogs.GET("/:ids", r.GetCatalogsByIn)
-			catalogs.DELETE("/:ids", r.DeleteCatalogsByIn)
+			catalogs.GET("/:id", r.GetCatalogsByIn)
+			catalogs.DELETE("/:id", r.DeleteCatalogsByIn)
 
 		}
 
@@ -208,9 +208,9 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByIn)
 			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByIn)
 			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByIn)
-			resources.GET("/:ids", r.GetResourcesByIn) // ids为资源ID，多个资源ID逗号分隔
+			resources.GET("/:id", r.GetResourcesByIn) // id为资源ID，多个资源ID逗号分隔
 			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByIn)
-			resources.DELETE("/:ids", r.DeleteResourcesByIn) // ids为资源ID，多个资源ID逗号分隔
+			resources.DELETE("/:id", r.DeleteResourcesByIn) // id为资源ID，多个资源ID逗号分隔
 			resources.POST("/query", r.verifyJsonContentType(), r.RawQueryByIn)
 		}
 

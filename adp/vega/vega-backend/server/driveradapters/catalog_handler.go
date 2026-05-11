@@ -270,7 +270,7 @@ func (r *restHandler) getCatalogs(c *gin.Context, ctx context.Context, span trac
 
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	ids := strings.Split(c.Param("ids"), ",")
+	ids := strings.Split(c.Param("id"), ",")
 
 	catalogs, err := r.cs.GetByIDs(ctx, ids)
 	if err != nil {
@@ -509,7 +509,7 @@ func (r *restHandler) deleteCatalogs(c *gin.Context, ctx context.Context, span t
 
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	ids := strings.Split(c.Param("ids"), ",")
+	ids := strings.Split(c.Param("id"), ",")
 
 	// Check if ids exists
 	for _, id := range ids {
