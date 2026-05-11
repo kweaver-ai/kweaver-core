@@ -458,18 +458,32 @@ components:
         - update_time
       properties:
         id:
+          description: 资源 ID；小写字母、数字、下划线、连字符，不能以下划线开头，最大长度 40
           type: string
+          pattern: "^[a-z0-9][a-z0-9\\-_]{0,39}$"
+          maxLength: 40
         catalog_id:
+          description: 所属 catalog ID
           type: string
         name:
+          description: 资源名称，必填，最大长度 255
           type: string
+          minLength: 1
+          maxLength: 255
         tags:
+          description: 标签列表（可选），最多 5 个，每个标签非空且最大长度 40，不能包含特殊字符
           type: array
+          maxItems: 5
           items:
             type: string
+            minLength: 1
+            maxLength: 40
         description:
+          description: 描述，最大长度 1000
           type: string
+          maxLength: 1000
         category:
+          description: 资源类型
           type: string
           enum:
             - table
@@ -482,6 +496,7 @@ components:
             - logicview
             - dataset
         status:
+          description: 资源状态
           type: string
           enum:
             - active
@@ -489,6 +504,7 @@ components:
             - deprecated
             - stale
         status_message:
+          description: 状态说明（stale/deprecated 时填充）
           type: string
         database:
           description: 所属数据库（实例级 Catalog 时填充）
@@ -547,19 +563,32 @@ components:
         - category
       properties:
         id:
-          description: 可选；创建时不指定则后端生成
+          description: 可选；创建时不指定则后端生成；小写字母、数字、下划线、连字符，不能以下划线开头，最大长度 40
           type: string
+          pattern: "^[a-z0-9][a-z0-9\\-_]{0,39}$"
+          maxLength: 40
         catalog_id:
+          description: 所属 catalog ID（必填）
           type: string
         name:
+          description: 资源名称，必填，最大长度 255
           type: string
+          minLength: 1
+          maxLength: 255
         tags:
+          description: 标签列表（可选），最多 5 个，每个标签非空且最大长度 40，不能包含特殊字符
           type: array
+          maxItems: 5
           items:
             type: string
+            minLength: 1
+            maxLength: 40
         description:
+          description: 描述，最大长度 1000
           type: string
+          maxLength: 1000
         category:
+          description: 资源类型
           type: string
           enum:
             - table

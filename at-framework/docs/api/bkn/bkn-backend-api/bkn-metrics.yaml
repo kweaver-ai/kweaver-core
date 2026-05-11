@@ -545,6 +545,17 @@ components:
           type: string
         comment:
           type: string
+        tags:
+          type: array
+          items:
+            type: string
+          description: 标签（与对象类 / 关系类展示一致）
+        icon:
+          type: string
+          description: 展示用图标标识
+        color:
+          type: string
+          description: 展示用颜色（语义色或色值，长度与库表 f_color 一致）
         unit_type:
           type: string
         unit:
@@ -584,6 +595,14 @@ components:
           type: string
         comment:
           type: string
+        tags:
+          type: array
+          items:
+            type: string
+        icon:
+          type: string
+        color:
+          type: string
         unit_type:
           type: string
         unit:
@@ -610,6 +629,14 @@ components:
       type: object
       properties:
         comment:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        icon:
+          type: string
+        color:
           type: string
         unit_type:
           type: string

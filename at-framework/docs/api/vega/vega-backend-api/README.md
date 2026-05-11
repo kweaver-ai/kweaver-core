@@ -6,7 +6,7 @@
 
 | 文件 | 资源 | 包含的端点 |
 |---|---|---|
-| [catalog.yaml](catalog.yaml) | Catalog | `GET/POST /catalogs`、`GET/PUT/DELETE /catalogs/{id(s)}`、`GET /catalogs/{ids}/health-status`、`POST /catalogs/{id}/test-connection` |
+| [catalog.yaml](catalog.yaml) | Catalog | `GET/POST /catalogs`、`GET/PUT/DELETE /catalogs/{id(s)}`、`GET /catalogs/{id}/health-status`、`POST /catalogs/{id}/test-connection` |
 | [connector-type.yaml](connector-type.yaml) | ConnectorType | `GET/POST /connector-types`、`GET/PUT/DELETE /connector-types/{type}`、`POST .../enable`、`POST .../disable` |
 | [discover-task.yaml](discover-task.yaml) | DiscoverTask | `POST /catalogs/{cid}/discover`（手动触发）、`GET /discover-tasks`、`GET /discover-tasks/{id}` |
 | [discover-schedule.yaml](discover-schedule.yaml) | DiscoverSchedule | `GET/POST /discover-schedules`、`GET/PUT/DELETE /discover-schedules/{sid}`、`POST .../enable`、`POST .../disable`、`GET /catalogs/{cid}/discover-schedules`（便利视图） |
