@@ -14,7 +14,7 @@ import (
 func TestViewField_InitFieldPath(t *testing.T) {
 	Convey("Test ViewField.InitFieldPath", t, func() {
 		Convey("empty path should be initialized", func() {
-			field := &ViewField{
+			field := &FieldCfg{
 				Name: "field1.field2",
 				Path: []string{},
 			}
@@ -25,7 +25,7 @@ func TestViewField_InitFieldPath(t *testing.T) {
 		})
 
 		Convey("existing path should not be changed", func() {
-			field := &ViewField{
+			field := &FieldCfg{
 				Name: "field1.field2",
 				Path: []string{"existing", "path"},
 			}
@@ -36,7 +36,7 @@ func TestViewField_InitFieldPath(t *testing.T) {
 		})
 
 		Convey("simple field name should create single element path", func() {
-			field := &ViewField{
+			field := &FieldCfg{
 				Name: "field1",
 				Path: []string{},
 			}

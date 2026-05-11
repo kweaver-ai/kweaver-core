@@ -17,7 +17,7 @@ import (
 func TestNewRegexCond(t *testing.T) {
 	Convey("Test NewRegexCond", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,
@@ -36,7 +36,7 @@ func TestNewRegexCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
 				Field:     "field3",
-				NameField: fieldsMap["field3"],
+				FieldCfg:  fieldsMap["field3"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -52,7 +52,7 @@ func TestNewRegexCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
 					Value:     "value1",
@@ -68,7 +68,7 @@ func TestNewRegexCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     123,
@@ -84,7 +84,7 @@ func TestNewRegexCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "[invalid",
@@ -100,7 +100,7 @@ func TestNewRegexCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test.*",
@@ -119,7 +119,7 @@ func TestNewRegexCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
 				Field:     "field2",
-				NameField: fieldsMap["field2"],
+				FieldCfg:  fieldsMap["field2"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test.*",
@@ -135,7 +135,7 @@ func TestNewRegexCond(t *testing.T) {
 func TestRegexCond_Convert(t *testing.T) {
 	Convey("Test RegexCond.Convert", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,
@@ -146,7 +146,7 @@ func TestRegexCond_Convert(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test.*",
@@ -174,7 +174,7 @@ func TestRegexCond_Convert(t *testing.T) {
 func TestRegexCond_Convert2SQL(t *testing.T) {
 	Convey("Test RegexCond.Convert2SQL", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,
@@ -185,7 +185,7 @@ func TestRegexCond_Convert2SQL(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationRegex,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test.*",

@@ -5,8 +5,8 @@
 
 -- ==========================================
 -- 0.7.0 → 0.8.0 升级脚本
--- t_metric_definition：补充 0.7.0 增量建表脚本遗漏的字段
--- （与 mariadb/0.7.0/init.sql 中指标表定义对齐）
+-- 1) t_metric_definition：补充 0.7.0 增量建表脚本遗漏的字段
+-- 2) t_object_type：新增 f_condition 字段用于存储过滤条件
 -- 使用 IF NOT EXISTS：兼容已通过 init.sql 建表的环境（已有这些列）。
 -- ==========================================
 USE kweaver;
@@ -37,3 +37,7 @@ ALTER TABLE t_action_type
 
 ALTER TABLE t_action_type
   ADD COLUMN IF NOT EXISTS f_impact_contracts TEXT DEFAULT NULL COMMENT '行动影响契约' AFTER f_action_intent;
+
+-- t_object_type 新增 f_condition 字段
+ALTER TABLE t_object_type
+  ADD COLUMN IF NOT EXISTS f_condition MEDIUMTEXT DEFAULT NULL COMMENT '对象类过滤条件' AFTER f_incremental_key;

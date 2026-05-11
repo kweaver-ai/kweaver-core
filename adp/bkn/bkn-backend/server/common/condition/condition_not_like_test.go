@@ -17,7 +17,7 @@ import (
 func TestNewNotLikeCond(t *testing.T) {
 	Convey("Test NewNotLikeCond", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -36,7 +36,7 @@ func TestNewNotLikeCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
 				Field:     "field3",
-				NameField: fieldsMap["field3"],
+				FieldCfg:  fieldsMap["field3"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -52,7 +52,7 @@ func TestNewNotLikeCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Field,
 					Value:     "value1",
@@ -68,7 +68,7 @@ func TestNewNotLikeCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     123,
@@ -84,7 +84,7 @@ func TestNewNotLikeCond(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "value1",
@@ -103,7 +103,7 @@ func TestNewNotLikeCond(t *testing.T) {
 func TestNotLikeCond_Convert(t *testing.T) {
 	Convey("Test NotLikeCond.Convert", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -114,7 +114,7 @@ func TestNotLikeCond_Convert(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",
@@ -142,7 +142,7 @@ func TestNotLikeCond_Convert(t *testing.T) {
 func TestNotLikeCond_Convert2SQL(t *testing.T) {
 	Convey("Test NotLikeCond.Convert2SQL", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -153,7 +153,7 @@ func TestNotLikeCond_Convert2SQL(t *testing.T) {
 			cfg := &CondCfg{
 				Operation: OperationNotLike,
 				Field:     "field1",
-				NameField: fieldsMap["field1"],
+				FieldCfg:  fieldsMap["field1"],
 				ValueOptCfg: ValueOptCfg{
 					ValueFrom: ValueFrom_Const,
 					Value:     "test",

@@ -27,7 +27,7 @@ type Condition interface {
 }
 
 // 将过滤条件拼接到 dsl 请求的 query 部分
-func NewCondition(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*ViewField) (cond Condition, err error) {
+func NewCondition(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*FieldCfg) (cond Condition, err error) {
 	if cfg == nil {
 		return nil, nil
 	}
@@ -46,7 +46,7 @@ func NewCondition(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap
 	return cond, nil
 }
 
-func NewCondWithOpr(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*ViewField) (cond Condition, err error) {
+func NewCondWithOpr(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*FieldCfg) (cond Condition, err error) {
 
 	// multi_match之外的才校验
 	if cfg.Operation != OperationMultiMatch {
@@ -62,7 +62,7 @@ func NewCondWithOpr(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsM
 				return nil, fmt.Errorf("condition config field '%s' is binary type, do not support filtering", cfg.Field)
 			}
 
-			cfg.NameField = field
+			cfg.FieldCfg = field
 		}
 	}
 
@@ -100,7 +100,7 @@ func NewCondWithOpr(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsM
 	return cond, nil
 }
 
-func getFilterFieldName(name string, fieldsMap map[string]*ViewField, isFullTextQuery bool) string {
+func getFilterFieldName(name string, fieldsMap map[string]*FieldCfg, isFullTextQuery bool) string {
 	// 全文检索允许字段为 "*"
 	if name == AllField {
 		return name
@@ -144,7 +144,7 @@ func wrapKeyWordFieldName(fields ...string) string {
 
 // ConvertCondCfgToFilterCondition converts CondCfg to dataset filter condition format
 // Reference: ontology-query's RewriteCondition pattern
-func ConvertCondCfgToFilterCondition(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField,
+func ConvertCondCfgToFilterCondition(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*FieldCfg,
 	vectorizer func(ctx context.Context, word string) ([]*VectorResp, error)) (map[string]any, error) {
 	if cfg == nil {
 		return nil, nil

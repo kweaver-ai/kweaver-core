@@ -1329,8 +1329,8 @@ func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.
 	return nil
 }
 
-func objectTypeToCondFieldsMap(ot *interfaces.ObjectType) map[string]*cond.ViewField {
-	m := make(map[string]*cond.ViewField)
+func objectTypeToCondFieldsMap(ot *interfaces.ObjectType) map[string]*cond.FieldCfg {
+	m := make(map[string]*cond.FieldCfg)
 	if ot == nil {
 		return m
 	}
@@ -1338,7 +1338,7 @@ func objectTypeToCondFieldsMap(ot *interfaces.ObjectType) map[string]*cond.ViewF
 		if dp == nil {
 			continue
 		}
-		m[dp.Name] = &cond.ViewField{
+		m[dp.Name] = &cond.FieldCfg{
 			Name:         dp.Name,
 			Type:         dp.Type,
 			DisplayName:  dp.DisplayName,

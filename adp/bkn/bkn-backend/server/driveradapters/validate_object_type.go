@@ -16,6 +16,7 @@ import (
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
+	cond "bkn-backend/common/condition"
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
 )
@@ -60,7 +61,7 @@ func ValidateObjectTypes(ctx context.Context, knID string, objectTypes []*interf
 }
 
 // ValidateObjectType 对象类必要创建参数的合法性校验。
-// 校验顺序：基础信息 → 数据来源 → 数据属性 → 键 → 逻辑属性 → rid属性
+// 校验顺序：基础信息 → 数据来源 → 数据属性 → 键 → 逻辑属性 → 过滤条件
 func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType, strictMode bool) error {
 	// 1. 校验基础信息：id、name、tags
 	if err := validateObjectTypeBasicInfo(ctx, objectType); err != nil {
@@ -85,6 +86,11 @@ func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType, 
 
 	// 5. 校验逻辑属性
 	if err := validateObjectTypeLogicProperties(ctx, objectType, strictMode); err != nil {
+		return err
+	}
+
+	// 6. 校验过滤条件
+	if err := validateObjectTypeCondition(ctx, objectType, dataPropMap); err != nil {
 		return err
 	}
 
@@ -334,6 +340,97 @@ func validateObjectTypeLogicProperties(ctx context.Context, objectType *interfac
 				extra = append(extra, p)
 			}
 			objectType.LogicProperties[i].Parameters = append(objectType.LogicProperties[i].Parameters, extra...)
+		}
+	}
+
+	return nil
+}
+
+// validateObjectTypeCondition 校验对象类的过滤条件 Condition 合法性。
+func validateObjectTypeCondition(ctx context.Context, objectType *interfaces.ObjectType, dataPropMap map[string]*interfaces.DataProperty) error {
+	if objectType.Condition == nil {
+		return nil
+	}
+
+	// 构建字段映射用于校验
+	fieldsMap := make(map[string]*cond.FieldCfg, len(dataPropMap))
+	for name, prop := range dataPropMap {
+		fieldsMap[name] = &cond.FieldCfg{
+			Name:         name,
+			Type:         prop.Type,
+			DisplayName:  prop.DisplayName,
+			OriginalName: name,
+		}
+	}
+
+	// 校验 condition 结构合法性
+	if err := validateCondCfg(ctx, objectType.Condition, fieldsMap, objectType.OTName, ""); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateCondCfg 递归校验 CondCfg 的合法性
+func validateCondCfg(ctx context.Context, cfg *cond.CondCfg, fieldsMap map[string]*cond.FieldCfg, otName string, prefix string) error {
+	if cfg == nil {
+		return nil
+	}
+
+	// 校验 operation 不能为空
+	if cfg.Operation == "" {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("对象类[%s]过滤条件%s的 operation 不能为空", otName, prefix))
+	}
+
+	// 校验 operation 是否有效
+	if _, ok := cond.OperationMap[cfg.Operation]; !ok {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("对象类[%s]过滤条件%s的 operation[%s]无效", otName, prefix, cfg.Operation))
+	}
+
+	// and/or 操作需要校验子条件
+	if cfg.Operation == cond.OperationAnd || cfg.Operation == cond.OperationOr {
+		if len(cfg.SubConds) == 0 {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]过滤条件%s的子条件(sub_conditions)不能为空", otName, prefix))
+		}
+
+		// 校验子条件数量限制
+		if len(cfg.SubConds) > cond.MaxSubCondition {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]过滤条件%s的子条件数量[%d]超过最大限制[%d]", otName, prefix, len(cfg.SubConds), cond.MaxSubCondition))
+		}
+
+		// 递归校验每个子条件
+		for i, subCond := range cfg.SubConds {
+			subPrefix := fmt.Sprintf("%s.sub_conditions[%d]", prefix, i)
+			if err := validateCondCfg(ctx, subCond, fieldsMap, otName, subPrefix); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// 非 and/or 操作需要校验 field
+	if cfg.Field == "" {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("对象类[%s]过滤条件%s的 field 不能为空", otName, prefix))
+	}
+
+	// 校验 field 是否存在于数据属性中（* 表示所有字段，特殊处理）
+	if cfg.Field != cond.AllField {
+		if _, ok := fieldsMap[cfg.Field]; !ok {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]过滤条件%s的字段[%s]不存在", otName, prefix, cfg.Field))
+		}
+	}
+
+	// 校验 value：非特殊操作需要 value
+	if _, ok := cond.NotRequiredValueOperationMap[cfg.Operation]; !ok {
+		if cfg.Value == nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]过滤条件%s的值(value)不能为空", otName, prefix))
 		}
 	}
 

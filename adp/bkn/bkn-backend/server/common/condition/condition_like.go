@@ -18,10 +18,10 @@ type LikeCond struct {
 	mFilterFieldName string
 }
 
-func NewLikeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField) (Condition, error) {
-	if !dtype.DataType_IsString(cfg.NameField.Type) &&
-		dtype.SimpleTypeMapping[cfg.NameField.Type] != dtype.SimpleChar {
-		return nil, fmt.Errorf("condition [like] left field is not a string field: %s:%s", cfg.NameField.Name, cfg.NameField.Type)
+func NewLikeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*FieldCfg) (Condition, error) {
+	if !dtype.DataType_IsString(cfg.FieldCfg.Type) &&
+		dtype.SimpleTypeMapping[cfg.FieldCfg.Type] != dtype.SimpleChar {
+		return nil, fmt.Errorf("condition [like] left field is not a string field: %s:%s", cfg.FieldCfg.Name, cfg.FieldCfg.Type)
 	}
 
 	if cfg.ValueFrom != ValueFrom_Const {

@@ -155,7 +155,7 @@ type CondCfg struct {
 
 	RemainCfg map[string]any `json:",inline" mapstructure:",remain,squash"`
 
-	NameField *ViewField `json:"-" mapstructure:"-"`
+	FieldCfg *FieldCfg `json:"-" mapstructure:"-"`
 }
 
 type ValueOptCfg struct {
@@ -163,7 +163,7 @@ type ValueOptCfg struct {
 	Value     any    `json:"value,omitempty" mapstructure:"value"`
 }
 
-type ViewField struct {
+type FieldCfg struct {
 	Name         string `json:"name"`
 	Type         string `json:"type"`
 	Comment      string `json:"comment"`
@@ -173,7 +173,7 @@ type ViewField struct {
 	Path []string `json:"-"`
 }
 
-func (field *ViewField) InitFieldPath() {
+func (field *FieldCfg) InitFieldPath() {
 	if len(field.Path) == 0 {
 		field.Path = strings.Split(field.Name, ".")
 	}

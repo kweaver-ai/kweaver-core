@@ -21,9 +21,9 @@ type RegexCond struct {
 	mFilterFieldName string
 }
 
-func NewRegexCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField) (Condition, error) {
-	if !dtype.DataType_IsString(cfg.NameField.Type) {
-		return nil, fmt.Errorf("condition [regex] left field is not a string field: %s:%s", cfg.NameField.Name, cfg.NameField.Type)
+func NewRegexCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*FieldCfg) (Condition, error) {
+	if !dtype.DataType_IsString(cfg.FieldCfg.Type) {
+		return nil, fmt.Errorf("condition [regex] left field is not a string field: %s:%s", cfg.FieldCfg.Name, cfg.FieldCfg.Type)
 	}
 
 	if cfg.ValueFrom != ValueFrom_Const {

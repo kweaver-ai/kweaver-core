@@ -17,7 +17,7 @@ import (
 func TestNewMultiMatchCond(t *testing.T) {
 	Convey("Test NewMultiMatchCond", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,
@@ -176,7 +176,7 @@ func TestNewMultiMatchCond(t *testing.T) {
 func TestMultiMatchCond_Convert(t *testing.T) {
 	Convey("Test MultiMatchCond.Convert", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,
@@ -327,7 +327,7 @@ func TestMultiMatchCond_Convert(t *testing.T) {
 func TestMultiMatchCond_Convert2SQL(t *testing.T) {
 	Convey("Test MultiMatchCond.Convert2SQL", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,

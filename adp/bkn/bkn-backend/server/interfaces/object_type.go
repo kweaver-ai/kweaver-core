@@ -5,7 +5,11 @@
 
 package interfaces
 
-import "bkn-backend/interfaces/data_type"
+import (
+	"bkn-backend/interfaces/data_type"
+
+	cond "bkn-backend/common/condition"
+)
 
 const (
 	MAX_PROPERTY_NUM = 1000
@@ -82,6 +86,7 @@ type ObjectTypeWithKeyField struct {
 	PrimaryKeys     []string         `json:"primary_keys" mapstructure:"primary_keys"`
 	DisplayKey      string           `json:"display_key" mapstructure:"display_key"`
 	IncrementalKey  string           `json:"incremental_key" mapstructure:"incremental_key"`
+	Condition       *cond.CondCfg    `json:"condition,omitempty" mapstructure:"condition"`
 	// ConditionOperations []string         `json:"condition_operations"`
 }
 

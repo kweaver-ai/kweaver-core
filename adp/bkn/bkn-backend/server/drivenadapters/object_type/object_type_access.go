@@ -173,6 +173,12 @@ func (ota *objectTypeAccess) CreateObjectType(ctx context.Context, tx *sql.Tx, o
 		otellog.LogError(ctx, "Failed to marshal PrimaryKeys, err", err)
 		return err
 	}
+	// 2.4 序列化过滤条件
+	conditionBytes, err := sonic.Marshal(objectType.Condition)
+	if err != nil {
+		otellog.LogError(ctx, "Marshal Condition failed", err)
+		return err
+	}
 
 	sqlStr, vals, err := sq.Insert(OT_TABLE_NAME).
 		Columns(
@@ -191,6 +197,7 @@ func (ota *objectTypeAccess) CreateObjectType(ctx context.Context, tx *sql.Tx, o
 			"f_primary_keys",
 			"f_display_key",
 			"f_incremental_key",
+			"f_condition",
 			"f_creator",
 			"f_creator_type",
 			"f_create_time",
@@ -214,6 +221,7 @@ func (ota *objectTypeAccess) CreateObjectType(ctx context.Context, tx *sql.Tx, o
 			primaryKeysBytes,
 			objectType.DisplayKey,
 			objectType.IncrementalKey,
+			conditionBytes,
 			objectType.Creator.ID,
 			objectType.Creator.Type,
 			objectType.CreateTime,
@@ -507,6 +515,8 @@ func (ota *objectTypeAccess) GetObjectTypeByID(ctx context.Context, tx *sql.Tx, 
 		"ot.f_primary_keys",
 		"ot.f_display_key",
 		"ot.f_incremental_key",
+		"ot.f_condition",
+
 		"ot.f_creator",
 		"ot.f_creator_type",
 		"ot.f_create_time",
@@ -545,6 +555,7 @@ func (ota *objectTypeAccess) GetObjectTypeByID(ctx context.Context, tx *sql.Tx, 
 		dataPropertiesBytes  []byte
 		logicPropertiesBytes []byte
 		primaryKeysBytes     []byte
+		conditionBytes       []byte
 	)
 
 	var row *sql.Row
@@ -569,6 +580,8 @@ func (ota *objectTypeAccess) GetObjectTypeByID(ctx context.Context, tx *sql.Tx, 
 		&primaryKeysBytes,
 		&objectType.DisplayKey,
 		&objectType.IncrementalKey,
+		&conditionBytes,
+
 		&objectType.Creator.ID,
 		&objectType.Creator.Type,
 		&objectType.CreateTime,
@@ -624,6 +637,13 @@ func (ota *objectTypeAccess) GetObjectTypeByID(ctx context.Context, tx *sql.Tx, 
 		return nil, err
 	}
 
+	// 2.4 反序列化过滤条件
+	err = sonic.Unmarshal(conditionBytes, &objectType.Condition)
+	if err != nil {
+		otellog.LogError(ctx, "Failed to unmarshal Condition after getting object type", err)
+		return nil, err
+	}
+
 	span.SetStatus(codes.Ok, "")
 	return &objectType, nil
 }
@@ -654,6 +674,7 @@ func (ota *objectTypeAccess) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx
 		"ot.f_primary_keys",
 		"ot.f_display_key",
 		"ot.f_incremental_key",
+		"ot.f_condition",
 		"ot.f_creator",
 		"ot.f_creator_type",
 		"ot.f_create_time",
@@ -727,6 +748,7 @@ func (ota *objectTypeAccess) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx
 			dataPropertiesBytes  []byte
 			logicPropertiesBytes []byte
 			primaryKeysBytes     []byte
+			conditionBytes       []byte
 		)
 
 		err := rows.Scan(
@@ -745,6 +767,8 @@ func (ota *objectTypeAccess) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx
 			&primaryKeysBytes,
 			&objectType.DisplayKey,
 			&objectType.IncrementalKey,
+			&conditionBytes,
+
 			&objectType.Creator.ID,
 			&objectType.Creator.Type,
 			&objectType.CreateTime,
@@ -796,6 +820,13 @@ func (ota *objectTypeAccess) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx
 			return []*interfaces.ObjectType{}, err
 		}
 
+		// 2.4 反序列化过滤条件
+		err = sonic.Unmarshal(conditionBytes, &objectType.Condition)
+		if err != nil {
+			otellog.LogError(ctx, "Failed to unmarshal Condition after getting object type", err)
+			return []*interfaces.ObjectType{}, err
+		}
+
 		objectTypes = append(objectTypes, &objectType)
 	}
 
@@ -838,6 +869,12 @@ func (ota *objectTypeAccess) UpdateObjectType(ctx context.Context, tx *sql.Tx, o
 		logger.Errorf("Failed to marshal PrimaryKeys, err: %v", err.Error())
 		return err
 	}
+	// 2.4 序列化过滤条件
+	conditionBytes, err := sonic.Marshal(objectType.Condition)
+	if err != nil {
+		logger.Errorf("Failed to marshal Condition, err: %v", err.Error())
+		return err
+	}
 
 	data := map[string]any{
 		"f_name":             objectType.OTName,
@@ -852,6 +889,7 @@ func (ota *objectTypeAccess) UpdateObjectType(ctx context.Context, tx *sql.Tx, o
 		"f_primary_keys":     primaryKeysBytes,
 		"f_display_key":      objectType.DisplayKey,
 		"f_incremental_key":  objectType.IncrementalKey,
+		"f_condition":        conditionBytes,
 		"f_updater":          objectType.Updater.ID,
 		"f_updater_type":     objectType.Updater.Type,
 		"f_update_time":      objectType.UpdateTime,
@@ -1302,6 +1340,7 @@ func (ota *objectTypeAccess) GetAllObjectTypesByKnID(ctx context.Context, knID s
 		"f_primary_keys",
 		"f_display_key",
 		"f_incremental_key",
+		"f_condition",
 		"f_creator",
 		"f_creator_type",
 		"f_create_time",
@@ -1338,6 +1377,7 @@ func (ota *objectTypeAccess) GetAllObjectTypesByKnID(ctx context.Context, knID s
 			dataPropertiesBytes  []byte
 			logicPropertiesBytes []byte
 			primaryKeysBytes     []byte
+			conditionBytes       []byte
 		)
 		err := rows.Scan(
 			&objectType.OTID,
@@ -1355,6 +1395,7 @@ func (ota *objectTypeAccess) GetAllObjectTypesByKnID(ctx context.Context, knID s
 			&primaryKeysBytes,
 			&objectType.DisplayKey,
 			&objectType.IncrementalKey,
+			&conditionBytes,
 			&objectType.Creator.ID,
 			&objectType.Creator.Type,
 			&objectType.CreateTime,
@@ -1395,6 +1436,13 @@ func (ota *objectTypeAccess) GetAllObjectTypesByKnID(ctx context.Context, knID s
 		err = sonic.Unmarshal(primaryKeysBytes, &objectType.PrimaryKeys)
 		if err != nil {
 			otellog.LogError(ctx, "Failed to unmarshal primaryKeys after getting object type, err", err)
+			return map[string]*interfaces.ObjectType{}, err
+		}
+
+		// 2.4 反序列化过滤条件
+		err = sonic.Unmarshal(conditionBytes, &objectType.Condition)
+		if err != nil {
+			otellog.LogError(ctx, "Failed to unmarshal Condition after getting object type", err)
 			return map[string]*interfaces.ObjectType{}, err
 		}
 

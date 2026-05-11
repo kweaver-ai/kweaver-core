@@ -15,7 +15,7 @@ type OrCond struct {
 	mSubConds []Condition
 }
 
-func newOrCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*ViewField) (Condition, error) {
+func newOrCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*FieldCfg) (Condition, error) {
 	subConds := []Condition{}
 
 	if len(cfg.SubConds) == 0 {
@@ -112,7 +112,7 @@ func (cond *OrCond) Convert2SQL(ctx context.Context) (string, error) {
 
 // convertOrCondToDatasetFilterCondition converts OrCond to dataset filter condition format
 // Reference: ontology-query's rewriteOrCondition pattern - recursively process sub-conditions
-func convertOrCondToDatasetFilterCondition(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField,
+func convertOrCondToDatasetFilterCondition(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*FieldCfg,
 	vectorizer func(ctx context.Context, word string) ([]*VectorResp, error)) (map[string]any, error) {
 	if len(cfg.SubConds) == 0 {
 		return nil, fmt.Errorf("sub condition size is 0")

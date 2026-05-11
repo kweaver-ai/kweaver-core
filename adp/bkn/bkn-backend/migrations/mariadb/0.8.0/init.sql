@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS t_object_type (
   f_primary_keys VARCHAR(8192) DEFAULT NULL COMMENT '对象类主键',
   f_display_key VARCHAR(40) NOT NULL DEFAULT '' COMMENT '对象实例的显示属性',
   f_incremental_key VARCHAR(40) NOT NULL DEFAULT '' COMMENT '对象类增量键',
+  f_condition MEDIUMTEXT DEFAULT NULL COMMENT '对象类过滤条件',
   f_creator VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
   f_creator_type VARCHAR(20) NOT NULL DEFAULT '' COMMENT '创建者类型',
   f_create_time BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间',

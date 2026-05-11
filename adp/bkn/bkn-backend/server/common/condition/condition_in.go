@@ -21,7 +21,7 @@ type InCond struct {
 	mFilterFieldName string
 }
 
-func NewInCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField) (Condition, error) {
+func NewInCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*FieldCfg) (Condition, error) {
 	if cfg.ValueFrom != ValueFrom_Const {
 		return nil, fmt.Errorf("condition [in] does not support value_from type '%s'", cfg.ValueFrom)
 	}

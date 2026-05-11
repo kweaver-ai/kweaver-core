@@ -17,7 +17,7 @@ import (
 func TestNewEqCond(t *testing.T) {
 	Convey("Test NewEqCond", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -90,7 +90,7 @@ func TestNewEqCond(t *testing.T) {
 func TestEqCond_Convert(t *testing.T) {
 	Convey("Test EqCond.Convert", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -149,7 +149,7 @@ func TestEqCond_Convert(t *testing.T) {
 func TestEqCond_Convert2SQL(t *testing.T) {
 	Convey("Test EqCond.Convert2SQL", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,

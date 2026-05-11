@@ -17,7 +17,7 @@ import (
 func TestNewOrCond(t *testing.T) {
 	Convey("Test newOrCond", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -134,7 +134,7 @@ func TestNewOrCond(t *testing.T) {
 func TestOrCond_Convert(t *testing.T) {
 	Convey("Test OrCond.Convert", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -242,7 +242,7 @@ func TestOrCond_Convert(t *testing.T) {
 func TestOrCond_Convert2SQL(t *testing.T) {
 	Convey("Test OrCond.Convert2SQL", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,

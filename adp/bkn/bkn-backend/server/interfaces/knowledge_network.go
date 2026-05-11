@@ -41,7 +41,7 @@ var (
 		"logic_properties.display_name",
 		"logic_properties.comment",
 	}
-	CONCPET_QUERY_FIELD = map[string]*cond.ViewField{
+	CONCPET_QUERY_FIELD = map[string]*cond.FieldCfg{
 		"kn_id": {
 			Name: "kn_id",
 			Type: data_type.DATATYPE_KEYWORD,

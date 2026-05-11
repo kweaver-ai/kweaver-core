@@ -17,7 +17,7 @@ import (
 func TestNewCondition(t *testing.T) {
 	Convey("Test NewCondition", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -112,7 +112,7 @@ func TestNewCondition(t *testing.T) {
 func TestNewCondWithOpr(t *testing.T) {
 	Convey("Test NewCondWithOpr", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -232,7 +232,7 @@ func TestNewCondWithOpr(t *testing.T) {
 				}
 
 				if tc.operation == OperationLike || tc.operation == OperationNotLike || tc.operation == OperationRegex {
-					cfg.NameField = fieldsMap[tc.name]
+					cfg.FieldCfg = fieldsMap[tc.name]
 				}
 
 				if tc.operation == OperationKNN {
@@ -252,7 +252,7 @@ func TestNewCondWithOpr(t *testing.T) {
 
 func TestGetFilterFieldName(t *testing.T) {
 	Convey("Test getFilterFieldName", t, func() {
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,

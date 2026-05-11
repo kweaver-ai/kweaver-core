@@ -15,6 +15,7 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/mitchellh/mapstructure"
 
+	cond "bkn-backend/common/condition"
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
 )
@@ -289,6 +290,78 @@ func validateFilteredCrossJoinMappingRules(ctx context.Context, mappingRules any
 		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
 			WithErrorDetails("分侧过滤全连接 mapping_rules 解码失败: " + err.Error())
 	}
-	// source_condition / target_condition 均可省略：nil 表示该侧无额外过滤（与查询引擎语义一致）。
+
+	// 校验 source_condition
+	if mapping.SourceCondition != nil {
+		if err := validateRelationTypeCondition(ctx, mapping.SourceCondition, "source_condition"); err != nil {
+			return nil, err
+		}
+	}
+
+	// 校验 target_condition
+	if mapping.TargetCondition != nil {
+		if err := validateRelationTypeCondition(ctx, mapping.TargetCondition, "target_condition"); err != nil {
+			return nil, err
+		}
+	}
+
 	return &mapping, nil
+}
+
+// validateRelationTypeCondition 校验关系类过滤条件的合法性
+func validateRelationTypeCondition(ctx context.Context, cfg *cond.CondCfg, prefix string) error {
+	if cfg == nil {
+		return nil
+	}
+
+	// 校验 operation 不能为空
+	if cfg.Operation == "" {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的 operation 不能为空", prefix))
+	}
+
+	// 校验 operation 是否有效
+	if _, ok := cond.OperationMap[cfg.Operation]; !ok {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的 operation[%s] 无效", prefix, cfg.Operation))
+	}
+
+	// and/or 操作需要校验子条件
+	if cfg.Operation == cond.OperationAnd || cfg.Operation == cond.OperationOr {
+		if len(cfg.SubConds) == 0 {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的子条件(sub_conditions)不能为空", prefix))
+		}
+
+		// 校验子条件数量限制
+		if len(cfg.SubConds) > cond.MaxSubCondition {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的子条件数量[%d]超过最大限制[%d]", prefix, len(cfg.SubConds), cond.MaxSubCondition))
+		}
+
+		// 递归校验每个子条件
+		for i, subCond := range cfg.SubConds {
+			subPrefix := fmt.Sprintf("%s.sub_conditions[%d]", prefix, i)
+			if err := validateRelationTypeCondition(ctx, subCond, subPrefix); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// 非 and/or 操作需要校验 field
+	if cfg.Field == "" {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的 field 不能为空", prefix))
+	}
+
+	// 校验 value：非特殊操作需要 value
+	if _, ok := cond.NotRequiredValueOperationMap[cfg.Operation]; !ok {
+		if cfg.Value == nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的值(value)不能为空", prefix))
+		}
+	}
+
+	return nil
 }

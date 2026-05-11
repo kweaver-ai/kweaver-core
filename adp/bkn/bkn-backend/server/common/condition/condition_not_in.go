@@ -19,7 +19,7 @@ type NotInCond struct {
 	mFilterFieldName string
 }
 
-func NewNotInCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField) (Condition, error) {
+func NewNotInCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*FieldCfg) (Condition, error) {
 	if cfg.ValueFrom != ValueFrom_Const {
 		return nil, fmt.Errorf("condition [not_in] does not support value_from type '%s'", cfg.ValueFrom)
 	}

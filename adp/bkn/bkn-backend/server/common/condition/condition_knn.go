@@ -20,7 +20,7 @@ type KnnCond struct {
 	mSubConds        []Condition
 }
 
-func NewKnnCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*ViewField) (Condition, error) {
+func NewKnnCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*FieldCfg) (Condition, error) {
 	if cfg.ValueFrom != ValueFrom_Const {
 		return nil, fmt.Errorf("condition [knn] does not support value_from type '%s'", cfg.ValueFrom)
 	}
@@ -148,7 +148,7 @@ func (cond *KnnCond) Convert2SQL(ctx context.Context) (string, error) {
 // convertKnnCondToDatasetFilterCondition converts KnnCond to dataset filter condition format
 // Reference: ontology-query's rewriteKnnCond pattern - use vectorizer to convert text to vector
 func convertKnnCondToDatasetFilterCondition(ctx context.Context, cfg *CondCfg,
-	fieldsMap map[string]*ViewField,
+	fieldsMap map[string]*FieldCfg,
 	vectorizer func(ctx context.Context, word string) ([]*VectorResp, error)) (map[string]any, error) {
 	// Convert text value to vector using vectorizer
 	v := fmt.Sprintf("%v", cfg.Value)
