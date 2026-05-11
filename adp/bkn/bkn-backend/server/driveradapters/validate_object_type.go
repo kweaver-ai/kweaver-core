@@ -60,7 +60,7 @@ func ValidateObjectTypes(ctx context.Context, knID string, objectTypes []*interf
 }
 
 // ValidateObjectType 对象类必要创建参数的合法性校验。
-// 校验顺序：基础信息 → 数据来源 → 数据属性 → 键 → 逻辑属性
+// 校验顺序：基础信息 → 数据来源 → 数据属性 → 键 → 逻辑属性 → rid属性
 func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType, strictMode bool) error {
 	// 1. 校验基础信息：id、name、tags
 	if err := validateObjectTypeBasicInfo(ctx, objectType); err != nil {
@@ -244,14 +244,34 @@ func validateObjectTypeLogicProperties(ctx context.Context, objectType *interfac
 				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的显示名称长度不能超过%d个字符", objectType.OTName, prop.Name, interfaces.OBJECT_NAME_MAX_LENGTH))
 		}
 
-		// type 非空且只支持 metric / operator
+		// type 非空且只支持 metric / operator / rid
 		if prop.Type == "" {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
 				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]类型不能为空", objectType.OTName, prop.Name))
 		}
-		if prop.Type != interfaces.LOGIC_PROPERTY_TYPE_METRIC && prop.Type != interfaces.LOGIC_PROPERTY_TYPE_OPERATOR {
+		if prop.Type != interfaces.LOGIC_PROPERTY_TYPE_METRIC &&
+			prop.Type != interfaces.LOGIC_PROPERTY_TYPE_OPERATOR &&
+			prop.Type != interfaces.LOGIC_PROPERTY_TYPE_RID {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]类型[%s]无效，只支持 metric, operator", objectType.OTName, prop.Name, prop.Type))
+				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]类型[%s]无效，只支持 metric, operator, rid", objectType.OTName, prop.Name, prop.Type))
+		}
+
+		// rid 类型特殊校验：需要 kind 和 field
+		if prop.Type == interfaces.LOGIC_PROPERTY_TYPE_RID {
+			if prop.Kind == "" {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的 kind 不能为空", objectType.OTName, prop.Name))
+			}
+			if !interfaces.IsValidRidKind(prop.Kind) {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的 kind[%s]无效，只支持 skill, tool, operator, agent", objectType.OTName, prop.Name, prop.Kind))
+			}
+			if prop.Field == "" {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的 field 不能为空", objectType.OTName, prop.Name))
+			}
+			// rid 类型不需要 data_source，跳过后续 data_source 校验
+			continue
 		}
 
 		// 校验 data_source：

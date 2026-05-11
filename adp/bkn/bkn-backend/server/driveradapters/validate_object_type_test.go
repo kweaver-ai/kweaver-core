@@ -808,3 +808,225 @@ func Test_ValidateVectorConfig(t *testing.T) {
 		})
 	})
 }
+
+func Test_ValidateRidLogicProperty(t *testing.T) {
+	Convey("Test ValidateRidLogicProperty\n", t, func() {
+		ctx := context.Background()
+
+		Convey("Success with valid rid logic property\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "skill_id",
+							Type:        "string",
+							DisplayName: "Skill ID",
+						},
+					},
+					PrimaryKeys: []string{"skill_id"},
+					DisplayKey:  "skill_id",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "skillRef",
+							DisplayName: "Skill Reference",
+							Type:        "rid",
+							Kind:        "skill",
+							Field:       "skill_id",
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Success with all valid rid kinds\n", func() {
+			validKinds := []string{"skill", "tool", "operator", "agent"}
+			for _, kind := range validKinds {
+				ot := &interfaces.ObjectType{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTID:   "ot1",
+						OTName: "object1",
+						DataProperties: []*interfaces.DataProperty{
+							{
+								Name:        "res_id",
+								Type:        "string",
+								DisplayName: "Resource ID",
+							},
+						},
+						PrimaryKeys: []string{"res_id"},
+						DisplayKey:  "res_id",
+						LogicProperties: []*interfaces.LogicProperty{
+							{
+								Name:        "resRef",
+								DisplayName: kind + " Reference",
+								Type:        "rid",
+								Kind:        kind,
+								Field:       "res_id",
+							},
+						},
+					},
+				}
+				err := ValidateObjectType(ctx, ot, true)
+				So(err, ShouldBeNil)
+			}
+		})
+
+		Convey("Failed with empty kind\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "skill_id",
+							Type:        "string",
+							DisplayName: "Skill ID",
+						},
+					},
+					PrimaryKeys: []string{"skill_id"},
+					DisplayKey:  "skill_id",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "skillRef",
+							DisplayName: "Skill Reference",
+							Type:        "rid",
+							Kind:        "",
+							Field:       "skill_id",
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Failed with invalid kind\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "skill_id",
+							Type:        "string",
+							DisplayName: "Skill ID",
+						},
+					},
+					PrimaryKeys: []string{"skill_id"},
+					DisplayKey:  "skill_id",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "skillRef",
+							DisplayName: "Skill Reference",
+							Type:        "rid",
+							Kind:        "invalid_kind",
+							Field:       "skill_id",
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Failed with empty field\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "skill_id",
+							Type:        "string",
+							DisplayName: "Skill ID",
+						},
+					},
+					PrimaryKeys: []string{"skill_id"},
+					DisplayKey:  "skill_id",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "skillRef",
+							DisplayName: "Skill Reference",
+							Type:        "rid",
+							Kind:        "skill",
+							Field:       "",
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Failed with invalid rid type\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "skill_id",
+							Type:        "string",
+							DisplayName: "Skill ID",
+						},
+					},
+					PrimaryKeys: []string{"skill_id"},
+					DisplayKey:  "skill_id",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "skillRef",
+							DisplayName: "Skill Reference",
+							Type:        "invalid_type",
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Success with rid and metric mixed logic properties\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "skill_id",
+							Type:        "string",
+							DisplayName: "Skill ID",
+						},
+					},
+					PrimaryKeys: []string{"skill_id"},
+					DisplayKey:  "skill_id",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "skillRef",
+							DisplayName: "Skill Reference",
+							Type:        "rid",
+							Kind:        "skill",
+							Field:       "skill_id",
+						},
+						{
+							Name:        "metric1",
+							DisplayName: "Metric 1",
+							Type:        "metric",
+							DataSource: &interfaces.ResourceInfo{
+								Type: "metric",
+								ID:   "metric_ds_1",
+							},
+							Parameters: []interfaces.Parameter{
+								{Name: "param1", Type: "string"},
+							},
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldBeNil)
+		})
+	})
+}

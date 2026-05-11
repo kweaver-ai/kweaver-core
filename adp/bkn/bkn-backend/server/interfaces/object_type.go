@@ -12,6 +12,7 @@ const (
 	// 逻辑属性类型
 	LOGIC_PROPERTY_TYPE_METRIC   = "metric"
 	LOGIC_PROPERTY_TYPE_OPERATOR = "operator"
+	LOGIC_PROPERTY_TYPE_RID      = "rid"
 )
 
 var (
@@ -43,10 +44,11 @@ var (
 		data_type.DATATYPE_BOOLEAN:          true,
 	}
 
-	// 逻辑资源类型需有效，当前支持 metric, operator
+	// 逻辑资源类型需有效，当前支持 metric, operator, rid
 	ValidLogicSourceTypes = map[string]bool{
 		LOGIC_PROPERTY_TYPE_METRIC:   true,
 		LOGIC_PROPERTY_TYPE_OPERATOR: true,
+		LOGIC_PROPERTY_TYPE_RID:      true,
 	}
 
 	// 有效的属性类型：integer, unsigned integer, float, decimal, string, text, date, timestamp, time, datetime, boolean, binary, json, vector, point, shape, ip。
@@ -145,10 +147,14 @@ type LogicProperty struct {
 	DisplayName string `json:"display_name" mapstructure:"display_name"`
 	Type        string `json:"type" mapstructure:"type"`
 	Comment     string `json:"comment" mapstructure:"comment"`
-	// Index        bool          `json:"index" mapstructure:"index"`
+
 	DataSource   *ResourceInfo `json:"data_source" mapstructure:"data_source"`
 	Parameters   []Parameter   `json:"parameters" mapstructure:"parameters"`
-	AnalysisDims []Field       `json:"analysis_dimensions,omitempty"`
+	AnalysisDims []Field       `json:"analysis_dimensions,omitempty" mapstructure:"analysis_dimensions"`
+
+	// Rid-specific fields (valid when Type == "rid")
+	Kind  string `json:"kind,omitempty" mapstructure:"kind"`
+	Field string `json:"field,omitempty" mapstructure:"field"`
 }
 
 type Field struct {
