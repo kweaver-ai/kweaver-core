@@ -3771,6 +3771,73 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RelationTypePath'
+    MetricUnitType:
+      description: 指标单位类型，与 bkn-backend `interfaces.ValidMetricUnitTypes`（及 bkn-metrics OpenAPI）一致。
+      type: string
+      enum:
+      - numUnit
+      - storeUnit
+      - percent
+      - transmissionRate
+      - timeUnit
+      - currencyUnit
+      - percentageUnit
+      - countUnit
+      - weightUnit
+      - ordinalRankUnit
+    MetricUnit:
+      description: 指标度量单位，与 bkn-backend `interfaces.ValidMetricUnits`（及 bkn-metrics OpenAPI）一致。
+      type: string
+      enum:
+      - none
+      - K
+      - Mil
+      - Bil
+      - Tri
+      - bit
+      - Byte
+      - KB
+      - MB
+      - GB
+      - TB
+      - PB
+      - bps
+      - Kbps
+      - Mbps
+      - μs
+      - ms
+      - s
+      - m
+      - h
+      - day
+      - week
+      - month
+      - year
+      - quarter
+      - Fen
+      - Jiao
+      - CNY
+      - 10K_CNY
+      - 1M_CNY
+      - 100M_CNY
+      - US_Cent
+      - USD
+      - EUR_Cent
+      - '%'
+      - ‰
+      - household
+      - transaction
+      - piece
+      - item
+      - times
+      - man_day
+      - family
+      - hand
+      - sheet
+      - packet
+      - ton
+      - kg
+      - rank
     MetricPropertyValue:
       description: 指标属性值
       required:
@@ -3794,72 +3861,9 @@ components:
       type: object
       properties:
         unit_type:
-          description: 单位类型
-          enum:
-          - numUnit
-          - storeUnit
-          - percent
-          - transmissionRate
-          - timeUnit
-          - currencyUnit
-          - percentageUnit
-          - countUnit
-          - weightUnit
-          - ordinalRankUnit
-          type: string
+          $ref: '#/components/schemas/MetricUnitType'
         unit:
-          description: 度量单位
-          enum:
-          - none
-          - K
-          - Mil
-          - Bil
-          - Tri
-          - bit
-          - Byte
-          - KB
-          - MB
-          - GB
-          - TB
-          - PB
-          - bps
-          - Kbps
-          - Mbps
-          - μs
-          - ms
-          - s
-          - m
-          - h
-          - day
-          - week
-          - month
-          - year
-          - quarter
-          - Fen
-          - Jiao
-          - CNY
-          - 10K_CNY
-          - 1M_CNY
-          - 100M_CNY
-          - US_Cent
-          - USD
-          - EUR_Cent
-          - '%'
-          - ‰
-          - household
-          - transaction
-          - piece
-          - item
-          - times
-          - man_day
-          - family
-          - hand
-          - sheet
-          - packet
-          - ton
-          - kg
-          - rank
-          type: string
+          $ref: '#/components/schemas/MetricUnit'
     ObjectDataResponse:
       description: 节点（对象类）信息
       required:
@@ -5401,9 +5405,9 @@ components:
           items:
             type: string
         unit_type:
-          type: string
+          $ref: '#/components/schemas/MetricUnitType'
         unit:
-          type: string
+          $ref: '#/components/schemas/MetricUnit'
         metric_type:
           type: string
         scope_type:
@@ -5463,9 +5467,9 @@ components:
           type: object
           properties:
             unit_type:
-              type: string
+              $ref: '#/components/schemas/MetricUnitType'
             unit:
-              type: string
+              $ref: '#/components/schemas/MetricUnit'
         datas:
           type: array
           items:
