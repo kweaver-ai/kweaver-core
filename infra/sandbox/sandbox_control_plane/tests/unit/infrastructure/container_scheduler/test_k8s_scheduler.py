@@ -3,14 +3,15 @@ Kubernetes 容器调度器单元测试
 
 测试 K8sScheduler 类的功能。
 """
-import pytest
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, Mock, patch
 
-from src.infrastructure.container_scheduler.k8s_scheduler import K8sScheduler
-from src.infrastructure.container_scheduler.base import ContainerConfig, ControlPlaneOwnerContext
+import pytest
 from kubernetes.client.rest import ApiException
+
+from src.infrastructure.config.settings import get_settings
+from src.infrastructure.container_scheduler.base import ContainerConfig, ControlPlaneOwnerContext
+from src.infrastructure.container_scheduler.k8s_scheduler import K8sScheduler
 
 
 class TestK8sScheduler:
@@ -129,6 +130,37 @@ class TestK8sScheduler:
         assert call_args[1]["namespace"] == "test-namespace"
 
     @pytest.mark.asyncio
+    async def test_create_pod_uses_configured_image_pull_settings(
+        self,
+        scheduler,
+        mock_core_v1,
+        basic_config,
+        monkeypatch,
+    ):
+        """测试 executor Pod 使用配置化镜像拉取策略和 imagePullSecrets。"""
+        monkeypatch.setenv("EXECUTOR_IMAGE_PULL_POLICY", "Always")
+        monkeypatch.setenv("EXECUTOR_IMAGE_PULL_SECRETS", "swr-secret, backup-secret")
+        get_settings.cache_clear()
+
+        mock_pod = Mock()
+        mock_pod.metadata = Mock()
+        mock_pod.metadata.name = "sandbox-test-session-abc123"
+        mock_core_v1.create_namespaced_pod.return_value = mock_pod
+
+        try:
+            await scheduler.create_container(basic_config)
+        finally:
+            get_settings.cache_clear()
+
+        pod = mock_core_v1.create_namespaced_pod.call_args.kwargs["body"]
+        executor_container = pod.spec.containers[0]
+        assert executor_container.image_pull_policy == "Always"
+        assert [secret.name for secret in pod.spec.image_pull_secrets] == [
+            "swr-secret",
+            "backup-secret",
+        ]
+
+    @pytest.mark.asyncio
     async def test_create_pod_sets_owner_references_and_annotations(self, scheduler, mock_core_v1):
         """测试创建 Pod 时写入 ownerReferences 和 control plane annotations。"""
         config = ContainerConfig(
@@ -172,7 +204,7 @@ class TestK8sScheduler:
         """测试旧 Pod 正在删除时会等待并重试同名创建。"""
         stale_pod = Mock()
         stale_pod.metadata = Mock()
-        stale_pod.metadata.deletion_timestamp = datetime.now(timezone.utc)
+        stale_pod.metadata.deletion_timestamp = datetime.now(UTC)
 
         created_pod = Mock()
         created_pod.metadata = Mock()
@@ -279,10 +311,10 @@ class TestK8sScheduler:
         mock_pod = Mock()
         mock_pod.metadata = Mock()
         mock_pod.metadata.name = "test-pod"
-        mock_pod.metadata.creation_timestamp = datetime.now(timezone.utc)
+        mock_pod.metadata.creation_timestamp = datetime.now(UTC)
         mock_pod.status.phase = "Running"
         mock_pod.status.pod_ip = "10.244.1.5"
-        mock_pod.status.start_time = datetime.now(timezone.utc)
+        mock_pod.status.start_time = datetime.now(UTC)
         mock_pod.status.container_statuses = [
             Mock(
                 name="executor",
@@ -310,10 +342,10 @@ class TestK8sScheduler:
         mock_pod = Mock()
         mock_pod.metadata = Mock()
         mock_pod.metadata.name = "test-pod"
-        mock_pod.metadata.creation_timestamp = datetime.now(timezone.utc)
+        mock_pod.metadata.creation_timestamp = datetime.now(UTC)
         mock_pod.status.phase = "Running"
         mock_pod.status.pod_ip = "10.244.1.5"
-        mock_pod.status.start_time = datetime.now(timezone.utc)
+        mock_pod.status.start_time = datetime.now(UTC)
         mock_pod.status.container_statuses = [
             Mock(
                 name="executor",
@@ -339,7 +371,7 @@ class TestK8sScheduler:
         mock_pod = Mock()
         mock_pod.metadata = Mock()
         mock_pod.metadata.name = "test-pod"
-        mock_pod.metadata.creation_timestamp = datetime.now(timezone.utc)
+        mock_pod.metadata.creation_timestamp = datetime.now(UTC)
         mock_pod.status.phase = "Succeeded"
         mock_pod.status.pod_ip = "10.244.1.5"
         mock_pod.status.container_statuses = []
@@ -542,7 +574,7 @@ class TestK8sSchedulerExtended:
         mock_pod = Mock()
         mock_pod.metadata = Mock()
         mock_pod.metadata.name = "test-pod"
-        mock_pod.metadata.creation_timestamp = datetime.now(timezone.utc)
+        mock_pod.metadata.creation_timestamp = datetime.now(UTC)
         mock_pod.status.phase = "Pending"
         mock_pod.status.pod_ip = None
         mock_pod.status.container_statuses = []
@@ -561,7 +593,7 @@ class TestK8sSchedulerExtended:
         mock_pod = Mock()
         mock_pod.metadata = Mock()
         mock_pod.metadata.name = "test-pod"
-        mock_pod.metadata.creation_timestamp = datetime.now(timezone.utc)
+        mock_pod.metadata.creation_timestamp = datetime.now(UTC)
         mock_pod.status.phase = "Failed"
         mock_pod.status.pod_ip = None
         mock_pod.status.container_statuses = [

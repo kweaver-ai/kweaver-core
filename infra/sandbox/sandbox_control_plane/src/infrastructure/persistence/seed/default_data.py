@@ -12,7 +12,7 @@ import os
 import time
 from decimal import Decimal
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from structlog import get_logger
 
@@ -21,6 +21,10 @@ if TYPE_CHECKING:
     from src.infrastructure.persistence.models.template_model import TemplateModel
 
 logger = get_logger(__name__)
+
+DEFAULT_TEMPLATE_IMAGE_REGISTRY = "swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip"
+DEFAULT_PYTHON_BASIC_TEMPLATE_IMAGE_REPOSITORY = "sandbox-template-python-basic"
+DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE_REPOSITORY = "sandbox-template-multi-language"
 
 
 def get_project_version() -> str:
@@ -52,21 +56,27 @@ def get_project_version() -> str:
     return "latest"
 
 
-def build_template_image_url(template_name: str) -> str:
-    """根据项目版本生成默认最终模板镜像 URL。"""
-    return f"sandbox-template-{template_name}:{get_project_version()}"
+def build_template_image_url(repository: str) -> str:
+    """根据项目版本生成默认 SWR 模板镜像 URL。"""
+    registry = os.getenv("DEFAULT_TEMPLATE_IMAGE_REGISTRY") or DEFAULT_TEMPLATE_IMAGE_REGISTRY
+    image_name = f"{registry.rstrip('/')}/{repository.lstrip('/')}" if registry else repository
+    return f"{image_name}:{get_project_version()}"
 
 
 def get_default_template_image_url() -> str:
     """
     获取默认模板镜像 URL
 
-    从环境变量 DEFAULT_TEMPLATE_IMAGE 读取，如果未设置则使用 VERSION 文件生成默认值。
+    从环境变量 DEFAULT_TEMPLATE_IMAGE 读取，如果未设置则使用 VERSION 文件生成默认 SWR 镜像地址。
 
     Returns:
         模板镜像 URL
     """
-    image_url = os.getenv("DEFAULT_TEMPLATE_IMAGE", build_template_image_url("python-basic"))
+    repository = os.getenv(
+        "DEFAULT_TEMPLATE_IMAGE_REPOSITORY",
+        DEFAULT_PYTHON_BASIC_TEMPLATE_IMAGE_REPOSITORY,
+    )
+    image_url = os.getenv("DEFAULT_TEMPLATE_IMAGE") or build_template_image_url(repository)
     logger.info(
         "Getting default template image URL from environment", DEFAULT_TEMPLATE_IMAGE=image_url
     )
@@ -77,11 +87,15 @@ def get_multi_language_template_image_url() -> str:
     """
     获取多语言复合模板镜像 URL。
 
-    从环境变量 DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE 读取，如果未设置则使用 VERSION 文件生成默认值。
+    从环境变量 DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE 读取，如果未设置则使用 VERSION 文件生成默认 SWR 镜像地址。
     """
     image_url = os.getenv(
-        "DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE",
-        build_template_image_url("multi-language"),
+        "DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE"
+    ) or build_template_image_url(
+        os.getenv(
+            "DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE_REPOSITORY",
+            DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE_REPOSITORY,
+        )
     )
     logger.info(
         "Getting multi-language template image URL from environment",
@@ -90,7 +104,7 @@ def get_multi_language_template_image_url() -> str:
     return image_url
 
 
-def get_default_runtime_nodes() -> List[RuntimeNodeModel]:
+def get_default_runtime_nodes() -> list[RuntimeNodeModel]:
     """
     获取默认运行时节点列表
 
@@ -128,7 +142,7 @@ def get_default_runtime_nodes() -> List[RuntimeNodeModel]:
     ]
 
 
-def get_default_templates() -> List[TemplateModel]:
+def get_default_templates() -> list[TemplateModel]:
     """
     获取默认模板列表
 

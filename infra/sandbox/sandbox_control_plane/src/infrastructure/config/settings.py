@@ -4,11 +4,10 @@
 使用 Pydantic Settings 管理应用配置。
 """
 
-import os
 from functools import lru_cache
 from urllib.parse import quote_plus
 
-from pydantic import Field, field_validator, computed_field
+from pydantic import Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -111,6 +110,8 @@ class Settings(BaseSettings):
 
     # ============== Kubernetes 配置 ==============
     kubernetes_namespace: str = Field(default="sandbox-runtime")
+    executor_image_pull_policy: str = Field(default="IfNotPresent")
+    executor_image_pull_secrets: str = Field(default="")
 
     # ============== 执行配置 ==============
     default_timeout: int = Field(default=300)
@@ -201,7 +202,7 @@ class Settings(BaseSettings):
         return v
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """
     获取配置单例

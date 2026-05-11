@@ -2,6 +2,7 @@
 
 namespace: anyshare
 imagePullPolicy: IfNotPresent
+imagePullSecrets: []
 image:
   registry: "acr.aishu.cn"
   controlPlane:
@@ -11,16 +12,16 @@ image:
   defaultTemplates:
     pythonBasic:
       repository: dip/sandbox-template-python-basic
-      tag: "latest"
+      tag: ""
       pullPolicy: IfNotPresent
     multiLanguage:
       repository: dip/sandbox-template-multi-language
-      tag: "latest"
+      tag: ""
       pullPolicy: IfNotPresent
   # Deprecated: use image.defaultTemplates.pythonBasic instead.
   defaultTemplate:
     repository: dip/sandbox-template-python-basic
-    tag: "latest"
+    tag: ""
     pullPolicy: IfNotPresent
   minio:
     repository: sandbox/minio

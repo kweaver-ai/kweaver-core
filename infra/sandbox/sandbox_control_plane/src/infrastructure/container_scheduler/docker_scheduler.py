@@ -11,23 +11,20 @@ Docker 容器调度器
 
 import asyncio
 import json
-import os
-from typing import Optional, List
 from urllib.parse import urlparse
 
 from aiodocker import Docker
 from aiodocker.exceptions import DockerError
 
+from src.infrastructure.config.settings import get_settings
 from src.infrastructure.container_scheduler.base import (
-    IContainerScheduler,
     ContainerConfig,
     ContainerInfo,
     ContainerResult,
+    IContainerScheduler,
 )
-from src.infrastructure.config.settings import get_settings
 from src.infrastructure.logging import get_logger
 from src.shared.utils.dependencies import (
-    format_dependencies_for_script,
     format_dependency_install_script_for_shell,
 )
 
@@ -51,7 +48,7 @@ class DockerScheduler(IContainerScheduler):
                 - tcp://localhost:2375 (TCP)
         """
         self._docker_url = docker_url
-        self._docker: Optional[Docker] = None
+        self._docker: Docker | None = None
         self._initialized = False
 
     async def _ensure_docker(self) -> Docker:
@@ -87,7 +84,36 @@ class DockerScheduler(IContainerScheduler):
             await self._docker.close()
             self._initialized = False
 
-    def _parse_s3_workspace(self, workspace_path: str) -> Optional[dict]:
+    async def _ensure_image_available(self, docker: Docker, image: str) -> None:
+        """确保 Docker 镜像本地可用；缺失时从远端 registry 拉取。"""
+        try:
+            await docker.images.inspect(image)
+            logger.debug("Docker image already available locally", image=image)
+            return
+        except DockerError as e:
+            if e.status != 404:
+                logger.exception(
+                    "Failed to inspect Docker image",
+                    image=image,
+                    error=str(e),
+                    status=e.status,
+                )
+                raise
+
+        logger.info("Docker image not found locally, pulling from registry", image=image)
+        try:
+            await docker.images.pull(image)
+            logger.info("Docker image pulled successfully", image=image)
+        except DockerError as e:
+            logger.exception(
+                "Failed to pull Docker image",
+                image=image,
+                error=str(e),
+                status=e.status,
+            )
+            raise
+
+    def _parse_s3_workspace(self, workspace_path: str) -> dict | None:
         """
         解析 S3 workspace 路径
 
@@ -113,7 +139,7 @@ class DockerScheduler(IContainerScheduler):
         s3_endpoint_url: str,
         s3_access_key: str,
         s3_secret_key: str,
-        dependencies: Optional[List[str]] = None,
+        dependencies: list[str] | None = None,
     ) -> str:
         """
         构建容器启动脚本，用于挂载 S3 bucket 并安装依赖
@@ -189,7 +215,7 @@ exec gosu sandbox bash -c 'export PYTHONPATH=$PYTHONPATH; export SANDBOX_VENV_PA
 
     def _build_dependency_install_entrypoint(
         self,
-        dependencies: Optional[List[str]] = None,
+        dependencies: list[str] | None = None,
     ) -> str:
         """
         构建依赖安装脚本（非 S3 模式）
@@ -249,11 +275,11 @@ exec python -m executor.interfaces.http.rest
         docker = await self._ensure_docker()
 
         logger.debug("Docker client obtained")
+        await self._ensure_image_available(docker, config.image)
 
         # 解析资源限制
         cpu_quota = int(float(config.cpu_limit) * 100000)
         memory_bytes = self._parse_memory_to_bytes(config.memory_limit)
-        disk_bytes = self._parse_memory_to_bytes(config.disk_limit)
 
         logger.debug(
             "Resource limits parsed",
@@ -399,7 +425,7 @@ exec python -m executor.interfaces.http.rest
                     "/root/.cache": "size=256M,mode=1777",  # pip 缓存
                 }
                 logger.info(
-                    f"Added tmpfs for dependency installation: /tmp=512M, /root/.cache=256M"
+                    "Added tmpfs for dependency installation: /tmp=512M, /root/.cache=256M"
                 )
             else:
                 # 无依赖时使用较小的 tmpfs
@@ -466,7 +492,7 @@ exec python -m executor.interfaces.http.rest
             container = await docker.containers.create(container_config, name=config.name)
 
             logger.info(
-                f"Container created successfully",
+                "Container created successfully",
                 container_id=container.id,
                 container_name=config.name,
                 network_name=config.network_name,
@@ -630,7 +656,7 @@ exec python -m executor.interfaces.http.rest
             return False
 
     async def get_container_logs(
-        self, container_id: str, tail: int = 100, since: Optional[str] = None
+        self, container_id: str, tail: int = 100, since: str | None = None
     ) -> str:
         """获取容器日志"""
         docker = await self._ensure_docker()
@@ -647,7 +673,7 @@ exec python -m executor.interfaces.http.rest
             raise
 
     async def wait_container(
-        self, container_id: str, timeout: Optional[int] = None
+        self, container_id: str, timeout: int | None = None
     ) -> ContainerResult:
         """等待容器执行完成"""
         docker = await self._ensure_docker()
@@ -672,7 +698,7 @@ exec python -m executor.interfaces.http.rest
                 stderr="",
                 exit_code=exit_code,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(f"Container {container_id} timed out")
             return ContainerResult(
                 status="timeout",

@@ -236,6 +236,23 @@ docker-compose -f deploy/docker-compose/docker-compose.yml logs -f control-plane
 docker-compose -f deploy/docker-compose/docker-compose.yml ps
 ```
 
+Docker Compose configures the Control Plane default template images through `TEMPLATE_IMAGE_TAG`.
+If `TEMPLATE_IMAGE_TAG` is not set, the Control Plane reads `/app/VERSION` and uses that value as the template image tag. For branch builds, pass the full generated template image tag and recreate the Control Plane container:
+
+```bash
+TEMPLATE_IMAGE_TAG=0.4.0-feature-sandbox-20260512.git-4188ba2-opensource \
+docker-compose -f deploy/docker-compose/docker-compose.yml up -d --force-recreate control-plane
+```
+
+This expands to:
+
+```text
+swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip/sandbox-template-python-basic:<TEMPLATE_IMAGE_TAG>
+swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip/sandbox-template-multi-language:<TEMPLATE_IMAGE_TAG>
+```
+
+You can also override `DEFAULT_TEMPLATE_IMAGE` and `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE` directly when different repositories or tags are required.
+
 ### Kubernetes Deployment (Production)
 
 For production deployment, use Kubernetes with Helm Chart:

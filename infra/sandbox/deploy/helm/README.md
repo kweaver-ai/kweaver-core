@@ -29,13 +29,15 @@ image:
   defaultTemplates:
     pythonBasic:
       repository: sandbox-template-python-basic
-      tag: latest
+      tag: ""
     multiLanguage:
       repository: sandbox-template-multi-language
-      tag: latest
+      tag: ""
 ```
 
-During rendering, these values become `DEFAULT_TEMPLATE_IMAGE` and `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE` for the Control Plane. The Control Plane seed logic uses those environment variables before falling back to the image tag derived from `VERSION`.
+When `tag` is empty, the chart does not render `DEFAULT_TEMPLATE_IMAGE` or `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE`. Instead, it renders the template image registry and repository, and the Control Plane reads `/app/VERSION` to choose the tag at startup.
+
+When `tag` is set, the chart renders the full `DEFAULT_TEMPLATE_IMAGE` and `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE` values, and those explicit images override the `/app/VERSION` fallback.
 
 ## Examples
 

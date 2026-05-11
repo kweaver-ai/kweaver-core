@@ -224,6 +224,23 @@ docker-compose -f deploy/docker-compose/docker-compose.yml logs -f control-plane
 docker-compose -f deploy/docker-compose/docker-compose.yml ps
 ```
 
+docker-compose 通过 `TEMPLATE_IMAGE_TAG` 配置 Control Plane 初始化默认模板时使用的镜像 tag。
+未设置 `TEMPLATE_IMAGE_TAG` 时，Control Plane 会读取 `/app/VERSION` 并使用该值作为模板镜像 tag。如果使用分支构建的模板镜像，需要传入完整的分支镜像 tag 并重建 control-plane 容器：
+
+```bash
+TEMPLATE_IMAGE_TAG=0.4.0-feature-sandbox-20260512.git-4188ba2-opensource \
+docker-compose -f deploy/docker-compose/docker-compose.yml up -d --force-recreate control-plane
+```
+
+该配置会展开为：
+
+```text
+swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip/sandbox-template-python-basic:<TEMPLATE_IMAGE_TAG>
+swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip/sandbox-template-multi-language:<TEMPLATE_IMAGE_TAG>
+```
+
+如需使用不同仓库或 tag，也可以直接覆盖 `DEFAULT_TEMPLATE_IMAGE` 和 `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE`。
+
 ### Kubernetes 部署（生产环境）
 
 生产环境推荐使用 Kubernetes 和 Helm Chart：

@@ -32,6 +32,11 @@ services:
       - MAX_TIMEOUT=3600
       - WARM_POOL_ENABLED=false
       - DISABLE_BWRAP=true # 本地开发禁用 Bubblewrap
+      # Default sandbox template images. If TEMPLATE_IMAGE_TAG is unset,
+      # Control Plane reads /app/VERSION and uses that as the tag.
+      - TEMPLATE_IMAGE_TAG
+      - DEFAULT_TEMPLATE_IMAGE
+      - DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE
       # S3/MinIO Configuration
       - S3_ENDPOINT_URL=http://minio:9000
       - S3_ACCESS_KEY_ID=minioadmin

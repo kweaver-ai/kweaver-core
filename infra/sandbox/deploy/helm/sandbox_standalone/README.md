@@ -53,11 +53,13 @@ image:
   defaultTemplates:
     pythonBasic:
       repository: sandbox-template-python-basic
-      tag: latest
+      tag: ""
     multiLanguage:
       repository: sandbox-template-multi-language
-      tag: latest
+      tag: ""
 ```
+
+An empty `tag` means the Control Plane reads `/app/VERSION` at startup and uses that value as the template image tag. Set the tag only when deploying branch or custom template images.
 
 The deprecated `image.defaultTemplate` value is still accepted as a compatibility fallback for `python-basic`.
 
@@ -66,13 +68,15 @@ The deprecated `image.defaultTemplate` value is still accepted as a compatibilit
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `namespace` | Kubernetes namespace | `sandbox-system` |
+| `imagePullPolicy` | Executor Pod image pull policy | `IfNotPresent` |
+| `imagePullSecrets` | Executor Pod image pull secret names | `[]` |
 | `image.registry` | Shared image registry prefix | `""` |
 | `image.controlPlane.repository` | Control Plane image repository | `sandbox-control-plane` |
 | `image.web.repository` | Web Console image repository | `sandbox-web` |
 | `image.mariadb.repository` | MariaDB image repository | `mariadb` |
 | `image.minio.repository` | MinIO image repository | `quay.io/minio/minio` |
-| `image.defaultTemplates.pythonBasic.tag` | Python template image tag | `latest` |
-| `image.defaultTemplates.multiLanguage.tag` | Multi-language template image tag | `latest` |
+| `image.defaultTemplates.pythonBasic.tag` | Python template image tag; empty uses `/app/VERSION` | `""` |
+| `image.defaultTemplates.multiLanguage.tag` | Multi-language template image tag; empty uses `/app/VERSION` | `""` |
 | `mariadb.enabled` | Deploy internal MariaDB | `true` |
 | `web.enabled` | Deploy Sandbox Web Console | `true` |
 | `minio.enabled` | Deploy internal MinIO | `true` |

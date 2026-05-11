@@ -109,6 +109,16 @@ spec:
                 configMapKeyRef:
                   name: {{ .Values.configMap.name }}
                   key: DATABASE_URL
+            - name: EXECUTOR_IMAGE_PULL_POLICY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.configMap.name }}
+                  key: EXECUTOR_IMAGE_PULL_POLICY
+            - name: EXECUTOR_IMAGE_PULL_SECRETS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.configMap.name }}
+                  key: EXECUTOR_IMAGE_PULL_SECRETS
             # Database connection from depServices.rds (optional, overrides DATABASE_URL if set)
             - name: DB_TYPE
               valueFrom:
@@ -235,16 +245,33 @@ spec:
                 configMapKeyRef:
                   name: {{ .Values.configMap.name }}
                   key: PYTHONUNBUFFERED
+            - name: DEFAULT_TEMPLATE_IMAGE_REGISTRY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.configMap.name }}
+                  key: DEFAULT_TEMPLATE_IMAGE_REGISTRY
+            - name: DEFAULT_TEMPLATE_IMAGE_REPOSITORY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.configMap.name }}
+                  key: DEFAULT_TEMPLATE_IMAGE_REPOSITORY
+            - name: DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE_REPOSITORY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.configMap.name }}
+                  key: DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE_REPOSITORY
             - name: DEFAULT_TEMPLATE_IMAGE
               valueFrom:
                 configMapKeyRef:
                   name: {{ .Values.configMap.name }}
                   key: DEFAULT_TEMPLATE_IMAGE
+                  optional: true
             - name: DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE
               valueFrom:
                 configMapKeyRef:
                   name: {{ .Values.configMap.name }}
                   key: DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE
+                  optional: true
             - name: CONTROL_PLANE_URL
               valueFrom:
                 configMapKeyRef:

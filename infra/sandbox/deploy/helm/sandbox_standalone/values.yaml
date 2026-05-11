@@ -1,5 +1,6 @@
 namespace: sandbox-system
 imagePullPolicy: IfNotPresent
+imagePullSecrets: []
 image:
   registry: ""
   controlPlane:
@@ -9,16 +10,16 @@ image:
   defaultTemplates:
     pythonBasic:
       repository: sandbox-template-python-basic
-      tag: "latest"
+      tag: ""
       pullPolicy: IfNotPresent
     multiLanguage:
       repository: sandbox-template-multi-language
-      tag: "latest"
+      tag: ""
       pullPolicy: IfNotPresent
   # Deprecated: use image.defaultTemplates.pythonBasic instead.
   defaultTemplate:
     repository: sandbox-template-python-basic
-    tag: "latest"
+    tag: ""
     pullPolicy: IfNotPresent
   minio:
     repository: quay.io/minio/minio

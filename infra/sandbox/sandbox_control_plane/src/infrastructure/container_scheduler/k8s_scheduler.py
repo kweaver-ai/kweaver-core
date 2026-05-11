@@ -13,43 +13,36 @@ Python 依赖安装：按照 sandbox-design-v2.1.md 章节 5 设计。
 
 import asyncio
 import json
-import os
-from typing import Optional, List
 from urllib.parse import urlparse
 
 from kubernetes import client, config
 from kubernetes.client import (
-    V1Pod,
-    V1PodSpec,
-    V1ObjectMeta,
-    V1OwnerReference,
+    V1Capabilities,
     V1Container,
     V1ContainerPort,
+    V1EmptyDirVolumeSource,
     V1EnvVar,
+    V1LocalObjectReference,
+    V1ObjectMeta,
+    V1OwnerReference,
+    V1Pod,
+    V1PodSpec,
     V1ResourceRequirements,
+    V1SecretVolumeSource,
+    V1SecurityContext,
     V1Volume,
     V1VolumeMount,
-    V1HostPathVolumeSource,
-    V1PersistentVolumeClaim,
-    V1PersistentVolumeClaimSpec,
-    V1PersistentVolumeClaimVolumeSource,
-    V1ObjectMeta as V1ObjectMeta_imported,
-    V1SecurityContext,
-    V1Capabilities,
-    V1PodSecurityContext,
-    V1EmptyDirVolumeSource,
-    V1SecretVolumeSource,
 )
 from kubernetes.client.rest import ApiException
 
+from src.infrastructure.config.settings import get_settings
 from src.infrastructure.container_scheduler.base import (
-    IContainerScheduler,
     ContainerConfig,
     ContainerInfo,
-    ContainerResult,
     ContainerOwnershipInfo,
+    ContainerResult,
+    IContainerScheduler,
 )
-from src.infrastructure.config.settings import get_settings
 from src.infrastructure.logging import get_logger
 from src.shared.utils.dependencies import (
     format_dependencies_for_script,
@@ -85,8 +78,8 @@ class K8sScheduler(IContainerScheduler):
     def __init__(
         self,
         namespace: str = "sandbox-system",
-        kube_config_path: Optional[str] = None,
-        service_account_token: Optional[str] = None,
+        kube_config_path: str | None = None,
+        service_account_token: str | None = None,
         executor_service_account: str = "sandbox-control-plane",
     ):
         """
@@ -149,7 +142,7 @@ class K8sScheduler(IContainerScheduler):
         """关闭连接（Kubernetes 客户端是无状态的，无需显式关闭）"""
         self._initialized = False
 
-    def _parse_s3_workspace(self, workspace_path: str) -> Optional[dict]:
+    def _parse_s3_workspace(self, workspace_path: str) -> dict | None:
         """
         解析 S3 workspace 路径
 
@@ -180,7 +173,7 @@ class K8sScheduler(IContainerScheduler):
         # 限制长度（K8s Pod 名称最多 253 字符）
         return pod_name[:253]
 
-    def _build_owner_references(self, config: ContainerConfig) -> Optional[list[V1OwnerReference]]:
+    def _build_owner_references(self, config: ContainerConfig) -> list[V1OwnerReference] | None:
         """基于 control plane owner 上下文构造 ownerReferences。"""
         if config.owner_context is None:
             return None
@@ -196,7 +189,7 @@ class K8sScheduler(IContainerScheduler):
             )
         ]
 
-    async def _read_pod(self, pod_name: str) -> Optional[V1Pod]:
+    async def _read_pod(self, pod_name: str) -> V1Pod | None:
         """读取指定 Pod，不存在时返回 None。"""
         try:
             return await asyncio.to_thread(
@@ -223,6 +216,18 @@ class K8sScheduler(IContainerScheduler):
                 return True
             await asyncio.sleep(poll_interval_seconds)
         return False
+
+    def _build_image_pull_secrets(self) -> list[V1LocalObjectReference] | None:
+        """构造 executor Pod 使用的 imagePullSecrets。"""
+        settings = get_settings()
+        secret_names = [
+            secret.strip()
+            for secret in settings.executor_image_pull_secrets.split(",")
+            if secret.strip()
+        ]
+        if not secret_names:
+            return None
+        return [V1LocalObjectReference(name=secret_name) for secret_name in secret_names]
 
     def _build_executor_container(
         self,
@@ -425,10 +430,12 @@ exec gosu sandbox python -m executor.interfaces.http.rest
 """
             command = ["sh", "-c", install_script]
 
+        settings = get_settings()
+
         return V1Container(
             name="executor",
             image=config.image,
-            image_pull_policy="IfNotPresent",  # 优先使用本地镜像
+            image_pull_policy=settings.executor_image_pull_policy,
             command=command,
             env=env_vars,
             resources=resources,
@@ -543,6 +550,7 @@ exec gosu sandbox python -m executor.interfaces.http.rest
                 host_network=False,
                 termination_grace_period_seconds=30,
                 service_account_name=self._executor_service_account,
+                image_pull_secrets=self._build_image_pull_secrets(),
                 # 使用默认 DNS 策略 (ClusterFirst)，允许 Pod 使用 K8s 集群 DNS
                 # 这对于 executor 与 control plane 通信很重要
             ),
@@ -750,7 +758,7 @@ exec gosu sandbox python -m executor.interfaces.http.rest
     async def get_container_ownership(
         self,
         container_id: str,
-    ) -> Optional[ContainerOwnershipInfo]:
+    ) -> ContainerOwnershipInfo | None:
         """读取 Pod 的 ownerReferences 和 takeover 相关 annotations。"""
         await self._ensure_connected()
 
@@ -792,7 +800,7 @@ exec gosu sandbox python -m executor.interfaces.http.rest
         )
 
     async def get_container_logs(
-        self, container_id: str, tail: int = 100, since: Optional[str] = None
+        self, container_id: str, tail: int = 100, since: str | None = None
     ) -> str:
         """
         获取 Pod 日志
@@ -821,7 +829,7 @@ exec gosu sandbox python -m executor.interfaces.http.rest
             raise
 
     async def wait_container(
-        self, container_id: str, timeout: Optional[int] = None
+        self, container_id: str, timeout: int | None = None
     ) -> ContainerResult:
         """
         等待 Pod 执行完成
@@ -898,7 +906,7 @@ exec gosu sandbox python -m executor.interfaces.http.rest
             else:
                 return await _wait()
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(f"Pod {container_id} timed out")
             return ContainerResult(
                 status="timeout",

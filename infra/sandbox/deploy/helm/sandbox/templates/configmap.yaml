@@ -1,9 +1,10 @@
 {{- if .Values.configMap.create }}
+{{- $templateImageRegistry := default "swr.cn-east-3.myhuaweicloud.com/kweaver-ai" .Values.image.registry }}
 {{- $pythonBasicTemplate := .Values.image.defaultTemplate }}
 {{- if .Values.image.defaultTemplates }}
 {{- $pythonBasicTemplate = .Values.image.defaultTemplates.pythonBasic }}
 {{- end }}
-{{- $multiLanguageTemplate := dict "repository" "sandbox-template-multi-language" "tag" "latest" }}
+{{- $multiLanguageTemplate := dict "repository" "sandbox-template-multi-language" "tag" "" }}
 {{- if and .Values.image.defaultTemplates .Values.image.defaultTemplates.multiLanguage }}
 {{- $multiLanguageTemplate = .Values.image.defaultTemplates.multiLanguage }}
 {{- end }}
@@ -20,6 +21,8 @@ data:
   DEBUG: {{ .Values.controlPlane.env.DEBUG | quote }}
   DATABASE_URL: {{ .Values.controlPlane.env.DATABASE_URL | quote }}
   KUBERNETES_NAMESPACE: {{ .Values.namespace | quote }}
+  EXECUTOR_IMAGE_PULL_POLICY: {{ .Values.imagePullPolicy | quote }}
+  EXECUTOR_IMAGE_PULL_SECRETS: {{ join "," .Values.imagePullSecrets | quote }}
   DEFAULT_TIMEOUT: {{ .Values.controlPlane.env.DEFAULT_TIMEOUT | quote }}
   MAX_TIMEOUT: {{ .Values.controlPlane.env.MAX_TIMEOUT | quote }}
   DEFAULT_CPU: {{ .Values.controlPlane.env.DEFAULT_CPU | quote }}
@@ -30,8 +33,15 @@ data:
   CLEANUP_INTERVAL_SECONDS: {{ .Values.controlPlane.env.CLEANUP_INTERVAL_SECONDS | quote }}
   DISABLE_BWRAP: {{ .Values.controlPlane.env.DISABLE_BWRAP | quote }}
   PYTHONUNBUFFERED: {{ .Values.controlPlane.env.PYTHONUNBUFFERED | quote }}
-  DEFAULT_TEMPLATE_IMAGE: "{{- if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ $pythonBasicTemplate.repository }}:{{ $pythonBasicTemplate.tag }}"
-  DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE: "{{- if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ $multiLanguageTemplate.repository }}:{{ $multiLanguageTemplate.tag }}"
+  DEFAULT_TEMPLATE_IMAGE_REGISTRY: {{ $templateImageRegistry | quote }}
+  DEFAULT_TEMPLATE_IMAGE_REPOSITORY: {{ $pythonBasicTemplate.repository | quote }}
+  DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE_REPOSITORY: {{ $multiLanguageTemplate.repository | quote }}
+  {{- if $pythonBasicTemplate.tag }}
+  DEFAULT_TEMPLATE_IMAGE: "{{- if $templateImageRegistry }}{{ $templateImageRegistry }}/{{ end }}{{ $pythonBasicTemplate.repository }}:{{ $pythonBasicTemplate.tag }}"
+  {{- end }}
+  {{- if $multiLanguageTemplate.tag }}
+  DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE: "{{- if $templateImageRegistry }}{{ $templateImageRegistry }}/{{ end }}{{ $multiLanguageTemplate.repository }}:{{ $multiLanguageTemplate.tag }}"
+  {{- end }}
   CONTROL_PLANE_URL: "http://{{ include "sandbox.controlPlaneName" . }}.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.controlPlane.service.port }}"
   # Database connection from depServices.rds
   {{- if .Values.depServices.rds }}

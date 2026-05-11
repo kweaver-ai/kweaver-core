@@ -52,11 +52,13 @@ image:
   defaultTemplates:
     pythonBasic:
       repository: dip/sandbox-template-python-basic
-      tag: latest
+      tag: ""
     multiLanguage:
       repository: dip/sandbox-template-multi-language
-      tag: latest
+      tag: ""
 ```
+
+An empty `tag` means the Control Plane reads `/app/VERSION` at startup and uses that value as the template image tag. Set the tag only when deploying branch or custom template images.
 
 The deprecated `image.defaultTemplate` value is still accepted as a compatibility fallback for `python-basic`.
 
@@ -65,13 +67,15 @@ The deprecated `image.defaultTemplate` value is still accepted as a compatibilit
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `namespace` | Kubernetes namespace | `anyshare` |
+| `imagePullPolicy` | Executor Pod image pull policy | `IfNotPresent` |
+| `imagePullSecrets` | Executor Pod image pull secret names | `[]` |
 | `image.registry` | Shared image registry prefix | `acr.aishu.cn` |
 | `image.controlPlane.repository` | Control Plane image repository | `dip/sandbox-control-plane` |
 | `image.controlPlane.tag` | Control Plane image tag | `latest` |
 | `image.defaultTemplates.pythonBasic.repository` | Python template image repository | `dip/sandbox-template-python-basic` |
-| `image.defaultTemplates.pythonBasic.tag` | Python template image tag | `latest` |
+| `image.defaultTemplates.pythonBasic.tag` | Python template image tag; empty uses `/app/VERSION` | `""` |
 | `image.defaultTemplates.multiLanguage.repository` | Multi-language template image repository | `dip/sandbox-template-multi-language` |
-| `image.defaultTemplates.multiLanguage.tag` | Multi-language template image tag | `latest` |
+| `image.defaultTemplates.multiLanguage.tag` | Multi-language template image tag; empty uses `/app/VERSION` | `""` |
 | `controlPlane.env.ENVIRONMENT` | Control Plane environment | `staging` |
 | `depServices.rds` | Core-provided database service configuration | enabled by values |
 

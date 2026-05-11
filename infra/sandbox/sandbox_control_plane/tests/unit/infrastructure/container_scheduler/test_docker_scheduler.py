@@ -3,13 +3,13 @@ Docker 容器调度器单元测试
 
 测试 DockerScheduler 类的功能。
 """
-import pytest
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from datetime import datetime
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+from aiodocker.exceptions import DockerError
+
+from src.infrastructure.container_scheduler.base import ContainerConfig
 from src.infrastructure.container_scheduler.docker_scheduler import DockerScheduler
-from src.infrastructure.container_scheduler.base import ContainerConfig, ContainerInfo
 
 
 class TestDockerScheduler:
@@ -21,6 +21,10 @@ class TestDockerScheduler:
         docker = Mock()
         # 版本信息同步调用
         docker.version.return_value = {"Version": "20.10.0"}
+        images_mock = Mock()
+        images_mock.inspect = AsyncMock(return_value={})
+        images_mock.pull = AsyncMock()
+        docker.images = images_mock
         return docker
 
     @pytest.fixture
@@ -104,6 +108,28 @@ class TestDockerScheduler:
         container_id = await scheduler.create_container(basic_config)
 
         assert container_id == "container-123"
+        containers_mock.create.assert_called_once()
+        mock_docker.images.inspect.assert_awaited_once_with("python:3.11")
+        mock_docker.images.pull.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_create_container_pulls_missing_image(self, scheduler, mock_docker, basic_config):
+        """测试本地镜像缺失时会先拉取远端镜像。"""
+        mock_container = Mock()
+        mock_container.id = "container-123"
+
+        mock_docker.images.inspect = AsyncMock(side_effect=DockerError(404, "No such image"))
+        mock_docker.images.pull = AsyncMock(return_value={})
+
+        containers_mock = Mock()
+        containers_mock.create = AsyncMock(return_value=mock_container)
+        mock_docker.containers = containers_mock
+
+        container_id = await scheduler.create_container(basic_config)
+
+        assert container_id == "container-123"
+        mock_docker.images.inspect.assert_awaited_once_with("python:3.11")
+        mock_docker.images.pull.assert_awaited_once_with("python:3.11")
         containers_mock.create.assert_called_once()
 
     @pytest.mark.asyncio
@@ -283,7 +309,7 @@ class TestDockerScheduler:
     async def test_wait_container_timeout(self, scheduler, mock_docker):
         """测试等待容器完成（超时）"""
         mock_container = Mock()
-        mock_container.wait = AsyncMock(side_effect=asyncio.TimeoutError())
+        mock_container.wait = AsyncMock(side_effect=TimeoutError())
 
         containers_mock = Mock()
         containers_mock.container = Mock(return_value=mock_container)
