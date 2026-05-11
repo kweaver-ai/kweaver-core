@@ -1,0 +1,217 @@
+-   name: "Positive_查询检索任务列表_参数缺省_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "catalog_id": "",
+            "schedule_id": "",
+            "status": "",
+            "trigger_type": "",
+            "offset": "",
+            "limit": "",
+            "sort": "",
+            "direction": ""
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_按status过滤_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "status": "pending"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_按status过滤_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "status": "running"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_按status过滤_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "status": "completed"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_按status过滤_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "status": "failed"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_按trigger过滤_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "trigger_type": "manual"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_按trigger过滤_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "trigger_type": "scheduled"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_指定分页_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "offset": "1",
+            "limit": "10"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_按创建时间正序_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "sort": "create_time",
+            "direction": "asc"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_按创建时间倒序_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "sort": "create_time",
+            "direction": "desc"
+        }
+    code_check: "200"
+    
+-   name: "Negative_查询检索任务列表_参数校验_status非枚举值_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "status": "undefined"
+        }
+    code_check: "400"
+
+-   name: "Negative_查询检索任务列表_参数校验_trigger非枚举值_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "trigger_type": "undefined"
+        }
+    code_check: "400"
+
+-   name: "Positive_查询检索任务列表_参数校验_offset=1000_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "offset": "1000"
+        }
+    code_check: "200"
+
+-   name: "Negative_查询检索任务列表_参数校验_offset=-1_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "offset": "-1"
+        }
+    code_check: "400"
+
+-   name: "Negative_查询检索任务列表_参数校验_offset非整数_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "offset": "1.2"
+        }
+    code_check: "400"
+
+-   name: "Negative_查询检索任务列表_参数校验_offset非整数_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "offset": "abc"
+        }
+    code_check: "400"
+
+-   name: "Positive_查询检索任务列表_参数校验_limit=-1_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "limit": "-1"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_参数校验_limit=1_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "limit": "1"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询检索任务列表_参数校验_limit=1000_请求成功"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "limit": "1000"
+        }
+    code_check: "200"
+
+-   name: "Negative_查询检索任务列表_参数校验_limit=1001_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "limit": "1001"
+        }
+    code_check: "400"
+
+-   name: "Negative_查询检索任务列表_参数校验_limit=-2_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "limit": "-2"
+        }
+    code_check: "400"
+
+-   name: "Negative_查询检索任务列表_参数校验_limit=0_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "limit": "0"
+        }
+    code_check: "400"
+
+-   name: "Negative_查询检索任务列表_参数校验_limit非整数_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "limit": "1.2"
+        }
+    code_check: "400"
+
+-   name: "Negative_查询检索任务列表_参数校验_limit非整数_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+         "limit": "abc"
+        }
+    code_check: "400"
+
+-   name: "Negative_查询检索任务列表_sort非枚举值_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "sort": "undefined"
+        }
+    code_check: "400"
+
+-   name: "Negative_查询检索任务列表_direction非枚举值_请求失败"
+    url: "获取发现任务列表"
+    query_params: >-
+        {
+            "direction": "undefined"
+        }
+    code_check: "400"

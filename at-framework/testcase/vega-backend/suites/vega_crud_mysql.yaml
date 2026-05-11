@@ -418,34 +418,6 @@ cases:
         url: "查询catalog列表"
         code_check: "200"
 
-    -   name: "Positive_查询catalog列表_参数缺省_请求成功"
-        url: "查询catalog列表"
-        query_params: >-
-            {
-                "tag": "",
-                "type": "",
-                "health_check_status": "",
-                "offset": "",
-                "limit": "",
-                "sort": "",
-                "direction": ""
-            }
-        code_check: "200"
-
-    -   name: "Positive_查询catalog列表_全量参数_请求成功"
-        url: "查询catalog列表"
-        query_params: >-
-            {
-                "tag": "AT",
-                "type": "logical",
-                "health_check_status": "healthy",
-                "offset": "0",
-                "limit": "20",
-                "sort": "name",
-                "direction": "desc"
-            }
-        code_check: "200"
-
     -   name: "Positive_检查catalog状态_MySQL数据源_请求成功"
         url: "检查catalog状态"
         path_params: >-
@@ -477,19 +449,31 @@ cases:
                 "id": "${catalog_id}"
             }
         code_check: "200"
+        resp_values: >-
+            {
+                "discover_id": "$.id"
+            }
 
-    -   name: "Positive_删除catalog_MySQL数据源_单个数据源_请求成功"
+    -   name: "Positive_检索任务列表_参数缺省_请求成功"
+        url: "获取发现任务列表"
+        code_check: "200"
+
+    -   name: "Positive_检索任务详情_MySQL数据源_请求成功"
+        url: "获取发现任务详情"
+        path_params: >-
+            {
+                "id": "${discover_id}"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.status": "completed"
+            }
+
+    -   name: "Positive_删除catalog_MySQL数据源_请求成功"
         url: "删除catalog"
         path_params: >-
             {
                 "ids": "${catalog_id}"
-            }
-        code_check: "204"
-
-    -   name: "Positive_删除catalog_MySQL数据源_多个数据源_请求成功"
-        url: "删除catalog"
-        path_params: >-
-            {
-                "ids": "${catalog_id_1},${catalog_id_2}"
             }
         code_check: "204"

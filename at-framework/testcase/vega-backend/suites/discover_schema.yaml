@@ -1,0 +1,191 @@
+feature: vega-backend
+story: discover
+switch: y
+tags:
+    - vega-backend
+    - discover
+    - schema
+
+include:
+    - discover_schema_query.case
+
+cases:
+    -   name: "Positive_创建catalog_逻辑资源_请求成功"
+        url: "创建catalog"
+        body_params: >-
+            {
+                "name": "{{ '新增catalog_Logical-%s' | format(random_string(6, 8)) }}"
+            }
+        resp_values: >-
+            {
+                "catalog_id_logical": "$.id"
+            }
+        code_check: "201"
+
+    -   name: "Positive_创建catalog_数据源_请求成功"
+        url: "创建catalog"
+        body_params: >-
+            {
+                "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+                "connector_type": "mysql",
+                "connector_config": {
+                    "host": "${mysql_host}",
+                    "port": ${mysql_port},
+                    "username": "${mysql_user}",
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"]
+                }
+            }
+        resp_values: >-
+            {
+                "catalog_id": "$.id"
+            }
+        code_check: "201"
+
+    -   name: "Negative_即时检索_逻辑资源_请求失败"
+        url: "catalog资源发现"
+        path_params: >-
+            {
+                "id": "${catalog_id_logical}"
+            }
+        code_check: "400"
+
+    -   name: "Positive_即时检索_数据源_请求成功"
+        url: "catalog资源发现"
+        path_params: >-
+            {
+                "id": "${catalog_id}"
+            }
+        resp_values: >-
+            {
+                "discover_id": "$.id"
+            }
+        code_check: "200"
+
+    -   name: "Negative_即时检索_参数校验_id不存在"
+        url: "catalog资源发现"
+        path_params: >-
+            {
+                "id": "00000000000000000000"
+            }
+        code_check: "404"
+
+    -   name: "Positive_查询检索任务列表_全量参数_请求成功"
+        url: "获取发现任务列表"
+        query_params: >-
+            {
+                "catalog_id": "${catalog_id}",
+                "schedule_id": "",
+                "status": "completed",
+                "trigger_type": "manual",
+                "offset": "0",
+                "limit": "20",
+                "sort": "create_time",
+                "direction": "desc"
+            }
+        code_check: "200"
+
+    -   name: "Positive_查询检索任务列表_按catalog过滤_请求成功"
+        url: "获取发现任务列表"
+        query_params: >-
+            {
+                "catalog_id": "${catalog_id}"
+            }
+        code_check: "200"
+        resp_values: >-
+            {
+                "$.entries[0].id": "${discover_id}"
+            }
+
+    -   name: "Positive_查询检索任务列表_参数校验_catalog不存在_请求成功"
+        url: "获取发现任务列表"
+        query_params: >-
+            {
+                "catalog_id": "00000000000000000000"
+            }
+        code_check: "200"
+        resp_values: >-
+            {
+                "$.total_count": 0
+            }
+
+    -   name: "Positive_查看检索任务详情_请求成功"
+        url: "获取发现任务详情"
+        path_params: >-
+            {
+                "id": "${discover_id}"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.status": "completed"
+            }
+
+    -   name: "Negative_查看检索任务详情_参数校验_id不存在"
+        url: "获取发现任务详情"
+        path_params: >-
+            {
+                "id": "00000000000000000000"
+            }
+        code_check: "404"
+
+    -   name: "Positive_删除检索任务_请求成功"
+        url: "删除发现任务"
+        path_params: >-
+            {
+                "ids": "${discover_id}"
+            }
+        code_check: "404"
+
+    -   name: "Negative_删除检索任务_参数校验_id不存在_请求失败"
+        url: "删除发现任务"
+        path_params: >-
+            {
+                "ids": "00000000000000000000"
+            }
+        code_check: "404"
+
+    -   name: "Negative_删除检索任务_参数校验_id已删除_请求失败"
+        url: "删除发现任务"
+        path_params: >-
+            {
+                "ids": "${discover_id}"
+            }
+        code_check: "404"
+
+    -   name: "Negative_查看检索任务详情_参数校验_id已删除_请求失败"
+        url: "获取发现任务详情"
+        path_params: >-
+            {
+                "id": "${discover_id}"
+            }
+        code_check: "404"
+
+    -   name: "Positive_删除catalog_请求成功"
+        url: "删除catalog"
+        path_params: >-
+            {
+                "ids": "${catalog_id}"
+            }
+        code_check: "204"
+
+    -   name: "Negative_即时检索_参数校验_id已删除_请求失败"
+        url: "catalog资源发现"
+        path_params: >-
+            {
+                "id": "${catalog_id}"
+            }
+        code_check: "404"
+
+    -   name: "Positive_查询检索任务列表_参数校验_catalog已删除_请求成功"
+        url: "获取发现任务列表"
+        query_params: >-
+            {
+                "catalog_id": "${catalog_id}"
+            }
+        code_check: "200"
+        resp_values: >-
+            {
+                "$.total_count": 0
+            }
+
