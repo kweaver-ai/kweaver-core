@@ -470,6 +470,14 @@ cases:
                 "$.success": "true"
             }
 
+    -   name: "Positive_catalog资源检索_MySQL数据源_请求成功"
+        url: "catalog资源发现"
+        path_params: >-
+            {
+                "id": "${catalog_id}"
+            }
+        code_check: "200"
+
     -   name: "Positive_删除catalog_MySQL数据源_单个数据源_请求成功"
         url: "删除catalog"
         path_params: >-

@@ -67,6 +67,14 @@
         }
     code_check: "200"
 
+-   name: "Negative_查询catalog列表_参数校验_type为未定义的类型_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+        {
+         "type": "undefined"
+        }
+    code_check: "400"
+
 -   name: "Positive_查询catalog列表_按status过滤_请求成功"
     url: "查询catalog列表"
     query_params: >-
@@ -75,53 +83,45 @@
         }
     code_check: "200"
 
--   name: "Positive_查询catalog列表_参数校验_tag包含特殊字符_请求成功"
+-   name: "Positive_查询catalog列表_按status过滤_请求成功"
     url: "查询catalog列表"
     query_params: >-
         {
-         "tag": "{{ '查询测试_tag-%s' | format(random_string(30, 73)) }}"
+            "health_check_status": "degraded"
         }
     code_check: "200"
 
--   name: "Positive_查询catalog列表_参数校验_tag为长字符_请求成功"
+-   name: "Positive_查询catalog列表_按status过滤_请求成功"
     url: "查询catalog列表"
     query_params: >-
         {
-         "tag": "{{ '查询测试_tag-%s' | format(random_string(100, 73)) }}"
+            "health_check_status": "unhealthy"
         }
     code_check: "200"
 
--   name: "Positive_查询catalog列表_参数校验_type为未定义的类型_请求成功"
+-   name: "Positive_查询catalog列表_按status过滤_请求成功"
     url: "查询catalog列表"
     query_params: >-
         {
-         "type": "undefined"
+            "health_check_status": "offline"
         }
     code_check: "200"
 
--   name: "Positive_查询catalog列表_参数校验_type包含特殊字符_请求成功"
+-   name: "Positive_查询catalog列表_按status过滤_请求成功"
     url: "查询catalog列表"
     query_params: >-
         {
-         "type": "{{ '查询测试_type-%s' | format(random_string(30, 73)) }}"
+            "health_check_status": "disabled"
         }
     code_check: "200"
 
--   name: "Positive_查询catalog列表_参数校验_type为长字符_请求成功"
-    url: "查询catalog列表"
-    query_params: >-
-        {
-         "type": "{{ '查询测试_type-%s' | format(random_string(100, 73)) }}"
-        }
-    code_check: "200"
-
--   name: "Positive_查询catalog列表_参数校验_health为未定义的类型_请求成功"
+-   name: "Negative_查询catalog列表_参数校验_health为未定义的类型_请求失败"
     url: "查询catalog列表"
     query_params: >-
         {
          "health_check_status": "undefined"
         }
-    code_check: "200"
+    code_check: "400"
 
 -   name: "Positive_查询catalog列表_参数校验_health包含特殊字符_请求成功"
     url: "查询catalog列表"
