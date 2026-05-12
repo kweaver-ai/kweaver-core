@@ -149,7 +149,7 @@ func (s *ToolServiceImpl) importPreCheck(ctx context.Context, mode interfaces.Im
 	boxIDs := []string{}
 	for _, item := range items {
 		boxIDs = append(boxIDs, item.BoxID)
-		if item.IsInternal {
+		if icommon.IsPublicAPIFromCtx(ctx) && item.IsInternal {
 			err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonInternalComponentNotAllowed,
 				fmt.Sprintf("internal toolbox %v not allowed to import", item.BoxID), item.BoxName)
 			return

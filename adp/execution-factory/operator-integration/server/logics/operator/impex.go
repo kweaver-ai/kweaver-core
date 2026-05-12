@@ -164,7 +164,7 @@ func (m *operatorManager) importPreCheck(ctx context.Context, mode interfaces.Im
 	for _, operatorItem := range items {
 		operatorIDs = append(operatorIDs, operatorItem.OperatorID)
 		// 内置算子不允许导入
-		if operatorItem.IsInternal {
+		if icommon.IsPublicAPIFromCtx(ctx) && operatorItem.IsInternal {
 			err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonInternalComponentNotAllowed,
 				fmt.Sprintf("internal operator %v not allowed to import", operatorItem.OperatorID), operatorItem.OperatorName)
 			return
