@@ -12,6 +12,10 @@
   - 分组范围内返回关系类和动作类时，会一并补齐其引用的对象类，让调用方拿到完整 Schema 上下文
   - 说明：指标类 Schema 请求会携带同一组概念分组范围，但是否真正按组过滤取决于 BKN metrics 侧支持
   - issue: https://github.com/kweaver-ai/kweaver-core/issues/304
+- 将 ContextLoader 标准工具集内置到服务启动流程
+  - ContextLoader 启动时自动同步内置工具集到执行工厂
+  - 工具集契约描述统一为 `ContextLoader 标准内置工具集；契约版本: 0.8.0`
+  - issue: https://github.com/kweaver-ai/kweaver-core/issues/306
 
 ### 兼容性
 
@@ -20,6 +24,7 @@
 ### 文档
 
 - 更新 API、MCP schema、toolset 和发布文档，说明按概念分组限定 Schema 探索范围的使用方式
+- 补充 ContextLoader 内置工具集交付方式和契约版本描述规则
 
 ## 0.7.0
 

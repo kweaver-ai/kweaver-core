@@ -13,12 +13,19 @@
 
 | 修订日期 | 修订说明 |
 | :--- | :--- |
+| 2026-05-12 | 补充 ContextLoader 标准工具集已内置到服务中，并随服务启动自动同步到执行工厂；新增工具集契约版本描述规则 |
 | 2026-04-28 | 更新为 context-loader `0.8.0`；`search_schema` 增加 `search_scope.concept_groups`，用于按 BKN 概念分组限定 object / relation / action schema 召回范围，并向 metric schema 检索透传分组条件 |
 | 2026-04-23 | 更新为 context-loader `0.7.0`；本版 release 仅纳入 `issue-189` / `issue-234`；`search_schema` 的 HTTP `kn_id` 改为通过 body 传递，并补充 `metric_types` 发布口径 |
 | 2026-04-16 | Schema 探索入口统一为 `search_schema`；MCP 不再暴露 `kn_search` / `kn_schema_search`；补充标准 / 兼容 / legacy 接口分层说明 |
 | 2026-04-10 | 更新为 context-loader `0.6.0`，新增 `find_skills` 工具说明，并补充 `search/query/find/get` 四类工具语义 |
 | 2026-03-26 | 根据 `docs/apis/api_private` OpenAPI 更新 6 个工具的依赖说明与参数配置 |
 | 2026-01-04 | 首次发布 |
+
+## 工具集契约
+
+ContextLoader 标准工具集已内置在服务中，随服务启动自动同步到执行工厂。工具集名称保持为 `contextloader工具集`，描述规则固定为 `ContextLoader 标准内置工具集；契约版本: x.y.z`。
+
+契约版本仅在工具列表、工具参数 Schema 或工具语义发生变化时更新；服务 bugfix、内部实现优化、文档调整不单独更新契约版本。
 
 ## 1. 什么是 context-loader
 

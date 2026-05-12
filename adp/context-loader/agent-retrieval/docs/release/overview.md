@@ -22,7 +22,6 @@
 ```text
 docs/release/
 ├── overview.md                # 本版本说明文档（唯一入口）
-├── toolset/                   # Context Loader 工具集快照（ADP 形式交付）
 ├── tool-deps/                 # Context Loader 依赖的其他工具集快照（镜像内固定携带，启动自动同步）
 ├── agent-deps/                # 必选依赖：逻辑属性解析等能力依赖的 Agent
 └── agent-recall-examples/     # 可选示例：用于接入参考与回放验证
@@ -30,7 +29,7 @@ docs/release/
 
 说明如下：
 
-- `toolset/`：本版 Context Loader 工具集快照，接入时优先导入。
+- ContextLoader 标准工具集已内置在服务中，随服务启动自动同步到执行工厂；内置源文件为 `server/bootstrap/tool_dependencies/context_loader_toolset.adp`。
 - `tool-deps/`：本版依赖的其他工具集快照；镜像启动后会自动同步到执行工厂，当前不需要人工单独导入。
 - `agent-deps/`：本版必选的 Agent 依赖；逻辑属性解析能力依赖此处的 Agent。
 - `agent-recall-examples/`：本版回放样例，用于接入参考与最小验证。
@@ -39,10 +38,9 @@ docs/release/
 
 ### 导入顺序
 
-1. 导入 `toolset/`
-2. 等待启动阶段自动同步 `tool-deps/`
-3. 导入 `agent-deps/`
-4. 使用 `agent-recall-examples/` 做回放验证
+1. 启动 ContextLoader 服务，等待内置工具集与 `tool-deps/` 依赖工具集自动同步
+2. 导入 `agent-deps/`
+3. 使用 `agent-recall-examples/` 做回放验证
 
 ### 本版变化与注意事项
 
@@ -57,7 +55,8 @@ docs/release/
 ## 4. 最小验证
 
 - 交付清单验证：`docs/release/` 下的实际内容与本文档描述一致
-- 导入验证：`toolset/`、`agent-deps/` 无缺失依赖，`tool-deps/` 会在服务启动后自动同步
+- 内置工具集验证：服务启动后自动同步 ContextLoader 标准工具集，内置源 `server/bootstrap/tool_dependencies/context_loader_toolset.adp` 无缺失依赖
+- 导入验证：`agent-deps/` 无缺失依赖，`tool-deps/` 会在服务启动后自动同步
 - Schema Search 验证：`search_schema` 作为唯一 MCP Schema 探索工具可用，`kn_search` / `kn_schema_search` 不再出现在 MCP 工具列表中
 - HTTP 契约验证：`search_schema` 通过 request body 传递 `kn_id`，契约中不再出现 `x-kn-id`
 - Metric Schema 验证：`search_schema` 返回 `metric_types`，并支持 `search_scope.include_metric_types`
