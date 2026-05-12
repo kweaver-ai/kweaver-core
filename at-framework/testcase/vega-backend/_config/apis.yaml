@@ -5,6 +5,11 @@
 #   PUT       /api/vega-backend/v1/catalogs/{id}
 #   GET       /api/vega-backend/v1/catalogs/{ids}/health-status
 #   POST      /api/vega-backend/v1/catalogs/{id}/test-connection
+#   GET|POST  /api/vega-backend/v1/resources
+#             GET query: catalog_id, category, status, database, offset, limit, sort, direction
+#   GET|DELETE /api/vega-backend/v1/resources/{ids}
+#             DELETE query: ignore_missing
+#   PUT       /api/vega-backend/v1/resources/{id}
 #   GET       /api/vega-backend/v1/discover-tasks
 #             (query: catalog_id, schedule_id, status, trigger_type, offset, limit, sort, direction)
 #   GET       /api/vega-backend/v1/discover-tasks/{id}
@@ -309,7 +314,261 @@
               "error_details": ""
             }
 
--   name: 获取发现任务列表
+-   name: 查询resource列表
+    url: /api/vega-backend/v1/resources
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "entries": [],
+              "total_count": 0
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 创建resource
+    url: /api/vega-backend/v1/resources
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+    resp_schema:
+        201: >-
+            {
+              "id": "resource_id",
+              "catalog_id": "catalog_id",
+              "name": "resource_name",
+              "category": "table",
+              "status": "active",
+              "source_identifier": "source_identifier",
+              "creator": {"id": "", "type": "", "name": ""},
+              "create_time": 0,
+              "updater": {"id": "", "type": "", "name": ""},
+              "update_time": 0
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        406: >-
+            {
+              "error_code": "",
+              "description": "Content-Type 不是 application/json",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 查看resource详情
+    url: /api/vega-backend/v1/resources/${ids}
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "entries": [
+                {
+                  "id": "resource_id",
+                  "catalog_id": "catalog_id",
+                  "name": "resource_name",
+                  "category": "table",
+                  "status": "active",
+                  "source_identifier": "source_identifier",
+                  "creator": {"id": "", "type": "", "name": ""},
+                  "create_time": 0,
+                  "updater": {"id": "", "type": "", "name": ""},
+                  "update_time": 0
+                }
+              ]
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 删除resource
+    url: /api/vega-backend/v1/resources/${ids}
+    method: DELETE
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 编辑resource
+    url: /api/vega-backend/v1/resources/${id}
+    method: PUT
+    headers: >-
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        406: >-
+            {
+              "error_code": "",
+              "description": "Content-Type 不是 application/json",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 查询检索任务列表
     url: /api/vega-backend/v1/discover-tasks
     method: GET
     headers: >-
@@ -347,7 +606,7 @@
               "error_details": ""
             }
 
--   name: 获取发现任务详情
+-   name: 查看检索任务详情
     url: /api/vega-backend/v1/discover-tasks/${id}
     method: GET
     headers: >-
@@ -402,7 +661,7 @@
               "error_details": ""
             }
 
--   name: 删除发现任务
+-   name: 删除检索任务
     url: /api/vega-backend/v1/discover-tasks/${ids}
     method: DELETE
     headers: >-
@@ -445,7 +704,7 @@
               "error_details": ""
             }
 
--   name: catalog资源发现
+-   name: catalog资源检索
     url: /api/vega-backend/v1/catalogs/${id}/discover
     method: POST
     headers: >-

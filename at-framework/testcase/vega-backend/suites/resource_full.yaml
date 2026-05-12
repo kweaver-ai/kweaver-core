@@ -1,0 +1,144 @@
+feature: vega-backend
+story: discover
+switch: y
+tags:
+    - vega-backend
+    - resource
+    - full
+
+include:
+    - resource_query.case
+
+cases:
+    -   name: "Positive_创建catalog_逻辑资源_请求成功"
+        url: "创建catalog"
+        body_params: >-
+            {
+                "name": "{{ '新增catalog_Logical-%s' | format(random_string(6, 8)) }}"
+            }
+        resp_values: >-
+            {
+                "catalog_id_logical": "$.id"
+            }
+        code_check: "201"
+
+    -   name: "Positive_创建catalog_数据源_请求成功"
+        url: "创建catalog"
+        body_params: >-
+            {
+                "name": "{{ '新增catalog_Physical-%s' | format(random_string(6, 8)) }}",
+                "connector_type": "mysql",
+                "connector_config": {
+                    "host": "${mysql_host}",
+                    "port": ${mysql_port},
+                    "username": "${mysql_user}",
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"]
+                }
+            }
+        resp_values: >-
+            {
+                "catalog_id": "$.id"
+            }
+        code_check: "201"
+
+    -   name: "Positive_即时检索_数据源_请求成功"
+        url: "catalog资源检索"
+        path_params: >-
+            {
+                "id": "${catalog_id}"
+            }
+        resp_values: >-
+            {
+                "discover_id": "$.id"
+            }
+        code_check: "200"
+        next_wait: 1
+
+    -   name: "Positive_查询资源列表_按catalog过滤_请求成功"
+        url: "查询resource列表"
+        query_params: >-
+            {
+                "catalog_id": "${catalog_id}"
+            }
+        resp_values: >-
+            {
+                "resource_id": "$.entries[0].id"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.entries[0].catalog_id": "${catalog_id}"
+            }
+
+    -   name: "Positive_查询资源列表_参数校验_catalog不存在_请求成功"
+        url: "查询resource列表"
+        query_params: >-
+            {
+                "catalog_id": "${resource_id}"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.total_count": 0
+            }
+
+    -   name: "Positive_查询资源列表_按database过滤_请求成功"
+        url: "查询resource列表"
+        query_params: >-
+            {
+                "database": "${mysql_db_1}"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.entries[0].database": "${mysql_db_1}"
+            }
+
+    -   name: "Positive_查询资源列表_参数校验_database不存在_请求成功"
+        url: "查询resource列表"
+        query_params: >-
+            {
+                "database": "undefined"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.total_count": 0
+            }
+
+    -   name: "Positive_查看资源详情_单个资源_请求成功"
+        url: "查看resource详情"
+        path_params: >-
+            {
+                "ids": "${resource_id}"
+            }
+        code_check: "200"
+
+    -   name: "Positive_查看资源详情_多个资源_id重复_请求成功"
+        url: "查看resource详情"
+        path_params: >-
+            {
+                "ids": "${resource_id},${resource_id}"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.entries.length()": 1
+            }
+
+    -   name: "Negative_查看资源详情_资源不存在_请求失败"
+        url: "查看resource详情"
+        path_params: >-
+            {
+                "ids": "${catalog_id}"
+            }
+        code_check: "404"
+
+    -   name: "Negative_查看资源详情_部分资源不存在_请求失败"
+        url: "查看resource详情"
+        path_params: >-
+            {
+                "ids": "${resource_id},${catalog_id}"
+            }
+        code_check: "404"

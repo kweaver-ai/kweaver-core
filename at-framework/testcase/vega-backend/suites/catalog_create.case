@@ -1,3 +1,203 @@
+-   name: "Positive_创建catalog_仅必需参数_请求成功"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    resp_values: >-
+        {
+            "catalog_id": "$.id"
+        }
+    code_check: "201"
+
+-   name: "Positive_创建catalog_指定id_请求成功"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "{{ '%s' | format(random_string(20, 10)) }}",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "201"
+
+-   name: "Positive_创建catalog_MySQL数据源_全量参数_请求成功"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}",
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
+            }
+        }
+    code_check: "201"
+
+-   name: "Positive_创建catalog_参数校验_id长度0_请求成功"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "201"
+
+-   name: "Positive_创建catalog_参数校验_id长度39_请求成功"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "{{ '%s' | format(random_string(1, 10)) }}",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "201"
+
+-   name: "Negative_创建catalog_参数校验_id长度40_请求失败"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "{{ '%s_%s-%s' | format(random_string(20, 2), random_string(9, 8), random_string(9, 8)) }}",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "400"
+
+-   name: "Negative_创建catalog_参数校验_id包含不支持的字符_请求失败"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "{{ '%s_%s-%s' | format(random_string(10, 2), random_string(10, 8), random_string(10, 1)) }}",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "400"
+
+-   name: "Negative_创建catalog_参数校验_id包含不支持的字符_请求失败"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "{{ '%s_%s-%s' | format(random_string(10, 2), random_string(10, 8), random_string(10, 4)) }}",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "400"
+
+-   name: "Negative_创建catalog_参数校验_id包含不支持的字符_请求失败"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "{{ '%s_%s-%s' | format(random_string(10, 2), random_string(10, 8), random_string(10, 64)) }}",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "400"
+
+-   name: "Negative_创建catalog_参数校验_id以符号开头_请求失败"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "{{ '_%s-%s' | format(random_string(10, 2), random_string(10, 8)) }}",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "400"
+
+-   name: "Negative_创建catalog_参数校验_id以符号开头_请求失败"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "{{ '-%s_%s' | format(random_string(10, 2), random_string(10, 8)) }}",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "400"
+
+-   name: "Negative_创建catalog_参数校验_id重复_请求失败"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "id": "${catalog_id}",
+            "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "409"
+
 -   name: "Negative_创建catalog_参数校验_name缺省_请求失败"
     url: "创建catalog"
     body_params: >-
@@ -143,7 +343,7 @@
 
 -   name: "Negative_创建catalog_参数校验_name名称重复_请求失败"
     url: "创建catalog"
-    prev_case: "查看catalog详情_数据源"
+    prev_case: "Positive_查看catalog详情_数据源_请求成功"
     body_params: >-
         {
             "name": "${catalog_name}",
@@ -229,12 +429,16 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "description": "",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "201"
@@ -246,12 +450,16 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "description": "{{ '自动化测试用例_AutoCase-%s' | format(random_string(983, 127)) }}",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "201"
@@ -263,29 +471,37 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "description": "{{ '自动化测试用例_AutoCase-%s' | format(random_string(984, 127)) }}",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
 
--   name: "Positive_创建catalog_参数校验_tag为空数组_请求成功"
+-   name: "Positive_创建catalog_参数校验_tag数组长度0_请求成功"
     url: "创建catalog"
     body_params: >-
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "201"
@@ -297,12 +513,58 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [""],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
+            }
+        }
+    code_check: "400"
+
+-   name: "Positive_创建catalog_参数校验_tag数组长度5_请求成功"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+            "description": "自动化测试用例",
+             "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}",
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
+            }
+        }
+    code_check: "201"
+
+-   name: "Negative_创建catalog_参数校验_tag数组长度大于5_请求失败"
+    url: "创建catalog"
+    body_params: >-
+        {
+            "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6"],
+            "description": "自动化测试用例",
+             "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}",
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -314,12 +576,16 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": "AT",
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -331,12 +597,16 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": 0,
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -348,12 +618,16 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": true,
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -365,12 +639,16 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [0],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -382,12 +660,16 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [true],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -399,12 +681,16 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [["AT"]],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -416,12 +702,16 @@
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [{}],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -432,15 +722,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
-            "tags": [
-                "AT", 0, true, ["catalog"], {}
-            ],
+            "tags": ["AT", 0, true, ["catalog"], {}],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -453,12 +745,16 @@
             "connector_type": "mysql",
             "description": "自动化测试用例",
             "tags": ["AT", "AT"],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "201"
@@ -469,6 +765,8 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {}
         }
     code_check: "400"
@@ -479,6 +777,8 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql"
+            "description": "自动化测试用例",
+            "tags": ["AT"],
         }
     code_check: "400"
 
@@ -488,13 +788,18 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": [
                 {
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
                     "password": "${mysql_password}",
-                    "databases": ["${mysql_db_1}"]
+                    "databases": ["${mysql_db_1}"],
+                    "options": {
+                        "timeout": "300s"
+                    }
                 }
             ]
         }
@@ -506,6 +811,8 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": ""
         }
     code_check: "400"
@@ -516,6 +823,8 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],        
             "connector_config": 0
         }
     code_check: "400"
@@ -526,6 +835,8 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": true
         }
     code_check: "400"
@@ -536,12 +847,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -552,11 +868,16 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -567,12 +888,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": ["${mysql_host}"],
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -583,12 +909,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": 0,
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -599,12 +930,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": true,
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -615,10 +951,16 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "username": "${mysql_user}",
-                "password": "${mysql_password}"
+                "password": "${mysql_password}",
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -629,12 +971,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": "${mysql_port}",
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -645,12 +992,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": 1.2,
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -661,12 +1013,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": true,
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -677,12 +1034,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": [${mysql_port}],
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -693,12 +1055,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -709,11 +1076,16 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -724,12 +1096,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": ["${mysql_user}"],
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -740,12 +1117,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": 0,
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -756,12 +1138,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": true,
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -772,12 +1159,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -788,11 +1180,16 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -803,12 +1200,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": ["${mysql_password}"],
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -819,12 +1221,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": 0,
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -835,12 +1242,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": true,
-                "databases": ["${mysql_db_1}"]
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -851,12 +1263,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": []
+                "databases": [],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "201"
@@ -867,12 +1284,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": [""]
+                "databases": [""],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -883,12 +1305,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": "${mysql_db_1}"
+                "databases": "${mysql_db_1}",
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -899,12 +1326,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": 0
+                "databases": 0,
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -915,12 +1347,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": true
+                "databases": true,
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -931,12 +1368,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": [0]
+                "databases": [0],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -947,12 +1389,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": [true]
+                "databases": [true],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -963,12 +1410,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": [{}]
+                "databases": [{}],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -979,14 +1431,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": [
-                    ["${mysql_db_1}"]
-                ]
+                "databases": [["${mysql_db_1}"]],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -997,14 +1452,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": [
-                    "${mysql_db_1}", 0, true, ["${mysql_db_2}"], {}
-                ]
+                "databases": ["${mysql_db_1}", 0, true, ["${mysql_db_2}"], {}],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -1015,12 +1473,17 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}", "${mysql_db_1}"]
+                "databases": ["${mysql_db_1}", "${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                }
             }
         }
     code_check: "400"
@@ -1031,6 +1494,8 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1048,6 +1513,8 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1068,6 +1535,8 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1087,6 +1556,8 @@
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},

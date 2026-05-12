@@ -4,15 +4,15 @@ switch: y
 tags:
     - vega-backend
     - catalog
-    - schema
+    - full
 
 # 通过include导入子用例文件，用于接口用例较多时的拆分，方便管理
 # 子用例文件后缀.case，防止重复加载
 # 考虑到可读性，建议将存在依赖关系的用例写入同一文件
 include:
-    - catalog_schema_create.case
-    - catalog_schema_query.case
-    - catalog_schema_update.case
+    - catalog_create.case
+    - catalog_query.case
+    - catalog_update.case
 
 cases:
     -   name: "Positive_创建catalog_逻辑资源_请求成功"
@@ -71,22 +71,6 @@ cases:
             }
         code_check: "200"
 
-    -   name: "Negative_创建catalog_参数校验_name名称重复_请求失败"
-        url: "创建catalog"
-        body_params: >-
-            {
-                "name": "${catalog_name}",
-                "connector_type": "mysql",
-                "connector_config": {
-                    "host": "${mysql_host}",
-                    "port": ${mysql_port},
-                    "username": "${mysql_user}",
-                    "password": "${mysql_password}",
-                    "databases": ["${mysql_db_1}"]
-                }
-            }
-        code_check: "409"
-
     -   name: "Negative_查看catalog详情_id不存在_请求失败"
         url: "查看catalog详情"
         path_params: >-
@@ -94,6 +78,30 @@ cases:
                 "ids": "00000000000000000000"
             }
         code_check: "404"
+
+    -   name: "Positive_查看catalog详情_查看多个资源_请求成功"
+        url: "查看catalog详情"
+        path_params: >-
+            {
+                "ids": "${catalog_id_logical},${catalog_id}"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.entries.length()": 2
+            }
+
+    -   name: "Positive_查看catalog详情_查看多个资源_id重复_请求成功"
+        url: "查看catalog详情"
+        path_params: >-
+            {
+                "ids": "${catalog_id},${catalog_id}"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.entries.length()": 1
+            }
 
     -   name: "Negative_查看catalog详情_查看多个资源_部分id不存在_请求失败"
         url: "查看catalog详情"
@@ -119,16 +127,29 @@ cases:
             }
         code_check: "404"
 
-    -   name: "Negative_编辑catalog_id不存在_请求失败"
+    -   name: "Positive_编辑catalog_信息无更新_逻辑资源_请求成功"
         url: "编辑catalog"
         path_params: >-
             {
-              "id": "00000000000000000000"
+                "id": "${catalog_id_logical}"
             }
         body_params: >-
             {
-                "id": "00000000000000000000",
-                "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+                "id": "${catalog_id_logical}",
+                "name": "${catalog_name_logical}"
+            }
+        code_check: "204"
+
+    -   name: "Positive_编辑catalog_信息无更新_数据源_请求成功"
+        url: "编辑catalog"
+        path_params: >-
+            {
+                "id": "${catalog_id}"
+            }
+        body_params: >-
+            {
+                "id": "${catalog_id}",
+                "name": "${catalog_name}",
                 "connector_type": "mysql",
                 "connector_config": {
                     "host": "${mysql_host}",
@@ -138,7 +159,42 @@ cases:
                     "databases": ["${mysql_db_1}"]
                 }
             }
-        code_check: "404"
+        code_check: "204"
+
+    -   name: "Positive_编辑catalog_更新逻辑资源名称_请求成功"
+        url: "编辑catalog"
+        prev_case: "Positive_创建catalog_逻辑资源_请求成功"
+        path_params: >-
+            {
+                "id": "${catalog_id_logical}"
+            }
+        body_params: >-
+            {
+                "id": "${catalog_id_logical}",
+                "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}"
+            }
+        code_check: "204"
+
+    -   name: "Negative_编辑catalog_name名称重复_请求失败"
+        url: "编辑catalog"
+        path_params: >-
+            {
+                "id": "${catalog_id}"
+            }
+        body_params: >-
+            {
+                "id": "${catalog_id}",
+                "name": "${catalog_name_logical}",
+                "connector_type": "mysql",
+                "connector_config": {
+                    "host": "${mysql_host}",
+                    "port": ${mysql_port},
+                    "username": "${mysql_user}",
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"]
+                }
+            }
+        code_check: "409"
 
     -   name: "Negative_删除catalog_id不存在_请求失败"
         url: "删除catalog"

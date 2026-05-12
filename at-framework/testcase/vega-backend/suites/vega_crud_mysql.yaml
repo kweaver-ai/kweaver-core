@@ -7,7 +7,7 @@ tags:
     - smoke
 
 cases:
-    -   name: "Positive_创建catalog_MySQL数据源_仅必需参数_请求成功"
+    -   name: "Positive_创建catalog_MySQL数据源_请求成功"
         url: "创建catalog"
         body_params: >-
             {
@@ -17,7 +17,8 @@ cases:
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
-                    "password": "${mysql_password}"
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"]
                 }
             }
         resp_values: >-
@@ -26,23 +27,18 @@ cases:
             }
         code_check: "201"
 
-    -   name: "Positive_创建catalog_MySQL数据源_全量参数_请求成功"
+    -   name: "Positive_创建catalog_MySQL数据源_不指定数据库_请求成功"
         url: "创建catalog"
         body_params: >-
             {
                 "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
                 "connector_type": "mysql",
                 "description": "自动化测试用例",
-                "tags": ["AT"],
                 "connector_config": {
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
-                    "password": "${mysql_password}",
-                    "databases": ["${mysql_db_1}"],
-                    "options": {
-                        "timeout": "300s"
-                    }
+                    "password": "${mysql_password}"
                 }
             }
         resp_values: >-
@@ -82,7 +78,8 @@ cases:
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
-                    "password": "${mysql_password}"
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"]
                 }
             }
         code_check: "400"
@@ -97,7 +94,8 @@ cases:
                     "host": "127.0.0.1",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
-                    "password": "${mysql_password}"
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"]
                 }
             }
         code_check: "400"
@@ -112,7 +110,8 @@ cases:
                     "host": "${mysql_host}",
                     "port": 3000,
                     "username": "${mysql_user}",
-                    "password": "${mysql_password}"
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"]
                 }
             }
         code_check: "400"
@@ -127,7 +126,8 @@ cases:
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "unknown",
-                    "password": "${mysql_password}"
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"]
                 }
             }
         code_check: "400"
@@ -142,7 +142,8 @@ cases:
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
-                    "password": "unknown"
+                    "password": "unknown",
+                    "databases": ["${mysql_db_1}"]
                 }
             }
         code_check: "400"
@@ -157,7 +158,8 @@ cases:
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
-                    "password": "${mysql_password_ciphertext}"
+                    "password": "${mysql_password_ciphertext}",
+                    "databases": ["${mysql_db_1}"]
                 }
             }
         code_check: "400"
@@ -173,9 +175,7 @@ cases:
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
                     "password": "${mysql_password}",
-                    "databases": [
-                        "unknown"
-                    ]
+                    "databases": ["unknown"]
                 }
             }
         code_check: "400"
@@ -191,13 +191,24 @@ cases:
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
                     "password": "${mysql_password}",
-                    "databases": [
-                        "${mysql_db_1}",
-                        "unknown"
-                    ]
+                    "databases": ["${mysql_db_1}","unknown"]
                 }
             }
         code_check: "400"
+
+    -   name: "Positive_查询catalog列表_全量参数_请求成功"
+        url: "查询catalog列表"
+        query_params: >-
+            {
+                "tag": "AT",
+                "type": "logical",
+                "health_check_status": "healthy",
+                "offset": "0",
+                "limit": "20",
+                "sort": "name",
+                "direction": "desc"
+            }
+        code_check: "200"
 
     -   name: "Positive_查看catalog详情_MySQL数据源_单个数据源_请求成功"
         url: "查看catalog详情"
@@ -219,27 +230,7 @@ cases:
             }
         code_check: "200"
 
-    -   name: "Positive_编辑catalog_MySQL数据源_信息无更新_请求成功"
-        url: "编辑catalog"
-        path_params: >-
-            {
-                "id": "${catalog_id}"
-            }
-        body_params: >-
-            {
-                "id": "${catalog_id}",
-                "name": "${catalog_name}",
-                "connector_type": "mysql",
-                "connector_config": {
-                    "host": "${mysql_host}",
-                    "port": ${mysql_port},
-                    "username": "${mysql_user}",
-                    "password": "${mysql_password}"
-                }
-            }
-        code_check: "204"
-
-    -   name: "Positive_编辑catalog_MySQL数据源_修改数据源名称_仅必需参数_请求成功"
+    -   name: "Positive_编辑catalog_MySQL数据源_修改数据源名称_请求成功"
         url: "编辑catalog"
         path_params: >-
             {
@@ -254,82 +245,11 @@ cases:
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
-                    "password": "${mysql_password}"
-                }
-            }
-        code_check: "204"
-
-    -   name: "Positive_编辑catalog_MySQL数据源_修改数据源名称_全量参数_请求成功"
-        url: "编辑catalog"
-        path_params: >-
-            {
-                "id": "${catalog_id_1}"
-            }
-        body_params: >-
-            {
-                "id": "${catalog_id_1}",
-                "name": "{{ '更新catalog_MySQL-%s' | format(random_string(6, 8)) }}",
-                "connector_type": "mysql",
-                "description": "自动化测试用例",
-                "tags": ["AT"],
-                "connector_config": {
-                    "host": "${mysql_host}",
-                    "port": ${mysql_port},
-                    "username": "${mysql_user}",
                     "password": "${mysql_password}",
-                    "databases": ["${mysql_db_1}"],
-                    "options": {
-                        "timeout": "300s"
-                    }
+                    "databases": ["${mysql_db_1}"]
                 }
             }
         code_check: "204"
-
-    -   name: "Positive_编辑catalog_MySQL数据源_修改数据源名称_指定多个数据库_请求成功"
-        url: "编辑catalog"
-        path_params: >-
-            {
-                "id": "${catalog_id_2}"
-            }
-        body_params: >-
-            {
-                "id": "${catalog_id_2}",
-                "name": "{{ '更新catalog_MySQL-%s' | format(random_string(6, 8)) }}",
-                "connector_type": "mysql",
-                "description": "自动化测试用例",
-                "tags": ["AT"],
-                "connector_config": {
-                    "host": "${mysql_host}",
-                    "port": ${mysql_port},
-                    "username": "${mysql_user}",
-                    "password": "${mysql_password}",
-                    "databases": ["${mysql_db_1}","${mysql_db_2}"],
-                    "options": {
-                        "timeout": "300s"
-                    }
-                }
-            }
-        code_check: "204"
-
-    -   name: "Negative_编辑catalog_MySQL数据源_修改数据源id_请求失败"
-        url: "编辑catalog"
-        path_params: >-
-            {
-                "id": "${catalog_id}"
-            }
-        body_params: >-
-            {
-                "id": "{{ '%s' | format(random_string(20, 10)) }}",
-                "name": "${catalog_name}",
-                "connector_type": "mysql",
-                "connector_config": {
-                    "host": "${mysql_host}",
-                    "port": ${mysql_port},
-                    "username": "${mysql_user}",
-                    "password": "${mysql_password}"
-                }
-            }
-        code_check: "409"
 
     -   name: "Negative_编辑catalog_MySQL数据源_修改数据源类型_请求失败"
         url: "编辑catalog"
@@ -351,7 +271,7 @@ cases:
             }
         code_check: "400"
 
-    -   name: "Positive_编辑catalog_MySQL数据源_修改数据库_请求成功"
+    -   name: "Positive_编辑catalog_MySQL数据源_修改数据库名称_请求成功"
         url: "编辑catalog"
         path_params: >-
             {
@@ -372,7 +292,7 @@ cases:
             }
         code_check: "204"
 
-    -   name: "Positive_编辑catalog_MySQL数据源_修改数据库_请求成功"
+    -   name: "Positive_编辑catalog_MySQL数据源_追加数据库_请求成功"
         url: "编辑catalog"
         path_params: >-
             {
@@ -393,7 +313,7 @@ cases:
             }
         code_check: "204"
 
-    -   name: "Positive_编辑catalog_MySQL数据源_修改数据库_请求成功"
+    -   name: "Positive_编辑catalog_MySQL数据源_精简数据库_请求成功"
         url: "编辑catalog"
         path_params: >-
             {
@@ -413,10 +333,6 @@ cases:
                 }
             }
         code_check: "204"
-
-    -   name: "Positive_查询catalog列表_参数缺省_请求成功"
-        url: "查询catalog列表"
-        code_check: "200"
 
     -   name: "Positive_检查catalog状态_MySQL数据源_请求成功"
         url: "检查catalog状态"
@@ -443,7 +359,7 @@ cases:
             }
 
     -   name: "Positive_catalog资源检索_MySQL数据源_请求成功"
-        url: "catalog资源发现"
+        url: "catalog资源检索"
         path_params: >-
             {
                 "id": "${catalog_id}"
@@ -455,12 +371,23 @@ cases:
             }
         next_wait: 1
 
-    -   name: "Positive_检索任务列表_参数缺省_请求成功"
-        url: "获取发现任务列表"
+    -   name: "Positive_查询检索任务列表_全量参数_请求成功"
+        url: "查询检索任务列表"
+        query_params: >-
+            {
+                "catalog_id": "${catalog_id}",
+                "schedule_id": "",
+                "status": "completed",
+                "trigger_type": "manual",
+                "offset": "0",
+                "limit": "20",
+                "sort": "create_time",
+                "direction": "desc"
+            }
         code_check: "200"
 
     -   name: "Positive_检索任务详情_MySQL数据源_请求成功"
-        url: "获取发现任务详情"
+        url: "查看检索任务详情"
         path_params: >-
             {
                 "id": "${discover_id}"
@@ -470,6 +397,45 @@ cases:
             {
                 "$.status": "completed"
             }
+
+    -   name: "Positive_查询资源列表_全量参数_请求成功"
+        url: "查询resource列表"
+        query_params: >-
+            {
+                "catalog_id": "${catalog_id}",
+                "category": "table",
+                "status": "active",
+                "database": "${mysql_db_1}",
+                "offset": "0",
+                "limit": "20",
+                "sort": "update_time",
+                "direction": "desc"
+            }
+        code_check: "200"
+
+    -   name: "Positive_追加table类型资源_MySQL数据源_请求成功"
+        url: "创建resource"
+        body_params: >-
+            {
+
+            }
+        code_check: "204"
+
+    -   name: "Positive_追加dataset类型资源_MySQL数据源_请求成功"
+        url: "创建resource"
+        body_params: >-
+            {
+
+            }
+        code_check: "204"
+
+    -   name: "Positive_追加logicview类型资源_MySQL数据源_请求成功"
+        url: "创建resource"
+        body_params: >-
+            {
+
+            }
+        code_check: "204"
 
     -   name: "Positive_删除catalog_MySQL数据源_请求成功"
         url: "删除catalog"

@@ -4,10 +4,10 @@ switch: y
 tags:
     - vega-backend
     - discover
-    - schema
+    - full
 
 include:
-    - discover_schema_query.case
+    - discover_query.case
 
 cases:
     -   name: "Positive_创建catalog_逻辑资源_请求成功"
@@ -26,7 +26,7 @@ cases:
         url: "创建catalog"
         body_params: >-
             {
-                "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+                "name": "{{ '新增catalog_Physical-%s' | format(random_string(6, 8)) }}",
                 "connector_type": "mysql",
                 "connector_config": {
                     "host": "${mysql_host}",
@@ -43,7 +43,7 @@ cases:
         code_check: "201"
 
     -   name: "Negative_即时检索_逻辑资源_请求失败"
-        url: "catalog资源发现"
+        url: "catalog资源检索"
         path_params: >-
             {
                 "id": "${catalog_id_logical}"
@@ -51,7 +51,7 @@ cases:
         code_check: "400"
 
     -   name: "Positive_即时检索_数据源_请求成功"
-        url: "catalog资源发现"
+        url: "catalog资源检索"
         path_params: >-
             {
                 "id": "${catalog_id}"
@@ -64,30 +64,15 @@ cases:
         next_wait: 1
 
     -   name: "Negative_即时检索_参数校验_id不存在"
-        url: "catalog资源发现"
+        url: "catalog资源检索"
         path_params: >-
             {
-                "id": "00000000000000000000"
+                "id": "${discover_id}"
             }
         code_check: "404"
 
-    -   name: "Positive_查询检索任务列表_全量参数_请求成功"
-        url: "获取发现任务列表"
-        query_params: >-
-            {
-                "catalog_id": "${catalog_id}",
-                "schedule_id": "",
-                "status": "completed",
-                "trigger_type": "manual",
-                "offset": "0",
-                "limit": "20",
-                "sort": "create_time",
-                "direction": "desc"
-            }
-        code_check: "200"
-
     -   name: "Positive_查询检索任务列表_按catalog过滤_请求成功"
-        url: "获取发现任务列表"
+        url: "查询检索任务列表"
         query_params: >-
             {
                 "catalog_id": "${catalog_id}"
@@ -99,10 +84,10 @@ cases:
             }
 
     -   name: "Positive_查询检索任务列表_参数校验_catalog不存在_请求成功"
-        url: "获取发现任务列表"
+        url: "查询检索任务列表"
         query_params: >-
             {
-                "catalog_id": "00000000000000000000"
+                "catalog_id": "${discover_id}"
             }
         code_check: "200"
         resp_check: >-
@@ -111,7 +96,7 @@ cases:
             }
 
     -   name: "Positive_查看检索任务详情_请求成功"
-        url: "获取发现任务详情"
+        url: "查看检索任务详情"
         path_params: >-
             {
                 "id": "${discover_id}"
@@ -123,15 +108,24 @@ cases:
             }
 
     -   name: "Negative_查看检索任务详情_参数校验_id不存在"
-        url: "获取发现任务详情"
+        url: "查看检索任务详情"
         path_params: >-
             {
-                "id": "00000000000000000000"
+                "id": "${catalog_id}"
             }
         code_check: "404"
 
+    -   name: "Positive_删除检索任务_id重复_请求成功"
+        url: "删除检索任务"
+        path_params: >-
+            {
+                "ids": "${discover_id},${discover_id}"
+            }
+        code_check: "204"
+
     -   name: "Positive_删除检索任务_请求成功"
-        url: "删除发现任务"
+        url: "删除检索任务"
+        prev_case: "Positive_即时检索_数据源_请求成功"
         path_params: >-
             {
                 "ids": "${discover_id}"
@@ -139,15 +133,15 @@ cases:
         code_check: "204"
 
     -   name: "Negative_删除检索任务_参数校验_id不存在_请求失败"
-        url: "删除发现任务"
+        url: "删除检索任务"
         path_params: >-
             {
-                "ids": "00000000000000000000"
+                "ids": "${catalog_id}"
             }
         code_check: "404"
 
     -   name: "Negative_删除检索任务_参数校验_id已删除_请求失败"
-        url: "删除发现任务"
+        url: "删除检索任务"
         path_params: >-
             {
                 "ids": "${discover_id}"
@@ -155,10 +149,10 @@ cases:
         code_check: "404"
 
     -   name: "Positive_删除检索任务_参数校验_放宽id检查_请求成功"
-        url: "删除发现任务"
+        url: "删除检索任务"
         path_params: >-
             {
-                "ids": "${discover_id},00000000000000000000"
+                "ids": "${discover_id}"
             }
         query_params:  >-
             {
@@ -167,7 +161,7 @@ cases:
         code_check: "204"
 
     -   name: "Negative_查看检索任务详情_参数校验_id已删除_请求失败"
-        url: "获取发现任务详情"
+        url: "查看检索任务详情"
         path_params: >-
             {
                 "id": "${discover_id}"
@@ -183,7 +177,7 @@ cases:
         code_check: "204"
 
     -   name: "Negative_即时检索_参数校验_id已删除_请求失败"
-        url: "catalog资源发现"
+        url: "catalog资源检索"
         path_params: >-
             {
                 "id": "${catalog_id}"
@@ -191,7 +185,7 @@ cases:
         code_check: "404"
 
     -   name: "Positive_查询检索任务列表_参数校验_catalog已删除_请求成功"
-        url: "获取发现任务列表"
+        url: "查询检索任务列表"
         query_params: >-
             {
                 "catalog_id": "${catalog_id}"

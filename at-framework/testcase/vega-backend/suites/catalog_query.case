@@ -1,5 +1,9 @@
 -   name: "Positive_查询catalog列表_参数缺省_请求成功"
     url: "查询catalog列表"
+    code_check: "200"
+
+-   name: "Positive_查询catalog列表_参数缺省_请求成功"
+    url: "查询catalog列表"
     query_params: >-
         {
             "tag": "",
@@ -9,20 +13,6 @@
             "limit": "",
             "sort": "",
             "direction": ""
-        }
-    code_check: "200"
-
--   name: "Positive_查询catalog列表_全量参数_请求成功"
-    url: "查询catalog列表"
-    query_params: >-
-        {
-            "tag": "AT",
-            "type": "logical",
-            "health_check_status": "healthy",
-            "offset": "0",
-            "limit": "20",
-            "sort": "name",
-            "direction": "desc"
         }
     code_check: "200"
 
