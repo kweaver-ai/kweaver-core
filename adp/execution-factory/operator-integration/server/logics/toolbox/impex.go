@@ -238,7 +238,7 @@ func (s *ToolServiceImpl) importByCreate(ctx context.Context, tx *sql.Tx, item *
 		ServerURL:    item.BoxSvcURL,
 		Category:     item.CategoryType,
 		Status:       item.Status.String(),
-		IsInternal:   false,
+		IsInternal:   item.IsInternal,
 		CreateTime:   time.Now().UnixNano(),
 		CreateUser:   userID,
 		UpdateUser:   userID,

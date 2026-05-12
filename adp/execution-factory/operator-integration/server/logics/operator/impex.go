@@ -356,7 +356,6 @@ func (m *operatorManager) importCheck(ctx context.Context, item *interfaces.Oper
 	if err != nil {
 		return
 	}
-	item.IsInternal = false
 	if item.OperatorInfo == nil {
 		item.OperatorInfo = &interfaces.OperatorInfo{}
 		err = defaults.Set(item.OperatorInfo)
@@ -465,7 +464,7 @@ func (m *operatorManager) importCheck(ctx context.Context, item *interfaces.Oper
 		UpdateUser:      userID,
 		UpdateTime:      time.Now().UnixNano(),
 		IsDataSource:    isDataSource,
-		IsInternal:      false,
+		IsInternal:      item.IsInternal,
 	}
 	metadataDB.SetCreateInfo(userID)
 	metadataDB.SetUpdateInfo(userID)
