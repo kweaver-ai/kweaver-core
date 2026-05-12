@@ -44,12 +44,14 @@ var (
 type relationTypeService struct {
 	appSetting *common.AppSetting
 	db         *sql.DB
+	ata        interfaces.ActionTypeAccess
 	cga        interfaces.ConceptGroupAccess
 	dva        interfaces.DataViewAccess
 	mfa        interfaces.ModelFactoryAccess
 	ots        interfaces.ObjectTypeService
 	ps         interfaces.PermissionService
 	rta        interfaces.RelationTypeAccess
+	riskTypeA  interfaces.RiskTypeAccess
 	ums        interfaces.UserMgmtService
 	vba        interfaces.VegaBackendAccess
 }
@@ -59,12 +61,14 @@ func NewRelationTypeService(appSetting *common.AppSetting) interfaces.RelationTy
 		rtService = &relationTypeService{
 			appSetting: appSetting,
 			db:         logics.DB,
+			ata:        logics.ATA,
 			cga:        logics.CGA,
 			dva:        logics.DVA,
 			mfa:        logics.MFA,
 			ots:        object_type.NewObjectTypeService(appSetting),
 			ps:         permission.NewPermissionService(appSetting),
 			rta:        logics.RTA,
+			riskTypeA:  logics.RiskTypeAccess,
 			ums:        user_mgmt.NewUserMgmtService(appSetting),
 			vba:        logics.VBA,
 		}
@@ -636,7 +640,13 @@ func normalizeScopeBindingRelationType(relationType *interfaces.RelationType) {
 	if relationType == nil || relationType.Type != interfaces.RELATION_TYPE_SCOPE_BINDING {
 		return
 	}
-	relationType.SourceObjectTypeID = ""
+	rules, ok := relationType.MappingRules.(*interfaces.ScopeBindingMapping)
+	if !ok || rules == nil {
+		return
+	}
+	if rules.Source != nil {
+		relationType.SourceObjectTypeID = rules.Source.ObjectTypeID
+	}
 	relationType.TargetObjectTypeID = ""
 }
 
@@ -1343,7 +1353,7 @@ func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.
 			if err := rts.validateScopeBindingSource(ctx, relationType, rules, resolveOT); err != nil {
 				return err
 			}
-			if err := rts.validateScopeBindingTargetRules(ctx, relationType, rules, resolveOT); err != nil {
+			if err := rts.validateScopeBindingTargetRules(ctx, relationType, rules, resolveOT, batch); err != nil {
 				return err
 			}
 		}
@@ -1404,36 +1414,106 @@ func (rts *relationTypeService) validateScopeBindingSource(ctx context.Context,
 
 func (rts *relationTypeService) validateScopeBindingTargetRules(ctx context.Context,
 	relationType *interfaces.RelationType, rules *interfaces.ScopeBindingMapping,
-	resolveOT func(string) (*interfaces.ObjectType, error)) error {
+	resolveOT func(string) (*interfaces.ObjectType, error), batch *interfaces.BatchIDIndex) error {
 
 	if rules == nil {
 		return nil
 	}
 	for i, targetRule := range rules.TargetRules {
-		if targetRule == nil || targetRule.Condition == nil {
-			continue
-		}
-		if targetRule.Scope != interfaces.SCOPE_BINDING_SCOPE_OBJECT_TYPE {
+		if targetRule == nil {
 			continue
 		}
 
-		targetObjectType, err := resolveOT(targetRule.ID)
-		if err != nil {
-			return err
-		}
-		if targetObjectType == nil {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 target_rules[%d].id[%s]不存在或缺少 schema 信息",
-					relationType.RTID, i, targetRule.ID))
-		}
-		if err := validateConditionFieldsExist(targetRule.Condition, objectTypeToCondFieldsMap(targetObjectType)); err != nil {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 target_rules[%d].condition 无效: %s",
-					relationType.RTID, i, err.Error()))
+		switch targetRule.Scope {
+		case interfaces.SCOPE_BINDING_SCOPE_KN:
+			continue
+		case interfaces.SCOPE_BINDING_SCOPE_OBJECT_TYPE:
+			targetObjectType, err := resolveOT(targetRule.ID)
+			if err != nil {
+				return err
+			}
+			if targetObjectType == nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 target_rules[%d].id[%s]对象类不存在或缺少 schema 信息",
+						relationType.RTID, i, targetRule.ID))
+			}
+			if targetRule.Condition != nil {
+				if err := validateConditionFieldsExist(targetRule.Condition, objectTypeToCondFieldsMap(targetObjectType)); err != nil {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+						WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 target_rules[%d].condition 无效: %s",
+							relationType.RTID, i, err.Error()))
+				}
+			}
+		case interfaces.SCOPE_BINDING_SCOPE_RELATION_TYPE:
+			if _, ok := batchRelationTypeIDs(batch)[targetRule.ID]; ok {
+				continue
+			}
+			_, exist, err := rts.rta.CheckRelationTypeExistByID(ctx, relationType.KNID, relationType.Branch, targetRule.ID)
+			if err != nil {
+				return err
+			}
+			if !exist {
+				return scopeBindingTargetNotFoundError(ctx, relationType, i, targetRule, "关系类")
+			}
+		case interfaces.SCOPE_BINDING_SCOPE_ACTION_TYPE:
+			if _, ok := batchActionTypeIDs(batch)[targetRule.ID]; ok {
+				continue
+			}
+			_, exist, err := rts.ata.CheckActionTypeExistByID(ctx, relationType.KNID, relationType.Branch, targetRule.ID)
+			if err != nil {
+				return err
+			}
+			if !exist {
+				return scopeBindingTargetNotFoundError(ctx, relationType, i, targetRule, "动作类")
+			}
+		case interfaces.SCOPE_BINDING_SCOPE_RISK_TYPE:
+			if batchindex.HasRiskTypeID(targetRule.ID, batch) {
+				continue
+			}
+			_, exist, err := rts.riskTypeA.CheckRiskTypeExistByID(ctx, relationType.KNID, relationType.Branch, targetRule.ID)
+			if err != nil {
+				return err
+			}
+			if !exist {
+				return scopeBindingTargetNotFoundError(ctx, relationType, i, targetRule, "风险类")
+			}
+		case interfaces.SCOPE_BINDING_SCOPE_CONCEPT_GROUP:
+			if batchindex.HasConceptGroupID(targetRule.ID, batch) {
+				continue
+			}
+			_, exist, err := rts.cga.CheckConceptGroupExistByID(ctx, relationType.KNID, relationType.Branch, targetRule.ID)
+			if err != nil {
+				return err
+			}
+			if !exist {
+				return scopeBindingTargetNotFoundError(ctx, relationType, i, targetRule, "概念分组")
+			}
 		}
 	}
 
 	return nil
+}
+
+func batchRelationTypeIDs(batch *interfaces.BatchIDIndex) map[string]struct{} {
+	if batch == nil {
+		return nil
+	}
+	return batch.RelationTypeIDs
+}
+
+func batchActionTypeIDs(batch *interfaces.BatchIDIndex) map[string]struct{} {
+	if batch == nil {
+		return nil
+	}
+	return batch.ActionTypeIDs
+}
+
+func scopeBindingTargetNotFoundError(ctx context.Context, relationType *interfaces.RelationType,
+	index int, targetRule *interfaces.TargetRule, label string) error {
+
+	return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+		WithErrorDetails(fmt.Sprintf("scope_binding 关系类[%s]的 target_rules[%d].scope[%s].id[%s]%s不存在",
+			relationType.RTID, index, targetRule.Scope, targetRule.ID, label))
 }
 
 func validateConditionFieldsExist(cfg *cond.CondCfg, fieldsMap map[string]*cond.FieldCfg) error {

@@ -219,6 +219,7 @@ type BatchIDIndex struct {
 	ObjectTypes     map[string]*ObjectType
 	RelationTypeIDs map[string]struct{}
 	ActionTypeIDs   map[string]struct{}
+	RiskTypeIDs     map[string]struct{}
 	ConceptGroupIDs map[string]struct{}
 	// Metrics maps metric id -> declaration from the KN payload for duplicate/conflict checks and strict cross-validation against batch.ObjectTypes (same batch OT semantics as relation/action validators).
 	Metrics map[string]*MetricDefinition

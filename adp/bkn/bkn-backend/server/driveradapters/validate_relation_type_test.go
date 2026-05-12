@@ -580,27 +580,27 @@ func Test_ValidateRelationType(t *testing.T) {
 			So(ok, ShouldBeTrue)
 		})
 
-		Convey("Success with scope_binding clearing top-level source and target object type id\n", func() {
+		Convey("Success with scope_binding normalizing top-level source object type id and clearing target object type id\n", func() {
 			rt := &interfaces.RelationType{
 				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
 					RTID:               "rt-sb-top-level",
 					RTName:             "scope_binding_top_level",
-					SourceObjectTypeID: "skill",
-					TargetObjectTypeID: "contract",
+					SourceObjectTypeID: "input_source",
+					TargetObjectTypeID: "input_target",
 					Type:               interfaces.RELATION_TYPE_SCOPE_BINDING,
 					MappingRules: map[string]any{
 						"source": map[string]any{
 							"object_type_id": "skill",
 						},
 						"target_rules": []map[string]any{
-							{"scope": "kn"},
+							{"scope": "object_type", "id": "contract"},
 						},
 					},
 				},
 			}
 			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldBeNil)
-			So(rt.SourceObjectTypeID, ShouldEqual, "")
+			So(rt.SourceObjectTypeID, ShouldEqual, "skill")
 			So(rt.TargetObjectTypeID, ShouldEqual, "")
 		})
 

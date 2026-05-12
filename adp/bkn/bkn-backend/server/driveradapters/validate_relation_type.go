@@ -96,10 +96,7 @@ func ValidateRelationType(ctx context.Context, relationType *interfaces.Relation
 		}
 	}
 
-	if relationType.Type == interfaces.RELATION_TYPE_SCOPE_BINDING {
-		relationType.SourceObjectTypeID = ""
-		relationType.TargetObjectTypeID = ""
-	} else {
+	if relationType.Type != interfaces.RELATION_TYPE_SCOPE_BINDING {
 		if relationType.SourceObjectTypeID == "" {
 			if strictMode {
 				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
@@ -134,8 +131,23 @@ func ValidateRelationType(ctx context.Context, relationType *interfaces.Relation
 		return err
 	}
 	relationType.MappingRules = rules
+	normalizeScopeBindingRelationTypeFields(relationType)
 
 	return nil
+}
+
+func normalizeScopeBindingRelationTypeFields(relationType *interfaces.RelationType) {
+	if relationType == nil || relationType.Type != interfaces.RELATION_TYPE_SCOPE_BINDING {
+		return
+	}
+	rules, ok := relationType.MappingRules.(*interfaces.ScopeBindingMapping)
+	if !ok || rules == nil {
+		return
+	}
+	if rules.Source != nil {
+		relationType.SourceObjectTypeID = rules.Source.ObjectTypeID
+	}
+	relationType.TargetObjectTypeID = ""
 }
 
 // 校验mapping_rules的有效性

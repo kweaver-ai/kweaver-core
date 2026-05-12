@@ -24,6 +24,7 @@ func NewBatchIDIndex(knID, branch string) *interfaces.BatchIDIndex {
 		ObjectTypes:     make(map[string]*interfaces.ObjectType),
 		RelationTypeIDs: make(map[string]struct{}),
 		ActionTypeIDs:   make(map[string]struct{}),
+		RiskTypeIDs:     make(map[string]struct{}),
 		ConceptGroupIDs: make(map[string]struct{}),
 		Metrics:         make(map[string]*interfaces.MetricDefinition),
 	}
@@ -65,6 +66,9 @@ func MergeBatchIndex(dst, src *interfaces.BatchIDIndex) error {
 	for id := range src.ActionTypeIDs {
 		dst.ActionTypeIDs[id] = struct{}{}
 	}
+	for id := range src.RiskTypeIDs {
+		dst.RiskTypeIDs[id] = struct{}{}
+	}
 	for id := range src.ConceptGroupIDs {
 		dst.ConceptGroupIDs[id] = struct{}{}
 	}
@@ -96,6 +100,9 @@ func CollectKNFromPayload(kn *interfaces.KN) (*interfaces.BatchIDIndex, error) {
 	}
 	for _, at := range kn.ActionTypes {
 		ingestActionType(idx, at)
+	}
+	for _, rt := range kn.RiskTypes {
+		ingestRiskType(idx, rt)
 	}
 	for _, cg := range kn.ConceptGroups {
 		if err := ingestConceptGroup(idx, cg); err != nil {
@@ -204,6 +211,13 @@ func metricBatchPayloadEqual(a, b *interfaces.MetricDefinition) bool {
 	return e1 == nil && e2 == nil && string(aj) == string(bj)
 }
 
+func ingestRiskType(b *interfaces.BatchIDIndex, rt *interfaces.RiskType) {
+	if rt == nil || rt.RTID == "" {
+		return
+	}
+	b.RiskTypeIDs[rt.RTID] = struct{}{}
+}
+
 func addObjectType(b *interfaces.BatchIDIndex, id string, ot *interfaces.ObjectType) error {
 	if id == "" || ot == nil {
 		return nil
@@ -242,5 +256,14 @@ func HasConceptGroupID(id string, b *interfaces.BatchIDIndex) bool {
 		return false
 	}
 	_, ok := b.ConceptGroupIDs[id]
+	return ok
+}
+
+// HasRiskTypeID reports whether the batch declares the risk type ID.
+func HasRiskTypeID(id string, b *interfaces.BatchIDIndex) bool {
+	if b == nil || id == "" {
+		return false
+	}
+	_, ok := b.RiskTypeIDs[id]
 	return ok
 }
