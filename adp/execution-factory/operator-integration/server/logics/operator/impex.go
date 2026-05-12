@@ -204,12 +204,12 @@ func (m *operatorManager) batchImportOperatorMetadata(ctx context.Context, tx *s
 			if err != nil {
 				return
 			}
-		}
-		// 内置算子不允许更新
-		if operatorDB.IsInternal {
-			err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonInternalComponentNotAllowed,
-				fmt.Sprintf("internal operator %v not allowed to update", operatorDB.OperatorID), operatorDB.Name)
-			return
+			// 内置算子不允许更新
+			if operatorDB.IsInternal {
+				err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonInternalComponentNotAllowed,
+					fmt.Sprintf("internal operator %v not allowed to update", operatorDB.OperatorID), operatorDB.Name)
+				return
+			}
 		}
 		updateMap[operatorDB.OperatorID] = operatorDB
 	}

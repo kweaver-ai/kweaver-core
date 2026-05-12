@@ -195,12 +195,12 @@ func (s *ToolServiceImpl) batchImportToolBoxMetadata(ctx context.Context, tx *sq
 			if err != nil {
 				return
 			}
-		}
-		// 内置工具箱不能编辑
-		if boxDB.IsInternal {
-			err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonInternalComponentNotAllowed,
-				fmt.Sprintf("internal toolbox %v not allowed to update", boxDB.BoxID), boxDB.Name)
-			return
+			// 内置工具箱不能编辑
+			if boxDB.IsInternal {
+				err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonInternalComponentNotAllowed,
+					fmt.Sprintf("internal toolbox %v not allowed to update", boxDB.BoxID), boxDB.Name)
+				return
+			}
 		}
 		updateBoxMap[boxDB.BoxID] = boxDB
 	}
