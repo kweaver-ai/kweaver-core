@@ -34,13 +34,16 @@ func (s *ToolServiceImpl) Import(ctx context.Context, tx *sql.Tx, mode interface
 	if err != nil {
 		return
 	}
-	accessor, err := s.AuthService.GetAccessor(ctx, userID)
-	if err != nil {
-		s.Logger.WithContext(ctx).Warnf("[Import] GetAccessor err:%v", err)
-		return
+	var accessor *interfaces.AuthAccessor
+	if icommon.IsPublicAPIFromCtx(ctx) {
+		accessor, err = s.AuthService.GetAccessor(ctx, userID)
+		if err != nil {
+			s.Logger.WithContext(ctx).Warnf("[Import] GetAccessor err:%v", err)
+			return
+		}
 	}
 	// 导入工具箱、工具信息
-	createMap, updateMap, err := s.batchImportToolBoxMetadata(ctx, tx, data.Toolbox.Configs, waitUpdataBoxList, accessor)
+	createMap, updateMap, err := s.batchImportToolBoxMetadata(ctx, tx, data.Toolbox.Configs, waitUpdataBoxList, accessor, userID)
 	if err != nil {
 		s.Logger.WithContext(ctx).Warnf("[Import] batchImportToolBoxMetadata err:%v", err)
 		return
@@ -72,33 +75,37 @@ func (s *ToolServiceImpl) importPostProcess(ctx context.Context, createBoxMap, u
 			return
 		}
 
-		// 触发新建策略，创建人默认拥有对当前资源的所有操作权限
-		err := s.AuthService.CreateOwnerPolicy(ctx, accessor, &interfaces.AuthResource{
-			ID:   boxDB.BoxID,
-			Type: string(interfaces.AuthResourceTypeToolBox),
-			Name: boxDB.Name,
-		})
-		if err != nil {
-			s.Logger.WithContext(ctx).Errorf("[importPostProcess] CreateOwnerPolicy err:%v", err)
-		}
-		// 记录设计日志及后续通知
-		go func() {
-			accountAuthContext, ok := common.GetAccountAuthContextFromCtx(ctx)
-			if !ok {
-				s.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
-				return
-			}
-			s.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
-				TokenInfo: accountAuthContext.TokenInfo,
-				Accessor:  accessor,
-				Operation: metric.AuditLogOperationCreate,
-				Object: &metric.AuditLogObject{
-					Type: metric.AuditLogObjectTool,
-					ID:   boxDB.BoxID,
-					Name: boxDB.Name,
-				},
+		// 触发新建策略，创建人默认拥有对当前资源的所有操作权限（内部调用不创建）
+		if accessor != nil {
+			err := s.AuthService.CreateOwnerPolicy(ctx, accessor, &interfaces.AuthResource{
+				ID:   boxDB.BoxID,
+				Type: string(interfaces.AuthResourceTypeToolBox),
+				Name: boxDB.Name,
 			})
-		}()
+			if err != nil {
+				s.Logger.WithContext(ctx).Errorf("[importPostProcess] CreateOwnerPolicy err:%v", err)
+			}
+		}
+		// 记录设计日志及后续通知（内部调用不记录）
+		if accessor != nil {
+			go func() {
+				accountAuthContext, ok := common.GetAccountAuthContextFromCtx(ctx)
+				if !ok {
+					s.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
+					return
+				}
+				s.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
+					TokenInfo: accountAuthContext.TokenInfo,
+					Accessor:  accessor,
+					Operation: metric.AuditLogOperationCreate,
+					Object: &metric.AuditLogObject{
+						Type: metric.AuditLogObjectTool,
+						ID:   boxDB.BoxID,
+						Name: boxDB.Name,
+					},
+				})
+			}()
+		}
 	}
 	// 更新工具箱
 	for _, boxDB := range updateBoxMap {
@@ -112,24 +119,26 @@ func (s *ToolServiceImpl) importPostProcess(ctx context.Context, createBoxMap, u
 		if err != nil {
 			s.Logger.WithContext(ctx).Errorf("[importPostProcess] NotifyResourceChange err:%v", err)
 		}
-		// 记录设计日志及后续通知
-		go func() {
-			accountAuthContext, ok := common.GetAccountAuthContextFromCtx(ctx)
-			if !ok {
-				s.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
-				return
-			}
-			s.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
-				TokenInfo: accountAuthContext.TokenInfo,
-				Accessor:  accessor,
-				Operation: metric.AuditLogOperationEdit,
-				Object: &metric.AuditLogObject{
-					Type: metric.AuditLogObjectTool,
-					ID:   boxDB.BoxID,
-					Name: boxDB.Name,
-				},
-			})
-		}()
+		// 记录设计日志及后续通知（内部调用不记录）
+		if accessor != nil {
+			go func() {
+				accountAuthContext, ok := common.GetAccountAuthContextFromCtx(ctx)
+				if !ok {
+					s.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
+					return
+				}
+				s.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
+					TokenInfo: accountAuthContext.TokenInfo,
+					Accessor:  accessor,
+					Operation: metric.AuditLogOperationEdit,
+					Object: &metric.AuditLogObject{
+						Type: metric.AuditLogObjectTool,
+						ID:   boxDB.BoxID,
+						Name: boxDB.Name,
+					},
+				})
+			}()
+		}
 	}
 	return nil
 }
@@ -168,17 +177,24 @@ func (s *ToolServiceImpl) importPreCheck(ctx context.Context, mode interfaces.Im
 
 // 批量导入工具箱及工具元数据
 func (s *ToolServiceImpl) batchImportToolBoxMetadata(ctx context.Context, tx *sql.Tx, items []*interfaces.ToolBoxImpexItem, waitUpdataBoxList []*model.ToolboxDB,
-	accessor *interfaces.AuthAccessor) (createBoxMap, updateBoxMap map[string]*model.ToolboxDB, err error) {
+	accessor *interfaces.AuthAccessor, userID string) (createBoxMap, updateBoxMap map[string]*model.ToolboxDB, err error) {
 	// 收集需要新增的ToolBox
 	createBoxMap = map[string]*model.ToolboxDB{}
 	// 收集需要更新的工具ToolBox
 	updateBoxMap = map[string]*model.ToolboxDB{}
+	// 获取用户ID（内部调用使用传入 userID）
+	uid := userID
+	if accessor != nil {
+		uid = accessor.ID
+	}
 	// 检查是否有更新权限，并收集需要更新的工具箱
 	for _, boxDB := range waitUpdataBoxList {
-		// 检查工具箱编辑权限
-		err = s.AuthService.CheckModifyPermission(ctx, accessor, boxDB.BoxID, interfaces.AuthResourceTypeToolBox)
-		if err != nil {
-			return
+		// 检查工具箱编辑权限（内部调用不鉴权）
+		if icommon.IsPublicAPIFromCtx(ctx) {
+			err = s.AuthService.CheckModifyPermission(ctx, accessor, boxDB.BoxID, interfaces.AuthResourceTypeToolBox)
+			if err != nil {
+				return
+			}
 		}
 		// 内置工具箱不能编辑
 		if boxDB.IsInternal {
@@ -191,12 +207,12 @@ func (s *ToolServiceImpl) batchImportToolBoxMetadata(ctx context.Context, tx *sq
 	// 遍历导入项，根据是否存在工具箱ID判断是新增还是更新
 	for _, item := range items {
 		if boxDB, ok := updateBoxMap[item.BoxID]; ok {
-			err = s.importByUpsert(ctx, tx, boxDB, item, accessor.ID)
+			err = s.importByUpsert(ctx, tx, boxDB, item, uid)
 			if err != nil {
 				return
 			}
 		} else {
-			boxDB, err = s.importByCreate(ctx, tx, item, accessor.ID)
+			boxDB, err = s.importByCreate(ctx, tx, item, uid)
 			if err != nil {
 				return
 			}
