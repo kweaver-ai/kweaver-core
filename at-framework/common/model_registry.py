@@ -26,6 +26,7 @@ from common import at_env
 _SESSION_MODEL_TYPES: set = set()
 _OSS_PORT_FORWARD_READY = False
 _SESSION_LLM_MODEL_ID: Optional[str] = None
+_SESSION_OSS_STORAGE_ID: Optional[str] = None
 _SESSION_BEARER_TOKEN: Optional[str] = None
 
 
@@ -469,18 +470,25 @@ def register_rerank_model(config: Dict[str, Dict[str, str]]) -> Optional[str]:
     return model_id
 
 
-def register_oss_storage(config: Dict[str, Dict[str, str]]) -> None:
+def ensure_oss_storage_and_get_id(config: Dict[str, Dict[str, str]]) -> Optional[str]:
     """
-    读取 [oss_info]，按 storage_name 注册 OSS 存储（存在则跳过）。
+    根据 [oss_info] 获取/创建对象存储，并返回存储 id。
     """
-    if "oss" in _SESSION_MODEL_TYPES:
-        return
+    global _SESSION_OSS_STORAGE_ID
+
     oss = config.get("oss_info") or {}
     if not oss:
         print("[oss_setup] Missing [oss_info], skip add storage")
-        return
+        return None
 
     storage_name = (oss.get("storage_name") or "").strip()
+    if _SESSION_OSS_STORAGE_ID:
+        existing_id = _find_storage_id_by_name(config, storage_name)
+        if existing_id:
+            return _SESSION_OSS_STORAGE_ID
+        print("[oss_setup] Storage was deleted, will re-register")
+        _SESSION_OSS_STORAGE_ID = None
+
     vendor_type = (oss.get("vendor_type") or "").strip()
     endpoint = (oss.get("endpoint") or "").strip()
     bucket_name = (oss.get("bucket_name") or "").strip()
@@ -492,12 +500,19 @@ def register_oss_storage(config: Dict[str, Dict[str, str]]) -> None:
 
     if not all([storage_name, vendor_type, endpoint, bucket_name, access_key_id, access_key_secret]):
         print("[oss_setup] Incomplete [oss_info], skip add storage")
-        return
+        return None
 
-    add_url, list_url = storage_urls(config)
-    if not add_url or not list_url:
+    existing_id = _find_storage_id_by_name(config, storage_name)
+    if existing_id:
+        _SESSION_OSS_STORAGE_ID = existing_id
+        _SESSION_MODEL_TYPES.add("oss")
+        print("[oss_setup] Storage already exists: %s (id=%s)" % (storage_name, existing_id))
+        return _SESSION_OSS_STORAGE_ID
+
+    add_url, _ = storage_urls(config)
+    if not add_url:
         print("[oss_setup] Cannot resolve storage API URL, skip")
-        return
+        return None
 
     payload = {
         "storage_name": storage_name,
@@ -519,31 +534,6 @@ def register_oss_storage(config: Dict[str, Dict[str, str]]) -> None:
         headers["Authorization"] = auth_header
 
     try:
-        list_resp = requests.get(list_url, headers=headers, timeout=timeout, verify=verify_ssl)
-        if 200 <= list_resp.status_code < 300:
-            try:
-                body = list_resp.json()
-            except Exception:
-                body = {}
-            candidates = []
-            if isinstance(body, list):
-                candidates = body
-            elif isinstance(body, dict):
-                for key in ("data", "items", "list", "storages", "entries"):
-                    val = body.get(key)
-                    if isinstance(val, list):
-                        candidates = val
-                        break
-            if any(isinstance(x, dict) and x.get("storage_name") == storage_name for x in candidates):
-                print("[oss_setup] Storage already exists, skip add: %s" % storage_name)
-                _SESSION_MODEL_TYPES.add("oss")
-                return
-        else:
-            print(
-                "[oss_setup] Query storage list failed: status=%s body=%s"
-                % (list_resp.status_code, list_resp.text[:1000])
-            )
-
         resp = requests.post(
             add_url,
             headers=headers,
@@ -552,15 +542,31 @@ def register_oss_storage(config: Dict[str, Dict[str, str]]) -> None:
             verify=verify_ssl,
         )
         if 200 <= resp.status_code < 300:
-            print("[oss_setup] Add storage success: %s" % storage_name)
             _SESSION_MODEL_TYPES.add("oss")
-            return
+            try:
+                body = resp.json()
+            except Exception:
+                body = {}
+            created_id = _extract_id_from_body(body)
+            if created_id:
+                _SESSION_OSS_STORAGE_ID = created_id
+                print("[oss_setup] Add storage success: %s" % created_id)
+                return _SESSION_OSS_STORAGE_ID
+
+            fallback_id = _find_storage_id_by_name(config, storage_name)
+            if fallback_id:
+                _SESSION_OSS_STORAGE_ID = fallback_id
+                print("[oss_setup] Add storage success: %s" % fallback_id)
+                return _SESSION_OSS_STORAGE_ID
+            print("[oss_setup] Add storage success but id not found in response/list")
+            return None
         print(
             "[oss_setup] Add storage failed: status=%s body=%s"
             % (resp.status_code, resp.text[:1000])
         )
     except Exception as e:
         print("[oss_setup] Request error: %s" % e)
+    return None
 
 
 def _extract_items(body: Any) -> list:
@@ -581,21 +587,58 @@ def _extract_items(body: Any) -> list:
 
 def _extract_id_from_body(body: Any) -> Optional[str]:
     if isinstance(body, dict):
-        if body.get("id") is not None:
-            return str(body.get("id"))
+        for key in ("id", "storage_id", "model_id", "llm_id"):
+            if body.get(key) is not None:
+                return str(body.get(key))
         for key in ("data", "item", "result"):
             sub = body.get(key)
-            if isinstance(sub, dict) and sub.get("id") is not None:
-                return str(sub.get("id"))
+            if isinstance(sub, dict):
+                for sub_key in ("id", "storage_id", "model_id", "llm_id"):
+                    if sub.get(sub_key) is not None:
+                        return str(sub.get(sub_key))
     return None
 
 
 def _extract_id_from_item(item: Any) -> Optional[str]:
     if not isinstance(item, dict):
         return None
-    for key in ("id", "model_id", "llm_id"):
+    for key in ("id", "storage_id", "model_id", "llm_id"):
         if item.get(key) is not None:
             return str(item.get(key))
+    return None
+
+
+def _find_storage_id_by_name(
+    config: Dict[str, Dict[str, str]],
+    storage_name: str,
+) -> Optional[str]:
+    _, list_url = storage_urls(config)
+    if not list_url or not storage_name:
+        return None
+
+    oss = config.get("oss_info") or {}
+    timeout = _to_int((oss.get("timeout") or "20"), 20)
+    verify_ssl = _to_bool(oss.get("verify_ssl"), False)
+    auth_header = _get_bearer_token(config)
+    headers = {}
+    if auth_header:
+        headers["Authorization"] = auth_header
+
+    try:
+        resp = requests.get(list_url, headers=headers, timeout=timeout, verify=verify_ssl)
+        if not (200 <= resp.status_code < 300):
+            return None
+        try:
+            body = resp.json()
+        except Exception:
+            body = {}
+        for item in _extract_items(body):
+            if isinstance(item, dict) and item.get("storage_name") == storage_name:
+                storage_id = _extract_id_from_item(item)
+                if storage_id:
+                    return storage_id
+    except Exception:
+        pass
     return None
 
 

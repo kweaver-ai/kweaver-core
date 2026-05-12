@@ -1,0 +1,44 @@
+# 全局清单配置
+variables:
+- name: storage_id
+  description: 存储ID，将在测试过程中动态获取
+  ref: ${storage_id}
+- name: upload_id
+  description: 上传ID，将在测试过程中动态获取
+  ref: ${upload_id}
+- name: oss_storage_name
+  description: OSS 存储名称
+  ref: ${oss_storage_name}
+- name: oss_endpoint
+  description: OSS 访问地址
+  ref: ${oss_endpoint}
+- name: oss_bucket_name
+  description: OSS bucket 名称
+  ref: ${oss_bucket_name}
+- name: oss_access_key_id
+  description: OSS Access Key ID
+  ref: ${oss_access_key_id}
+- name: oss_access_key_secret
+  description: OSS Access Key Secret
+  ref: ${oss_access_key_secret}
+- name: oss_region
+  description: OSS 区域
+  ref: ${oss_region}
+- name: obs_storage_name
+  description: OBS 存储名称
+  ref: ${obs_storage_name}
+- name: obs_endpoint
+  description: OBS 访问地址
+  ref: ${obs_endpoint}
+- name: obs_bucket_name
+  description: OBS bucket 名称
+  ref: ${obs_bucket_name}
+- name: obs_access_key_id
+  description: OBS Access Key ID
+  ref: ${obs_access_key_id}
+- name: obs_access_key_secret
+  description: OBS Access Key Secret
+  ref: ${obs_access_key_secret}
+- name: obs_region
+  description: OBS 区域
+  ref: ${obs_region}

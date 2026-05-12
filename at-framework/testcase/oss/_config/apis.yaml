@@ -1,0 +1,78 @@
+# OSS 网关 API 接口定义
+
+# 存储管理 API
+- name: 获取存储列表
+  url: /api/v1/storages
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取单个存储配置
+  url: /api/v1/storages/${storage_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 创建存储配置
+  url: /api/v1/storages
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新存储配置
+  url: /api/v1/storages/${storage_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 删除存储配置
+  url: /api/v1/storages/${storage_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 检查存储连接
+  url: /api/v1/storages/${storage_id}/check
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+# 单文件上传 API
+- name: 获取单文件上传 URL
+  url: /api/v1/upload/${storage_id}/${key}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+# 分片上传 API
+- name: 初始化分片上传
+  url: /api/v1/initmultiupload/${storage_id}/${key}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取分片上传 URL
+  url: /api/v1/uploadpart/${storage_id}/${key}
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 完成分片上传
+  url: /api/v1/completeupload/${storage_id}/${key}
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+# 下载 API
+- name: 获取下载 URL
+  url: /api/v1/download/${storage_id}/${key}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+# 删除 API
+- name: 获取删除 URL
+  url: /api/v1/delete/${storage_id}/${key}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+# 文件上传（获取单文件上传url接口返回的临时上传地址）
+- name: 文件上传
+  url: ${upload_url}
+  method: ${upload_method}
+  headers: '{}'
+
+# 文件下载（获取文件下载url接口返回的临时下载地址）
+- name: 文件下载
+  url: ${download_url}
+  method: ${download_method}
+  headers: ${download_headers}

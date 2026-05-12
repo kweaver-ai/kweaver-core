@@ -1,0 +1,19 @@
+# =============================================================================
+# 配置模板：复制为 global.yaml 后按环境填写（不要将含密钥的 global.yaml 提交到仓库）
+# =============================================================================
+
+# 阿里云存储配置
+oss_storage_name: <OSS_STORAGE_NAME>
+oss_endpoint: <OSS_ENDPOINT>
+oss_bucket_name: <OSS_BUCKET_NAME>
+oss_access_key_id: <OSS_ACCESS_KEY_ID>
+oss_access_key_secret: <OSS_ACCESS_KEY_SECRET>
+oss_region: <OSS_REGION>
+
+# 华为云存储配置
+obs_storage_name: <OBS_STORAGE_NAME>
+obs_endpoint: <OBS_ENDPOINT>
+obs_bucket_name: <OBS_BUCKET_NAME>
+obs_access_key_id: <OBS_ACCESS_KEY_ID>
+obs_access_key_secret: <OBS_ACCESS_KEY_SECRET>
+obs_region: <OBS_REGION>

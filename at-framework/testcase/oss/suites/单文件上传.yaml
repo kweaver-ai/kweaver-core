@@ -1,0 +1,86 @@
+feature: 文件上传
+story: 单文件上传
+switch: y
+cases:
+- name: 获取单文件上传URL成功--PUT方式
+  url: 获取单文件上传 URL
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/singleUploadByPUT.pdf\"
+}"
+  query_params: "{
+  \"request_method\": \"PUT\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.method\": \"PUT\",\n  \"$.data.url\": \"exists\"\n}"
+  resp_values: "{\"upload_method\": \"$.data.method\", \"upload_url\": \"$.data.url\"}"
+  description: 测试获取PUT方式单文件上传URL功能
+
+- name: 获取单文件上传URL成功--POST方式
+  url: 获取单文件上传 URL
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/singleUploadByPOST.pdf\"
+}"
+  query_params: "{
+  \"request_method\": \"POST\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.method\": \"POST\",\n  \"$.data.url\": \"exists\"\n}"
+  resp_values: "{\"upload_method\": \"$.data.method\", \"upload_url\": \"$.data.url\", \"upload_bucket\": \"$.data.form_field.bucket\", \"upload_key\": \"$.data.form_field.key\", \"upload_policy\": \"$.data.form_field.policy\", \"upload_x_amz_algorithm\": \"$.data.form_field.x-amz-algorithm\", \"upload_x_amz_credential\": \"$.data.form_field.x-amz-credential\", \"upload_x_amz_date\": \"$.data.form_field.x-amz-date\", \"upload_x_amz_signature\": \"$.data.form_field.x-amz-signature\"}"
+  description: 测试获取POST方式单文件上传URL功能
+
+- name: 获取单文件上传URL成功--自定义过期时间
+  url: 获取单文件上传 URL
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test/singleUpload.pdf\"
+}"
+  query_params: "{
+  \"request_method\": \"PUT\",
+  \"expires\": 7200
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.method\": \"PUT\",\n  \"$.data.url\": \"exists\"\n}"
+  description: 测试获取带自定义过期时间的上传URL功能
+
+- name: 获取单文件上传URL失败--storage_id不存在
+  url: 获取单文件上传 URL
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"99999999999999999999\",
+  \"key\": \"test/singleUpload.pdf\"
+}"
+  code_check: '500'
+  resp_check: "{\n  \"$.description\": \"storage not found\"\n}"
+  description: 测试storage_id不存在的情况
+
+- name: 获取单文件上传URL失败--key为空
+  url: 获取单文件上传 URL
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"\"
+}"
+  code_check: '500'
+  resp_check: "{\n  \"$.description\": \"object_key cannot be empty\"\n}"
+  description: 测试key为空的情况
+
+- name: 单文件上传成功--PUT方式
+  url: 文件上传
+  prev_case: 获取单文件上传URL成功--PUT方式
+  file_params: '{"file": "testcase/oss/data/爱数AnyDATA_ONE洞察云_使用手册.pdf"}'
+  code_check: '200'
+  description: 测试通过PUT方式单文件上传
+
+- name: 单文件上传成功--POST方式
+  url: 文件上传
+  prev_case: 获取单文件上传URL成功--POST方式
+  file_params: '{"file": "testcase/oss/data/爱数AnyDATA_ONE洞察云_使用手册.pdf"}'
+  form_params: '{"bucket": "${upload_bucket}", "key": "${upload_key}", "policy": "${upload_policy}", "x-amz-algorithm": "${upload_x_amz_algorithm}", "x-amz-credential": "${upload_x_amz_credential}", "x-amz-date": "${upload_x_amz_date}", "x-amz-signature": "${upload_x_amz_signature}"}'
+  code_check: '204'
+  description: 测试通过POST方式单文件上传
+

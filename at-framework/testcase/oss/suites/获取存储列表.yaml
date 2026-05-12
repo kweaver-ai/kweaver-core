@@ -1,0 +1,74 @@
+feature: 存储管理
+story: 获取存储列表
+switch: y
+cases:
+- name: 获取所有存储列表成功
+  url: 获取存储列表
+  prepare_models: oss
+  code_check: '200'
+  resp_check: "{\n  \"$.count\": \"exists\",\n  \"$.data\": \"exists\"\n}"
+  description: 测试获取所有存储列表功能
+
+- name: 获取启用的存储列表
+  url: 获取存储列表
+  prepare_models: oss
+  query_params: "{
+  \"enabled\": true
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.count\": \"exists\",\n  \"$.data\": \"exists\"\n}"
+  description: 测试获取启用的存储列表功能
+
+- name: 获取默认存储列表
+  url: 获取存储列表
+  prepare_models: oss
+  query_params: "{
+  \"is_default\": true
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.count\": \">=1\",\n  \"$.data\": \"type('array')\"\n}"
+  description: 测试获取默认存储列表功能
+
+- name: 获取启用的默认存储列表
+  url: 获取存储列表
+  prepare_models: oss
+  query_params: "{
+  \"enabled\": true,
+  \"is_default\": true
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.count\": \">=1\",\n  \"$.data\": \"type('array')\"\n}"
+  description: 测试获取启用的默认存储列表功能
+
+- name: 按厂商类型过滤存储列表
+  url: 获取存储列表
+  prepare_models: oss
+  query_params: "{
+  \"vendor_type\": \"OBS\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.count\": \">=1\",\n  \"$.data\": \"type('array')\"\n}"
+  description: 测试按厂商类型过滤存储列表功能
+
+- name: 按名称搜索存储列表
+  url: 获取存储列表
+  prepare_models: oss
+  query_params: "{
+  \"name\": \"${storage_config_name}\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.count\": \">=1\",\n  \"$.data\": \"type('array')\"\n}"
+  description: 测试按名称搜索存储列表功能
+
+- name: 获取存储列表--分页参数
+  url: 获取存储列表
+  prepare_models: oss
+  next_case: 删除存储配置成功
+  query_params: "{
+  \"page\": 1,
+  \"size\": 5
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.count\": \">=1\",\n  \"$.data\": \"type('array')\"\n}"
+  description: 测试分页获取存储列表功能
+

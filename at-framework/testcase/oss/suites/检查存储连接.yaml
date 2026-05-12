@@ -1,0 +1,31 @@
+feature: 存储管理
+story: 检查存储连接
+switch: y
+cases:
+- name: 检查存储连接成功
+  url: 检查存储连接
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.connected\": \"true\"\n}"
+  description: 测试检查存储连接功能
+
+- name: 检查存储连接失败--storage_id不存在
+  url: 检查存储连接
+  path_params: "{
+  \"storage_id\": \"999999999999999999\"
+}"
+  code_check: '500'
+  resp_check: "{\"message\": \"Connection failed\",\"$.description\": \"Failed to connect to the storage service\",\"cause\": \"storage not found\"}"
+  description: 测试storage_id不存在的情况
+
+- name: 检查存储连接失败--storage_id为空
+  url: 检查存储连接
+  path_params: "{
+  \"storage_id\": \"\"
+}"
+  code_check: '500'
+  resp_check: "{\"message\": \"Connection failed\",\"$.description\": \"Failed to connect to the storage service\"}"
+  description: 测试storage_id为空的情况

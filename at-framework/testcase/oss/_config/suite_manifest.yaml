@@ -1,0 +1,27 @@
+# 测试套件清单
+
+# 套件清单
+suites:
+  - name: 存储管理
+    description: 测试存储配置的增删改查等操作
+    file: suites/存储管理.yaml
+  
+  - name: 对象元数据
+    description: 测试对象元数据相关操作
+    file: suites/对象元数据.yaml
+  
+  - name: 文件上传
+    description: 测试文件上传相关操作
+    file: suites/文件上传.yaml
+  
+  - name: 文件下载
+    description: 测试文件下载相关操作
+    file: suites/文件下载.yaml
+  
+  - name: 文件删除
+    description: 测试文件删除相关操作
+    file: suites/文件删除.yaml
+  
+  - name: 健康检查
+    description: 测试服务健康状态
+    file: suites/健康检查.yaml

@@ -1,0 +1,95 @@
+feature: 文件上传与下载
+story: 下载文件
+switch: y
+cases:
+- name: 获取下载URL成功--PUT方式上传单文件
+  url: 获取下载 URL
+  prev_case: 单文件上传成功--PUT方式
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/singleUploadByPUT.pdf\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.method\": \"GET\",\n  \"$.data.url\": \"exists\"\n}"
+  resp_values: "{\"download_method\": \"$.data.method\",\"download_url\": \"$.data.url\", \"download_headers\": \"$.data.headers\"}"
+  description: 测试获取下载URL(PUT方式上传单文件)的功能
+
+- name: 下载文件成功--PUT方式上传单文件
+  url: 文件下载
+  prev_case: 获取下载URL成功--PUT方式上传单文件
+  code_check: '200'
+  description: 测试下载文件成功(PUT方式上传单文件)的功能
+
+- name: 获取下载URL成功--POST方式上传单文件
+  url: 获取下载 URL
+  prev_case: 单文件上传成功--POST方式
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/singleUploadByPOST.pdf\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.method\": \"GET\",\n  \"$.data.url\": \"exists\"\n}"
+  resp_values: "{\"download_method\": \"$.data.method\",\"download_url\": \"$.data.url\", \"download_headers\": \"$.data.headers\"}"
+  description: 测试获取下载URL(POST方式上传单文件)的功能
+
+- name: 下载文件成功--POST方式上传单文件
+  url: 文件下载
+  prev_case: 获取下载URL成功--POST方式上传单文件
+  code_check: '200'
+  description: 测试下载文件成功(POST方式上传单文件)的功能
+
+# - name: 获取下载URL成功--自定义过期时间
+#   url: 获取下载 URL
+#   path_params: "{
+#   \"storage_id\": \"${storage_config_id}\",
+#   \"key\": \"test%2Fdownload.txt\"
+# }"
+#   query_params: "{
+#   \"expires\": 7200
+# }"
+#   code_check: '200'
+#   resp_check: "{\n  \"$.data.method\": \"GET\",\n  \"$.data.url\": \"exists\"\n}"
+#   description: 测试获取带自定义过期时间的下载URL功能
+
+# - name: 获取下载URL成功--指定下载文件名
+#   url: 获取下载 URL
+#   path_params: "{
+#   \"storage_id\": \"${storage_config_id}\",
+#   \"key\": \"test%2Fdownload.txt\"
+# }"
+#   query_params: "{
+#   \"save_name\": \"%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6.txt\"
+# }"
+#   code_check: '200'
+#   resp_check: "{\n  \"$.data.method\": \"GET\",\n  \"$.data.url\": \"exists\"\n}"
+#   description: 测试指定下载文件名的功能
+
+# - name: 获取下载URL失败--storage_id不存在
+#   url: 获取下载 URL
+#   path_params: "{
+#   \"storage_id\": \"NONEXISTENT_ID\",
+#   \"key\": \"test%2Fdownload.txt\"
+# }"
+#   code_check: '404'
+#   description: 测试storage_id不存在的情况
+
+# - name: 获取下载URL失败--key为空
+#   url: 获取下载 URL
+#   path_params: "{
+#   \"storage_id\": \"${storage_config_id}\",
+#   \"key\": \"\"
+# }"
+#   code_check: '400'
+#   description: 测试key为空的情况
+
+# - name: 获取下载URL失败--expires为负数
+#   url: 获取下载 URL
+#   path_params: "{
+#   \"storage_id\": \"${storage_config_id}\",
+#   \"key\": \"test%2Fdownload.txt\"
+# }"
+#   query_params: "{
+#   \"expires\": -1
+# }"
+#   code_check: '400'
+#   description: 测试expires为负数的情况
