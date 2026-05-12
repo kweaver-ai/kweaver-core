@@ -12,6 +12,10 @@ Chinese version: [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)
   - Return referenced object types together with scoped relation and action schemas, so callers receive a complete Schema context
   - Note: metric schema requests carry the same concept group scope, but actual metric filtering depends on BKN metrics support
   - issue: https://github.com/kweaver-ai/kweaver-core/issues/304
+- Embed the ContextLoader standard toolset in the service startup flow
+  - Automatically sync the built-in toolset to execution-factory during ContextLoader startup
+  - Use `ContextLoader 标准内置工具集；契约版本: 0.8.0` as the toolset contract description
+  - issue: https://github.com/kweaver-ai/kweaver-core/issues/306
 
 ### Compatibility
 
@@ -20,6 +24,7 @@ Chinese version: [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)
 ### Documentation
 
 - Update API, MCP schema, toolset, and release documentation for concept group scoped Schema discovery
+- Document the built-in ContextLoader toolset delivery model and contract version rule
 
 ## 0.7.0
 

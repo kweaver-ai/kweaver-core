@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -119,5 +120,52 @@ func TestNextRetryDelay(t *testing.T) {
 		}
 		So(syncer.nextRetryDelay(3*time.Second), ShouldEqual, 6*time.Second)
 		So(syncer.nextRetryDelay(6*time.Second), ShouldEqual, 10*time.Second)
+	})
+}
+
+func TestEmbeddedContextLoaderToolsetContract(t *testing.T) {
+	Convey("TestEmbeddedContextLoaderToolsetContract", t, func() {
+		var data map[string]interface{}
+		err := json.Unmarshal(contextLoaderToolsetData, &data)
+		So(err, ShouldBeNil)
+
+		toolbox, ok := data["toolbox"].(map[string]interface{})
+		So(ok, ShouldBeTrue)
+		configs, ok := toolbox["configs"].([]interface{})
+		So(ok, ShouldBeTrue)
+		So(len(configs), ShouldEqual, 1)
+		toolboxConfig, ok := configs[0].(map[string]interface{})
+		So(ok, ShouldBeTrue)
+		So(toolboxConfig["box_name"], ShouldEqual, "contextloader工具集")
+		So(toolboxConfig["box_desc"], ShouldEqual, "ContextLoader 标准内置工具集；契约版本: 0.8.0")
+
+		tools, ok := toolboxConfig["tools"].([]interface{})
+		So(ok, ShouldBeTrue)
+		var searchSchemaTool map[string]interface{}
+		for _, tool := range tools {
+			toolMap, ok := tool.(map[string]interface{})
+			So(ok, ShouldBeTrue)
+			if toolMap["name"] == "search_schema" {
+				searchSchemaTool = toolMap
+				break
+			}
+		}
+		So(searchSchemaTool, ShouldNotBeNil)
+
+		metadata, ok := searchSchemaTool["metadata"].(map[string]interface{})
+		So(ok, ShouldBeTrue)
+		apiSpec, ok := metadata["api_spec"].(map[string]interface{})
+		So(ok, ShouldBeTrue)
+		components, ok := apiSpec["components"].(map[string]interface{})
+		So(ok, ShouldBeTrue)
+		schemas, ok := components["schemas"].(map[string]interface{})
+		So(ok, ShouldBeTrue)
+		searchScope, ok := schemas["SearchScope"].(map[string]interface{})
+		So(ok, ShouldBeTrue)
+		properties, ok := searchScope["properties"].(map[string]interface{})
+		So(ok, ShouldBeTrue)
+		conceptGroups, ok := properties["concept_groups"].(map[string]interface{})
+		So(ok, ShouldBeTrue)
+		So(conceptGroups["type"], ShouldEqual, "array")
 	})
 }
