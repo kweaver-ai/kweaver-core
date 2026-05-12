@@ -9,6 +9,7 @@ import (
 	"time"
 
 	myErr "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/errors"
+	icommon "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/logger"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces/model"
@@ -75,6 +76,7 @@ func TestImport(t *testing.T) {
 		}
 		operatorDB := &model.OperatorRegisterDB{OperatorID: "1"}
 		accessor := &interfaces.AuthAccessor{}
+		publicCtx := icommon.SetPublicAPIToCtx(context.TODO(), true)
 		Convey("导入校验: 导入数据为空", func() {
 			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeCreate, nil, "")
 			So(err, ShouldNotBeNil)
@@ -126,7 +128,7 @@ func TestImport(t *testing.T) {
 				gomock.Any()).Return(true, operatorDB, nil)
 			mockDBOperatorManager.EXPECT().SelectByOperatorIDs(gomock.Any(), gomock.Any()).Return([]*model.OperatorRegisterDB{operatorDB}, nil)
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("GetAccessor"))
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 		})
 		Convey("无算子编辑权限", func() {
@@ -135,7 +137,7 @@ func TestImport(t *testing.T) {
 			mockDBOperatorManager.EXPECT().SelectByOperatorIDs(gomock.Any(), gomock.Any()).Return([]*model.OperatorRegisterDB{operatorDB}, nil)
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(accessor, nil)
 			mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("CheckModifyPermission"))
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 		})
 		Convey("内置算子不允许编辑", func() {
@@ -147,7 +149,7 @@ func TestImport(t *testing.T) {
 			}}, nil)
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(accessor, nil)
 			mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			httpErr, ok := err.(*myErr.HTTPError)
 			So(ok, ShouldBeTrue)
@@ -161,7 +163,7 @@ func TestImport(t *testing.T) {
 			mockValidator.EXPECT().ValidateOperatorName(gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("ValidateOperatorName")).Times(1)
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(accessor, nil)
 			mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 		})
 		Convey("导入检查: 异步算子数据源", func() {
@@ -176,7 +178,7 @@ func TestImport(t *testing.T) {
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(accessor, nil)
 			mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			mockValidator.EXPECT().ValidateOperatorName(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			httpErr, ok := err.(*myErr.HTTPError)
 			So(ok, ShouldBeTrue)
@@ -191,7 +193,7 @@ func TestImport(t *testing.T) {
 			mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
 			mockValidator.EXPECT().ValidateOperatorName(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			httpErr, ok := err.(*myErr.HTTPError)
 			So(ok, ShouldBeTrue)
@@ -206,7 +208,7 @@ func TestImport(t *testing.T) {
 			mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
 			mockValidator.EXPECT().ValidateOperatorName(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			httpErr, ok := err.(*myErr.HTTPError)
 			So(ok, ShouldBeTrue)
@@ -221,7 +223,7 @@ func TestImport(t *testing.T) {
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(accessor, nil)
 			mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			httpErr, ok := err.(*myErr.HTTPError)
 			So(ok, ShouldBeTrue)
@@ -236,7 +238,7 @@ func TestImport(t *testing.T) {
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(accessor, nil)
 			mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			httpErr, ok := err.(*myErr.HTTPError)
 			So(ok, ShouldBeTrue)
@@ -254,7 +256,7 @@ func TestImport(t *testing.T) {
 			mockValidator.EXPECT().ValidateOperatorDesc(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			mockValidator.EXPECT().ValidatorStruct(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			httpErr, ok := err.(*myErr.HTTPError)
 			So(ok, ShouldBeTrue)
@@ -273,7 +275,7 @@ func TestImport(t *testing.T) {
 			mockValidator.EXPECT().ValidatorStruct(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			// mockMetadataService.EXPECT().RegisterMetadata(gomock.Any(), gomock.Any(), gomock.Any()).Return("", mocks.MockFuncErr("RegisterMetadata")).Times(1)
 			// mockDBAPIMetadataManager.EXPECT().InsertAPIMetadata(gomock.Any(), gomock.Any(), gomock.Any()).Return("", mocks.MockFuncErr("InsertAPIMetadata")).Times(1)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			fmt.Println(err)
 			httpErr, ok := err.(*myErr.HTTPError)
@@ -294,7 +296,7 @@ func TestImport(t *testing.T) {
 			mockValidator.EXPECT().ValidatorStruct(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			mockMetadataService.EXPECT().RegisterMetadata(gomock.Any(), gomock.Any(), gomock.Any()).Return("", mocks.MockFuncErr("RegisterMetadata")).Times(1)
 			// mockDBAPIMetadataManager.EXPECT().InsertAPIMetadata(gomock.Any(), gomock.Any(), gomock.Any()).Return("", mocks.MockFuncErr("InsertAPIMetadata")).Times(1)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			fmt.Println(err)
 			// httpErr, ok := err.(*myErr.HTTPError)
@@ -315,7 +317,7 @@ func TestImport(t *testing.T) {
 			mockValidator.EXPECT().ValidatorStruct(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			mockMetadataService.EXPECT().RegisterMetadata(gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).Times(1)
 			mockDBOperatorManager.EXPECT().UpdateByOperatorID(gomock.Any(), gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("UpdateByOperatorID")).Times(1)
-			err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+			err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 			So(err, ShouldNotBeNil)
 			httpErr, ok := err.(*myErr.HTTPError)
 			So(ok, ShouldBeTrue)
@@ -334,7 +336,7 @@ func TestImport(t *testing.T) {
 		// 	mockDBOperatorManager.EXPECT().UpdateByOperatorID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		// 	mockAuthService.EXPECT().NotifyResourceChange(gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("NotifyResourceChange"))
 		// 	mockAuditLog.EXPECT().Logger(gomock.Any(), gomock.Any())
-		// 	err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+		// 	err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 		// 	So(err, ShouldBeNil)
 		// 	time.Sleep(100 * time.Millisecond)
 		// })
@@ -351,7 +353,7 @@ func TestImport(t *testing.T) {
 		// 	mockDBOperatorManager.EXPECT().UpdateByOperatorID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		// 	mockAuthService.EXPECT().NotifyResourceChange(gomock.Any(), gomock.Any()).Return(nil)
 		// 	mockAuditLog.EXPECT().Logger(gomock.Any(), gomock.Any())
-		// 	err := operator.Import(context.TODO(), &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
+		// 	err := operator.Import(publicCtx, &sql.Tx{}, interfaces.ImportTypeUpsert, importData, "")
 		// 	So(err, ShouldBeNil)
 		// 	time.Sleep(100 * time.Millisecond)
 		// })
