@@ -14,12 +14,11 @@ import (
 	"sync"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -68,14 +67,13 @@ func (vba *vegaBackendAccess) buildHeaders(ctx context.Context) map[string]strin
 }
 
 func (vba *vegaBackendAccess) GetCatalogByID(ctx context.Context, id string) (*interfaces.Catalog, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Get catalog by ID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Get catalog by ID")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_id").String(id))
 
 	httpUrl := fmt.Sprintf("%s/catalogs/%s", vba.baseUrl, url.PathEscape(id))
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodGet,
 		HttpContentType: rest.ContentTypeJson,
@@ -88,9 +86,8 @@ func (vba *vegaBackendAccess) GetCatalogByID(ctx context.Context, id string) (*i
 
 	if err != nil {
 		errDetails := fmt.Sprintf("GetCatalogByID http request failed: %s", err.Error())
-		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get catalog by ID failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get catalog by ID failed")
 		return nil, fmt.Errorf("GetCatalogByID http request failed: %s", err)
 	}
 
@@ -106,21 +103,20 @@ func (vba *vegaBackendAccess) GetCatalogByID(ctx context.Context, id string) (*i
 	var catalog interfaces.Catalog
 	if err := json.Unmarshal([]byte(respData), &catalog); err != nil {
 		logger.Errorf("Failed to unmarshal GetCatalogByID response: %v", err)
-		return nil, fmt.Errorf("Failed to unmarshal GetCatalogByID response: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal GetCatalogByID response: %v", err)
 	}
 
 	return &catalog, nil
 }
 
 func (vba *vegaBackendAccess) CreateCatalog(ctx context.Context, req *interfaces.CatalogRequest) (*interfaces.Catalog, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Create catalog",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Create catalog")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_name").String(req.Name))
 
 	httpUrl := fmt.Sprintf("%s/catalogs", vba.baseUrl)
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodPost,
 		HttpContentType: rest.ContentTypeJson,
@@ -132,9 +128,8 @@ func (vba *vegaBackendAccess) CreateCatalog(ctx context.Context, req *interfaces
 
 	if err != nil {
 		errDetails := fmt.Sprintf("CreateCatalog http request failed: %s", err.Error())
-		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http create catalog failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http create catalog failed")
 		return nil, fmt.Errorf("CreateCatalog http request failed: %s", err)
 	}
 
@@ -146,21 +141,20 @@ func (vba *vegaBackendAccess) CreateCatalog(ctx context.Context, req *interfaces
 	var catalog interfaces.Catalog
 	if err := json.Unmarshal([]byte(respData), &catalog); err != nil {
 		logger.Errorf("Failed to unmarshal CreateCatalog response: %v", err)
-		return nil, fmt.Errorf("Failed to unmarshal CreateCatalog response: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal CreateCatalog response: %v", err)
 	}
 
 	return &catalog, nil
 }
 
 func (vba *vegaBackendAccess) GetResourceByID(ctx context.Context, id string) (*interfaces.VegaResource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Get resource by ID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Get resource by ID")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("resource_id").String(id))
 
 	httpUrl := fmt.Sprintf("%s/resources/%s", vba.baseUrl, url.PathEscape(id))
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodGet,
 		HttpContentType: rest.ContentTypeJson,
@@ -173,9 +167,8 @@ func (vba *vegaBackendAccess) GetResourceByID(ctx context.Context, id string) (*
 
 	if err != nil {
 		errDetails := fmt.Sprintf("GetResourceByID http request failed: %s", err.Error())
-		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get resource by ID failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get resource by ID failed")
 		return nil, fmt.Errorf("GetResourceByID http request failed: %s", err)
 	}
 
@@ -204,14 +197,13 @@ func (vba *vegaBackendAccess) GetResourceByID(ctx context.Context, id string) (*
 }
 
 func (vba *vegaBackendAccess) CreateResource(ctx context.Context, req *interfaces.VegaResource) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Create resource",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Create resource")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("resource_name").String(req.Name))
 
 	httpUrl := fmt.Sprintf("%s/resources", vba.baseUrl)
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodPost,
 		HttpContentType: rest.ContentTypeJson,
@@ -223,9 +215,8 @@ func (vba *vegaBackendAccess) CreateResource(ctx context.Context, req *interface
 
 	if err != nil {
 		errDetails := fmt.Sprintf("CreateResource http request failed: %s", err.Error())
-		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http create resource failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http create resource failed")
 		return fmt.Errorf("CreateResource http request failed: %s", err)
 	}
 
@@ -237,21 +228,20 @@ func (vba *vegaBackendAccess) CreateResource(ctx context.Context, req *interface
 	var resource interfaces.VegaResource
 	if err := json.Unmarshal([]byte(respData), &resource); err != nil {
 		logger.Errorf("Failed to unmarshal CreateResource response: %v", err)
-		return fmt.Errorf("Failed to unmarshal CreateResource response: %v", err)
+		return fmt.Errorf("failed to unmarshal CreateResource response: %v", err)
 	}
 
 	return nil
 }
 
 func (vba *vegaBackendAccess) DeleteResource(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Delete resource",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Delete resource")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("resource_id").String(id))
 
 	httpUrl := fmt.Sprintf("%s/resources/%s", vba.baseUrl, url.PathEscape(id))
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodDelete,
 		HttpContentType: rest.ContentTypeJson,
@@ -263,9 +253,8 @@ func (vba *vegaBackendAccess) DeleteResource(ctx context.Context, id string) err
 
 	if err != nil {
 		errDetails := fmt.Sprintf("DeleteResource http request failed: %s", err.Error())
-		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http delete resource failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http delete resource failed")
 		return fmt.Errorf("DeleteResource http request failed: %s", err)
 	}
 
@@ -278,15 +267,14 @@ func (vba *vegaBackendAccess) DeleteResource(ctx context.Context, id string) err
 }
 
 func (vba *vegaBackendAccess) DeleteDatasetDocumentByID(ctx context.Context, datasetID string, docID string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Delete dataset document by ID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Delete dataset document by ID")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("dataset_id").String(datasetID))
 	span.SetAttributes(attr.Key("doc_id").String(docID))
 
 	httpUrl := fmt.Sprintf("%s/resources/%s/data/%s", vba.baseUrl, url.PathEscape(datasetID), url.PathEscape(docID))
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:    httpUrl,
 		HttpMethod: http.MethodDelete,
 	})
@@ -297,9 +285,8 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentByID(ctx context.Context, dat
 
 	if err != nil {
 		errDetails := fmt.Sprintf("DeleteDatasetDocumentByID http request failed: %s", err.Error())
-		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http delete dataset document by ID failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http delete dataset document by ID failed")
 		return fmt.Errorf("DeleteDatasetDocumentByID http request failed: %s", err)
 	}
 
@@ -312,14 +299,13 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentByID(ctx context.Context, dat
 }
 
 func (vba *vegaBackendAccess) DeleteDatasetDocumentsByQuery(ctx context.Context, datasetID string, filterCondition map[string]any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Delete dataset documents by query",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Delete dataset documents by query")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("dataset_id").String(datasetID))
 
 	httpUrl := fmt.Sprintf("%s/resources/%s/data", vba.baseUrl, url.PathEscape(datasetID))
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodPost,
 		HttpContentType: rest.ContentTypeJson,
@@ -330,7 +316,7 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentsByQuery(ctx context.Context,
 	}
 
 	headers := vba.buildHeaders(ctx)
-	headers[o11y.HTTP_HEADER_METHOD_OVERRIDE] = http.MethodDelete
+	headers[oteltrace.HTTP_HEADER_METHOD_OVERRIDE] = http.MethodDelete
 	reqBodyJson, _ := sonic.Marshal(reqBody)
 	respCode, respData, err := vba.httpClient.PostNoUnmarshal(ctx, httpUrl, headers, reqBody)
 	logger.Debugf("DeleteDatasetDocumentsByQuery [%s] finished, request is [%s], response code is [%d], result is [%s], error is [%v]",
@@ -339,8 +325,8 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentsByQuery(ctx context.Context,
 	if err != nil {
 		errDetails := fmt.Sprintf("DeleteDatasetDocumentsByQuery http request failed: %s", err.Error())
 		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http delete dataset documents by query failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http delete dataset documents by query failed")
 		return fmt.Errorf("DeleteDatasetDocumentsByQuery http request failed: %s", err)
 	}
 
@@ -354,21 +340,20 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentsByQuery(ctx context.Context,
 
 // 从 vega resource中获取数据
 func (vba *vegaBackendAccess) QueryResourceData(ctx context.Context, resourceID string, params *interfaces.ResourceDataQueryParams) (*interfaces.DatasetQueryResponse, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Query dataset data",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Query dataset data")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("dataset_id").String(resourceID))
 
 	httpUrl := fmt.Sprintf("%s/resources/%s/data", vba.baseUrl, url.PathEscape(resourceID))
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodPost,
 		HttpContentType: rest.ContentTypeJson,
 	})
 
 	headers := vba.buildHeaders(ctx)
-	headers[o11y.HTTP_HEADER_METHOD_OVERRIDE] = http.MethodGet
+	headers[oteltrace.HTTP_HEADER_METHOD_OVERRIDE] = http.MethodGet
 	paramsJson, _ := sonic.Marshal(params)
 	respCode, respData, err := vba.httpClient.PostNoUnmarshal(ctx, httpUrl, headers, params)
 	logger.Debugf("QueryDatasetData [%s] finished, request is [%s], response code is [%d],  error is [%v]",
@@ -376,9 +361,8 @@ func (vba *vegaBackendAccess) QueryResourceData(ctx context.Context, resourceID 
 
 	if err != nil {
 		errDetails := fmt.Sprintf("QueryDatasetData http request failed: %s", err.Error())
-		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http query dataset data failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http query dataset data failed")
 		return nil, fmt.Errorf("QueryDatasetData http request failed: %s", err)
 	}
 
@@ -390,29 +374,28 @@ func (vba *vegaBackendAccess) QueryResourceData(ctx context.Context, resourceID 
 	var response interfaces.DatasetQueryResponse
 	if err := json.Unmarshal([]byte(respData), &response); err != nil {
 		logger.Errorf("Failed to unmarshal QueryDatasetData response: %v", err)
-		return nil, fmt.Errorf("Failed to unmarshal QueryDatasetData response: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal QueryDatasetData response: %v", err)
 	}
 
 	return &response, nil
 }
 
 func (vba *vegaBackendAccess) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Write dataset documents",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Write dataset documents")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("dataset_id").String(datasetID))
 	span.SetAttributes(attr.Key("documents_count").Int(len(documents)))
 
 	httpUrl := fmt.Sprintf("%s/resources/%s/data", vba.baseUrl, url.PathEscape(datasetID))
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodPost,
 		HttpContentType: rest.ContentTypeJson,
 	})
 
 	headers := vba.buildHeaders(ctx)
-	headers[o11y.HTTP_HEADER_METHOD_OVERRIDE] = http.MethodPost
+	headers[oteltrace.HTTP_HEADER_METHOD_OVERRIDE] = http.MethodPost
 	reqBodyJson, _ := sonic.Marshal(documents)
 	respCode, respData, err := vba.httpClient.PostNoUnmarshal(ctx, httpUrl, headers, documents)
 	logger.Debugf("WriteDatasetDocuments [%s] finished,	 request is [%s], response code is [%d], result is [%s], error is [%v]",
@@ -420,9 +403,8 @@ func (vba *vegaBackendAccess) WriteDatasetDocuments(ctx context.Context, dataset
 
 	if err != nil {
 		errDetails := fmt.Sprintf("WriteDatasetDocuments http request failed: %s", err.Error())
-		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http write dataset documents failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http write dataset documents failed")
 		return fmt.Errorf("WriteDatasetDocuments http request failed: %s", err)
 	}
 

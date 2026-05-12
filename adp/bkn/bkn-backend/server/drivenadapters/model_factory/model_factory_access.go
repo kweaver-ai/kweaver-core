@@ -12,10 +12,9 @@ import (
 	"sync"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	cond "bkn-backend/common/condition"
@@ -64,8 +63,7 @@ func (mfa *modelFactoryAccess) GetDefaultModel(ctx context.Context) (*interfaces
 }
 
 func (mfa *modelFactoryAccess) GetModelByID(ctx context.Context, modelID string) (*interfaces.SmallModel, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetModelByID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetModelByID")
 	defer span.End()
 
 	// 构建请求URL
@@ -111,8 +109,7 @@ func (mfa *modelFactoryAccess) GetModelByID(ctx context.Context, modelID string)
 }
 
 func (mfa *modelFactoryAccess) GetModelByName(ctx context.Context, modelName string) (*interfaces.SmallModel, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetModelByName",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetModelByName")
 	defer span.End()
 
 	// 构建请求URL
@@ -160,8 +157,7 @@ func (mfa *modelFactoryAccess) GetModelByName(ctx context.Context, modelName str
 func (mfa *modelFactoryAccess) GetVector(ctx context.Context,
 	model *interfaces.SmallModel, words []string) ([]*cond.VectorResp, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetVector",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetVector")
 	defer span.End()
 
 	if model == nil {

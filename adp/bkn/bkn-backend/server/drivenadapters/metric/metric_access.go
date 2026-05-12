@@ -14,12 +14,11 @@ import (
 	"sync"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -130,7 +129,7 @@ func scanMetricFromRow(scanner interface {
 }
 
 func (ma *metricAccess) CreateMetric(ctx context.Context, tx *sql.Tx, def *interfaces.MetricDefinition) error {
-	_, span := ar_trace.Tracer.Start(ctx, "CreateMetric", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "CreateMetric")
 	defer span.End()
 
 	td := jsonOrNull(def.TimeDimension)
@@ -211,7 +210,7 @@ func (ma *metricAccess) CreateMetric(ctx context.Context, tx *sql.Tx, def *inter
 
 func (ma *metricAccess) CheckMetricExistByID(ctx context.Context, knID string, branch string, metricID string) (string, bool, error) {
 
-	_, span := ar_trace.Tracer.Start(ctx, "CheckMetricExistByID", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "CheckMetricExistByID")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Select("f_name").
@@ -240,7 +239,7 @@ func (ma *metricAccess) CheckMetricExistByID(ctx context.Context, knID string, b
 
 func (ma *metricAccess) CheckMetricExistByName(ctx context.Context, knID string, branch string, name string) (string, bool, error) {
 
-	_, span := ar_trace.Tracer.Start(ctx, "CheckMetricExistByName", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "CheckMetricExistByName")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Select("f_id").
@@ -297,7 +296,7 @@ func metricSelectColumns() []string {
 
 func (ma *metricAccess) GetMetricByID(ctx context.Context, knID string, branch string, metricID string) (*interfaces.MetricDefinition, error) {
 
-	_, span := ar_trace.Tracer.Start(ctx, "GetMetricByID", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "GetMetricByID")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Select(metricSelectColumns()...).
@@ -323,7 +322,7 @@ func (ma *metricAccess) GetMetricByID(ctx context.Context, knID string, branch s
 
 func (ma *metricAccess) GetMetricsByIDs(ctx context.Context, knID string, branch string, metricIDs []string) ([]*interfaces.MetricDefinition, error) {
 
-	_, span := ar_trace.Tracer.Start(ctx, "GetMetricsByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "GetMetricsByIDs")
 	defer span.End()
 
 	if len(metricIDs) == 0 {
@@ -347,7 +346,7 @@ func (ma *metricAccess) GetMetricsByIDs(ctx context.Context, knID string, branch
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var metrics []*interfaces.MetricDefinition
 	for rows.Next() {
@@ -395,7 +394,7 @@ func processMetricQueryCondition(query interfaces.MetricsListQueryParams, subBui
 }
 
 func (ma *metricAccess) ListMetrics(ctx context.Context, query interfaces.MetricsListQueryParams) ([]*interfaces.MetricDefinition, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "ListMetrics", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "ListMetrics")
 	defer span.End()
 
 	subBuilder := sq.Select(metricSelectColumns()...).From(METRIC_TABLE_NAME)
@@ -421,7 +420,7 @@ func (ma *metricAccess) ListMetrics(ctx context.Context, query interfaces.Metric
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var metrics []*interfaces.MetricDefinition
 	for rows.Next() {
@@ -442,7 +441,7 @@ func (ma *metricAccess) ListMetrics(ctx context.Context, query interfaces.Metric
 }
 
 func (ma *metricAccess) GetMetricsTotal(ctx context.Context, query interfaces.MetricsListQueryParams) (int, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "GetMetricsTotal", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "GetMetricsTotal")
 	defer span.End()
 
 	subBuilder := sq.Select("COUNT(f_id)").From(METRIC_TABLE_NAME)
@@ -465,7 +464,7 @@ func (ma *metricAccess) GetMetricsTotal(ctx context.Context, query interfaces.Me
 }
 
 func (ma *metricAccess) UpdateMetric(ctx context.Context, tx *sql.Tx, metric *interfaces.MetricDefinition) error {
-	_, span := ar_trace.Tracer.Start(ctx, "UpdateMetric", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "UpdateMetric")
 	defer span.End()
 
 	data := map[string]any{
@@ -523,7 +522,7 @@ func (ma *metricAccess) UpdateMetric(ctx context.Context, tx *sql.Tx, metric *in
 }
 
 func (ma *metricAccess) DeleteMetricsByIDs(ctx context.Context, tx *sql.Tx, knID, branch string, metricIDs []string) error {
-	_, span := ar_trace.Tracer.Start(ctx, "DeleteMetricsByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "DeleteMetricsByIDs")
 	defer span.End()
 
 	if len(metricIDs) == 0 {
@@ -567,7 +566,7 @@ func (ma *metricAccess) DeleteMetricsByIDs(ctx context.Context, tx *sql.Tx, knID
 }
 
 func (ma *metricAccess) GetMetricIDsByKnID(ctx context.Context, knID string, branch string) ([]string, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "GetMetricIDsByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "GetMetricIDsByKnID")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Select("f_id").
@@ -586,7 +585,7 @@ func (ma *metricAccess) GetMetricIDsByKnID(ctx context.Context, knID string, bra
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var ids []string
 	for rows.Next() {
@@ -608,7 +607,7 @@ func (ma *metricAccess) GetMetricIDsByKnID(ctx context.Context, knID string, bra
 }
 
 func (ma *metricAccess) DeleteMetricsByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) (int64, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "DeleteMetricsByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "DeleteMetricsByKnID")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Delete(METRIC_TABLE_NAME).

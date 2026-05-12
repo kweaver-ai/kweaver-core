@@ -12,12 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/xid"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	berrors "bkn-backend/errors"
@@ -55,7 +54,7 @@ func NewActionScheduleService(appSetting *common.AppSetting) interfaces.ActionSc
 
 // CreateSchedule creates a new action schedule
 func (s *actionScheduleService) CreateSchedule(ctx context.Context, schedule *interfaces.ActionSchedule) (string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateSchedule", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CreateSchedule")
 	defer span.End()
 
 	// Validate cron expression
@@ -109,7 +108,7 @@ func (s *actionScheduleService) CreateSchedule(ctx context.Context, schedule *in
 
 // UpdateSchedule updates an existing action schedule
 func (s *actionScheduleService) UpdateSchedule(ctx context.Context, scheduleID string, req *interfaces.ActionScheduleUpdateRequest) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateSchedule", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdateSchedule")
 	defer span.End()
 
 	// Check if schedule exists
@@ -176,7 +175,7 @@ func (s *actionScheduleService) UpdateSchedule(ctx context.Context, scheduleID s
 
 // UpdateScheduleStatus updates the status of a schedule
 func (s *actionScheduleService) UpdateScheduleStatus(ctx context.Context, scheduleID string, status string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateScheduleStatus", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdateScheduleStatus")
 	defer span.End()
 
 	// Validate status
@@ -217,7 +216,7 @@ func (s *actionScheduleService) UpdateScheduleStatus(ctx context.Context, schedu
 
 // DeleteSchedules deletes schedules by IDs
 func (s *actionScheduleService) DeleteSchedules(ctx context.Context, knID, branch string, scheduleIDs []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteSchedules", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeleteSchedules")
 	defer span.End()
 
 	if len(scheduleIDs) == 0 {
@@ -254,7 +253,7 @@ func (s *actionScheduleService) DeleteSchedules(ctx context.Context, knID, branc
 
 // GetSchedule gets a single schedule by ID
 func (s *actionScheduleService) GetSchedule(ctx context.Context, scheduleID string) (*interfaces.ActionSchedule, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetSchedule", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetSchedule")
 	defer span.End()
 
 	schedule, err := s.asa.GetSchedule(ctx, scheduleID)
@@ -271,7 +270,7 @@ func (s *actionScheduleService) GetSchedule(ctx context.Context, scheduleID stri
 
 // GetSchedules gets schedules by IDs
 func (s *actionScheduleService) GetSchedules(ctx context.Context, scheduleIDs []string) (map[string]*interfaces.ActionSchedule, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetSchedules", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetSchedules")
 	defer span.End()
 
 	schedules, err := s.asa.GetSchedules(ctx, scheduleIDs)
@@ -285,7 +284,7 @@ func (s *actionScheduleService) GetSchedules(ctx context.Context, scheduleIDs []
 
 // ListSchedules lists schedules with pagination
 func (s *actionScheduleService) ListSchedules(ctx context.Context, queryParams interfaces.ActionScheduleQueryParams) ([]*interfaces.ActionSchedule, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListSchedules", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ListSchedules")
 	defer span.End()
 
 	schedules, err := s.asa.ListSchedules(ctx, queryParams)

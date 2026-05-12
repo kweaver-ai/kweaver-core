@@ -12,11 +12,10 @@ import (
 	"sync"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -47,7 +46,7 @@ func NewRiskTypeAccess(appSetting *common.AppSetting) interfaces.RiskTypeAccess 
 }
 
 func (rta *riskTypeAccess) CheckRiskTypeExistByID(ctx context.Context, knID string, branch string, rtID string) (string, bool, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "CheckRiskTypeExistByID", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "CheckRiskTypeExistByID")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Select("f_name").
@@ -72,7 +71,7 @@ func (rta *riskTypeAccess) CheckRiskTypeExistByID(ctx context.Context, knID stri
 }
 
 func (rta *riskTypeAccess) CheckRiskTypeExistByName(ctx context.Context, knID string, branch string, rtName string) (string, bool, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "CheckRiskTypeExistByName", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "CheckRiskTypeExistByName")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Select("f_id").
@@ -97,7 +96,7 @@ func (rta *riskTypeAccess) CheckRiskTypeExistByName(ctx context.Context, knID st
 }
 
 func (rta *riskTypeAccess) CreateRiskType(ctx context.Context, tx *sql.Tx, riskType *interfaces.RiskType) error {
-	_, span := ar_trace.Tracer.Start(ctx, "CreateRiskType", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "CreateRiskType")
 	defer span.End()
 
 	tagsStr := libCommon.TagSlice2TagString(riskType.Tags)
@@ -147,7 +146,7 @@ func (rta *riskTypeAccess) CreateRiskType(ctx context.Context, tx *sql.Tx, riskT
 }
 
 func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.RiskTypesQueryParams) ([]*interfaces.RiskType, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "ListRiskTypes", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "ListRiskTypes")
 	defer span.End()
 
 	subBuilder := sq.Select(
@@ -187,7 +186,7 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var riskTypes []*interfaces.RiskType
 	for rows.Next() {
@@ -225,7 +224,7 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 }
 
 func (rta *riskTypeAccess) GetRiskTypesTotal(ctx context.Context, query interfaces.RiskTypesQueryParams) (int, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "GetRiskTypesTotal", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "GetRiskTypesTotal")
 	defer span.End()
 
 	subBuilder := sq.Select("COUNT(f_id)").From(RT_TABLE_NAME)
@@ -245,7 +244,7 @@ func (rta *riskTypeAccess) GetRiskTypesTotal(ctx context.Context, query interfac
 }
 
 func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, branch string, rtIDs []string) ([]*interfaces.RiskType, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "GetRiskTypesByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "GetRiskTypesByIDs")
 	defer span.End()
 
 	if len(rtIDs) == 0 {
@@ -281,7 +280,7 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var riskTypes []*interfaces.RiskType
 	for rows.Next() {
@@ -319,7 +318,7 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 }
 
 func (rta *riskTypeAccess) UpdateRiskType(ctx context.Context, tx *sql.Tx, riskType *interfaces.RiskType) error {
-	_, span := ar_trace.Tracer.Start(ctx, "UpdateRiskType", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "UpdateRiskType")
 	defer span.End()
 
 	tagsStr := libCommon.TagSlice2TagString(riskType.Tags)
@@ -351,7 +350,7 @@ func (rta *riskTypeAccess) UpdateRiskType(ctx context.Context, tx *sql.Tx, riskT
 }
 
 func (rta *riskTypeAccess) DeleteRiskTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, rtIDs []string) (int64, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "DeleteRiskTypesByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "DeleteRiskTypesByIDs")
 	defer span.End()
 
 	if len(rtIDs) == 0 {
@@ -382,7 +381,7 @@ func (rta *riskTypeAccess) GetAllRiskTypesByKnID(ctx context.Context, knID strin
 }
 
 func (rta *riskTypeAccess) DeleteRiskTypesByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) (int64, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "DeleteRiskTypesByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "DeleteRiskTypesByKnID")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Delete(RT_TABLE_NAME).

@@ -17,10 +17,10 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -73,15 +73,12 @@ func NewActionTypeService(appSetting *common.AppSetting) interfaces.ActionTypeSe
 }
 
 func (ats *actionTypeService) CheckActionTypeExistByID(ctx context.Context, knID string, branch string, atID string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CheckActionTypeExistByID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CheckActionTypeExistByID")
 	defer span.End()
 
 	atName, exist, err := ats.ata.CheckActionTypeExistByID(ctx, knID, branch, atID)
 	if err != nil {
-		logger.Errorf("CheckActionTypeExistByID error: %s", err.Error())
-		// 记录处理的 sql 字符串
-		o11y.Error(ctx, fmt.Sprintf("按ID[%v]获取行动类失败: %v", atID, err))
-		span.SetStatus(codes.Error, fmt.Sprintf("按ID[%v]获取行动类失败", atID))
+		otellog.LogError(ctx, fmt.Sprintf("按ID[%v]获取行动类失败", atID), err)
 		return "", exist, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ActionType_InternalError_CheckActionTypeIfExistFailed).WithErrorDetails(err.Error())
 	}
@@ -91,15 +88,12 @@ func (ats *actionTypeService) CheckActionTypeExistByID(ctx context.Context, knID
 }
 
 func (ats *actionTypeService) CheckActionTypeExistByName(ctx context.Context, knID string, branch string, atName string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CheckActionTypeExistByName")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CheckActionTypeExistByName")
 	defer span.End()
 
 	actionTypeID, exist, err := ats.ata.CheckActionTypeExistByName(ctx, knID, branch, atName)
 	if err != nil {
-		logger.Errorf("CheckActionTypeExistByName error: %s", err.Error())
-		// 记录处理的 sql 字符串
-		o11y.Error(ctx, fmt.Sprintf("按名称[%s]获取行动类失败: %v", atName, err))
-		span.SetStatus(codes.Error, fmt.Sprintf("按名称[%s]获取行动类失败", atName))
+		otellog.LogError(ctx, fmt.Sprintf("按名称[%s]获取行动类失败", atName), err)
 		return actionTypeID, exist, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ActionType_InternalError_CheckActionTypeIfExistFailed).WithErrorDetails(err.Error())
 	}
@@ -138,7 +132,7 @@ func (ats *actionTypeService) validateActionSourceStrict(ctx context.Context, at
 }
 
 func (ats *actionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx, actionTypes []*interfaces.ActionType, mode string, strictMode bool) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateActionTypes")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CreateActionTypes")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -154,10 +148,7 @@ func (ats *actionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx,
 	if tx == nil {
 		tx, err = ats.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return []string{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ActionType_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -169,19 +160,14 @@ func (ats *actionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx,
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("CreateActionType Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "CreateActionType Transaction Commit Failed", err)
 					return
 				}
-				logger.Infof("CreateActionType Transaction Commit Success")
-				o11y.Debug(ctx, "CreateActionType Transaction Commit Success")
+				otellog.LogDebug(ctx, "CreateActionType Transaction Commit Success")
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("CreateActionType Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Rollback Error: %s", err.Error()))
+					otellog.LogError(ctx, "CreateActionType Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -275,7 +261,7 @@ func (ats *actionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx,
 func (ats *actionTypeService) ValidateActionTypes(ctx context.Context, knID string, branch string,
 	actionTypes []*interfaces.ActionType, strictMode bool, batch *interfaces.BatchIDIndex, mode string) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "ValidateActionTypes")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ValidateActionTypes")
 	defer span.End()
 
 	if len(actionTypes) == 0 {
@@ -327,7 +313,7 @@ func (ats *actionTypeService) ValidateActionTypes(ctx context.Context, knID stri
 }
 
 func (ats *actionTypeService) ListActionTypes(ctx context.Context, query interfaces.ActionTypesQueryParams) ([]*interfaces.ActionType, int, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListActionTypes")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ListActionTypes")
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -406,7 +392,7 @@ func (ats *actionTypeService) ListActionTypes(ctx context.Context, query interfa
 
 func (ats *actionTypeService) GetActionTypesByIDs(ctx context.Context, knID string, branch string, atIDs []string) ([]*interfaces.ActionType, error) {
 	// 获取行动类
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetActionTypesByIDs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetActionTypesByIDs")
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -478,7 +464,7 @@ func (ats *actionTypeService) GetActionTypesByIDs(ctx context.Context, knID stri
 
 // 更新行动类
 func (ats *actionTypeService) UpdateActionType(ctx context.Context, tx *sql.Tx, actionType *interfaces.ActionType, strictMode bool) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateActionType")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdateActionType")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -525,9 +511,7 @@ func (ats *actionTypeService) UpdateActionType(ctx context.Context, tx *sql.Tx, 
 		// 0. 开始事务
 		tx, err = ats.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_ActionType_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
 		}
@@ -538,18 +522,14 @@ func (ats *actionTypeService) UpdateActionType(ctx context.Context, tx *sql.Tx, 
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("UpdateActionType Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateActionType Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "UpdateActionType Transaction Commit Failed", err)
+					return
 				}
-				logger.Infof("UpdateActionType Transaction Commit Success:%v", actionType.ATName)
-				o11y.Debug(ctx, fmt.Sprintf("UpdateActionType Transaction Commit Success: %s", actionType.ATName))
+				otellog.LogDebug(ctx, fmt.Sprintf("UpdateActionType Transaction Commit Success: %s", actionType.ATName))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("UpdateActionType Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateActionType Transaction Rollback Error: %s", rollbackErr.Error()))
+					otellog.LogError(ctx, "UpdateActionType Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -579,7 +559,7 @@ func (ats *actionTypeService) UpdateActionType(ctx context.Context, tx *sql.Tx, 
 }
 
 func (ats *actionTypeService) DeleteActionTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, atIDs []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteActionTypesByIDs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeleteActionTypesByIDs")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -595,10 +575,7 @@ func (ats *actionTypeService) DeleteActionTypesByIDs(ctx context.Context, tx *sq
 		// 0. 开始事务
 		tx, err = ats.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ActionType_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -610,18 +587,14 @@ func (ats *actionTypeService) DeleteActionTypesByIDs(ctx context.Context, tx *sq
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("DeleteActionTypes Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("DeleteActionTypes Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "DeleteActionTypes Transaction Commit Failed", err)
+					return
 				}
-				logger.Infof("DeleteActionTypes Transaction Commit Success: kn_id:%s,ot_ids:%v", knID, atIDs)
-				o11y.Debug(ctx, fmt.Sprintf("DeleteActionTypes Transaction Commit Success: kn_id:%s,ot_ids:%v", knID, atIDs))
+				otellog.LogDebug(ctx, fmt.Sprintf("DeleteActionTypes Transaction Commit Success: kn_id:%s,ot_ids:%v", knID, atIDs))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("DeleteActionTypes Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("DeleteActionTypes Transaction Rollback Error: %s", rollbackErr.Error()))
+					otellog.LogError(ctx, "DeleteActionTypes Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -638,8 +611,7 @@ func (ats *actionTypeService) DeleteActionTypesByIDs(ctx context.Context, tx *sq
 
 	logger.Infof("DeleteActionTypes: Rows affected is %v, request delete ATIDs is %v!", rowsAffect, len(atIDs))
 	if rowsAffect != int64(len(atIDs)) {
-		logger.Warnf("Delete action types number %v not equal requerst action types number %v!", rowsAffect, len(atIDs))
-		o11y.Warn(ctx, fmt.Sprintf("Delete action types number %v not equal requerst action types number %v!", rowsAffect, len(atIDs)))
+		otellog.LogWarn(ctx, fmt.Sprintf("Delete action types number %v not equal requerst action types number %v!", rowsAffect, len(atIDs)))
 	}
 
 	for _, atID := range atIDs {
@@ -658,13 +630,11 @@ func (ats *actionTypeService) DeleteActionTypesByIDs(ctx context.Context, tx *sq
 
 // 内部接口，不校验权限， tx必须传
 func (ats *actionTypeService) DeleteActionTypesByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteActionTypesByKnID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeleteActionTypesByKnID")
 	defer span.End()
 
 	if tx == nil {
-		logger.Errorf("missing transaction")
-		o11y.Error(ctx, "missing transaction")
-		span.SetStatus(codes.Error, "缺少事务")
+		otellog.LogError(ctx, "missing transaction", nil)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ActionType_InternalError_MissingTransaction).
 			WithErrorDetails("missing transaction")
@@ -688,7 +658,7 @@ func (ats *actionTypeService) DeleteActionTypesByKnID(ctx context.Context, tx *s
 func (ats *actionTypeService) handleActionTypeImportMode(ctx context.Context, mode string,
 	actionTypes []*interfaces.ActionType) ([]*interfaces.ActionType, []*interfaces.ActionType, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "handleActionTypeImportMode")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "handleActionTypeImportMode")
 	defer span.End()
 
 	creates := []*interfaces.ActionType{}
@@ -784,7 +754,7 @@ func (ats *actionTypeService) handleActionTypeImportMode(ctx context.Context, mo
 }
 
 func (ats *actionTypeService) InsertDatasetData(ctx context.Context, actionTypes []*interfaces.ActionType) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "行动类索引写入")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "行动类索引写入")
 	defer span.End()
 
 	if len(actionTypes) == 0 {
@@ -884,7 +854,7 @@ func (ats *actionTypeService) InsertDatasetData(ctx context.Context, actionTypes
 }
 
 func (ats *actionTypeService) SearchActionTypes(ctx context.Context, query *interfaces.ConceptsQuery) (interfaces.ActionTypes, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "SearchActionTypes")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "SearchActionTypes")
 	defer span.End()
 
 	response := interfaces.ActionTypes{}
@@ -1141,7 +1111,7 @@ func (ats *actionTypeService) SearchActionTypes(ctx context.Context, query *inte
 }
 
 func (ats *actionTypeService) GetTotal(ctx context.Context, filterCondition map[string]any) (total int64, err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetTotal")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetTotal")
 	defer span.End()
 
 	// 添加 module_type 过滤条件
@@ -1190,7 +1160,7 @@ func (ats *actionTypeService) GetTotal(ctx context.Context, filterCondition map[
 // 内部调用，不加权限校验
 func (ats *actionTypeService) GetActionTypeIDsByKnID(ctx context.Context, knID string, branch string) ([]string, error) {
 	// 获取行动类
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetActionTypeIDsByKnID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetActionTypeIDsByKnID")
 	defer span.End()
 
 	// 获取模型基本信息

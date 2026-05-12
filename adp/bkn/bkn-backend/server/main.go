@@ -20,9 +20,8 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
 	_ "go.uber.org/automaxprocs"
 
 	"bkn-backend/common"
@@ -53,6 +52,7 @@ import (
 
 type mgrService struct {
 	appSetting     *common.AppSetting
+	otelProviders  *otel.Providers
 	restHandler    driveradapters.RestHandler
 	conceptSyncer  *worker.ConceptSyncer
 	jobExecutor    interfaces.JobExecutor
@@ -110,6 +110,9 @@ func (server *mgrService) start() {
 	if err := s.Shutdown(ctx); err != nil {
 		logger.Fatalf("Server Shutdown:%v", err)
 	}
+
+	server.otelProviders.Shutdown(ctx)
+
 	logger.Info("Server Exiting")
 }
 
@@ -136,7 +139,10 @@ func main() {
 
 	logger.Infof("Server Start By Port:%d", appSetting.ServerSetting.HttpPort)
 
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	otelProviders, err := otel.InitOTel(context.Background(), &appSetting.OtelSetting)
+	if err != nil {
+		logger.Fatalf("Failed to initialize OpenTelemetry provider: %v", err)
+	}
 
 	db := libdb.NewDB(&appSetting.DBSetting)
 	logics.SetDB(db)
@@ -170,6 +176,7 @@ func main() {
 
 	server := &mgrService{
 		appSetting:     appSetting,
+		otelProviders:  otelProviders,
 		restHandler:    driveradapters.NewRestHandler(appSetting),
 		conceptSyncer:  worker.NewConceptSyncer(appSetting),
 		jobExecutor:    worker.NewJobExecutor(appSetting),

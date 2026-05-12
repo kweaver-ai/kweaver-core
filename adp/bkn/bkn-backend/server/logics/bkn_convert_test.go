@@ -484,7 +484,7 @@ func Test_condCfgConverters(t *testing.T) {
 			adp := toADPActionCondCfg(bknCond)
 			So(adp.ObjectTypeID, ShouldEqual, "ot1")
 			So(adp.Field, ShouldEqual, "f1")
-			So(adp.ValueOptCfg.Value, ShouldEqual, "v1")
+			So(adp.Value, ShouldEqual, "v1")
 			So(adp.SubConds, ShouldBeEmpty)
 
 			// round-trip

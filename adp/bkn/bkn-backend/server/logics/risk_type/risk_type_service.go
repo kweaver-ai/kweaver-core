@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -63,14 +63,12 @@ func NewRiskTypeService(appSetting *common.AppSetting) interfaces.RiskTypeServic
 }
 
 func (rts *riskTypeService) CheckRiskTypeExistByID(ctx context.Context, knID string, branch string, rtID string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CheckRiskTypeExistByID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CheckRiskTypeExistByID")
 	defer span.End()
 
 	rtName, exist, err := rts.rta.CheckRiskTypeExistByID(ctx, knID, branch, rtID)
 	if err != nil {
-		logger.Errorf("CheckRiskTypeExistByID error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("按ID[%s]获取风险类失败: %v", rtID, err))
-		span.SetStatus(codes.Error, fmt.Sprintf("按ID[%s]获取风险类失败", rtID))
+		otellog.LogError(ctx, fmt.Sprintf("按ID[%s]获取风险类失败", rtID), err)
 		return "", false, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_RiskType_InternalError_CheckRiskTypeIfExistFailed).WithErrorDetails(err.Error())
 	}
@@ -79,14 +77,12 @@ func (rts *riskTypeService) CheckRiskTypeExistByID(ctx context.Context, knID str
 }
 
 func (rts *riskTypeService) CheckRiskTypeExistByName(ctx context.Context, knID string, branch string, rtName string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CheckRiskTypeExistByName")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CheckRiskTypeExistByName")
 	defer span.End()
 
 	rtID, exist, err := rts.rta.CheckRiskTypeExistByName(ctx, knID, branch, rtName)
 	if err != nil {
-		logger.Errorf("CheckRiskTypeExistByName error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("按名称[%s]获取风险类失败: %v", rtName, err))
-		span.SetStatus(codes.Error, fmt.Sprintf("按名称[%s]获取风险类失败", rtName))
+		otellog.LogError(ctx, fmt.Sprintf("按名称[%s]获取风险类失败", rtName), err)
 		return "", false, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_RiskType_InternalError_CheckRiskTypeIfExistFailed).WithErrorDetails(err.Error())
 	}
@@ -95,7 +91,7 @@ func (rts *riskTypeService) CheckRiskTypeExistByName(ctx context.Context, knID s
 }
 
 func (rts *riskTypeService) CreateRiskTypes(ctx context.Context, tx *sql.Tx, riskTypes []*interfaces.RiskType, mode string) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateRiskTypes")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CreateRiskTypes")
 	defer span.End()
 
 	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
@@ -182,7 +178,7 @@ func (rts *riskTypeService) handleImportMode(ctx context.Context, mode string, r
 			berrors.BknBackend_InvalidParameter_ImportMode).WithErrorDetails("invalid import_mode")
 	}
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "handleRiskTypeImportMode")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "handleRiskTypeImportMode")
 	defer span.End()
 
 	creates := []*interfaces.RiskType{}
@@ -259,7 +255,7 @@ func (rts *riskTypeService) handleImportMode(ctx context.Context, mode string, r
 }
 
 func (rts *riskTypeService) ListRiskTypes(ctx context.Context, query interfaces.RiskTypesQueryParams) ([]*interfaces.RiskType, int, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListRiskTypes")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ListRiskTypes")
 	defer span.End()
 
 	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
@@ -310,7 +306,7 @@ func (rts *riskTypeService) ListRiskTypes(ctx context.Context, query interfaces.
 }
 
 func (rts *riskTypeService) GetRiskTypesByIDs(ctx context.Context, knID string, branch string, rtIDs []string) ([]*interfaces.RiskType, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetRiskTypesByIDs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetRiskTypesByIDs")
 	defer span.End()
 
 	rtIDs = common.DuplicateSlice(rtIDs)
@@ -325,7 +321,7 @@ func (rts *riskTypeService) GetRiskTypesByIDs(ctx context.Context, knID string, 
 }
 
 func (rts *riskTypeService) UpdateRiskType(ctx context.Context, tx *sql.Tx, riskType *interfaces.RiskType) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateRiskType")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdateRiskType")
 	defer span.End()
 
 	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
@@ -378,7 +374,7 @@ func (rts *riskTypeService) UpdateRiskType(ctx context.Context, tx *sql.Tx, risk
 }
 
 func (rts *riskTypeService) DeleteRiskTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, rtIDs []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteRiskTypesByIDs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeleteRiskTypesByIDs")
 	defer span.End()
 
 	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
@@ -426,7 +422,7 @@ func (rts *riskTypeService) DeleteRiskTypesByIDs(ctx context.Context, tx *sql.Tx
 }
 
 func (rts *riskTypeService) InsertDatasetData(ctx context.Context, riskTypes []*interfaces.RiskType) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "风险类索引写入")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "风险类索引写入")
 	defer span.End()
 
 	if len(riskTypes) == 0 {
@@ -502,7 +498,7 @@ func (rts *riskTypeService) InsertDatasetData(ctx context.Context, riskTypes []*
 }
 
 func (rts *riskTypeService) SearchRiskTypes(ctx context.Context, query *interfaces.ConceptsQuery) (interfaces.RiskTypes, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "SearchRiskTypes")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "SearchRiskTypes")
 	defer span.End()
 
 	response := interfaces.RiskTypes{}
