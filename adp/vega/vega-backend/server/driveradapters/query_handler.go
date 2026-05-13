@@ -11,9 +11,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/trace"
 
@@ -24,8 +23,7 @@ import (
 
 // RawQueryByEx handles POST /api/vega-backend/v1/resources/query (External)
 func (r *restHandler) RawQueryByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"RawQueryByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 外网接口：校验token
@@ -38,8 +36,7 @@ func (r *restHandler) RawQueryByEx(c *gin.Context) {
 
 // RawQueryByIn handles POST /api/vega-backend/in/v1/resources/query (Internal)
 func (r *restHandler) RawQueryByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"RawQueryByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 内网接口：user_id从header中取
@@ -55,13 +52,13 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	var req interfaces.RawQueryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -70,7 +67,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	if req.ResourceType == "" {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_ResourceType).
 			WithErrorDetails(fmt.Sprintf("resource_type is required and must be one of: %v", interfaces.GetSupportedConnectorTypesForQuery()))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -78,7 +75,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	if !interfaces.IsConnectorTypeSupportedForQuery(req.ResourceType) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_ResourceType).
 			WithErrorDetails(fmt.Sprintf("resource_type must be one of: %v, got: %s", interfaces.GetSupportedConnectorTypesForQuery(), req.ResourceType))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -89,7 +86,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	} else if req.StreamSize < 100 || req.StreamSize > 10000 {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_StreamSize).
 			WithErrorDetails(fmt.Sprintf("stream_size must be between 100 and 10000, got: %d", req.StreamSize))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -100,7 +97,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	} else if req.QueryTimeout < 1 || req.QueryTimeout > 3600 {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_Query_InvalidParameter_QueryTimeout).
 			WithErrorDetails(fmt.Sprintf("query_timeout must be between 1 and 3600, got: %d", req.QueryTimeout))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -115,11 +112,11 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 			httpErr = rest.NewHTTPError(ctx, http.StatusInternalServerError, errors.VegaBackend_Query_ExecuteFailed).
 				WithErrorDetails(err.Error())
 		}
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, resp)
 }

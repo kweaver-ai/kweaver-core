@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/codes"
 
@@ -57,7 +57,7 @@ func NewRawQueryServiceWithDeps(cs interfaces.CatalogService, rs interfaces.Reso
 
 // Execute 执行SQL查询
 func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryRequest) (*interfaces.RawQueryResponse, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "SQLQueryExecute")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "SQLQueryExecute")
 	defer span.End()
 
 	// 记录请求参数

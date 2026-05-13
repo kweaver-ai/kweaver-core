@@ -9,8 +9,8 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/mitchellh/mapstructure"
 	"go.opentelemetry.io/otel/codes"
@@ -60,7 +60,7 @@ func NewLogicViewService(appSetting *common.AppSetting) interfaces.LogicViewServ
 func (lvs *logicViewService) Query(ctx context.Context, resource *interfaces.Resource,
 	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query logic view")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Query logic view")
 	defer span.End()
 
 	logger.Debugf("Query logic view, resourceID: %s, params: %v",
@@ -83,7 +83,7 @@ func (lvs *logicViewService) Query(ctx context.Context, resource *interfaces.Res
 
 func (lvs *logicViewService) queryDerivedLogicView(ctx context.Context, view *interfaces.LogicView,
 	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query derived logic view")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Query derived logic view")
 	defer span.End()
 
 	var inputNode *interfaces.LogicDefinitionNode
@@ -162,7 +162,7 @@ func (lvs *logicViewService) queryDerivedLogicView(ctx context.Context, view *in
 func executePhysicalQuery(ctx context.Context, catalog *interfaces.Catalog, resource *interfaces.Resource,
 	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Execute physical query")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Execute physical query")
 	defer span.End()
 
 	logger.Debugf("executePhysicalQuery, resourceID: %s, catalogID: %s, params: %v",
@@ -182,7 +182,7 @@ func executePhysicalQuery(ctx context.Context, catalog *interfaces.Catalog, reso
 
 func (lvs *logicViewService) queryCompositeLogicView(ctx context.Context, view *interfaces.LogicView,
 	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query composite logic view")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Query composite logic view")
 	defer span.End()
 
 	// input resource 的 category 决定生成 SQL 还是 DSL
@@ -230,7 +230,7 @@ func (lvs *logicViewService) queryCompositeLogicView(ctx context.Context, view *
 
 func (lvs *logicViewService) executeCompositeViewByDSL(ctx context.Context, view *interfaces.LogicView,
 	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query composite view data")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Query composite view data")
 	defer span.End()
 
 	// 获取索引列表, 视图 ID 到索引列表的映射
@@ -387,7 +387,7 @@ func (lvs *logicViewService) executeCompositeViewBySQL(ctx context.Context, view
 func executeIndexQuery(ctx context.Context, catalog *interfaces.Catalog, resource *interfaces.Resource,
 	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Execute index query")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Execute index query")
 	defer span.End()
 
 	connector, err := factory.GetFactory().CreateConnectorInstance(ctx, catalog.ConnectorType, catalog.ConnectorCfg)
@@ -423,7 +423,7 @@ func executeIndexQuery(ctx context.Context, catalog *interfaces.Catalog, resourc
 func executeTableQuery(ctx context.Context, catalog *interfaces.Catalog, resource *interfaces.Resource,
 	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Execute table query")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Execute table query")
 	defer span.End()
 
 	connector, err := factory.GetFactory().CreateConnectorInstance(ctx, catalog.ConnectorType, catalog.ConnectorCfg)

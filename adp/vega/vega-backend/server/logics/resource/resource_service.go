@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -64,7 +64,7 @@ func NewResourceService(appSetting *common.AppSetting) interfaces.ResourceServic
 
 // Create creates a new Resource.
 func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceRequest) (*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create resource")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create resource")
 	defer span.End()
 
 	// 判断userid是否有创建数据资源的权限（策略决策）
@@ -137,9 +137,7 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 
 	err = rs.ra.Create(ctx, resource)
 	if err != nil {
-		logger.Errorf("Create resource failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Create resource failed: %v", err))
-		span.SetStatus(codes.Error, "Create resource failed")
+		otellog.LogError(ctx, "Create resource failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_CreateFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -173,7 +171,7 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 
 // Get retrieves a Resource by ID.
 func (rs *resourceService) GetByID(ctx context.Context, id string) (*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get resource")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get resource")
 	defer span.End()
 
 	resource, err := rs.ra.GetByID(ctx, id)
@@ -217,7 +215,7 @@ func (rs *resourceService) GetByID(ctx context.Context, id string) (*interfaces.
 
 // GetByIDs retrieves Resources by IDs.
 func (rs *resourceService) GetByIDs(ctx context.Context, ids []string) ([]*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get resources by IDs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get resources by IDs")
 	defer span.End()
 
 	if len(ids) == 0 {
@@ -265,7 +263,7 @@ func (rs *resourceService) GetByIDs(ctx context.Context, ids []string) ([]*inter
 
 // GetByCatalogID retrieves all Resources under a Catalog.
 func (rs *resourceService) GetByCatalogID(ctx context.Context, catalogID string) ([]*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get resources by catalog ID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get resources by catalog ID")
 	defer span.End()
 
 	resources, err := rs.ra.GetByCatalogID(ctx, catalogID)
@@ -281,7 +279,7 @@ func (rs *resourceService) GetByCatalogID(ctx context.Context, catalogID string)
 
 // GetByName retrieves a Resource by catalog and name.
 func (rs *resourceService) GetByName(ctx context.Context, catalogID string, name string) (*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get resource by name")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get resource by name")
 	defer span.End()
 
 	resource, err := rs.ra.GetByName(ctx, catalogID, name)
@@ -301,7 +299,7 @@ func (rs *resourceService) GetByName(ctx context.Context, catalogID string, name
 
 // List lists Resources with filters.
 func (rs *resourceService) List(ctx context.Context, params interfaces.ResourcesQueryParams) ([]*interfaces.Resource, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List resources")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "List resources")
 	defer span.End()
 
 	// 查询所有资源的ID
@@ -425,7 +423,7 @@ func (rs *resourceService) List(ctx context.Context, params interfaces.Resources
 
 // Update updates a Resource.
 func (rs *resourceService) Update(ctx context.Context, id string, req *interfaces.ResourceRequest) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update resource")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update resource")
 	defer span.End()
 
 	resource := req.OriginResource
@@ -506,7 +504,7 @@ func (rs *resourceService) Update(ctx context.Context, id string, req *interface
 
 // UpdateStatus updates a Resource's status.
 func (rs *resourceService) UpdateStatus(ctx context.Context, id string, status string, statusMessage string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update resource status")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update resource status")
 	defer span.End()
 
 	if err := rs.ra.UpdateStatus(ctx, id, status, statusMessage); err != nil {
@@ -521,7 +519,7 @@ func (rs *resourceService) UpdateStatus(ctx context.Context, id string, status s
 
 // DeleteByIDs deletes Resources by IDs.
 func (rs *resourceService) DeleteByIDs(ctx context.Context, ids []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete resources")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete resources")
 	defer span.End()
 
 	if len(ids) == 0 {
@@ -604,7 +602,7 @@ func (rs *resourceService) DeleteByIDs(ctx context.Context, ids []string) error 
 
 // CheckExistByID checks if a resource exists by ID.
 func (rs *resourceService) CheckExistByID(ctx context.Context, id string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Check resource exist by ID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Check resource exist by ID")
 	defer span.End()
 
 	resource, err := rs.ra.GetByID(ctx, id)
@@ -620,7 +618,7 @@ func (rs *resourceService) CheckExistByID(ctx context.Context, id string) (bool,
 
 // CheckExistByName checks if a Resource exists by name.
 func (rs *resourceService) CheckExistByName(ctx context.Context, catalogID string, name string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Check resource exist by name")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Check resource exist by name")
 	defer span.End()
 
 	resource, err := rs.ra.GetByName(ctx, catalogID, name)
@@ -636,7 +634,7 @@ func (rs *resourceService) CheckExistByName(ctx context.Context, catalogID strin
 
 // UpdateResource updates a Resource directly.
 func (rs *resourceService) UpdateResource(ctx context.Context, resource *interfaces.Resource) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update resource")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update resource")
 	defer span.End()
 
 	if err := rs.ra.Update(ctx, resource); err != nil {
@@ -651,7 +649,7 @@ func (rs *resourceService) UpdateResource(ctx context.Context, resource *interfa
 
 // ListResourceSrcs lists Resource Sources with filters.
 func (rs *resourceService) ListResourceSrcs(ctx context.Context, params interfaces.ListResourcesQueryParams) ([]*interfaces.ListResourceEntry, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListResourceSrcs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ListResourceSrcs")
 	defer span.End()
 
 	// 先查询所有资源源的ID
@@ -759,7 +757,7 @@ func (rs *resourceService) ListResourceSrcs(ctx context.Context, params interfac
 
 // CheckExistByCategories checks if Resources exists by catalog ID and categories.
 func (rs *resourceService) CheckExistByCategories(ctx context.Context, catalogID string, categories []string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CheckExistByCategories")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CheckExistByCategories")
 	defer span.End()
 
 	return rs.ra.CheckExistByCategories(ctx, catalogID, categories)

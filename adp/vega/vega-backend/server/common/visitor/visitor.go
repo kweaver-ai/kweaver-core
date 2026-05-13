@@ -1,3 +1,8 @@
+// Copyright The kweaver.ai Authors.
+//
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file in the project root for details.
+
 package visitor
 
 import (
@@ -16,7 +21,7 @@ func GenerateVisitor(c *gin.Context) hydra.Visitor {
 	visitor := hydra.Visitor{
 		ID:         accountInfo.ID,
 		Type:       hydra.VisitorType(accountInfo.Type),
-		TokenID:    "",
+		TokenID:    "", // 无token
 		IP:         c.ClientIP(),
 		Mac:        c.GetHeader("X-Request-MAC"),
 		UserAgent:  c.GetHeader("User-Agent"),

@@ -14,14 +14,13 @@ import (
 	"sync"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	attr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
 	"vega-backend/interfaces"
@@ -54,8 +53,7 @@ func NewResourceAccess(appSetting *common.AppSetting) interfaces.ResourceAccess 
 
 // Create creates ra new Resource.
 func (ra *resourceAccess) Create(ctx context.Context, resource *interfaces.Resource) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Insert into resource",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Insert into resource")
 	defer span.End()
 
 	span.SetAttributes(
@@ -151,19 +149,15 @@ func (ra *resourceAccess) Create(ctx context.Context, resource *interfaces.Resou
 			resource.UpdateTime,
 		).ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build insert resource sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build insert resource sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build insert resource sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Insert resource SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Insert resource SQL: %s", sqlStr))
 
 	_, err = ra.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Insert resource failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Insert resource failed: %v", err))
-		span.SetStatus(codes.Error, "Insert failed")
+		otellog.LogError(ctx, "Insert resource failed", err)
 		return err
 	}
 
@@ -173,8 +167,7 @@ func (ra *resourceAccess) Create(ctx context.Context, resource *interfaces.Resou
 
 // GetByID retrieves ra Resource by ID.
 func (ra *resourceAccess) GetByID(ctx context.Context, id string) (*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query resource by ID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query resource by ID")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("resource_id").String(id))
@@ -268,8 +261,7 @@ func (ra *resourceAccess) GetByID(ctx context.Context, id string) (*interfaces.R
 
 // GetByIDs retrieves ra Resource by IDs.
 func (ra *resourceAccess) GetByIDs(ctx context.Context, ids []string) ([]*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query resources by IDs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query resources by IDs")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("resource_ids").StringSlice(ids))
@@ -373,8 +365,7 @@ func (ra *resourceAccess) GetByIDs(ctx context.Context, ids []string) ([]*interf
 // GetByIDsBasic retrieves Resources by IDs without parsing sourceMetadata, schemaDefinition and logicDefinition.
 // This method is optimized for memory usage when these large fields are not needed.
 func (ra *resourceAccess) GetByIDsBasic(ctx context.Context, ids []string) ([]*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query resources by IDs (basic)",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query resources by IDs (basic)")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("resource_ids").StringSlice(ids))
@@ -462,8 +453,7 @@ func (ra *resourceAccess) GetByIDsBasic(ctx context.Context, ids []string) ([]*i
 
 // GetByName retrieves ra Resource by catalog and name.
 func (ra *resourceAccess) GetByName(ctx context.Context, catalogID string, name string) (*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query resource by name",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query resource by name")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("resource_name").String(name))
@@ -549,8 +539,7 @@ func (ra *resourceAccess) GetByName(ctx context.Context, catalogID string, name 
 
 // ListIDs lists Resource IDs with filters.
 func (ra *resourceAccess) ListIDs(ctx context.Context, params interfaces.ResourcesQueryParams) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List resource IDs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "List resource IDs")
 	defer span.End()
 
 	builder := sq.Select("f_id").From(RESOURCE_TABLE_NAME)
@@ -601,8 +590,7 @@ func (ra *resourceAccess) ListIDs(ctx context.Context, params interfaces.Resourc
 
 // List lists Resources with filters.
 func (ra *resourceAccess) List(ctx context.Context, params interfaces.ResourcesQueryParams) ([]*interfaces.Resource, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List resources",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "List resources")
 	defer span.End()
 
 	builder := sq.Select(
@@ -725,8 +713,7 @@ func (ra *resourceAccess) List(ctx context.Context, params interfaces.ResourcesQ
 
 // Update updates ra Resource.
 func (ra *resourceAccess) Update(ctx context.Context, resource *interfaces.Resource) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update resource",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update resource")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("resource_id").String(resource.ID))
@@ -780,8 +767,7 @@ func (ra *resourceAccess) Update(ctx context.Context, resource *interfaces.Resou
 
 // GetByCatalogID retrieves all Resources under a Catalog.
 func (ra *resourceAccess) GetByCatalogID(ctx context.Context, catalogID string) ([]*interfaces.Resource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query resources by catalog ID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query resources by catalog ID")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_id").String(catalogID))
@@ -873,8 +859,7 @@ func (ra *resourceAccess) GetByCatalogID(ctx context.Context, catalogID string) 
 
 // UpdateStatus updates a Resource's status.
 func (ra *resourceAccess) UpdateStatus(ctx context.Context, id string, status string, statusMessage string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update resource status",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update resource status")
 	defer span.End()
 
 	span.SetAttributes(
@@ -903,8 +888,7 @@ func (ra *resourceAccess) UpdateStatus(ctx context.Context, id string, status st
 }
 
 func (ra *resourceAccess) DeleteByIDs(ctx context.Context, ids []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete resources",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Delete resources")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("resource_ids").StringSlice(ids))
@@ -929,8 +913,7 @@ func (ra *resourceAccess) DeleteByIDs(ctx context.Context, ids []string) error {
 
 // ListResourceSrcsIDs lists Resource Source IDs with filters.
 func (ra *resourceAccess) ListResourceSrcsIDs(ctx context.Context, params interfaces.ListResourcesQueryParams) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListResourceSrcsIDs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListResourceSrcsIDs")
 	defer span.End()
 
 	builder := sq.Select("f_id").From(RESOURCE_TABLE_NAME)
@@ -980,8 +963,7 @@ func (ra *resourceAccess) ListResourceSrcsIDs(ctx context.Context, params interf
 
 // ListResourceSrcsByIDs lists Resource Sources by IDs.
 func (ra *resourceAccess) ListResourceSrcsByIDs(ctx context.Context, ids []string) ([]*interfaces.ListResourceEntry, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListResourceSrcsByIDs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListResourceSrcsByIDs")
 	defer span.End()
 
 	if len(ids) == 0 {
@@ -1028,8 +1010,7 @@ func (ra *resourceAccess) ListResourceSrcsByIDs(ctx context.Context, ids []strin
 
 // ListResourceSrcs lists Resource Sources with filters.
 func (ra *resourceAccess) ListResourceSrcs(ctx context.Context, params interfaces.ListResourcesQueryParams) ([]*interfaces.ListResourceEntry, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListResourceSrcs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListResourceSrcs")
 	defer span.End()
 
 	builder := sq.Select(
@@ -1100,8 +1081,7 @@ func (ra *resourceAccess) ListResourceSrcs(ctx context.Context, params interface
 }
 
 func (ra *resourceAccess) CheckExistByCategories(ctx context.Context, catalogID string, categories []string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Check resources exist",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Check resources exist")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_id").String(catalogID))
@@ -1129,8 +1109,7 @@ func (ra *resourceAccess) CheckExistByCategories(ctx context.Context, catalogID 
 }
 
 func (ra *resourceAccess) DeleteByCatalogIDs(ctx context.Context, catalogIDs []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete resources by catalog IDs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Delete resources by catalog IDs")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_ids").StringSlice(catalogIDs))

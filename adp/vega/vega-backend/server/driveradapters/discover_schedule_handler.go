@@ -12,11 +12,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/robfig/cron/v3"
 	"go.opentelemetry.io/otel/trace"
@@ -29,8 +28,7 @@ import (
 
 // CreateDiscoverScheduleByEx handles POST /api/vega-backend/v1/discover-schedules (External).
 func (r *restHandler) CreateDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"CreateDiscoverScheduleByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -42,8 +40,7 @@ func (r *restHandler) CreateDiscoverScheduleByEx(c *gin.Context) {
 
 // CreateDiscoverScheduleByIn handles POST /api/vega-backend/in/v1/discover-schedules (Internal).
 func (r *restHandler) CreateDiscoverScheduleByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"CreateDiscoverScheduleByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor := GenerateVisitor(c)
@@ -53,13 +50,13 @@ func (r *restHandler) CreateDiscoverScheduleByIn(c *gin.Context) {
 func (r *restHandler) createDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	var req interfaces.DiscoverScheduleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -67,7 +64,7 @@ func (r *restHandler) createDiscoverSchedule(c *gin.Context, ctx context.Context
 	if req.CatalogID == "" {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails("catalog_id is required")
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -75,13 +72,13 @@ func (r *restHandler) createDiscoverSchedule(c *gin.Context, ctx context.Context
 	catalog, err := r.cs.GetByID(ctx, req.CatalogID, false)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if catalog == nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -94,7 +91,7 @@ func (r *restHandler) createDiscoverSchedule(c *gin.Context, ctx context.Context
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_CreateFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -109,7 +106,7 @@ func (r *restHandler) createDiscoverSchedule(c *gin.Context, ctx context.Context
 		interfaces.GenerateCatalogAuditObject(req.CatalogID, ""), "")
 
 	logger.Debug("Handler CreateDiscoverSchedule Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusCreated)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusCreated)
 	rest.ReplyOK(c, http.StatusCreated, gin.H{"id": scheduleID})
 }
 
@@ -117,8 +114,7 @@ func (r *restHandler) createDiscoverSchedule(c *gin.Context, ctx context.Context
 
 // ListDiscoverSchedulesByEx handles GET /api/vega-backend/v1/discover-schedules (External).
 func (r *restHandler) ListDiscoverSchedulesByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListDiscoverSchedulesByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -130,8 +126,7 @@ func (r *restHandler) ListDiscoverSchedulesByEx(c *gin.Context) {
 
 // ListDiscoverSchedulesByIn handles GET /api/vega-backend/in/v1/discover-schedules (Internal).
 func (r *restHandler) ListDiscoverSchedulesByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListDiscoverSchedulesByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor := GenerateVisitor(c)
@@ -141,7 +136,7 @@ func (r *restHandler) ListDiscoverSchedulesByIn(c *gin.Context) {
 func (r *restHandler) listDiscoverSchedules(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	params := interfaces.DiscoverScheduleQueryParams{
 		CatalogID: c.Query("catalog_id"),
@@ -151,7 +146,7 @@ func (r *restHandler) listDiscoverSchedules(c *gin.Context, ctx context.Context,
 		if err != nil {
 			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 				WithErrorDetails(fmt.Sprintf("invalid enabled value: %s", enabledStr))
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -162,12 +157,12 @@ func (r *restHandler) listDiscoverSchedules(c *gin.Context, ctx context.Context,
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, gin.H{"entries": entries, "total_count": total})
 }
 
@@ -175,8 +170,7 @@ func (r *restHandler) listDiscoverSchedules(c *gin.Context, ctx context.Context,
 
 // GetDiscoverScheduleByEx handles GET /api/vega-backend/v1/discover-schedules/:id (External).
 func (r *restHandler) GetDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetDiscoverScheduleByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -188,8 +182,7 @@ func (r *restHandler) GetDiscoverScheduleByEx(c *gin.Context) {
 
 // GetDiscoverScheduleByIn handles GET /api/vega-backend/in/v1/discover-schedules/:id (Internal).
 func (r *restHandler) GetDiscoverScheduleByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetDiscoverScheduleByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor := GenerateVisitor(c)
@@ -199,25 +192,25 @@ func (r *restHandler) GetDiscoverScheduleByIn(c *gin.Context) {
 func (r *restHandler) getDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	id := c.Param("id")
 	schedule, err := r.dss.GetByID(ctx, id)
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if schedule == nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_DiscoverSchedule_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, schedule)
 }
 
@@ -225,8 +218,7 @@ func (r *restHandler) getDiscoverSchedule(c *gin.Context, ctx context.Context, s
 
 // UpdateDiscoverScheduleByEx handles PUT /api/vega-backend/v1/discover-schedules/:id (External).
 func (r *restHandler) UpdateDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"UpdateDiscoverScheduleByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -238,8 +230,7 @@ func (r *restHandler) UpdateDiscoverScheduleByEx(c *gin.Context) {
 
 // UpdateDiscoverScheduleByIn handles PUT /api/vega-backend/in/v1/discover-schedules/:id (Internal).
 func (r *restHandler) UpdateDiscoverScheduleByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"UpdateDiscoverScheduleByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor := GenerateVisitor(c)
@@ -249,7 +240,7 @@ func (r *restHandler) UpdateDiscoverScheduleByIn(c *gin.Context) {
 func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	id := c.Param("id")
 
@@ -257,13 +248,13 @@ func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if current == nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_DiscoverSchedule_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -272,7 +263,7 @@ func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -281,21 +272,21 @@ func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context
 	if req.ID != "" && req.ID != id {
 		httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_DiscoverSchedule_IdMismatch).
 			WithErrorDetails(fmt.Sprintf("body.id=%s does not match path id=%s", req.ID, id))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if req.CatalogID != "" && req.CatalogID != current.CatalogID {
 		httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_DiscoverSchedule_CatalogMismatch).
 			WithErrorDetails(fmt.Sprintf("catalog_id is read-only; current=%s, body=%s", current.CatalogID, req.CatalogID))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if req.Enabled != current.Enabled {
 		httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_DiscoverSchedule_EnabledFieldNotAllowed).
 			WithErrorDetails("use POST /discover-schedules/{id}/enable or /disable to change enabled state")
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -312,7 +303,7 @@ func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context
 	if err := r.dss.Update(ctx, id, &req); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_UpdateFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -327,7 +318,7 @@ func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context
 		interfaces.GenerateCatalogAuditObject(current.CatalogID, ""), "")
 
 	logger.Debug("Handler UpdateDiscoverSchedule Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -335,8 +326,7 @@ func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context
 
 // DeleteDiscoverScheduleByEx handles DELETE /api/vega-backend/v1/discover-schedules/:id (External).
 func (r *restHandler) DeleteDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteDiscoverScheduleByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -348,8 +338,7 @@ func (r *restHandler) DeleteDiscoverScheduleByEx(c *gin.Context) {
 
 // DeleteDiscoverScheduleByIn handles DELETE /api/vega-backend/in/v1/discover-schedules/:id (Internal).
 func (r *restHandler) DeleteDiscoverScheduleByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteDiscoverScheduleByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor := GenerateVisitor(c)
@@ -359,7 +348,7 @@ func (r *restHandler) DeleteDiscoverScheduleByIn(c *gin.Context) {
 func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	id := c.Param("id")
 
@@ -367,13 +356,13 @@ func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, ctx context.Context
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if current == nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_DiscoverSchedule_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -384,7 +373,7 @@ func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, ctx context.Context
 	if err := r.dss.Delete(ctx, id); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_DeleteFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -392,7 +381,7 @@ func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, ctx context.Context
 	audit.NewWarnLog(audit.OPERATION, audit.DELETE, audit.TransforOperator(visitor),
 		interfaces.GenerateCatalogAuditObject(current.CatalogID, ""), audit.SUCCESS, "")
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -400,8 +389,7 @@ func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, ctx context.Context
 
 // EnableDiscoverScheduleByEx handles POST /api/vega-backend/v1/discover-schedules/:id/enable (External).
 func (r *restHandler) EnableDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"EnableDiscoverScheduleByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -413,8 +401,7 @@ func (r *restHandler) EnableDiscoverScheduleByEx(c *gin.Context) {
 
 // EnableDiscoverScheduleByIn handles POST /api/vega-backend/in/v1/discover-schedules/:id/enable (Internal).
 func (r *restHandler) EnableDiscoverScheduleByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"EnableDiscoverScheduleByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor := GenerateVisitor(c)
@@ -423,8 +410,7 @@ func (r *restHandler) EnableDiscoverScheduleByIn(c *gin.Context) {
 
 // DisableDiscoverScheduleByEx handles POST /api/vega-backend/v1/discover-schedules/:id/disable (External).
 func (r *restHandler) DisableDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DisableDiscoverScheduleByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -436,8 +422,7 @@ func (r *restHandler) DisableDiscoverScheduleByEx(c *gin.Context) {
 
 // DisableDiscoverScheduleByIn handles POST /api/vega-backend/in/v1/discover-schedules/:id/disable (Internal).
 func (r *restHandler) DisableDiscoverScheduleByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DisableDiscoverScheduleByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor := GenerateVisitor(c)
@@ -449,7 +434,7 @@ func (r *restHandler) DisableDiscoverScheduleByIn(c *gin.Context) {
 func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor, enable bool) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	id := c.Param("id")
 
@@ -457,20 +442,20 @@ func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, ctx context.Context
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if current == nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_DiscoverSchedule_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	if current.Enabled == enable {
 		// Idempotent no-op.
-		o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 		rest.ReplyOK(c, http.StatusNoContent, nil)
 		return
 	}
@@ -479,7 +464,7 @@ func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, ctx context.Context
 		if err := r.dss.Enable(ctx, id); err != nil {
 			httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_UpdateFailed).
 				WithErrorDetails(err.Error())
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -490,7 +475,7 @@ func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, ctx context.Context
 		if err := r.dss.Disable(ctx, id); err != nil {
 			httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_UpdateFailed).
 				WithErrorDetails(err.Error())
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -502,7 +487,7 @@ func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, ctx context.Context
 	audit.NewInfoLog(audit.OPERATION, audit.UPDATE, audit.TransforOperator(visitor),
 		interfaces.GenerateCatalogAuditObject(current.CatalogID, ""), "")
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -513,14 +498,14 @@ func validateCronExprAndStrategies(ctx context.Context, span trace.Span, c *gin.
 	if cronExpr == "" {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_DiscoverSchedule_InvalidCronExpr).
 			WithErrorDetails("cron_expr is required")
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return httpErr
 	}
 	if _, err := cron.ParseStandard(cronExpr); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_DiscoverSchedule_InvalidCronExpr).
 			WithErrorDetails(fmt.Sprintf("invalid cron expression: %v", err))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return httpErr
 	}
@@ -528,7 +513,7 @@ func validateCronExprAndStrategies(ctx context.Context, span trace.Span, c *gin.
 		if err := validateStrategies(strategies); err != nil {
 			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_DiscoverSchedule_InvalidStrategies).
 				WithErrorDetails(err.Error())
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return httpErr
 		}

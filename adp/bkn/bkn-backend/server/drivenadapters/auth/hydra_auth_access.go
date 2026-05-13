@@ -7,6 +7,7 @@ package auth
 
 import (
 	"context"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
@@ -15,16 +16,27 @@ import (
 	"bkn-backend/interfaces"
 )
 
+var (
+	haAccessOnce sync.Once
+	haAccess     interfaces.AuthAccess
+)
+
 type hydraAuthAccess struct {
-	hydra hydra.Hydra
+	appSetting *common.AppSetting
+	hydra      hydra.Hydra
 }
 
 func NewHydraAuthAccess(appSetting *common.AppSetting) interfaces.AuthAccess {
-	return &hydraAuthAccess{
-		hydra: hydra.NewHydra(appSetting.HydraAdminSetting),
-	}
+	haAccessOnce.Do(func() {
+		haAccess = &hydraAuthAccess{
+			appSetting: appSetting,
+			hydra:      hydra.NewHydra(appSetting.HydraAdminSetting),
+		}
+	})
+
+	return haAccess
 }
 
-func (h *hydraAuthAccess) VerifyToken(ctx context.Context, c *gin.Context) (hydra.Visitor, error) {
-	return h.hydra.VerifyToken(ctx, c)
+func (haa *hydraAuthAccess) VerifyToken(ctx context.Context, c *gin.Context) (hydra.Visitor, error) {
+	return haa.hydra.VerifyToken(ctx, c)
 }

@@ -10,14 +10,12 @@ import (
 	"context"
 	"net/http"
 	"time"
-	"vega-backend/worker"
 
 	"github.com/gin-gonic/gin"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	"github.com/kweaver-ai/kweaver-go-lib/middleware"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"vega-backend/common"
@@ -32,6 +30,7 @@ import (
 	"vega-backend/logics/resource"
 	"vega-backend/logics/resource_data"
 	"vega-backend/version"
+	"vega-backend/worker"
 )
 
 // RestHandler interface
@@ -232,7 +231,13 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 // HealthCheck 健康检查
 func (r *restHandler) HealthCheck(c *gin.Context) {
 	// 返回服务信息
-	serverInfo := o11y.ServerInfo{
+	serverInfo := struct {
+		ServerName    string
+		ServerVersion string
+		Language      string
+		GoVersion     string
+		GoArch        string
+	}{
 		ServerName:    version.ServerName,
 		ServerVersion: version.ServerVersion,
 		Language:      version.LanguageGo,

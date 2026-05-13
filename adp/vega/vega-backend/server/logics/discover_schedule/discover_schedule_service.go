@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/rs/xid"
 
 	"vega-backend/common"
@@ -58,13 +58,12 @@ func NewDiscoverScheduleService(appSetting *common.AppSetting, dts interfaces.Di
  */
 func (dss *discoverScheduleService) Create(ctx context.Context, req *interfaces.DiscoverScheduleRequest) (string, error) {
 	// 使用OpenTelemetry追踪请求执行过程
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Create")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverScheduleService.Create")
 	defer span.End()
 
 	// Validate cron expression
 	if req.CronExpr == "" {
-		logger.Error("Cron expression is required")
-		o11y.Error(ctx, "Cron expression is required")
+		otellog.LogError(ctx, "Cron expression is required", nil)
 		return "", fmt.Errorf("cron_expr is required")
 	}
 
@@ -91,8 +90,7 @@ func (dss *discoverScheduleService) Create(ctx context.Context, req *interfaces.
 
 	// Create schedule
 	if err := dss.dsa.Create(ctx, schedule); err != nil {
-		logger.Errorf("Failed to create scheduled discover schedule: %v", err)
-		o11y.Error(ctx, "Failed to create discover schedule")
+		otellog.LogError(ctx, "Failed to create discover schedule", err)
 		return "", err
 	}
 
@@ -103,7 +101,7 @@ func (dss *discoverScheduleService) Create(ctx context.Context, req *interfaces.
 
 // GetByID retrieves a discover schedule by ID.
 func (dss *discoverScheduleService) GetByID(ctx context.Context, id string) (*interfaces.DiscoverSchedule, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.GetByID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverScheduleService.GetByID")
 	defer span.End()
 
 	return dss.dsa.GetByID(ctx, id)
@@ -111,7 +109,7 @@ func (dss *discoverScheduleService) GetByID(ctx context.Context, id string) (*in
 
 // List lists discover schedules.
 func (dss *discoverScheduleService) List(ctx context.Context, params interfaces.DiscoverScheduleQueryParams) ([]*interfaces.DiscoverSchedule, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.List")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverScheduleService.List")
 	defer span.End()
 
 	return dss.dsa.List(ctx, params)
@@ -119,13 +117,12 @@ func (dss *discoverScheduleService) List(ctx context.Context, params interfaces.
 
 // Update updates a discover schedule.
 func (dss *discoverScheduleService) Update(ctx context.Context, id string, req *interfaces.DiscoverSchedule) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Update")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverScheduleService.Update")
 	defer span.End()
 
 	// Validate cron expression
 	if req.CronExpr == "" {
-		logger.Error("Cron expression is required")
-		o11y.Error(ctx, "Cron expression is required")
+		otellog.LogError(ctx, "Cron expression is required", nil)
 		return fmt.Errorf("cron_expr is required")
 	}
 
@@ -140,8 +137,7 @@ func (dss *discoverScheduleService) Update(ctx context.Context, id string, req *
 
 	// Update schedule
 	if err := dss.dsa.Update(ctx, req); err != nil {
-		logger.Errorf("Failed to update discover schedule: %v", err)
-		o11y.Error(ctx, "Failed to update discover schedule")
+		otellog.LogError(ctx, "Failed to update discover schedule", err)
 		return err
 	}
 	logger.Infof("Updated discover schedule: id=%s", id)
@@ -150,13 +146,12 @@ func (dss *discoverScheduleService) Update(ctx context.Context, id string, req *
 
 // Delete deletes a discover schedule by ID.
 func (dss *discoverScheduleService) Delete(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Delete")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverScheduleService.Delete")
 	defer span.End()
 
 	// Delete schedule
 	if err := dss.dsa.Delete(ctx, id); err != nil {
-		logger.Errorf("Failed to delete discover schedule: %v", err)
-		o11y.Error(ctx, "Failed to delete discover schedule")
+		otellog.LogError(ctx, "Failed to delete discover schedule", err)
 		return err
 	}
 
@@ -166,13 +161,12 @@ func (dss *discoverScheduleService) Delete(ctx context.Context, id string) error
 
 // Enable enables a discover schedule.
 func (dss *discoverScheduleService) Enable(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Enable")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverScheduleService.Enable")
 	defer span.End()
 
 	schedule, err := dss.dsa.GetByID(ctx, id)
 	if err != nil {
-		logger.Errorf("Failed to get discover schedule: %v", err)
-		o11y.Error(ctx, "Failed to get discover schedule")
+		otellog.LogError(ctx, "Failed to get discover schedule", err)
 		return err
 	}
 
@@ -182,13 +176,12 @@ func (dss *discoverScheduleService) Enable(ctx context.Context, id string) error
 
 // Disable disables a discover schedule.
 func (dss *discoverScheduleService) Disable(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Disable")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverScheduleService.Disable")
 	defer span.End()
 
 	schedule, err := dss.dsa.GetByID(ctx, id)
 	if err != nil {
-		logger.Errorf("Failed to get discover schedule: %v", err)
-		o11y.Error(ctx, "Failed to get discover schedule")
+		otellog.LogError(ctx, "Failed to get discover schedule", err)
 		return err
 	}
 
@@ -198,7 +191,7 @@ func (dss *discoverScheduleService) Disable(ctx context.Context, id string) erro
 
 // GetEnabledSchedules retrieves all enabled discover schedules.
 func (dss *discoverScheduleService) GetEnabledSchedules(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.GetEnabledSchedules")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverScheduleService.GetEnabledSchedules")
 	defer span.End()
 	return dss.dsa.GetEnabledSchedules(ctx)
 }
@@ -207,13 +200,12 @@ func (dss *discoverScheduleService) GetEnabledSchedules(ctx context.Context) ([]
 // 它接收一个上下文和一个计划发现任务作为参数，返回一个错误
 func (dss *discoverScheduleService) ExecuteSchedule(ctx context.Context, schedule *interfaces.DiscoverSchedule) error {
 	// 使用追踪器创建一个新的span，用于监控和追踪请求的执行过程
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.ExecuteSchedule")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverScheduleService.ExecuteSchedule")
 	defer span.End() // 确保在函数返回时结束span
 
 	// 检查DiscoverTaskService是否已设置
 	if dss.dts == nil {
-		logger.Error("DiscoverTaskService not set")
-		o11y.Error(ctx, "DiscoverTaskService not set")
+		otellog.LogError(ctx, "DiscoverTaskService not set", nil)
 		return fmt.Errorf("DiscoverTaskService not set")
 	}
 
@@ -224,8 +216,7 @@ func (dss *discoverScheduleService) ExecuteSchedule(ctx context.Context, schedul
 		TriggerType: interfaces.DiscoverTaskTriggerScheduled,
 	})
 	if err != nil {
-		logger.Errorf("Failed to check running tasks for catalog %s: %v", schedule.CatalogID, err)
-		o11y.Error(ctx, "Failed to check running tasks")
+		otellog.LogError(ctx, "Failed to check running tasks", err)
 		return err
 	}
 	if tasks > 0 {
@@ -237,16 +228,14 @@ func (dss *discoverScheduleService) ExecuteSchedule(ctx context.Context, schedul
 	strategiesStr := strategiesToString(schedule.Strategies)
 	_, err = dss.dts.Create(ctx, schedule.CatalogID, interfaces.DiscoverTaskTriggerScheduled, schedule.ID, strategiesStr)
 	if err != nil {
-		logger.Errorf("Failed to create discover task for catalog %s: %v", schedule.CatalogID, err)
-		o11y.Error(ctx, "Failed to create discover task")
+		otellog.LogError(ctx, "Failed to create discover task", err)
 		return err
 	}
 
 	// Update last run time
 	now := time.Now().UnixMilli()
 	if err := dss.UpdateLastRun(ctx, schedule.ID, now); err != nil {
-		logger.Errorf("Failed to update last run time: %v", err)
-		o11y.Error(ctx, "Failed to update last run time")
+		otellog.LogError(ctx, "Failed to update last run time", err)
 		return err
 	}
 	logger.Infof("Executed discover schedule: id=%s, catalog_id=%s", schedule.ID, schedule.CatalogID)

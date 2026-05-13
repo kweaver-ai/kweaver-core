@@ -12,10 +12,9 @@ import (
 	"sync"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
 	"vega-backend/interfaces"
@@ -48,8 +47,7 @@ func NewModelFactoryAccess(appSetting *common.AppSetting) interfaces.ModelFactor
 }
 
 func (mfa *modelFactoryAccess) GetModelByName(ctx context.Context, modelName string) (*interfaces.SmallModel, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetModelByName",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetModelByName")
 	defer span.End()
 
 	httpUrl := fmt.Sprintf("%s/api/private/mf-model-manager/v1/small-model/get_by_name?model_name=%s", mfa.mfManagerUrl, modelName)
@@ -87,8 +85,7 @@ func (mfa *modelFactoryAccess) GetModelByName(ctx context.Context, modelName str
 
 func (mfa *modelFactoryAccess) GetVector(ctx context.Context, modelName string, words []string) ([]*interfaces.VectorResp, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetVector",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetVector")
 	defer span.End()
 
 	if len(words) == 0 {

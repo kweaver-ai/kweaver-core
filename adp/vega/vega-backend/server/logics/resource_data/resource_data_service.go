@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/codes"
 
@@ -67,7 +67,7 @@ func NewResourceDataService(appSetting *common.AppSetting) interfaces.ResourceDa
 
 // Query 列出 resource 中的文档
 func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.Resource, params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List resource documents")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "List resource documents")
 	defer span.End()
 
 	logger.Debugf("Query, resourceID: %s, params: %v", resource.ID, params)
@@ -200,7 +200,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfaces.Catalog, resource *interfaces.Resource,
 	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query data")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Query data")
 	defer span.End()
 
 	logger.Debugf("QueryData, resourceID: %s, catalogID: %s, params: %v",

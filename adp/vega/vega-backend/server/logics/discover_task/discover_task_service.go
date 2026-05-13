@@ -15,13 +15,12 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/hibiken/asynq"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
 	asynq_access "vega-backend/drivenadapters/asynq"
@@ -65,8 +64,7 @@ func NewDiscoverTaskService(appSetting *common.AppSetting) interfaces.DiscoverTa
 //   - error: 错误信息，如果创建失败则返回错误
 func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, discoverSchedule ...string) (string, error) {
 	// 使用分布式追踪系统创建一个span，用于追踪服务调用
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.Create",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverTaskService.Create")
 	defer span.End() // 确保span在函数结束时结束
 
 	// Get account info from context
@@ -109,8 +107,7 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, di
 
 	// 1. Write to database
 	if err := dts.dta.Create(ctx, task); err != nil {
-		logger.Errorf("Failed to create discover task: %v", err)
-		o11y.Error(ctx, "Failed to create discover task")
+		otellog.LogError(ctx, "Failed to create discover task", err)
 		return "", err
 	}
 
@@ -119,8 +116,7 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, di
 		TaskID: task.ID,
 	})
 	if err != nil {
-		logger.Errorf("Failed to marshal discover task: %v", err)
-		o11y.Error(ctx, "Failed to marshal discover task")
+		otellog.LogError(ctx, "Failed to marshal discover task", err)
 		return "", err
 	}
 	// 设置任务执行超时时间为 30 分钟
@@ -132,8 +128,7 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, di
 		asynq.Deadline(time.Now().Add(12*time.Hour)),
 	)
 	if err != nil {
-		logger.Errorf("Failed to enqueue discover task: %v", err)
-		o11y.Error(ctx, "Failed to enqueue discover task")
+		otellog.LogError(ctx, "Failed to enqueue discover task", err)
 		return "", err
 	}
 
@@ -145,8 +140,7 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, di
 
 // GetByID retrieves a DiscoverTask by ID.
 func (dts *discoverTaskService) GetByID(ctx context.Context, id string) (*interfaces.DiscoverTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.GetByID",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverTaskService.GetByID")
 	defer span.End()
 
 	return dts.dta.GetByID(ctx, id)
@@ -154,8 +148,7 @@ func (dts *discoverTaskService) GetByID(ctx context.Context, id string) (*interf
 
 // List lists DiscoverTasks for a catalog.
 func (dts *discoverTaskService) List(ctx context.Context, params interfaces.DiscoverTaskQueryParams) ([]*interfaces.DiscoverTask, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.List",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverTaskService.List")
 	defer span.End()
 
 	return dts.dta.List(ctx, params)
@@ -163,8 +156,7 @@ func (dts *discoverTaskService) List(ctx context.Context, params interfaces.Disc
 
 // UpdateStatus updates a DiscoverTask's status.
 func (dts *discoverTaskService) UpdateStatus(ctx context.Context, id, status, message string, stime int64) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.UpdateStatus",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverTaskService.UpdateStatus")
 	defer span.End()
 
 	return dts.dta.UpdateStatus(ctx, id, status, message, stime)
@@ -172,8 +164,7 @@ func (dts *discoverTaskService) UpdateStatus(ctx context.Context, id, status, me
 
 // UpdateResult updates a DiscoverTask's result.
 func (dts *discoverTaskService) UpdateResult(ctx context.Context, id string, result *interfaces.DiscoverResult, stime int64) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.UpdateResult",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverTaskService.UpdateResult")
 	defer span.End()
 
 	return dts.dta.UpdateResult(ctx, id, result, stime)
@@ -181,8 +172,7 @@ func (dts *discoverTaskService) UpdateResult(ctx context.Context, id string, res
 
 // CheckExistByStatuses checks if DiscoverTasks exists by catalog ID and statuses.
 func (dts *discoverTaskService) CheckExistByStatuses(ctx context.Context, catalogID string, statuses []string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.CheckExistByStatuses",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverTaskService.CheckExistByStatuses")
 	defer span.End()
 
 	return dts.dta.CheckExistByStatuses(ctx, catalogID, statuses)
@@ -199,8 +189,7 @@ func (dts *discoverTaskService) CheckExistByStatuses(ctx context.Context, catalo
 //   - Deletes pass-through tasks one-by-one. Mid-loop errors return 500 (rare, bounded
 //     by pre-validation).
 func (dts *discoverTaskService) Delete(ctx context.Context, ids []string, ignoreMissing bool) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.Delete",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DiscoverTaskService.Delete")
 	defer span.End()
 
 	// Dedupe ids while preserving order.
@@ -221,9 +210,7 @@ func (dts *discoverTaskService) Delete(ctx context.Context, ids []string, ignore
 	for _, id := range uniqueIDs {
 		task, err := dts.dta.GetByID(ctx, id)
 		if err != nil {
-			logger.Errorf("Get discover_task %s failed: %v", id, err)
-			o11y.Error(ctx, fmt.Sprintf("Get discover_task %s failed: %v", id, err))
-			span.SetStatus(codes.Error, "Get discover_task failed")
+			otellog.LogError(ctx, fmt.Sprintf("Get discover_task %s failed", id), err)
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverTask_InternalError_GetFailed).
 				WithErrorDetails(err.Error())
 		}
@@ -251,9 +238,7 @@ func (dts *discoverTaskService) Delete(ctx context.Context, ids []string, ignore
 
 	for _, id := range toDelete {
 		if err := dts.dta.Delete(ctx, id); err != nil {
-			logger.Errorf("Delete discover_task %s failed: %v", id, err)
-			o11y.Error(ctx, fmt.Sprintf("Delete discover_task %s failed: %v", id, err))
-			span.SetStatus(codes.Error, "Delete discover_task failed")
+			otellog.LogError(ctx, fmt.Sprintf("Delete discover_task %s failed", id), err)
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverTask_InternalError_DeleteFailed).
 				WithErrorDetails(err.Error())
 		}

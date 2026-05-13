@@ -67,7 +67,7 @@ func (server *mgrService) start() {
 		panic(err)
 	}
 
-	// 创建gin.engine 并注册Public API
+	// 创建gin.engine 并注册 API
 	engine := gin.New()
 
 	server.restHandler.RegisterPublic(engine)
@@ -82,7 +82,7 @@ func (server *mgrService) start() {
 	// 在收到信号的时候，会自动触发 ctx 的 Done ，这个 stop 是不再捕获注册的信号的意思，算是一种释放资源。
 	defer stop()
 
-	// 初始化http服务
+	// 初始化 http 服务
 	s := &http.Server{
 		Addr:           ":" + strconv.Itoa(server.appSetting.ServerSetting.HttpPort),
 		Handler:        engine,
@@ -91,7 +91,7 @@ func (server *mgrService) start() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	// 启动http服务
+	// 启动 http 服务
 	go func() {
 		err := s.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
@@ -99,13 +99,15 @@ func (server *mgrService) start() {
 		}
 	}()
 
+	logger.Infof("Server Started on Port:%d", server.appSetting.ServerSetting.HttpPort)
+
 	<-ctx.Done()
 
 	// 设置系统最后处理时间
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	// 停止http服务
+	// 停止 http 服务
 	logger.Info("Server Start Shutdown")
 	if err := s.Shutdown(ctx); err != nil {
 		logger.Fatalf("Server Shutdown:%v", err)
@@ -113,7 +115,7 @@ func (server *mgrService) start() {
 
 	server.otelProviders.Shutdown(ctx)
 
-	logger.Info("Server Exiting")
+	logger.Info("Server Exited")
 }
 
 func main() {
@@ -122,20 +124,19 @@ func main() {
 	// 	http.ListenAndServe("0.0.0.0:6060", nil)
 	// }()
 
-	logger.Info("Server Starting")
+	logger.Info("Server Initializing")
 
 	// 初始化服务配置
 	appSetting := common.NewSetting()
-
 	logger.Info("Server Init Setting Success")
 
 	// 设置错误码语言
 	rest.SetLang(appSetting.ServerSetting.Language)
 	logger.Info("Server Set Language Success")
 
-	// 设置gin运行模式
+	// 设置 gin 运行模式
 	gin.SetMode(appSetting.ServerSetting.RunMode)
-	logger.Info("Server Set RunMode Success")
+	logger.Infof("Server RunMode: %s", appSetting.ServerSetting.RunMode)
 
 	logger.Infof("Server Start By Port:%d", appSetting.ServerSetting.HttpPort)
 
@@ -144,6 +145,7 @@ func main() {
 		logger.Fatalf("Failed to initialize OpenTelemetry provider: %v", err)
 	}
 
+	// 初始化数据库连接
 	db := libdb.NewDB(&appSetting.DBSetting)
 	logics.SetDB(db)
 
@@ -174,6 +176,7 @@ func main() {
 	logics.SetRiskTypeAccess(risk_type.NewRiskTypeAccess(appSetting))
 	logics.SetVegaBackendAccess(vega_backend.NewVegaBackendAccess(appSetting))
 
+	// 创建并启动服务
 	server := &mgrService{
 		appSetting:     appSetting,
 		otelProviders:  otelProviders,
