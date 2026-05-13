@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"vega-backend/interfaces"
+	"vega-backend/logics/extensions"
 )
 
 func ValidateCatalogRequest(ctx context.Context, req *interfaces.CatalogRequest) error {
@@ -23,6 +24,11 @@ func ValidateCatalogRequest(ctx context.Context, req *interfaces.CatalogRequest)
 	}
 	if err := validateConnectorConfig(ctx, req.ConnectorCfg); err != nil {
 		return err
+	}
+	if req.Extensions != nil {
+		if err := extensions.ValidateEntityExtensionsMap(ctx, *req.Extensions); err != nil {
+			return err
+		}
 	}
 	return nil
 }

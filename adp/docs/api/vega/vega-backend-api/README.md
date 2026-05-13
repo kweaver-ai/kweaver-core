@@ -20,11 +20,5 @@
 - **错误响应**：所有非 2xx 响应统一返回 `Error` schema（对应 `kweaver-go-lib/rest.BaseError`），各文件自含一份定义。
 - **内部接口**：`/api/vega-backend/in/v1/...` 与 `/api/vega-backend/v1/...` 一一对应，请求 / 响应结构完全一致；区别仅在鉴权方式（外部 OAuth Token，内部 Header `X-Account-ID` / `X-Account-Type`）。各文件仅描述外部接口，内部接口在 `info.description` 中统一说明。
 - **跨资源便利端点**：归属到"被过滤的目标资源"所在的文件。例如 `GET /catalogs/{cid}/discover-schedules` 是按 catalog 过滤 schedule，归 `discover-schedule.yaml`；`POST /catalogs/{cid}/discover` 创建 DiscoverTask 实例，归 `discover-task.yaml`。
-
-## 待生成
-
-以下文件尚未落地，待对应资源 / 设计稿评审通过后补全：
-
-- `discover-task.yaml`
-- `discover-schedule.yaml`（依赖 [discover_schedule_redesign.md](../../../design/vega/features/vega-backend/discover_schedule_redesign.md) 的重构落地）
-- `resource.yaml`
+- **Catalog / Resource `extensions`（Issue #382，方案 B）**：OpenAPI 定义在 [catalog.yaml](catalog.yaml)、[resource.yaml](resource.yaml)。请求/响应与列表投影仅 **`extensions`**；列表筛选 query 为 **`extension_key` / `extension_value`**；`include_extensions`、`include_extension_keys` 见两文件。持久化表 **`t_entity_extension`** 及约定见 `info.description` 与设计稿
+  [catalog-resource-labels-scheme-b-design.md](../../../design/vega/features/vega-backend/dip-for-extension/catalog-resource-labels-scheme-b-design.md)。

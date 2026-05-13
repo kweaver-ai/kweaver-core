@@ -25,10 +25,12 @@ import (
 
 	"vega-backend/common"
 	catalogAccess "vega-backend/drivenadapters/catalog"
+	"vega-backend/drivenadapters/entityextension"
 	resourceAccess "vega-backend/drivenadapters/resource"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 	"vega-backend/logics/connectors/factory"
+	"vega-backend/logics/extensions"
 	"vega-backend/logics/permission"
 	"vega-backend/logics/user_mgmt"
 )
@@ -165,6 +167,20 @@ func (cs *catalogService) Create(ctx context.Context, req *interfaces.CatalogReq
 			WithErrorDetails(err.Error())
 	}
 
+	if req.Extensions != nil {
+		if err := extensions.ValidateEntityExtensionsMap(ctx, *req.Extensions); err != nil {
+			_ = cs.ca.DeleteByIDs(ctx, []string{catalog.ID})
+			return "", err
+		}
+		if err := entityextension.NewStore(cs.appSetting).Replace(ctx, catalog.ID, *req.Extensions); err != nil {
+			_ = cs.ca.DeleteByIDs(ctx, []string{catalog.ID})
+			logger.Errorf("Replace catalog extensions failed: %v", err)
+			span.SetStatus(codes.Error, "Replace catalog extensions failed")
+			return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_CreateFailed).
+				WithErrorDetails(err.Error())
+		}
+	}
+
 	// 注册资源
 	err = cs.ps.CreateResources(ctx, []interfaces.PermissionResource{{
 		ID:   catalog.ID,
@@ -257,6 +273,12 @@ func (cs *catalogService) GetByIDs(ctx context.Context, ids []string) ([]*interf
 	catalogs, err := cs.ca.GetByIDs(ctx, ids)
 	if err != nil {
 		span.SetStatus(codes.Error, "Get catalog failed")
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+
+	if err := cs.ca.AttachListExtensions(ctx, interfaces.CatalogsQueryParams{IncludeExtensions: true}, catalogs); err != nil {
+		span.SetStatus(codes.Error, "Load catalog extensions failed")
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -395,6 +417,12 @@ func (cs *catalogService) List(ctx context.Context, params interfaces.CatalogsQu
 		catalogs = append(catalogs, batchCatalogs...)
 	}
 
+	if err := cs.ca.AttachListExtensions(ctx, params, catalogs); err != nil {
+		span.SetStatus(codes.Error, "Attach catalog extensions failed")
+		return []*interfaces.Catalog{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+
 	// 设置catalog操作权限
 	for _, c := range catalogs {
 		if resrc, exist := matchResourceOpsMap[c.ID]; exist {
@@ -504,6 +532,17 @@ func (cs *catalogService) Update(ctx context.Context, id string, req *interfaces
 		span.SetStatus(codes.Error, "Update catalog failed")
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_UpdateFailed).
 			WithErrorDetails(err.Error())
+	}
+
+	if req.Extensions != nil {
+		if err := extensions.ValidateEntityExtensionsMap(ctx, *req.Extensions); err != nil {
+			return err
+		}
+		if err := entityextension.NewStore(cs.appSetting).Replace(ctx, catalog.ID, *req.Extensions); err != nil {
+			span.SetStatus(codes.Error, "Replace catalog extensions failed")
+			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_UpdateFailed).
+				WithErrorDetails(err.Error())
+		}
 	}
 
 	// 请求更新资源名称的接口，更新资源的名称

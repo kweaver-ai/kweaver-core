@@ -25,6 +25,7 @@ import (
 
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
+	"vega-backend/logics/extensions"
 )
 
 // ========== ListResources ==========
@@ -85,12 +86,29 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 		return
 	}
 
+	extKeys := c.QueryArray("extension_key")
+	extVals := c.QueryArray("extension_value")
+	if err := extensions.ValidateExtensionQueryPairs(ctx, extKeys, extVals); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	includeExt := strings.EqualFold(strings.TrimSpace(c.Query("include_extensions")), "true")
+	includeExtKeys := strings.TrimSpace(c.Query("include_extension_keys"))
+
 	params := interfaces.ResourcesQueryParams{
 		PaginationQueryParams: pageParam,
 		CatalogID:             catalogID,
 		Category:              category,
 		Status:                status,
 		Database:              database,
+		ExtensionKeys:         extKeys,
+		ExtensionValues:       extVals,
+		IncludeExtensions:     includeExt,
+		IncludeExtensionKeys:  includeExtKeys,
 	}
 
 	entries, total, err := r.rs.List(ctx, params)

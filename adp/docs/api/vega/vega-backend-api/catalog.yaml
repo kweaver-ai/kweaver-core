@@ -8,6 +8,32 @@ info:
     Catalog 是一个数据源连接的抽象，对应一个物理数据源（MySQL / OpenSearch / S3 等）
     或逻辑目录（虚拟视图）。资源（`Resource`）按 catalog 归属注册。
 
+    **可检索业务 KV（`extensions`，Issue #382，方案 B）**
+
+    - 与 `tags`（最多 5 个、用于展示的短字符串列表）不同，`extensions` 为 **扁平 string→string**，
+      用于 DIP 等域外元数据及 **列表按 key/value 筛选**；持久化见 **`t_entity_extension`**（仅存一套行）。
+    - **创建 / 更新**：请求体可选 **`extensions`**。**根对象出现 `extensions` 键**（含 `{}`）
+      即对该 catalog 做 KV **整包替换**；**键不出现**则不修改已有 KV。
+    - **读取**：详情与列表（`include_extensions=true` 时）返回 **`extensions`**。
+    - **列表**：默认不返回各条目的 KV object；`include_extensions=true` 时返回。
+      可选 `include_extension_keys` 仅投影部分 key。
+    - **列表筛选**：**`extension_key`/`extension_value`**（数组 query，`style=form` + `explode=true`），等长成对 AND。
+    - 设计依据：
+      [catalog-resource-labels-scheme-b-design.md](../../../design/vega/features/vega-backend/dip-for-extension/catalog-resource-labels-scheme-b-design.md)
+
+    **持久化（与 `migrations/mariadb`、`migrations/dm8` 惯例对齐）**
+
+    - 表名：`t_entity_extension`（**不**改 `t_catalog` / `t_resource` 主表结构）。
+    - 列：`f_entity_id` VARCHAR(40) NOT NULL（与 `t_catalog.f_id` **同一取值空间、全局唯一**）、
+      `f_key` VARCHAR(128) NOT NULL、`f_value` VARCHAR(512) NOT NULL、
+      `f_create_time` / `f_update_time` BIGINT（与现有表时间字段风格一致）。
+    - 主键：`PRIMARY KEY (f_entity_id, f_key)`（单值语义；**无** `f_scope` 列，依赖 catalog/resource
+      id 全局不冲突之前提，见设计文档）。
+    - 索引（MariaDB 示例，DM8 同源语义）：`KEY idx_entity (f_entity_id)`；
+      `KEY idx_entity_key_value (f_entity_id, f_key, f_value(191))` 等（前缀长度以方言上限为准）。
+    - 删除 catalog 时应用层同事务删除 `t_entity_extension` 中 `f_entity_id` 等于该 catalog `f_id` 的行；
+      若级联删除其下 resource，须一并删除对应 resource 的 `f_entity_id` 行。
+
     本文件仅包含 catalog 自身的 CRUD 与状态相关端点。跨资源的便利端点：
     - `POST /catalogs/{id}/discover`（手动发现一次） → 见 `discover-task.yaml`
     - `GET /catalogs/{ids}/resources`（按 catalog 列资源） → 见 `resource.yaml`
@@ -15,15 +41,22 @@ info:
 
     每个外部接口都有一一对应的内部版本，路径前缀为 `/api/vega-backend/in/v1`，请求体与
     响应结构与外部完全一致；区别仅在于鉴权方式：外部走 OAuth Token 校验，内部从请求头
-    （`X-Account-ID` / `X-Account-Type`）解析访问者。本文档仅描述外部接口。
-  version: 0.1.0
+    （`X-Account-ID` / `X-Account-Type`）解析访问者。
+
+    本文档仅描述外部接口。
+  version: 0.2.1
 servers:
   - url: /api/vega-backend/v1
 paths:
   /api/vega-backend/v1/catalogs:
     get:
       summary: 获取 catalog 列表
-      description: 分页获取 catalog；支持按 tag、type、health_check_status 过滤。
+      description: |
+        分页获取 catalog；支持按 tag、type、health_check_status 过滤。
+
+        **KV 筛选**：`extension_key` / `extension_value` 为数组 query。
+        序列化形如 `extension_key=a&extension_key=b&extension_value=1&extension_value=2`。参与筛选的一组参数 **必须等长**，
+        按下标配对为 AND 等值条件；长度不一致或未成对 → 400。
       parameters:
         - name: tag
           description: 按标签精确过滤
@@ -83,6 +116,42 @@ paths:
               - asc
               - desc
             default: desc
+        - name: extension_key
+          description: 与 `extension_value` 成对；多条件 AND。等长数组，按下标配对；等值匹配 `t_entity_extension.f_key`。
+          in: query
+          schema:
+            type: array
+            maxItems: 5
+            items:
+              type: string
+              maxLength: 128
+          style: form
+          explode: true
+        - name: extension_value
+          description: 与 `extension_key` 成对；语义见 `extension_key`。
+          in: query
+          schema:
+            type: array
+            maxItems: 5
+            items:
+              type: string
+              maxLength: 512
+          style: form
+          explode: true
+        - name: include_extensions
+          description: |
+            为 true 时列表 `entries` 中每条 Catalog 带 `extensions`；默认 false。
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: include_extension_keys
+          description: |
+            逗号分隔的 key 列表；在 `include_extensions` 为 true 时仅返回列出的 key（仍一次加载后过滤）。
+            未携带或为空表示返回全部 key。
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: ok
@@ -101,6 +170,9 @@ paths:
       description: |
         创建一个新的 catalog。`name` 全局唯一，已存在时返回 409。
         `connector_type` 必须是已注册且 enabled 的连接器类型。
+
+        可选 **`extensions`**：与 `t_catalog` 插入 **同一事务**内写入 `t_entity_extension`。
+        响应体 `CatalogRef` 返回 `extensions`，与持久化一致。
       requestBody:
         required: true
         content:
@@ -138,7 +210,9 @@ paths:
           type: string
     get:
       summary: 获取 catalog 详情
-      description: 路径参数支持单条或批量（逗号分隔）；批量时不存在的 ID 不会报错，结果中按存在的返回。
+      description: |
+        路径参数支持单条或批量（逗号分隔）；批量时不存在的 ID 不会报错，结果中按存在的返回。
+        每条 `Catalog` 含 **`extensions`**（无副表行时为 `{}`）。
       responses:
         "200":
           description: ok
@@ -157,7 +231,9 @@ paths:
           $ref: "#/components/responses/InternalServerError"
     delete:
       summary: 删除 catalog
-      description: 路径参数支持单条或批量（逗号分隔）。删除会同步移除该 catalog 下的资源、调度等关联记录。
+      description: |
+        路径参数支持单条或批量（逗号分隔）。删除会同步移除该 catalog 下的资源、调度等关联记录，
+        并删除 `t_entity_extension` 中 `f_entity_id` 等于被删 catalog / resource `f_id` 的行（应用层同事务）。
       responses:
         "204":
           description: 删除成功
@@ -185,6 +261,9 @@ paths:
         - 不一致 → 409 `VegaBackend.Catalog.IDMismatch`。
 
         `name` 改动后若新名称已被其它 catalog 占用，返回 409 `VegaBackend.Catalog.NameExists`。
+
+        **extensions**：请求体若包含 **`extensions` 键**（含空对象 `{}`），则对该 catalog **整包替换**
+        `t_entity_extension` 中 `f_entity_id = id` 的全部行；**键未出现**则不修改副表。
       requestBody:
         required: true
         content:
@@ -269,7 +348,12 @@ paths:
 components:
   responses:
     BadRequest:
-      description: 请求参数 / 请求体非法
+      description: |
+        请求参数 / 请求体非法。与 `extensions` 相关的常见 errcode（命名以合入代码为准）：
+        - `VegaBackend.Extensions.InvalidFormat`：`extensions` 非 object 或 key/value 非 string
+        - `VegaBackend.Extensions.QuotaExceeded`：条数或长度超限
+        - `VegaBackend.Extensions.ReservedKey`：key 以 `vega_` 开头
+        - `VegaBackend.Extensions.MismatchedQueryPairs`：`extension_key` / `extension_value` 数组长度不一致或未成对
       content:
         application/json:
           schema:
@@ -320,6 +404,26 @@ components:
           type: string
         error_details:
           description: 详细内容，类型不固定
+    EntityExtensions:
+      description: |
+        扁平 KV 的 JSON object 形态（`string`→`string`）。用于 **`Catalog` / `CatalogRequest` / `CatalogRef`**
+        上的 **`extensions`** 属性。
+
+        存于 `t_entity_extension`；与 `tags` 语义独立。无数据时 JSON 为 `{}`。单实体条数、键值长度以服务端配置为准
+        （建议 ≤64 条；key ≤128；value ≤512 UTF-8）；禁止 key 以 `vega_` 开头（平台保留）。
+
+        **列表**：`include_extensions` 为 true 时，条目返回 `extensions`；默认 false 时可省略以减小负载。
+        `include_extension_keys` 非空时仅投影所列 key。
+
+        **请求体（POST/PUT）**：根对象出现 **`extensions` 键**（含 `{}`）即触发该实体 KV **整包替换**；
+        **键未出现**则不修改副表（与 `info.description` 一致）。
+      type: object
+      maxProperties: 64
+      additionalProperties:
+        type: string
+        maxLength: 512
+      propertyNames:
+        maxLength: 128
     AccountInfo:
       description: 账号信息
       type: object
@@ -381,6 +485,8 @@ components:
           description: 扩展元信息
           type: object
           additionalProperties: true
+        extensions:
+          $ref: "#/components/schemas/EntityExtensions"
         health_check_enabled:
           description: 是否开启周期健康检查
           type: boolean
@@ -421,6 +527,8 @@ components:
 
         - POST：`id` 可省略，由后端生成；若携带且已存在，返回 409 `VegaBackend.Catalog.IdExists`。
         - PUT：`id` **必填**，且必须与路径参数 `id` 完全一致。缺失返回 400 `VegaBackend.Catalog.InvalidParameter.ID`，不一致返回 409 `VegaBackend.Catalog.IDMismatch`。
+
+        可选 **`extensions`**（见 `EntityExtensions`）：写入规则见 `info.description`。
       type: object
       required:
         - name
@@ -455,6 +563,8 @@ components:
           description: 连接器配置；字段由 ConnectorType.field_config 决定
           type: object
           additionalProperties: true
+        extensions:
+          $ref: "#/components/schemas/EntityExtensions"
     ListCatalogs:
       description: catalog 列表
       type: object
@@ -470,13 +580,15 @@ components:
           type: integer
           format: int64
     CatalogRef:
-      description: catalog 引用
+      description: catalog 引用（创建成功响应）；含 `extensions`
       type: object
       required:
         - id
       properties:
         id:
           type: string
+        extensions:
+          $ref: "#/components/schemas/EntityExtensions"
     CatalogHealthStatusEntry:
       description: catalog 健康状态条目
       type: object

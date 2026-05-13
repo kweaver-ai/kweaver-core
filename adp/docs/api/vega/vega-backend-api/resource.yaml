@@ -21,6 +21,24 @@ info:
 
     `status` 取值：`active` / `disabled` / `deprecated` / `stale`。
 
+    **可检索业务 KV（`extensions`，Issue #382，方案 B）**
+
+    - 与 `tags` 不同，`extensions` 为 **扁平 string→string**，存于 **`t_entity_extension`**；
+      `f_entity_id` 与 `t_resource.f_id` **同一全局唯一 ID 空间**（见设计文档不变量）。
+    - **创建 / 更新**：请求体可选 **`extensions`**；**键出现**（含 `{}`）即整包替换副表行；
+      **键未出现**则不修改。
+    - **读取**：详情与列表（`include_extensions` 为 true 时）返回 **`extensions`**。
+    - **列表**：`include_extensions`、`include_extension_keys`；筛选 **`extension_key` / `extension_value`**
+      数组 query（与 `catalog.yaml` 一致）。
+    - 设计依据：
+      [catalog-resource-labels-scheme-b-design.md](../../../design/vega/features/vega-backend/dip-for-extension/catalog-resource-labels-scheme-b-design.md)
+
+    **持久化（与 `migrations/mariadb`、`migrations/dm8` 惯例对齐）**
+
+    - 与 Catalog 共用 **`t_entity_extension`** 表；**无** `f_scope` 列；主键 `(f_entity_id, f_key)`。
+    - 列名、索引、时间字段风格与 `catalog.yaml` / 设计文档 **§3** 一致；删除 resource 时同事务删除
+      `f_entity_id` 等于该 resource `f_id` 的全部扩展行。
+
     **子资源端点指引**：
 
     - 数据访问（dataset 文档 / 通用查询）→ [resource-data.yaml](resource-data.yaml)
@@ -30,14 +48,18 @@ info:
 
     端点设计遵循 [vega-backend/CLAUDE.md] 的"端点设计规则"：批量 GET / DELETE 走 path
     （`/resources/{ids}` 逗号分隔，单条退化），列表过滤走 query。
-  version: 0.1.0
+  version: 0.2.1
 servers:
   - url: /api/vega-backend/v1
 paths:
   /api/vega-backend/v1/resources:
     get:
       summary: 获取资源列表
-      description: 分页 + 多维过滤获取 Resource 列表。
+      description: |
+        分页 + 多维过滤获取 Resource 列表。
+
+        **KV 筛选**：`extension_key` / `extension_value`（数组 query）；
+        语义同 [catalog.yaml](catalog.yaml) 列表；与 `catalog_id`、`category` 等过滤 **AND** 组合。
       parameters:
         - name: catalog_id
           description: 按归属 catalog 过滤
@@ -108,6 +130,40 @@ paths:
               - asc
               - desc
             default: desc
+        - name: extension_key
+          description: 与 `extension_value` 成对；多条件 AND。等长数组；等值匹配 `t_entity_extension.f_key`。
+          in: query
+          schema:
+            type: array
+            maxItems: 5
+            items:
+              type: string
+              maxLength: 128
+          style: form
+          explode: true
+        - name: extension_value
+          description: 与 `extension_key` 成对；语义见 `extension_key`。
+          in: query
+          schema:
+            type: array
+            maxItems: 5
+            items:
+              type: string
+              maxLength: 512
+          style: form
+          explode: true
+        - name: include_extensions
+          description: |
+            为 true 时列表条目带 `extensions`；默认 false。
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: include_extension_keys
+          description: 逗号分隔 key；在 `include_extensions` 为 true 时仅返回列出的 key。
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: ok
@@ -132,6 +188,7 @@ paths:
         - `name` 在 catalog 内唯一；冲突返回 409 `VegaBackend.Resource.NameExists`。
         - `schema_definition` / `logic_definition` 视 category 而定（如 `logicview`
           需要 `logic_definition`，`table` / `index` 通常需要 `schema_definition`）。
+        - 可选 **`extensions`**：与插入 `t_resource` **同一事务**内写入 `t_entity_extension`。
       requestBody:
         required: true
         content:
@@ -171,6 +228,7 @@ paths:
       description: |
         按 ids 批量取 Resource。**整体事务语义**：任一 id 不存在返回 404
         `VegaBackend.Resource.NotFound`，`error_details` 含具体缺失 id。
+        每条 `Resource` 含 **`extensions`**（无副表行时为 `{}`）。
       responses:
         "200":
           description: ok
@@ -191,6 +249,8 @@ paths:
         任一不存在返回 404 `VegaBackend.Resource.NotFound`，整批不删。
 
         可选 `?ignore_missing=true`：忽略不存在的 id（视为已删除），其它 id 正常删。
+
+        删除成功后须同事务移除 `t_entity_extension` 中对应 `f_entity_id` 的行。
       parameters:
         - name: ignore_missing
           description: 忽略不存在的 id；默认 false
@@ -222,6 +282,8 @@ paths:
 
         - `name` 在 catalog 内唯一；改名为已占用值返回 409 `VegaBackend.Resource.NameExists`。
         - 不能跨 catalog 移动（`catalog_id` 与原值不一致时按 service 层规则处理）。
+        - **extensions**：请求体若包含 **`extensions` 键**（含 `{}`）则整包替换该 resource 的 `t_entity_extension` 行；
+          **键未出现**则不修改副表。
       requestBody:
         required: true
         content:
@@ -250,6 +312,7 @@ components:
         请求参数 / 请求体非法。常见 errcode：
         - `VegaBackend.InvalidParameter.RequestBody`：body schema 不合法
         - `VegaBackend.Resource.InvalidParameter.*`：具体字段非法
+        - `VegaBackend.Extensions.*`：`extensions` 形状、配额、保留 key；或 query 数组未成对
       content:
         application/json:
           schema:
@@ -310,6 +373,17 @@ components:
           type: string
         error_details:
           description: 详细内容，类型不固定；无详情时为空字符串
+    EntityExtensions:
+      description: |
+        扁平 KV 的 JSON object（`string`→`string`）。用于 **`Resource` / `ResourceRequest`** 上的 **`extensions`**
+        属性；语义与约束同 [catalog.yaml](catalog.yaml) 中 `EntityExtensions`。
+      type: object
+      maxProperties: 64
+      additionalProperties:
+        type: string
+        maxLength: 512
+      propertyNames:
+        maxLength: 128
     AccountInfo:
       description: 操作者信息
       type: object
@@ -359,6 +433,18 @@ components:
           description: connector-specific 扩展属性，opaque
           type: object
           additionalProperties: true
+        extensions:
+          description: |
+            业务域外扁平 KV（`string`→`string`），**仅展示**；不参与 `GET /resources` 列表按 key/value 筛选。
+            持久化在 `schema_definition` JSON 内，**不**写入 `t_entity_extension`。与根级 Resource `extensions` 形态一致，见
+            [catalog-resource-labels-scheme-b-design.md](../../../design/vega/features/vega-backend/dip-for-extension/catalog-resource-labels-scheme-b-design.md) §6.11。
+          type: object
+          maxProperties: 32
+          additionalProperties:
+            type: string
+            maxLength: 512
+          propertyNames:
+            maxLength: 128
     PropertyFeature:
       description: 字段特性（决定字段在索引/查询/向量化中的行为）
       type: object
@@ -516,6 +602,8 @@ components:
           description: 源端配置（JSON），由 connector 实现解释
           type: object
           additionalProperties: true
+        extensions:
+          $ref: "#/components/schemas/EntityExtensions"
         schema_definition:
           description: Schema 定义（物理资源使用）
           type: array
@@ -556,6 +644,8 @@ components:
       description: |
         创建 / 更新请求体。与 `Resource` 实体相比，去掉了后端计算 / 时间戳 / 操作者
         等只读字段。
+
+        可选 **`extensions`**（见 `EntityExtensions` 与 `catalog.yaml` `info.description`）。
       type: object
       required:
         - catalog_id
@@ -614,6 +704,8 @@ components:
         source_metadata:
           type: object
           additionalProperties: true
+        extensions:
+          $ref: "#/components/schemas/EntityExtensions"
         schema_definition:
           type: array
           items:
