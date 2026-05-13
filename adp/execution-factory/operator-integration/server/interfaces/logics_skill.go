@@ -115,21 +115,21 @@ type QuerySkillMarketListResp struct {
 
 // GetSkillDetailReq Skill 详情查询
 type GetSkillDetailReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 }
 
 // GetSkillMarketDetailReq Skill 市场详情查询
 type GetSkillMarketDetailReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 }
 
 // GetSkillContentReq Skill 内容查询
 type GetSkillContentReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 }
@@ -144,7 +144,7 @@ type GetSkillContentResp struct {
 
 // ReadSkillFileReq 读取 Skill 文件请求
 type ReadSkillFileReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 	RelPath          string `json:"rel_path" validate:"required"`
@@ -265,7 +265,7 @@ type PublishSkillHistoryResp struct {
 
 // ExecuteSkillReq 执行 Skill 请求
 type ExecuteSkillReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 	EntryShell       string `json:"entry_shell" validate:"required"`
@@ -416,6 +416,65 @@ type SkillReader interface {
 	GetSkillContent(ctx context.Context, req *GetSkillContentReq) (*GetSkillContentResp, error)
 	ReadSkillFile(ctx context.Context, req *ReadSkillFileReq) (*ReadSkillFileResp, error)
 	GetSkillReleaseHistory(ctx context.Context, req *GetSkillReleaseHistoryReq) ([]*SkillReleaseHistoryInfo, error)
+}
+
+// ========== Management Read ==========
+
+// SkillManagementReader Skill 管理态只读接口
+type SkillManagementReader interface {
+	// GetManagementContent 获取管理态 SKILL.md 内容（含文件清单）
+	GetManagementContent(ctx context.Context, req *GetManagementContentReq) (*GetManagementContentResp, error)
+	// ReadManagementFile 读取管理态指定文件内容
+	ReadManagementFile(ctx context.Context, req *ReadManagementFileReq) (*ReadManagementFileResp, error)
+	// DownloadManagementSkill 下载管理态完整技能包
+	DownloadManagementSkill(ctx context.Context, req *DownloadManagementSkillReq) (*DownloadSkillResp, error)
+}
+
+// GetManagementContentReq 管理态内容查询请求
+type GetManagementContentReq struct {
+	BusinessDomainID string `header:"x-business-domain"`
+	UserID           string `header:"user_id"`
+	SkillID          string `uri:"skill_id" validate:"required"`
+	ResponseMode     string `form:"response_mode" default:"url"` // url(默认) | content
+}
+
+// GetManagementContentResp 管理态内容查询响应
+type GetManagementContentResp struct {
+	SkillID     string              `json:"skill_id"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Version     string              `json:"version"`
+	Status      BizStatus           `json:"status"`
+	Source      string              `json:"source"`
+	FileType    string              `json:"file_type"`
+	URL         string              `json:"url"`
+	Content     string              `json:"content,omitempty"`
+	Files       []*SkillFileSummary `json:"files"`
+}
+
+// ReadManagementFileReq 管理态文件读取请求
+type ReadManagementFileReq struct {
+	BusinessDomainID string `header:"x-business-domain"`
+	UserID           string `header:"user_id"`
+	SkillID          string `uri:"skill_id" validate:"required"`
+	RelPath          string `json:"rel_path" validate:"required"`
+}
+
+// ReadManagementFileResp 管理态文件读取响应
+type ReadManagementFileResp struct {
+	SkillID  string `json:"skill_id"`
+	RelPath  string `json:"rel_path"`
+	URL      string `json:"url"`
+	MimeType string `json:"mime_type"`
+	FileType string `json:"file_type"`
+	Size     int64  `json:"size"`
+}
+
+// DownloadManagementSkillReq 管理态技能包下载请求
+type DownloadManagementSkillReq struct {
+	BusinessDomainID string `header:"x-business-domain"`
+	UserID           string `header:"user_id"`
+	SkillID          string `uri:"skill_id" validate:"required"`
 }
 
 type SkillIndexBuildService interface {

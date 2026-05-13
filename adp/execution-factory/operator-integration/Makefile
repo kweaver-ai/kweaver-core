@@ -1,8 +1,21 @@
 .DEFAULT_GOAL := help
-.PHONY: help generate-mock lint test test-cover test-race test-integration test-at test-performance ci
+.PHONY: help dev generate-mock lint test test-cover test-race test-integration test-at test-performance ci
+
+DEV_CONFIG_PROFILE ?= $(shell d="$(CURDIR)"; \
+	while [ "$$d" != "/" ]; do \
+		if [ -d "$$d/.env/execution-factory" ]; then \
+			printf "%s/.env/execution-factory" "$$d"; \
+			exit 0; \
+		fi; \
+		d=$$(dirname "$$d"); \
+	done; \
+	printf "%s/.env/execution-factory" "$(CURDIR)")
+AUTH_ENABLED ?= true
+BUSINESS_DOMAIN_ENABLED ?= true
 
 help:
 	@echo "operator-integration - available commands:"
+	@echo "  make dev              - run local service with .env execution-factory config"
 	@echo "  make test             - run unit tests"
 	@echo "  make test-cover       - run unit tests with coverage output"
 	@echo "  make test-race        - run unit tests with race detection"
@@ -16,6 +29,16 @@ help:
 UT_PACKAGES := $(shell go list ./... | \
 	grep -v /server/tests | \
 	grep -v /server/mocks)
+
+dev:
+	@test -f "$(DEV_CONFIG_PROFILE)/agent-operator-integration.yaml"
+	@test -f "$(DEV_CONFIG_PROFILE)/agent-operator-integration-secret.yaml"
+	@test -f "$(DEV_CONFIG_PROFILE)/mq_config.yaml"
+	@test -f "$(DEV_CONFIG_PROFILE)/observability.yaml"
+	CONFIG_PROFILE="$(DEV_CONFIG_PROFILE)" \
+	AUTH_ENABLED="$(AUTH_ENABLED)" \
+	BUSINESS_DOMAIN_ENABLED="$(BUSINESS_DOMAIN_ENABLED)" \
+	go run ./server/main.go
 
 generate-mock:
 	go generate ./...

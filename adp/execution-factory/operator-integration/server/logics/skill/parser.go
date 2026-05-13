@@ -53,7 +53,20 @@ func (p *skillParser) parseRegisterReq(req *interfaces.RegisterSkillReq) (skillD
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		return skill, nil, nil, nil
+		// FR-5: 为 content 注册的 SKILL.md 生成 asset 和 file_summary
+		files = append(files, &interfaces.SkillFileSummary{
+			RelPath:  SkillMD,
+			FileType: detectFileType(SkillMD),
+			Size:     int64(len(content)),
+			MimeType: detectMimeType(SkillMD),
+		})
+		assets = append(assets, &skillAsset{
+			RelPath:  SkillMD,
+			FileType: detectFileType(SkillMD),
+			MimeType: detectMimeType(SkillMD),
+			Content:  []byte(content),
+		})
+		return skill, files, assets, nil
 	case "zip":
 		content, files, assets, err := p.parseSkillZip(req)
 		if err != nil {
