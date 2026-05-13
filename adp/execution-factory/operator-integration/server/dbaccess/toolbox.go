@@ -101,6 +101,7 @@ func (b *toolboxDB) UpdateToolBox(ctx context.Context, tx *sql.Tx, toolbox *mode
 		"f_description":  toolbox.Description,
 		"f_svc_url":      toolbox.ServerURL,
 		"f_category":     toolbox.Category,
+		"f_is_internal":  toolbox.IsInternal,
 		"f_update_user":  toolbox.UpdateUser,
 		"f_update_time":  toolbox.UpdateTime,
 		"f_release_user": toolbox.ReleaseUser,
