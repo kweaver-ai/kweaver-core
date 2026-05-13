@@ -18,7 +18,7 @@ import (
 
 // List 获取对话列表
 // @Summary      获取对话列表
-// @Description  获取指定应用的会话列表，支持分页
+// @Description  获取指定应用的对话列表，支持分页
 // @Tags         对话管理
 // @Accept       json
 // @Produce      json

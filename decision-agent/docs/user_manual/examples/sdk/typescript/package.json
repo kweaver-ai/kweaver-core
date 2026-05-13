@@ -1,0 +1,20 @@
+{
+  "name": "kweaver-user-guide-sdk-typescript-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "import-smoke": "tsx src/import-smoke.ts",
+    "client-setup": "tsx src/client-setup.ts",
+    "list": "tsx src/list-agents.ts",
+    "agent-detail": "tsx src/agent-detail.ts",
+    "chat": "tsx src/chat.ts",
+    "chat-stream": "tsx src/chat-stream.ts",
+    "conversations": "tsx src/conversations.ts",
+    "flow": "tsx src/agent-flow.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0"
+  }
+}

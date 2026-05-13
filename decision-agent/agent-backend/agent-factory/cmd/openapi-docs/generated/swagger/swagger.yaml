@@ -796,11 +796,6 @@ definitions:
       knowledge_network_id:
         description: 业务知识网络ID
         type: string
-      object_types:
-        description: 对象类型列表
-        items:
-          $ref: '#/definitions/datasourcevalobj.ObjectType'
-        type: array
     required:
     - knowledge_network_id
     type: object
@@ -811,14 +806,6 @@ definitions:
         type: string
     required:
     - metric_model_id
-    type: object
-  datasourcevalobj.ObjectType:
-    properties:
-      object_type_id:
-        description: 对象类型ID
-        type: string
-    required:
-    - object_type_id
     type: object
   datasourcevalobj.RetrieverAdvancedConfig:
     properties:
@@ -2022,7 +2009,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: 获取指定应用的会话列表，支持分页
+      description: 获取指定应用的对话列表，支持分页
       parameters:
       - description: 应用 Key
         in: path

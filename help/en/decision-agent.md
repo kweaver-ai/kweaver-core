@@ -8,9 +8,8 @@ Typical ingress prefixes:
 
 | Prefix | Role |
 | --- | --- |
-| `/api/agent-factory/v1` | Factory APIs (templates, agents, runs) |
-| `/api/agent-factory/v2`, `/api/agent-factory/v3` | Versioned factory surfaces |
-| `/api/agent-app/v1` | Application-facing agent APIs |
+| `/api/agent-factory/v3` | Agent management, publishing, personal workspace, marketplace, and permission APIs |
+| `/api/agent-factory/v1` | Runtime APIs for chat, conversations, sessions, and API chat |
 
 **Related modules:** [Context Loader](context-loader.md), [Execution Factory](execution-factory.md), [BKN Engine](bkn.md), [Trace AI](trace-ai.md).
 
@@ -372,26 +371,26 @@ curl -sk -X POST "https://<access-address>/api/agent-factory/v1/agents/agt-xyz78
   -H "Authorization: Bearer $(kweaver token)"
 
 # Chat with an agent
-curl -sk -X POST "https://<access-address>/api/agent-app/v1/agents/agt-xyz789/chat" \
+curl -sk -X POST "https://<access-address>/api/agent-factory/v1/app/<agent_key>/chat/completion" \
   -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
-  -d '{"message": "Show me the revenue trend for the last 6 months"}'
+  -d '{"query": "Show me the revenue trend for the last 6 months"}'
 
 # Continue a conversation
-curl -sk -X POST "https://<access-address>/api/agent-app/v1/agents/agt-xyz789/chat" \
+curl -sk -X POST "https://<access-address>/api/agent-factory/v1/app/<agent_key>/chat/completion" \
   -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "Which product categories drove the most growth?",
+    "query": "Which product categories drove the most growth?",
     "conversation_id": "conv-abc123"
   }'
 
-# List sessions
-curl -sk "https://<access-address>/api/agent-app/v1/agents/agt-xyz789/sessions" \
+# List conversations
+curl -sk "https://<access-address>/api/agent-factory/v1/app/<agent_key>/conversation?page=1&size=10" \
   -H "Authorization: Bearer $(kweaver token)"
 
-# Get conversation history
-curl -sk "https://<access-address>/api/agent-app/v1/agents/agt-xyz789/sessions/conv-abc123/history" \
+# Get conversation detail
+curl -sk "https://<access-address>/api/agent-factory/v1/app/<agent_key>/conversation/conv-abc123" \
   -H "Authorization: Bearer $(kweaver token)"
 
 # Delete an agent
