@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -44,3 +44,39 @@ class SchemaInfo(BaseModel):
     """图数据库模式信息"""
 
     schema_data: Dict[str, Any] = Field(..., description="数据库模式", alias="schema")
+
+
+class SkillLoadResponse(BaseModel):
+    """内置工具：加载 Skill 包响应"""
+
+    skill_id: str = Field(..., description="Skill 标识符")
+    skill_md_content: str = Field(..., description="SKILL.md 文件的完整文本内容")
+    available_scripts: List[str] = Field(default_factory=list, description="可执行脚本路径列表")
+    available_references: List[str] = Field(default_factory=list, description="参考文件路径列表")
+    source: str = Field(default="factory", description="数据来源标识")
+    error: Optional[str] = Field(default=None, description="错误信息（成功时为 null）")
+
+
+class SkillReadFileResponse(BaseModel):
+    """内置工具：读取 Skill 包内文件响应"""
+
+    skill_id: str = Field(..., description="Skill 标识符")
+    file_path: str = Field(..., description="读取的文件相对路径")
+    content: str = Field(..., description="文件文本内容")
+    source: str = Field(default="factory", description="数据来源标识")
+    error: Optional[str] = Field(default=None, description="错误信息（成功时为 null）")
+
+
+class SkillExecuteScriptResponse(BaseModel):
+    """内置工具：执行 Skill 包脚本响应"""
+
+    skill_id: str = Field(..., description="Skill 标识符")
+    entry_shell: str = Field(..., description="执行的入口 Shell 命令")
+    command: str = Field(default="", description="实际执行的命令")
+    stdout: str = Field(default="", description="标准输出内容")
+    stderr: str = Field(default="", description="标准错误内容")
+    exit_code: int = Field(default=-1, description="退出码（0 表示成功）")
+    duration_ms: int = Field(default=0, description="执行耗时（毫秒）")
+    artifacts: List[Dict[str, Any]] = Field(default_factory=list, description="产生的制品列表")
+    source: str = Field(default="factory", description="数据来源标识")
+    error: Optional[str] = Field(default=None, description="错误信息（成功时为 null）")

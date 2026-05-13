@@ -72,4 +72,15 @@ tool_box_configs = [
         "file_path": openapi_file_path / "sandbox-exec.yaml",
         "content_type": "application/yaml",
     },
+    {
+        "box_id": "c3e7f1a2-84b0-4d56-9e12-fa30bc591d47",
+        "box_name": "Skill内置工具",
+        "box_desc": "提供 Skill 包加载、文件读取和脚本执行三项内置能力，供 Agent 在运行时按需调用",
+        "metadata_type": "openapi",
+        "source": "internal",
+        "config_version": "1.0.0",
+        "config_source": "auto",
+        "file_path": openapi_file_path / "skill_tools.json",
+        "content_type": "application/json",
+    },
 ]

@@ -127,7 +127,7 @@ class AgentConfigVo(BaseModel):
             return ReactConfigVo(**v)
 
         return None
-    
+
     def react_disable_history_in_a_conversation(self) -> bool:
         """
         react模式下，检查是否禁用历史对话，此方法仅在mode为react时有效
@@ -146,7 +146,7 @@ class AgentConfigVo(BaseModel):
         """
         if self.mode != "react":
             return False
-        
+
         return bool(
             self.react_config
             and self.react_config.disable_llm_cache

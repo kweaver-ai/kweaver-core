@@ -23,6 +23,7 @@ from .input_handler_pkg import (
     build_llm_config,
     build_skills,
 )
+from .skill_contract_tools import build_builtin_skill_tools
 from app.domain.enum.common.user_account_header_key import (
     get_user_account_id,
     get_user_account_type,
@@ -88,7 +89,15 @@ async def run_dolphin(
 
     tool_dict = await build_tools(ac, skills, request_headers=headers)
 
-    # 3.2 构造toolkit
+    # 3.2 注入平台内置 Skill 工具（skill_enabled=True 时）
+    if Config.features.skill_enabled:
+        builtin_skill_tools = build_builtin_skill_tools(request_headers=headers)
+        tool_dict.update(builtin_skill_tools)
+        StandLogger.info_log(
+            f"[run_dolphin] Built-in skill tools injected: {list(builtin_skill_tools.keys())}"
+        )
+
+    # 3.3 构造toolkit
     toolkit = TriditionalToolkit.buildFromTooldict(tool_dict)
 
     # 4. 记录信息

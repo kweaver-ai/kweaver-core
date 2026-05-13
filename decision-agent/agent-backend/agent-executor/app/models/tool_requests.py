@@ -7,6 +7,32 @@ class ZhipuSearchRequest(BaseModel):
     query: str = Field(..., description="搜索查询词", example="机器学习")
 
 
+class SkillLoadRequest(BaseModel):
+    """内置工具：加载 Skill 包请求"""
+
+    skill_id: str = Field(..., description="Skill 标识符", example="my-skill-001")
+
+
+class SkillReadFileRequest(BaseModel):
+    """内置工具：读取 Skill 包内文件请求"""
+
+    skill_id: str = Field(..., description="Skill 标识符", example="my-skill-001")
+    file_path: str = Field(
+        ..., description="Skill 包内文件的相对路径", example="references/guide.md"
+    )
+
+
+class SkillExecuteScriptRequest(BaseModel):
+    """内置工具：执行 Skill 包脚本请求"""
+
+    skill_id: str = Field(..., description="Skill 标识符", example="my-skill-001")
+    entry_shell: str = Field(
+        ...,
+        description="来自 SKILL.md 的入口 Shell 命令",
+        example="python scripts/analyze.py",
+    )
+
+
 class GetSchemaRequest(BaseModel):
     """获取模式请求"""
 
