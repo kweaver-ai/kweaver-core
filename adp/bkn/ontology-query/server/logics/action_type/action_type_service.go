@@ -12,14 +12,13 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/tidwall/sjson"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
-	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
-	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"ontology-query/common"
 	cond "ontology-query/common/condition"
@@ -56,7 +55,7 @@ func NewActionTypeService(appSetting *common.AppSetting) interfaces.ActionTypeSe
 func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 	query *interfaces.ActionQuery) (interfaces.Actions, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询行动类的行动数据")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询行动类的行动数据")
 	defer span.End()
 
 	var resps interfaces.Actions
@@ -71,7 +70,7 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 		span.SetStatus(codes.Error, "Get Action Type error")
 		span.End()
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Get Action Type error: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("Get Action Type error: %v", err), nil)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			oerrors.OntologyQuery_ObjectType_InternalError_GetObjectTypesByIDFailed).WithErrorDetails(err.Error())
@@ -84,7 +83,7 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 		span.SetStatus(codes.Error, "Action Type not found!")
 		span.End()
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Action Type [%s] not found!", query.ActionTypeID))
+		otellog.LogError(ctx, fmt.Sprintf("Action Type [%s] not found!", query.ActionTypeID), nil)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_ObjectType_ObjectTypeNotFound)
 	}

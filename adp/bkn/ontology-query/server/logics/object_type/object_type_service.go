@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/tidwall/sjson"
 	"go.opentelemetry.io/otel/attribute"
@@ -63,7 +63,7 @@ func NewObjectTypeService(appSetting *common.AppSetting) interfaces.ObjectTypeSe
 func (ots *objectTypeService) GetObjectsByObjectTypeID(ctx context.Context,
 	query *interfaces.ObjectQueryBaseOnObjectType) (interfaces.Objects, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询对象类的对象数据")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询对象类的对象数据")
 	defer span.End()
 
 	start := time.Now().UnixMilli()
@@ -79,7 +79,7 @@ func (ots *objectTypeService) GetObjectsByObjectTypeID(ctx context.Context,
 		span.SetStatus(codes.Error, "Get Object Type error")
 		span.End()
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Get Object Type error: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("Get Object Type error: %v", err), nil)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			oerrors.OntologyQuery_ObjectType_InternalError_GetObjectTypesByIDFailed).WithErrorDetails(err.Error())
@@ -92,7 +92,7 @@ func (ots *objectTypeService) GetObjectsByObjectTypeID(ctx context.Context,
 		span.SetStatus(codes.Error, "Object Type not found!")
 		span.End()
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Object Type [%s] not found!", query.ObjectTypeID))
+		otellog.LogError(ctx, fmt.Sprintf("Object Type [%s] not found!", query.ObjectTypeID), nil)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_ObjectType_ObjectTypeNotFound)
 	}
@@ -620,7 +620,7 @@ func (ots *objectTypeService) getObjectsFromObjectIndex(ctx context.Context, que
 }
 
 func (ots *objectTypeService) GetTotal(ctx context.Context, index string, dsl map[string]any) (total int64, err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "logic layer: search object type total ")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "logic layer: search object type total ")
 	defer span.End()
 
 	// delete(dsl, "pit")
@@ -689,7 +689,7 @@ func (ots *objectTypeService) handlerVector(ctx context.Context, property *cond.
 func (ots *objectTypeService) GetObjectPropertyValue(ctx context.Context,
 	query *interfaces.ObjectPropertyValueQuery) (interfaces.Objects, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询对象属性值")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询对象属性值")
 	defer span.End()
 
 	var resps interfaces.Objects

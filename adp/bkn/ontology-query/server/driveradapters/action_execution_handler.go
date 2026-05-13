@@ -13,13 +13,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"ontology-query/common/visitor"
 	oerrors "ontology-query/errors"
@@ -36,8 +35,7 @@ func (r *restHandler) ExecuteActionByIn(c *gin.Context) {
 // ExecuteActionByEx handles action execution request (external)
 func (r *restHandler) ExecuteActionByEx(c *gin.Context) {
 	logger.Debug("Handler ExecuteActionByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "执行行动类API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -52,8 +50,7 @@ func (r *restHandler) ExecuteAction(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler ExecuteAction Start")
 	startTime := time.Now()
 
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "执行行动类API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -66,8 +63,8 @@ func (r *restHandler) ExecuteAction(c *gin.Context, visitor hydra.Visitor) {
 	businessDomain := c.GetHeader(interfaces.HTTP_HEADER_BUSINESS_DOMAIN)
 	ctx = context.WithValue(ctx, interfaces.BUSINESS_DOMAIN_KEY, businessDomain)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
-	o11y.Info(ctx, fmt.Sprintf("行动执行请求参数: [%s,%v]", c.Request.RequestURI, c.Request.Body))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
+	otellog.LogInfo(ctx, fmt.Sprintf("行动执行请求参数: [%s,%v]", c.Request.RequestURI, c.Request.Body))
 
 	// Get path parameters
 	knID := c.Param("kn_id")
@@ -85,8 +82,8 @@ func (r *restHandler) ExecuteAction(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_ActionExecution_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Binding Parameter Failed: %s", err.Error()))
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -107,13 +104,13 @@ func (r *restHandler) ExecuteAction(c *gin.Context, visitor hydra.Visitor) {
 				WithErrorDetails(err.Error())
 		}
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusAccepted)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusAccepted)
 	logger.Debugf("ExecuteAction completed in %dms", time.Since(startTime).Milliseconds())
 	rest.ReplyOK(c, http.StatusAccepted, result)
 }
@@ -128,8 +125,7 @@ func (r *restHandler) GetActionExecutionByIn(c *gin.Context) {
 // GetActionExecutionByEx handles get execution status request (external)
 func (r *restHandler) GetActionExecutionByEx(c *gin.Context) {
 	logger.Debug("Handler GetActionExecutionByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "获取行动执行状态API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -144,8 +140,7 @@ func (r *restHandler) GetActionExecution(c *gin.Context, visitor hydra.Visitor) 
 	logger.Debug("Handler GetActionExecution Start")
 	startTime := time.Now()
 
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "获取行动执行状态API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -154,7 +149,7 @@ func (r *restHandler) GetActionExecution(c *gin.Context, visitor hydra.Visitor) 
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// Get path parameters
 	knID := c.Param("kn_id")
@@ -173,13 +168,13 @@ func (r *restHandler) GetActionExecution(c *gin.Context, visitor hydra.Visitor) 
 				WithErrorDetails(err.Error())
 		}
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	logger.Debugf("GetActionExecution completed in %dms", time.Since(startTime).Milliseconds())
 	rest.ReplyOK(c, http.StatusOK, result)
 }
@@ -194,8 +189,7 @@ func (r *restHandler) QueryActionLogsByIn(c *gin.Context) {
 // QueryActionLogsByEx handles query action logs request (external)
 func (r *restHandler) QueryActionLogsByEx(c *gin.Context) {
 	logger.Debug("Handler QueryActionLogsByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "查询行动执行日志API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -210,8 +204,7 @@ func (r *restHandler) QueryActionLogs(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler QueryActionLogs Start")
 	startTime := time.Now()
 
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "查询行动执行日志API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -220,8 +213,8 @@ func (r *restHandler) QueryActionLogs(c *gin.Context, visitor hydra.Visitor) {
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
-	o11y.Info(ctx, fmt.Sprintf("行动日志查询请求参数: [%s]", c.Request.RequestURI))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
+	otellog.LogInfo(ctx, fmt.Sprintf("行动日志查询请求参数: [%s]", c.Request.RequestURI))
 
 	// Get path parameters
 	knID := c.Param("kn_id")
@@ -233,8 +226,8 @@ func (r *restHandler) QueryActionLogs(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_ActionExecution_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Binding Parameter Failed: %s", err.Error()))
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -272,13 +265,13 @@ func (r *restHandler) QueryActionLogs(c *gin.Context, visitor hydra.Visitor) {
 				WithErrorDetails(err.Error())
 		}
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	logger.Debugf("QueryActionLogs completed in %dms", time.Since(startTime).Milliseconds())
 	rest.ReplyOK(c, http.StatusOK, result)
 }
@@ -293,8 +286,7 @@ func (r *restHandler) GetActionLogByIn(c *gin.Context) {
 // GetActionLogByEx handles get single action log request (external)
 func (r *restHandler) GetActionLogByEx(c *gin.Context) {
 	logger.Debug("Handler GetActionLogByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "获取行动执行日志详情API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -309,8 +301,7 @@ func (r *restHandler) GetActionLog(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler GetActionLog Start")
 	startTime := time.Now()
 
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "获取行动执行日志详情API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -319,7 +310,7 @@ func (r *restHandler) GetActionLog(c *gin.Context, visitor hydra.Visitor) {
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// Get path parameters
 	knID := c.Param("kn_id")
@@ -335,8 +326,8 @@ func (r *restHandler) GetActionLog(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_ActionExecution_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Binding Parameter Failed: %s", err.Error()))
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -364,13 +355,13 @@ func (r *restHandler) GetActionLog(c *gin.Context, visitor hydra.Visitor) {
 				WithErrorDetails(err.Error())
 		}
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	logger.Debugf("GetActionLog completed in %dms", time.Since(startTime).Milliseconds())
 	rest.ReplyOK(c, http.StatusOK, result)
 }
@@ -385,8 +376,7 @@ func (r *restHandler) CancelActionLogByIn(c *gin.Context) {
 // CancelActionLogByEx handles cancel action execution request (external)
 func (r *restHandler) CancelActionLogByEx(c *gin.Context) {
 	logger.Debug("Handler CancelActionLogByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "取消行动执行API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -401,8 +391,7 @@ func (r *restHandler) CancelActionLog(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler CancelActionLog Start")
 	startTime := time.Now()
 
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "取消行动执行API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -411,7 +400,7 @@ func (r *restHandler) CancelActionLog(c *gin.Context, visitor hydra.Visitor) {
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// Get path parameters
 	knID := c.Param("kn_id")
@@ -444,13 +433,13 @@ func (r *restHandler) CancelActionLog(c *gin.Context, visitor hydra.Visitor) {
 			}
 		}
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	logger.Debugf("CancelActionLog completed in %dms", time.Since(startTime).Milliseconds())
 	rest.ReplyOK(c, http.StatusOK, result)
 }

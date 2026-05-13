@@ -12,13 +12,12 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
-	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
-	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"ontology-query/common"
 	cond "ontology-query/common/condition"
@@ -58,7 +57,7 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 	query *interfaces.SubGraphQueryBaseOnSource) (interfaces.ObjectSubGraph, error) {
 
 	// 1.获取对象类信息
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询对象子图")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询对象子图")
 	var resps interfaces.ObjectSubGraph
 
 	// 1. 在指定的业务知识网络下，根据起点对象类、方向、路径长度获取所有路径。
@@ -78,7 +77,7 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 		span.SetStatus(codes.Error, "Get RelationTypePathsBaseOnSource error")
 		span.End()
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Get RelationTypePathsBaseOnSource error: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("Get RelationTypePathsBaseOnSource error: %v", err), nil)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			oerrors.OntologyQuery_ObjectType_InternalError_GetObjectTypesByIDFailed).WithErrorDetails(err.Error())
@@ -135,7 +134,7 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 func (kns *knowledgeNetworkService) SearchSubgraphByTypePath(ctx context.Context,
 	query *interfaces.SubGraphQueryBaseOnTypePath) (interfaces.PathsEntries, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询路径的对象子图")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询路径的对象子图")
 	defer span.End()
 
 	// 多个路径，并发查，各查各的，各自有过滤条件
@@ -184,7 +183,7 @@ func (kns *knowledgeNetworkService) buildObjectSubgraphByTypePaths(
 
 	defer typePathsObjectCtx.wg.Done()
 
-	ctx, span := ar_trace.Tracer.Start(typePathsObjectCtx.ctx, "查询路径的对象子图")
+	ctx, span := oteltrace.StartNamedInternalSpan(typePathsObjectCtx.ctx, "查询路径的对象子图")
 	defer span.End()
 
 	// 1. 查各个边的关系类信息，补充 typeEdge 里的 RelationType
@@ -202,7 +201,7 @@ func (kns *knowledgeNetworkService) buildObjectSubgraphByTypePaths(
 			span.SetStatus(codes.Error, "Get relation type error")
 			span.End()
 			// 记录异常日志
-			o11y.Error(ctx, fmt.Sprintf("Get relation type error: %v", err))
+			otellog.LogError(ctx, fmt.Sprintf("Get relation type error: %v", err), nil)
 
 			err = rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				oerrors.OntologyQuery_KnowledgeNetwork_InternalError_GetRelationTypeFailed).WithErrorDetails(err.Error())
@@ -218,7 +217,7 @@ func (kns *knowledgeNetworkService) buildObjectSubgraphByTypePaths(
 			span.SetStatus(codes.Error, "relation type not found!")
 			span.End()
 			// 记录异常日志
-			o11y.Error(ctx, fmt.Sprintf("relation type [%s] not found!", edge.RelationTypeId))
+			otellog.LogError(ctx, fmt.Sprintf("relation type [%s] not found!", edge.RelationTypeId), nil)
 
 			err = rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_KnowledgeNetwork_RelationTypeNotFound)
 
@@ -1254,7 +1253,7 @@ func (kns *knowledgeNetworkService) isPathEndsWith(path interfaces.RelationPath,
 func (kns *knowledgeNetworkService) SearchSubgraphByObjects(ctx context.Context,
 	query *interfaces.SubGraphQueryBaseOnObjects) (interfaces.ObjectSubGraph, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "基于一组对象实例组织关系子图")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "基于一组对象实例组织关系子图")
 	defer span.End()
 
 	var result interfaces.ObjectSubGraph

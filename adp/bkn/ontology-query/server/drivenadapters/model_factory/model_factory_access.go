@@ -12,10 +12,9 @@ import (
 	"sync"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel/trace"
 
 	"ontology-query/common"
 	cond "ontology-query/common/condition"
@@ -59,7 +58,7 @@ func NewModelFactoryAccess(appSetting *common.AppSetting) interfaces.ModelFactor
 func (mfa *modelFactoryAccess) GetVector(ctx context.Context, model *interfaces.SmallModel,
 	words []string) ([]cond.VectorResp, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetVector", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetVector")
 	defer span.End()
 
 	if model == nil {
@@ -146,8 +145,7 @@ func (mfa *modelFactoryAccess) GetVector(ctx context.Context, model *interfaces.
 }
 
 func (mfa *modelFactoryAccess) GetModelByID(ctx context.Context, modelID string) (*interfaces.SmallModel, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetModelByID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetModelByID")
 	defer span.End()
 
 	// 构建请求URL
