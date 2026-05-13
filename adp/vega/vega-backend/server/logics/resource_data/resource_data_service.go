@@ -152,6 +152,8 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 				return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 					WithErrorDetails(err.Error())
 			}
+
+			span.SetStatus(codes.Ok, "")
 			return documents, total, nil
 		}
 
@@ -166,6 +168,8 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
+
+		span.SetStatus(codes.Ok, "")
 		return data, total, nil
 
 	case interfaces.ResourceCategoryIndex:
@@ -175,6 +179,8 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
+
+		span.SetStatus(codes.Ok, "")
 		return data, total, nil
 
 	case interfaces.ResourceCategoryLogicView:
@@ -187,6 +193,8 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
+
+		span.SetStatus(codes.Ok, "")
 		return data, total, nil
 
 	case interfaces.ResourceCategoryFileset:
@@ -195,6 +203,8 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 			span.SetStatus(codes.Error, "Query fileset data failed")
 			return nil, 0, err
 		}
+
+		span.SetStatus(codes.Ok, "")
 		return data, total, nil
 
 	default:
@@ -242,6 +252,8 @@ func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfac
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(fmt.Sprintf("failed to execute query: %v", err))
 		}
+
+		span.SetStatus(codes.Ok, "")
 		return result.Rows, result.Total, nil
 
 	case interfaces.ResourceCategoryIndex:
@@ -258,6 +270,8 @@ func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfac
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(fmt.Sprintf("failed to execute query: %v", err))
 		}
+
+		span.SetStatus(codes.Ok, "")
 		return result.Rows, result.Total, nil
 
 	case interfaces.ResourceCategoryFileset:
@@ -275,6 +289,8 @@ func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfac
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
+
+		span.SetStatus(codes.Ok, "")
 		return result.Rows, result.Total, nil
 
 	default:
