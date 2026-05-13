@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
 	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/codes"
@@ -80,14 +81,15 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 	if resource.Category != interfaces.ResourceCategoryLogicView {
 		catalog, err = rds.cs.GetByID(ctx, resource.CatalogID, true)
 		if err != nil {
-			span.SetStatus(codes.Error, "Get catalog failed")
+			otellog.LogError(ctx, "Get catalog failed", err)
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(fmt.Sprintf("failed to get catalog: %v", err))
 		}
 		if catalog == nil {
-			span.SetStatus(codes.Error, "Catalog not found")
-			return nil, 0, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_CatalogNotFound).
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_CatalogNotFound).
 				WithErrorDetails(fmt.Sprintf("catalog %s not found", resource.CatalogID))
+			otellog.LogError(ctx, "Catalog not found", httpErr)
+			return nil, 0, httpErr
 		}
 		if concurrent, existsInCatalog := catalog.ConnectorCfg["concurrent"]; existsInCatalog {
 			maxConcurrentQueries = int64(concurrent.(float64))
@@ -106,15 +108,18 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		if acquireErr != nil {
 			logger.Warnf("Concurrency limit exceeded: catalog=%s, error=%v",
 				resource.CatalogID, acquireErr)
-			span.SetStatus(codes.Error, "concurrency limit exceeded")
 
 			// 返回限流错误
 			if rateErr, ok := acquireErr.(*rate.RateLimitError); ok {
-				return nil, 0, rest.NewHTTPError(ctx, rateErr.HTTPStatus, verrors.VegaBackend_Query_ConcurrencyLimitExceeded).
+				httpErr := rest.NewHTTPError(ctx, rateErr.HTTPStatus, verrors.VegaBackend_Query_ConcurrencyLimitExceeded).
 					WithErrorDetails(rateErr.Message)
+				otellog.LogError(ctx, "Concurrency limit exceeded", httpErr)
+				return nil, 0, httpErr
 			}
-			return nil, 0, rest.NewHTTPError(ctx, http.StatusTooManyRequests, verrors.VegaBackend_Query_ConcurrencyLimitExceeded).
+			httpErr := rest.NewHTTPError(ctx, http.StatusTooManyRequests, verrors.VegaBackend_Query_ConcurrencyLimitExceeded).
 				WithErrorDetails("Query concurrency limit exceeded, please retry later")
+			otellog.LogError(ctx, "Concurrency limit exceeded", httpErr)
+			return nil, 0, httpErr
 		}
 		defer release() // 查询完成后释放许可
 	}
@@ -125,7 +130,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 	}
 	actualFilterCond, err := filter_condition.NewFilterCondition(ctx, params.FilterCondCfg, fieldMap)
 	if err != nil {
-		span.SetStatus(codes.Error, "Create filter condition failed")
+		otellog.LogError(ctx, "Create filter condition failed", err)
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 			WithErrorDetails(err.Error())
 	}
@@ -136,7 +141,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		// 调用 dataset access 列出文档
 		documents, total, err := rds.ds.ListDocuments(ctx, resource.ID, resource, params)
 		if err != nil {
-			span.SetStatus(codes.Error, "List dataset documents failed")
+			otellog.LogError(ctx, "List dataset documents failed", err)
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
@@ -148,7 +153,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 			// 调用 dataset access 列出文档
 			documents, total, err := rds.ds.ListDocuments(ctx, resource.LocalIndexName, resource, params)
 			if err != nil {
-				span.SetStatus(codes.Error, "Query table data from local index failed")
+				otellog.LogError(ctx, "Query table data from local index failed", err)
 				return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 					WithErrorDetails(err.Error())
 			}
@@ -164,7 +169,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 
 		data, total, err := rds.QueryData(ctx, catalog, resource, params)
 		if err != nil {
-			span.SetStatus(codes.Error, "Query table data failed")
+			otellog.LogError(ctx, "Query table data failed", err)
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
@@ -175,7 +180,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 	case interfaces.ResourceCategoryIndex:
 		data, total, err := rds.QueryData(ctx, catalog, resource, params)
 		if err != nil {
-			span.SetStatus(codes.Error, "Query index data failed")
+			otellog.LogError(ctx, "Query index data failed", err)
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
@@ -189,7 +194,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		// 逻辑视图查询数据
 		data, total, err := rds.lvs.Query(ctx, resource, params)
 		if err != nil {
-			span.SetStatus(codes.Error, "Query logic view data failed")
+			otellog.LogError(ctx, "Query logic view data failed", err)
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
@@ -200,7 +205,7 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 	case interfaces.ResourceCategoryFileset:
 		data, total, err := rds.QueryData(ctx, catalog, resource, params)
 		if err != nil {
-			span.SetStatus(codes.Error, "Query fileset data failed")
+			otellog.LogError(ctx, "Query fileset data failed", err)
 			return nil, 0, err
 		}
 
@@ -208,9 +213,10 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		return data, total, nil
 
 	default:
-		span.SetStatus(codes.Error, "Unsupported resource category")
-		return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
 			WithErrorDetails(resource.Category)
+		otellog.LogError(ctx, "Unsupported resource category", httpErr)
+		return nil, 0, httpErr
 	}
 }
 
@@ -225,13 +231,13 @@ func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfac
 
 	connector, err := factory.GetFactory().CreateConnectorInstance(ctx, catalog.ConnectorType, catalog.ConnectorCfg)
 	if err != nil {
-		span.SetStatus(codes.Error, "Create connector failed")
+		otellog.LogError(ctx, "Create connector failed", err)
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 			WithErrorDetails(fmt.Sprintf("failed to create connector: %v", err))
 	}
 
 	if err := connector.Connect(ctx); err != nil {
-		span.SetStatus(codes.Error, "Connect to data source failed")
+		otellog.LogError(ctx, "Connect to data source failed", err)
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 			WithErrorDetails(fmt.Sprintf("failed to connect to data source: %v", err))
 	}
@@ -241,14 +247,15 @@ func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfac
 	case interfaces.ResourceCategoryTable:
 		tableConnector, ok := connector.(connectors.TableConnector)
 		if !ok {
-			span.SetStatus(codes.Error, "Connector does not support table operations")
-			return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
+			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
 				WithErrorDetails(fmt.Sprintf("connector %s does not support table operations", catalog.ConnectorType))
+			otellog.LogError(ctx, "Connector does not support table operations", httpErr)
+			return nil, 0, httpErr
 		}
 
 		result, err := tableConnector.ExecuteQuery(ctx, resource, params)
 		if err != nil {
-			span.SetStatus(codes.Error, "Execute query failed")
+			otellog.LogError(ctx, "Execute query failed", err)
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(fmt.Sprintf("failed to execute query: %v", err))
 		}
@@ -259,14 +266,15 @@ func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfac
 	case interfaces.ResourceCategoryIndex:
 		indexConnector, ok := connector.(connectors.IndexConnector)
 		if !ok {
-			span.SetStatus(codes.Error, "Connector does not support index operations")
-			return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
+			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
 				WithErrorDetails(fmt.Sprintf("connector %s does not support index operations", catalog.ConnectorType))
+			otellog.LogError(ctx, "Connector does not support index operations", httpErr)
+			return nil, 0, httpErr
 		}
 
 		result, err := indexConnector.ExecuteQuery(ctx, resource.SourceIdentifier, resource, params)
 		if err != nil {
-			span.SetStatus(codes.Error, "Execute query failed")
+			otellog.LogError(ctx, "Execute query failed", err)
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(fmt.Sprintf("failed to execute query: %v", err))
 		}
@@ -277,15 +285,16 @@ func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfac
 	case interfaces.ResourceCategoryFileset:
 		fc, ok := connector.(connectors.FilesetConnector)
 		if !ok {
-			span.SetStatus(codes.Error, "Connector does not support fileset operations")
-			return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
+			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
 				WithErrorDetails(fmt.Sprintf("connector %s does not support fileset operations", catalog.ConnectorType))
+			otellog.LogError(ctx, "Connector does not support fileset operations", httpErr)
+			return nil, 0, httpErr
 		}
 
 		// 使用 ExecuteQuery 获取文件列表
 		result, err := fc.ExecuteQuery(ctx, resource, params)
 		if err != nil {
-			span.SetStatus(codes.Error, "Fileset query failed")
+			otellog.LogError(ctx, "Fileset query failed", err)
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
@@ -294,9 +303,10 @@ func (rds *resourceDataService) QueryData(ctx context.Context, catalog *interfac
 		return result.Rows, result.Total, nil
 
 	default:
-		span.SetStatus(codes.Error, "Connector does not support table operations")
-		return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
 			WithErrorDetails(connector.GetCategory())
+		otellog.LogError(ctx, "Connector does not support table operations", httpErr)
+		return nil, 0, httpErr
 	}
 
 }

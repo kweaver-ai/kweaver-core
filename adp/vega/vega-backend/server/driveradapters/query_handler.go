@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
 	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/trace"
@@ -59,6 +60,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails(err.Error())
+		otellog.LogError(ctx, "Bind raw query request failed", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -68,6 +70,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	if req.ResourceType == "" {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_ResourceType).
 			WithErrorDetails(fmt.Sprintf("resource_type is required and must be one of: %v", interfaces.GetSupportedConnectorTypesForQuery()))
+		otellog.LogError(ctx, "Resource type is required", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -76,6 +79,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	if !interfaces.IsConnectorTypeSupportedForQuery(req.ResourceType) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_ResourceType).
 			WithErrorDetails(fmt.Sprintf("resource_type must be one of: %v, got: %s", interfaces.GetSupportedConnectorTypesForQuery(), req.ResourceType))
+		otellog.LogError(ctx, "Resource type is not supported", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -87,6 +91,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	} else if req.StreamSize < 100 || req.StreamSize > 10000 {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_StreamSize).
 			WithErrorDetails(fmt.Sprintf("stream_size must be between 100 and 10000, got: %d", req.StreamSize))
+		otellog.LogError(ctx, "Stream size is invalid", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -98,6 +103,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 	} else if req.QueryTimeout < 1 || req.QueryTimeout > 3600 {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_Query_InvalidParameter_QueryTimeout).
 			WithErrorDetails(fmt.Sprintf("query_timeout must be between 1 and 3600, got: %d", req.QueryTimeout))
+		otellog.LogError(ctx, "Query timeout is invalid", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -113,6 +119,7 @@ func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.S
 			httpErr = rest.NewHTTPError(ctx, http.StatusInternalServerError, errors.VegaBackend_Query_ExecuteFailed).
 				WithErrorDetails(err.Error())
 		}
+		otellog.LogError(ctx, "Execute raw query failed", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return

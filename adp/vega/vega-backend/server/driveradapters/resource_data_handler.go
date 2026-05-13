@@ -87,6 +87,7 @@ func (r *restHandler) queryResourceData(c *gin.Context, ctx context.Context, spa
 	if err := c.ShouldBindJSON(&params); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails(err.Error())
+		otellog.LogError(ctx, "Bind resource data query request failed", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -94,6 +95,7 @@ func (r *restHandler) queryResourceData(c *gin.Context, ctx context.Context, spa
 
 	if err := ValidateResourceDataQueryParams(ctx, &params); err != nil {
 		httpErr := err.(*rest.HTTPError)
+		otellog.LogError(ctx, "Validate resource data query params failed", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -102,12 +104,14 @@ func (r *restHandler) queryResourceData(c *gin.Context, ctx context.Context, spa
 	resource, err := r.rs.GetByID(ctx, resourceID)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
+		otellog.LogError(ctx, "Get resource failed", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if resource == nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_NotFound)
+		otellog.LogError(ctx, "Resource not found", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -116,6 +120,7 @@ func (r *restHandler) queryResourceData(c *gin.Context, ctx context.Context, spa
 	entries, total, err := r.rds.Query(ctx, resource, &params)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
+		otellog.LogError(ctx, "Query resource data failed", httpErr)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
