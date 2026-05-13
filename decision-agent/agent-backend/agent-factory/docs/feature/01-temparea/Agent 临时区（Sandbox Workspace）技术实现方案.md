@@ -1489,7 +1489,7 @@ func sanitizeFileName(fileName string) string {
 
 ### 背景
 
-现有 Agent Chat API（`POST /api/agent-app/v1/app/{app_key}/chat/completion`）使用了旧的临时区实现方式：
+现有 Agent Chat API（`POST /api/agent-factory/v1/app/{app_key}/chat/completion`）使用了旧的临时区实现方式：
 - `temporary_area_id`：临时区域 ID
 - `temp_files`：临时文件列表
 
@@ -1618,7 +1618,7 @@ async function chatWithFiles(
     conversationId: string,
     selectedFiles: SelectedFile[]
 ) {
-    const response = await fetch('/api/agent-app/v1/app/my-agent/chat/completion', {
+    const response = await fetch('/api/agent-factory/v1/app/my-agent/chat/completion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1945,7 +1945,7 @@ async function chatWithFiles(
     conversationId: string,
     selectedFiles: SelectedFile[]
 ) {
-    const response = await fetch('/api/agent-app/v1/app/my-agent/chat/completion', {
+    const response = await fetch('/api/agent-factory/v1/app/my-agent/chat/completion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
