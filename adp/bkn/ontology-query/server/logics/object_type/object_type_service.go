@@ -72,14 +72,8 @@ func (ots *objectTypeService) GetObjectsByObjectTypeID(ctx context.Context,
 
 	objectType, exists, err := ots.omAccess.GetObjectType(ctx, query.KNID, query.Branch, query.ObjectTypeID)
 	if err != nil {
-		logger.Errorf("Get Object Type error: %s", err.Error())
-
-		// 添加异常时的 trace 属性
 		span.SetAttributes(attribute.Key("model_id").String(query.ObjectTypeID))
-		span.SetStatus(codes.Error, "Get Object Type error")
-		span.End()
-		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get Object Type error: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get Object Type error: %v", err), err)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			oerrors.OntologyQuery_ObjectType_InternalError_GetObjectTypesByIDFailed).WithErrorDetails(err.Error())
@@ -87,14 +81,11 @@ func (ots *objectTypeService) GetObjectsByObjectTypeID(ctx context.Context,
 	if !exists {
 		logger.Debugf("Object Type %d not found!", query.ObjectTypeID)
 
-		// 添加异常时的 trace 属性
 		span.SetAttributes(attribute.Key("model_id").String(query.ObjectTypeID))
-		span.SetStatus(codes.Error, "Object Type not found!")
-		span.End()
-		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Object Type [%s] not found!", query.ObjectTypeID), nil)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_ObjectType_ObjectTypeNotFound)
+		otellog.LogError(ctx, fmt.Sprintf("Object Type [%s] not found!", query.ObjectTypeID), httpErr)
 
-		return resps, rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_ObjectType_ObjectTypeNotFound)
+		return resps, httpErr
 	}
 
 	// /排序字段可以是对象类的数据属性, _score
@@ -630,23 +621,26 @@ func (ots *objectTypeService) GetTotal(ctx context.Context, index string, dsl ma
 	delete(dsl, "track_scores")
 	totalBytes, err := ots.osa.Count(ctx, index, dsl)
 	if err != nil {
-		span.SetStatus(codes.Error, "Search total documents count failed")
-		return total, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_InternalError).
+		otellog.LogError(ctx, "Search total documents count failed", err)
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_InternalError).
 			WithErrorDetails(err.Error())
+		return total, httpErr
 	}
 
 	totalNode, err := sonic.Get(totalBytes, "count")
 	if err != nil {
-		span.SetStatus(codes.Error, "Get total documents count failed")
-		return total, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_InternalError).
+		otellog.LogError(ctx, "Get total documents count failed", err)
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_InternalError).
 			WithErrorDetails(err.Error())
+		return total, httpErr
 	}
 
 	total, err = totalNode.Int64()
 	if err != nil {
-		span.SetStatus(codes.Error, "Convert total documents count to type int64 failed")
-		return total, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_InternalError).
+		otellog.LogError(ctx, "Convert total documents count to type int64 failed", err)
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_InternalError).
 			WithErrorDetails(err.Error())
+		return total, httpErr
 	}
 
 	span.SetStatus(codes.Ok, "")

@@ -81,11 +81,10 @@ func (oma *ontologyManagerAccess) GetObjectType(ctx context.Context, knID string
 
 	var emptyObjectType interfaces.ObjectType
 	if err != nil {
-		logger.Errorf("get request method failed: %v", err)
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Get Failed")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get object type request failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get object type request failed: %v", err), err)
 
 		return emptyObjectType, false, fmt.Errorf("get request method failed: %v", err)
 	}
@@ -102,16 +101,14 @@ func (oma *ontologyManagerAccess) GetObjectType(ctx context.Context, knID string
 	}
 
 	if respCode != http.StatusOK {
-		logger.Errorf("get object type failed: %v", result)
 
 		var baseError rest.BaseError
 		if err = sonic.Unmarshal(result, &baseError); err != nil {
-			logger.Errorf("unmalshal BaesError failed: %v\n", err)
 
 			// 添加异常时的 trace 属性
 			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal BaesError failed")
 			// 记录异常日志
-			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaesError failed: %v", err), nil)
+			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaesError failed: %v", err), err)
 
 			return emptyObjectType, false, err
 		}
@@ -120,7 +117,7 @@ func (oma *ontologyManagerAccess) GetObjectType(ctx context.Context, knID string
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get object type failed: %v", httpErr), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get object type failed: %v", httpErr), httpErr)
 
 		return emptyObjectType, false, fmt.Errorf("get object type failed: %v", httpErr.Error())
 	}
@@ -141,12 +138,11 @@ func (oma *ontologyManagerAccess) GetObjectType(ctx context.Context, knID string
 	}
 
 	if err = sonic.Unmarshal(result, &response); err != nil {
-		logger.Errorf("unmalshal object type info failed: %v\n", err)
 
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal object type info failed")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Unmalshal object type info failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Unmalshal object type info failed: %v", err), err)
 
 		return emptyObjectType, false, err
 	}
@@ -195,9 +191,8 @@ func (oma *ontologyManagerAccess) GetMetricDefinition(ctx context.Context, knID 
 	respCode, result, err = oma.httpClient.GetNoUnmarshal(ctx, httpURL, nil, headers)
 
 	if err != nil {
-		logger.Errorf("GetMetricDefinition request failed: %v", err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Get Failed")
-		otellog.LogError(ctx, fmt.Sprintf("Get metric definition request failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get metric definition request failed: %v", err), err)
 		return nil, false, fmt.Errorf("get metric definition request failed: %v", err)
 	}
 
@@ -208,16 +203,15 @@ func (oma *ontologyManagerAccess) GetMetricDefinition(ctx context.Context, knID 
 	}
 
 	if respCode != http.StatusOK {
-		logger.Errorf("get metric definition failed: %v", result)
 		var baseError rest.BaseError
 		if err = sonic.Unmarshal(result, &baseError); err != nil {
 			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal BaseError failed")
-			otellog.LogError(ctx, fmt.Sprintf("Unmarshal BaseError failed: %v", err), nil)
+			otellog.LogError(ctx, fmt.Sprintf("Unmarshal BaseError failed: %v", err), err)
 			return nil, false, err
 		}
 		httpErr := &rest.HTTPError{HTTPCode: respCode, BaseError: baseError}
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
-		otellog.LogError(ctx, fmt.Sprintf("Get metric definition failed: %v", httpErr), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get metric definition failed: %v", httpErr), httpErr)
 		return nil, false, httpErr
 	}
 
@@ -231,9 +225,8 @@ func (oma *ontologyManagerAccess) GetMetricDefinition(ctx context.Context, knID 
 		Entries []*interfaces.MetricDefinition `json:"entries"`
 	}
 	if err = sonic.Unmarshal(result, &response); err != nil {
-		logger.Errorf("unmarshal metric definition failed: %v\n", err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal metric definition failed")
-		otellog.LogError(ctx, fmt.Sprintf("Unmarshal metric definition failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Unmarshal metric definition failed: %v", err), err)
 		return nil, false, err
 	}
 
@@ -276,26 +269,23 @@ func (oma *ontologyManagerAccess) GetRelationTypePathsBaseOnSource(ctx context.C
 		url, headers, query, respCode, err, time.Now().UnixMilli()-start)
 
 	if err != nil {
-		logger.Errorf("get request method failed: %v", err)
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Get Failed")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get relation type paths request failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get relation type paths request failed: %v", err), err)
 
 		return nil, fmt.Errorf("get request method failed: %v", err)
 	}
 
 	if respCode != http.StatusOK {
-		logger.Errorf("get relation type paths failed: %v", result)
 
 		var baseError rest.BaseError
 		if err = sonic.Unmarshal(result, &baseError); err != nil {
-			logger.Errorf("unmalshal BaesError failed: %v\n", err)
 
 			// 添加异常时的 trace 属性
 			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal BaesError failed")
 			// 记录异常日志
-			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaesError failed: %v", err), nil)
+			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaesError failed: %v", err), err)
 
 			return nil, err
 		}
@@ -305,7 +295,7 @@ func (oma *ontologyManagerAccess) GetRelationTypePathsBaseOnSource(ctx context.C
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get relation type paths failed: %v", httpErr), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get relation type paths failed: %v", httpErr), httpErr)
 
 		return nil, fmt.Errorf("get relation type paths failed: %v", httpErr.Error())
 	}
@@ -325,12 +315,11 @@ func (oma *ontologyManagerAccess) GetRelationTypePathsBaseOnSource(ctx context.C
 		TypePaths []interfaces.RelationTypePath `json:"entries"`
 	}
 	if err = sonic.Unmarshal(result, &response); err != nil {
-		logger.Errorf("unmalshal object type info failed: %v\n", err)
 
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal object type info failed")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Unmalshal relation type paths info failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Unmalshal relation type paths info failed: %v", err), err)
 
 		return nil, err
 	}
@@ -423,11 +412,10 @@ func (oma *ontologyManagerAccess) GetRelationType(ctx context.Context, knID stri
 
 	var emptyRelationType interfaces.RelationType
 	if err != nil {
-		logger.Errorf("get request method failed: %v", err)
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Get Failed")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get relation type request failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get relation type request failed: %v", err), err)
 
 		return emptyRelationType, false, fmt.Errorf("get request method failed: %v", err)
 	}
@@ -444,16 +432,14 @@ func (oma *ontologyManagerAccess) GetRelationType(ctx context.Context, knID stri
 	}
 
 	if respCode != http.StatusOK {
-		logger.Errorf("get relation type failed: %v", result)
 
 		var baseError rest.BaseError
 		if err = sonic.Unmarshal(result, &baseError); err != nil {
-			logger.Errorf("unmalshal BaesError failed: %v\n", err)
 
 			// 添加异常时的 trace 属性
 			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal BaesError failed")
 			// 记录异常日志
-			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaesError failed: %v", err), nil)
+			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaesError failed: %v", err), err)
 
 			return emptyRelationType, false, err
 		}
@@ -463,7 +449,7 @@ func (oma *ontologyManagerAccess) GetRelationType(ctx context.Context, knID stri
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get relation type failed: %v", httpErr), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get relation type failed: %v", httpErr), httpErr)
 
 		return emptyRelationType, false, fmt.Errorf("get relation type failed: %v", httpErr.Error())
 	}
@@ -483,12 +469,11 @@ func (oma *ontologyManagerAccess) GetRelationType(ctx context.Context, knID stri
 		RelationTypes []interfaces.RelationType `json:"entries"`
 	}
 	if err = sonic.Unmarshal(result, &response); err != nil {
-		logger.Errorf("unmalshal relation type info failed: %v\n", err)
 
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal relation type info failed")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Unmalshal relation type info failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Unmalshal relation type info failed: %v", err), err)
 
 		return emptyRelationType, false, err
 	}
@@ -587,26 +572,23 @@ func (oma *ontologyManagerAccess) ListRelationTypes(ctx context.Context, knID st
 		httpUrl, headers, respCode, err)
 
 	if err != nil {
-		logger.Errorf("get request method failed: %v", err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Get Failed")
-		otellog.LogError(ctx, fmt.Sprintf("List relation types request failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("List relation types request failed: %v", err), err)
 		return nil, fmt.Errorf("get request method failed: %v", err)
 	}
 
 	if respCode != http.StatusOK {
-		logger.Errorf("list relation types failed: %v", result)
 
 		var baseError rest.BaseError
 		if err = sonic.Unmarshal(result, &baseError); err != nil {
-			logger.Errorf("unmalshal BaseError failed: %v\n", err)
 			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal BaseError failed")
-			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaseError failed: %v", err), nil)
+			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaseError failed: %v", err), err)
 			return nil, err
 		}
 
 		httpErr := &rest.HTTPError{HTTPCode: respCode, BaseError: baseError}
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
-		otellog.LogError(ctx, fmt.Sprintf("List relation types failed: %v", httpErr), nil)
+		otellog.LogError(ctx, fmt.Sprintf("List relation types failed: %v", httpErr), httpErr)
 		return nil, fmt.Errorf("list relation types failed: %v", httpErr.Error())
 	}
 
@@ -620,9 +602,8 @@ func (oma *ontologyManagerAccess) ListRelationTypes(ctx context.Context, knID st
 		RelationTypes []interfaces.RelationType `json:"entries"`
 	}
 	if err = sonic.Unmarshal(result, &response); err != nil {
-		logger.Errorf("unmalshal relation types info failed: %v\n", err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal relation types info failed")
-		otellog.LogError(ctx, fmt.Sprintf("Unmalshal relation types info failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Unmalshal relation types info failed: %v", err), err)
 		return nil, err
 	}
 
@@ -708,11 +689,10 @@ func (oma *ontologyManagerAccess) GetActionType(ctx context.Context, knID string
 
 	var emptyActionType interfaces.ActionType
 	if err != nil {
-		logger.Errorf("get request method failed: %v", err)
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Get Failed")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get action type request failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get action type request failed: %v", err), err)
 
 		return emptyActionType, nil, false, fmt.Errorf("get request method failed: %v", err)
 	}
@@ -729,16 +709,14 @@ func (oma *ontologyManagerAccess) GetActionType(ctx context.Context, knID string
 	}
 
 	if respCode != http.StatusOK {
-		logger.Errorf("get action type failed: %v", result)
 
 		var baseError rest.BaseError
 		if err = sonic.Unmarshal(result, &baseError); err != nil {
-			logger.Errorf("unmalshal BaesError failed: %v\n", err)
 
 			// 添加异常时的 trace 属性
 			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal BaesError failed")
 			// 记录异常日志
-			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaesError failed: %v", err), nil)
+			otellog.LogError(ctx, fmt.Sprintf("Unmalshal BaesError failed: %v", err), err)
 
 			return emptyActionType, nil, false, err
 		}
@@ -748,7 +726,7 @@ func (oma *ontologyManagerAccess) GetActionType(ctx context.Context, knID string
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get action type failed: %v", httpErr), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get action type failed: %v", httpErr), httpErr)
 
 		return emptyActionType, nil, false, fmt.Errorf("get action type failed: %v", httpErr.Error())
 	}
@@ -767,12 +745,11 @@ func (oma *ontologyManagerAccess) GetActionType(ctx context.Context, knID string
 		ActionTypes []interfaces.ActionType `json:"entries"`
 	}
 	if err = sonic.Unmarshal(result, &response); err != nil {
-		logger.Errorf("unmalshal action type info failed: %v\n", err)
 
 		// 添加异常时的 trace 属性
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal action type info failed")
 		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Unmalshal action type info failed: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Unmalshal action type info failed: %v", err), err)
 
 		return emptyActionType, nil, false, err
 	}

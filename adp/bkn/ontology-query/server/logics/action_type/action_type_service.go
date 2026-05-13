@@ -18,7 +18,6 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/tidwall/sjson"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 
 	"ontology-query/common"
 	cond "ontology-query/common/condition"
@@ -63,14 +62,8 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 	// 1. 先获取行动类信息
 	actionType, _, exists, err := ats.omAccess.GetActionType(ctx, query.KNID, query.Branch, query.ActionTypeID)
 	if err != nil {
-		logger.Errorf("Get Action Type error: %s", err.Error())
-
-		// 添加异常时的 trace 属性
 		span.SetAttributes(attribute.Key("at_id").String(query.ActionTypeID))
-		span.SetStatus(codes.Error, "Get Action Type error")
-		span.End()
-		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get Action Type error: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get Action Type error: %v", err), err)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			oerrors.OntologyQuery_ObjectType_InternalError_GetObjectTypesByIDFailed).WithErrorDetails(err.Error())
@@ -78,14 +71,11 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 	if !exists {
 		logger.Debugf("Action Type %d not found!", query.ActionTypeID)
 
-		// 添加异常时的 trace 属性
 		span.SetAttributes(attribute.Key("model_id").String(query.ActionTypeID))
-		span.SetStatus(codes.Error, "Action Type not found!")
-		span.End()
-		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Action Type [%s] not found!", query.ActionTypeID), nil)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_ObjectType_ObjectTypeNotFound)
+		otellog.LogError(ctx, fmt.Sprintf("Action Type [%s] not found!", query.ActionTypeID), httpErr)
 
-		return resps, rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_ObjectType_ObjectTypeNotFound)
+		return resps, httpErr
 	}
 
 	if missing := logics.MissingActionInputDynamicParamNames(&actionType, query.DynamicParams); len(missing) > 0 {

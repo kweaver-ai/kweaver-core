@@ -107,7 +107,7 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		// 记录异常日志
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -120,7 +120,7 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 		// 设置 trace 的错误信息的 attributes
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -136,7 +136,7 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -156,7 +156,7 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 		// 设置 trace 的错误信息的 attributes
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -170,7 +170,7 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 		// 设置 trace 的错误信息的 attributes
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -227,7 +227,7 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		// 记录异常日志
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -240,7 +240,7 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 		// 设置 trace 的错误信息的 attributes
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -256,7 +256,7 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -275,7 +275,7 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 		// 设置 trace 的错误信息的 attributes
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -289,7 +289,7 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 		// 设置 trace 的错误信息的 attributes
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -371,7 +371,7 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		// 记录异常日志
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -387,7 +387,7 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -404,7 +404,7 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 		// 设置 trace 的错误信息的 attributes
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -418,7 +418,7 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 		// 设置 trace 的错误信息的 attributes
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 

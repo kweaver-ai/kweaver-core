@@ -83,7 +83,7 @@ func (r *restHandler) ExecuteAction(c *gin.Context, visitor hydra.Visitor) {
 			WithErrorDetails(fmt.Sprintf("Binding Parameter Failed: %s", err.Error()))
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
-		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -105,7 +105,7 @@ func (r *restHandler) ExecuteAction(c *gin.Context, visitor hydra.Visitor) {
 		}
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
-		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -169,7 +169,7 @@ func (r *restHandler) GetActionExecution(c *gin.Context, visitor hydra.Visitor) 
 		}
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
-		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -227,7 +227,7 @@ func (r *restHandler) QueryActionLogs(c *gin.Context, visitor hydra.Visitor) {
 			WithErrorDetails(fmt.Sprintf("Binding Parameter Failed: %s", err.Error()))
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
-		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -266,7 +266,7 @@ func (r *restHandler) QueryActionLogs(c *gin.Context, visitor hydra.Visitor) {
 		}
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
-		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -327,7 +327,7 @@ func (r *restHandler) GetActionLog(c *gin.Context, visitor hydra.Visitor) {
 			WithErrorDetails(fmt.Sprintf("Binding Parameter Failed: %s", err.Error()))
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
-		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -356,7 +356,7 @@ func (r *restHandler) GetActionLog(c *gin.Context, visitor hydra.Visitor) {
 		}
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
-		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -434,7 +434,7 @@ func (r *restHandler) CancelActionLog(c *gin.Context, visitor hydra.Visitor) {
 		}
 
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
-		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}

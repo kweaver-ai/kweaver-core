@@ -58,6 +58,7 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 
 	// 1.获取对象类信息
 	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询对象子图")
+	defer span.End()
 	var resps interfaces.ObjectSubGraph
 
 	// 1. 在指定的业务知识网络下，根据起点对象类、方向、路径长度获取所有路径。
@@ -69,15 +70,9 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 			PathLength:        query.PathLength,
 		})
 	if err != nil {
-		logger.Errorf("GetRelationTypePathsBaseOnSource error: %s", err.Error())
-
-		// 添加异常时的 trace 属性
 		span.SetAttributes(attribute.Key("kn_id").String(query.KNID))
 		span.SetAttributes(attribute.Key("branch").String(query.Branch))
-		span.SetStatus(codes.Error, "Get RelationTypePathsBaseOnSource error")
-		span.End()
-		// 记录异常日志
-		otellog.LogError(ctx, fmt.Sprintf("Get RelationTypePathsBaseOnSource error: %v", err), nil)
+		otellog.LogError(ctx, fmt.Sprintf("Get RelationTypePathsBaseOnSource error: %v", err), err)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			oerrors.OntologyQuery_ObjectType_InternalError_GetObjectTypesByIDFailed).WithErrorDetails(err.Error())
@@ -194,14 +189,8 @@ func (kns *knowledgeNetworkService) buildObjectSubgraphByTypePaths(
 		// 获取关系类信息
 		relationType, exists, err := kns.omAccess.GetRelationType(ctx, query.KNID, query.Branch, edge.RelationTypeId)
 		if err != nil {
-			logger.Errorf("Get relation type error: %s", err.Error())
-
-			// 添加异常时的 trace 属性
 			span.SetAttributes(attribute.Key("rt_id").String(edge.RelationTypeId))
-			span.SetStatus(codes.Error, "Get relation type error")
-			span.End()
-			// 记录异常日志
-			otellog.LogError(ctx, fmt.Sprintf("Get relation type error: %v", err), nil)
+			otellog.LogError(ctx, fmt.Sprintf("Get relation type error: %v", err), err)
 
 			err = rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				oerrors.OntologyQuery_KnowledgeNetwork_InternalError_GetRelationTypeFailed).WithErrorDetails(err.Error())
@@ -212,14 +201,9 @@ func (kns *knowledgeNetworkService) buildObjectSubgraphByTypePaths(
 		if !exists {
 			logger.Debugf("relation type %d not found!", edge.RelationTypeId)
 
-			// 添加异常时的 trace 属性
 			span.SetAttributes(attribute.Key("rt_id").String(edge.RelationTypeId))
-			span.SetStatus(codes.Error, "relation type not found!")
-			span.End()
-			// 记录异常日志
-			otellog.LogError(ctx, fmt.Sprintf("relation type [%s] not found!", edge.RelationTypeId), nil)
-
 			err = rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_KnowledgeNetwork_RelationTypeNotFound)
+			otellog.LogError(ctx, fmt.Sprintf("relation type [%s] not found!", edge.RelationTypeId), err)
 
 			typePathsObjectCtx.errCh <- err
 			return
