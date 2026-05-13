@@ -126,8 +126,9 @@ const (
 )
 
 var (
-	appSetting  *AppSetting
-	vp          *viper.Viper
+	appSetting *AppSetting
+	vp         *viper.Viper
+
 	settingOnce sync.Once
 
 	// 当前系统时区
@@ -207,6 +208,8 @@ func loadSetting(vp *viper.Viper) {
 	SetMfModelManagerSetting()
 	SetMfModelApiSetting()
 
+	appSetting.OtelSetting.ServiceName = version.ServerName
+	appSetting.OtelSetting.ServiceVersion = version.ServerVersion
 	logger.Infof("ServerName: %s, ServerVersion: %s, Language: %s, GoVersion: %s, GoArch: %s",
 		version.ServerName, version.ServerVersion, version.LanguageGo,
 		version.GoVersion, version.GoArch)

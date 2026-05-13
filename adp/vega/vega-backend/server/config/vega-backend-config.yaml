@@ -31,7 +31,7 @@ otel:
     # 日志级别: debug, info, warn, error
     level: "info"
 crypto:
-  enabled: true
+  enabled: false
   privateKeyPath: /opt/vega-backend/secret-config/rsa_private_key_pkcs8.pem
   publicKeyPath: /opt/vega-backend/secret-config/rsa_public_key.pem
 
@@ -39,10 +39,10 @@ depServices:
   class-443:
     ingressClass: class-443
   rds:
-    host: mariadb-mariadb-master.resource.svc.cluster.local.
-    port: 3330
+    host: 192.168.40.63
+    port: 30006
     user: root
-    password: ""
+    password: "eisoo.com123"
     type: MariaDB
   mq:
     mqType: kafka
