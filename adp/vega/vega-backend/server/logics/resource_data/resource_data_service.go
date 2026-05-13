@@ -154,8 +154,12 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 			}
 			return documents, total, nil
 		}
+
 		// 准备 sort参数
 		params = rds.prepareSortParams(resource, params)
+		// 准备 output
+		params = rds.prepareOutputFieldsParams(resource, params)
+
 		data, total, err := rds.QueryData(ctx, catalog, resource, params)
 		if err != nil {
 			span.SetStatus(codes.Error, "Query table data failed")
@@ -322,4 +326,29 @@ func (rds *resourceDataService) prepareSortParams(resource *interfaces.Resource,
 	}
 
 	return filteredParams
+}
+
+// prepareOutputFieldsParams filters output fields to only include fields defined in resource SchemaDefinition.
+func (rds *resourceDataService) prepareOutputFieldsParams(resource *interfaces.Resource, params *interfaces.ResourceDataQueryParams) *interfaces.ResourceDataQueryParams {
+	if resource == nil || params == nil || len(params.OutputFields) == 0 {
+		return params
+	}
+
+	fieldMap := make(map[string]bool, len(resource.SchemaDefinition))
+	for _, prop := range resource.SchemaDefinition {
+		if prop == nil || prop.Name == "" {
+			continue
+		}
+		fieldMap[prop.Name] = true
+	}
+
+	filteredOutputFields := make([]string, 0, len(params.OutputFields))
+	for _, field := range params.OutputFields {
+		if fieldMap[field] || (field == "_score" && resource.Category == interfaces.ResourceCategoryIndex) {
+			filteredOutputFields = append(filteredOutputFields, field)
+		}
+	}
+	params.OutputFields = filteredOutputFields
+
+	return params
 }
