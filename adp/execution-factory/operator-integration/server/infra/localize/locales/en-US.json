@@ -117,7 +117,7 @@
         "MCPDescLimit": "MCP description exceeds maximum length (%d characters)",
         "MCPToolMaxCount": "MCP tool count must be less than %d",
         "MCPToolNameDuplicate": "MCP tool name \"%s\" is duplicate",
-        "CommonNameInvalid": "Only Chinese, letters, numbers, and underscores are allowed",
+        "CommonNameInvalid": "Only letters, numbers, and underscores are allowed",
         "CommonResourceIDConflict": "The resource already exists and is not allowed to be duplicated",
         "CommonImportDataEmpty": "Please check if the import data is correct",
         "CommonInternalComponentNotAllowed": "Internal component \"%s\" is not allowed to be imported or exported",

@@ -117,7 +117,7 @@
         "MCPDescLimit": "MCP描述长度不能超过%d个字符",
         "MCPToolMaxCount": "MCP工具数量不能超过%d个",
         "MCPToolNameDuplicate": "MCP工具名称“%s”存在重复",
-        "CommonNameInvalid": "仅支持输入中文、字母、数字、下划线",
+        "CommonNameInvalid": "仅支持字母、数字、下划线",
         "CommonResourceIDConflict": "资源已经存在，不允许重复",
         "CommonImportDataEmpty": "导入数据为空",
         "CommonInternalComponentNotAllowed": "内置组件“%s”不允许导入导出",

@@ -50,8 +50,8 @@ var (
 	vOnce sync.Once
 	v     interfaces.Validator
 
-	// 仅支持中文、字母、数字、下划线
-	commonNameReg = `^[[:word:]\p{Han}]+$`
+	// 仅支持字母、数字、下划线
+	commonNameReg = `^[a-zA-Z0-9_]+$`
 )
 
 func NewValidator() interfaces.Validator {
@@ -89,7 +89,7 @@ func init() {
 }
 
 // ValidateOperatorName 验证算子名称是否合法
-// 仅支持中英文、数字和键盘上的特殊字符
+// 仅支持英文、数字、下划线
 func (v *validator) ValidateOperatorName(ctx context.Context, name string) (err error) {
 	if name == "" {
 		err = myErr.NewHTTPError(ctx, http.StatusBadRequest, myErr.ErrExtOperatorNameEmpty, "operator name cannot be empty")

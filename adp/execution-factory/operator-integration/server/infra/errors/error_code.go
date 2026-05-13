@@ -134,7 +134,7 @@ const (
 
 // 通用错误码定义
 const (
-	ErrExtCommonNameInvalid                 ErrorCode = "CommonNameInvalid"                 // 仅支持输入中文、字母、数字、下划线或空格
+	ErrExtCommonNameInvalid                 ErrorCode = "CommonNameInvalid"                 // 仅支持字母、数字、下划线
 	ErrExtCommonResourceIDConflict          ErrorCode = "CommonResourceIDConflict"          // 资源ID冲突
 	ErrExtCommonInternalComponentNotAllowed ErrorCode = "CommonInternalComponentNotAllowed" // 内置组件不允许导入导出
 	ErrExtCommonImportDataEmpty             ErrorCode = "CommonImportDataEmpty"             // 导入数据为空
