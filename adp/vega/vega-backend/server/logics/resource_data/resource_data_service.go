@@ -66,16 +66,19 @@ func NewResourceDataService(appSetting *common.AppSetting) interfaces.ResourceDa
 }
 
 // Query 列出 resource 中的文档
-func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.Resource, params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
+func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.Resource,
+	params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
+
 	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "List resource documents")
 	defer span.End()
 
 	logger.Debugf("Query, resourceID: %s, params: %v", resource.ID, params)
 
+	var err error
 	var catalog *interfaces.Catalog
 	maxConcurrentQueries := int64(0)
 	if resource.Category != interfaces.ResourceCategoryLogicView {
-		catalog, err := rds.cs.GetByID(ctx, resource.CatalogID, true)
+		catalog, err = rds.cs.GetByID(ctx, resource.CatalogID, true)
 		if err != nil {
 			span.SetStatus(codes.Error, "Get catalog failed")
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
