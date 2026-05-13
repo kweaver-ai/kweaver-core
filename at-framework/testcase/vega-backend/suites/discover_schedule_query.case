@@ -1,0 +1,47 @@
+-   name: "Positive_查询定时任务列表_参数缺省_请求成功"
+    url: "查询调度任务列表"
+    code_check: "200"
+
+-   name: "Positive_查询定时任务列表_catalog无任务_请求成功"
+    url: "查询调度任务列表"
+    prev_case: "Positive_创建catalog_数据源_请求成功"
+    query_params: >-
+        {
+            "catalog_id": "${catalog_id}"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询定时任务列表_catalog有任务_请求成功"
+    url: "查询调度任务列表"
+    prev_case: "Positive_创建定时任务_每日8点执行_仅必需参数_请求成功"
+    query_params: >-
+        {
+            "catalog_id": "${catalog_id}"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询定时任务列表_全量参数_请求成功"
+    url: "查询调度任务列表"
+    prev_case: "Positive_创建catalog_数据源_请求成功"
+    query_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "enabled": "true"
+        }
+    code_check: "200"
+
+-   name: "Positive_查询定时任务列表_按enabled过滤_请求成功"
+    url: "查询调度任务列表"
+    query_params: >-
+        {
+            "enabled": true
+        }
+    code_check: "200"
+
+-   name: "Positive_查询定时任务列表_按enabled过滤_请求成功"
+    url: "查询调度任务列表"
+    query_params: >-
+        {
+            "enabled": false
+        }
+    code_check: "200"

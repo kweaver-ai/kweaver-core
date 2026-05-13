@@ -1,0 +1,444 @@
+-   name: "Positive_创建定时任务_每日8点执行_全量参数_请求成功"
+    url: "创建调度任务"
+    prev_case: "Positive_创建catalog_数据源_请求成功"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 08 * * *",
+            "start_time": 1778601600000,
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "201"
+
+-   name: "Positive_创建定时任务_任务禁用_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 08 * * *",
+            "enabled": false
+        }
+    code_check: "201"
+
+-   name: "Positive_创建定时任务_指定策略_insert_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 09 * * *",
+            "strategies": ["insert"]
+        }
+    code_check: "201"
+
+-   name: "Positive_创建定时任务_指定策略_delete_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 09 * * *",
+            "strategies": ["delete"]
+        }
+    code_check: "201"
+
+-   name: "Positive_创建定时任务_指定策略_update_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 09 * * *",
+            "strategies": ["update"]
+        }
+    code_check: "201"
+
+-   name: "Positive_创建定时任务_指定策略_复合策略_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 09 * * *",
+            "strategies": ["insert","delete"]
+        }
+    code_check: "201"
+
+-   name: "Negative_创建定时任务_参数校验_id缺省_请求失败"
+    url: "创建调度任务"
+    prev_case: "Positive_创建catalog_数据源_请求成功"
+    body_params: >-
+        {
+            "catalog_id": "",
+            "cron_expr": "00 10 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_id缺省_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "cron_expr": "00 10 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_id不存在_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${scheduler_id}",
+            "cron_expr": "00 10 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_id非string_请求失败"
+    url: "创建调度任务"
+    prev_case: "Positive_创建catalog_数据源_请求成功"
+    body_params: >-
+        {
+            "catalog_id": 0,
+            "cron_expr": "00 10 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_id非string_请求失败"
+    url: "创建调度任务"
+    prev_case: "Positive_创建catalog_数据源_请求成功"
+    body_params: >-
+        {
+            "catalog_id": true,
+            "cron_expr": "00 10 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_id非string_请求失败"
+    url: "创建调度任务"
+    prev_case: "Positive_创建catalog_数据源_请求成功"
+    body_params: >-
+        {
+            "catalog_id": ["${catalog_id}"],
+            "cron_expr": "00 10 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_cron缺省_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": ""
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_cron缺省_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}"
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_cron不符合规范_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "anything"
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_cron非string_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": 0
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_cron非string_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": true
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_cron非string_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": ["00 10 * * *"]
+        }
+    code_check: "400"
+
+-   name: "Positive_创建定时任务_参数校验_时间缺省_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 0,
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "201"
+
+-   name: "Positive_创建定时任务_参数校验_时间缺省_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "201"
+
+-   name: "Positive_创建定时任务_参数校验_时间缺省_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": 0,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "201"
+
+-   name: "Positive_创建定时任务_参数校验_时间缺省_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "201"
+
+-   name: "Negative_创建定时任务_参数校验_起始时间大于结束时间_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778688000000,
+            "end_time": 1778601600000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间值错误_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": -1778601600000,
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间值错误_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": -1778688000000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间非integer_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": "1778601600000",
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间非integer_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": "1778688000000",
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间非integer_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": true,
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间非integer_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": true,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间非integer_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600.123,
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间非integer_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": 1778688000.123,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间非integer_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": [1778601600000],
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_时间非integer_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": [1778688000000],
+            "enabled": true,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_enable格式错误_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": 1778688000000,
+            "enabled": "true",
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_enable格式错误_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": 1778688000000,
+            "enabled": 0,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_enable格式错误_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": 1778688000000,
+            "enabled": [true],
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_strategies未定义_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["undefined"]
+        }
+    code_check: "400"
+
+-   name: "Negative_创建定时任务_参数校验_strategies未定义_请求失败"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["undefined"，"update"]
+        }
+    code_check: "400"
+
+-   name: "Positive_创建定时任务_参数校验_strategies重复_请求成功"
+    url: "创建调度任务"
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 10 * * *",
+            "start_time": 1778601600000,
+            "end_time": 1778688000000,
+            "enabled": true,
+            "strategies": ["insert","insert"]
+        }
+    code_check: "201"

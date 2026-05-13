@@ -16,6 +16,23 @@
 #   DELETE    /api/vega-backend/v1/discover-tasks/{ids}
 #             (query: ignore_missing)
 #   POST      /api/vega-backend/v1/catalogs/{id}/discover
+#   GET|POST  /api/vega-backend/v1/connector-types
+#             GET query: tag, mode, category, enabled, offset, limit, sort, direction
+#   GET|PUT|DELETE /api/vega-backend/v1/connector-types/{type}
+#   POST      /api/vega-backend/v1/connector-types/{type}/enable
+#   POST      /api/vega-backend/v1/connector-types/{type}/disable
+#   POST|GET  /api/vega-backend/v1/discover-schedules
+#             GET query: catalog_id, enabled
+#   GET|PUT|DELETE /api/vega-backend/v1/discover-schedules/{id}
+#   POST      /api/vega-backend/v1/discover-schedules/{id}/enable
+#   POST      /api/vega-backend/v1/discover-schedules/{id}/disable
+#   GET|POST  /api/vega-backend/v1/build-tasks
+#             GET query: resource_id, catalog_id, status, mode, offset, limit, sort, direction
+#   GET       /api/vega-backend/v1/build-tasks/{id}
+#   DELETE    /api/vega-backend/v1/build-tasks/{ids}
+#             DELETE query: ignore_missing
+#   POST      /api/vega-backend/v1/build-tasks/{id}/start
+#   POST      /api/vega-backend/v1/build-tasks/{id}/stop
 
 
 
@@ -728,6 +745,947 @@
             {
               "error_code": "",
               "description": "目录不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 查询连接器类型列表
+    url: /api/vega-backend/v1/connector-types
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "entries": [],
+              "total_count": 0
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 注册连接器类型
+    url: /api/vega-backend/v1/connector-types
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+    resp_schema:
+        201: >-
+            {
+              "type": "connector_type_id"
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        406: >-
+            {
+              "error_code": "",
+              "description": "Content-Type 不是 application/json",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 查看连接器类型详情
+    url: /api/vega-backend/v1/connector-types/${type}
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "type": "connector_type_id",
+              "name": "connector_type_name",
+              "tags": [],
+              "description": "",
+              "mode": "local",
+              "category": "table",
+              "endpoint": "",
+              "field_config": {},
+              "enabled": true,
+              "operations": []
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 编辑连接器类型
+    url: /api/vega-backend/v1/connector-types/${type}
+    method: PUT
+    headers: >-
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        406: >-
+            {
+              "error_code": "",
+              "description": "Content-Type 不是 application/json",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 删除连接器类型
+    url: /api/vega-backend/v1/connector-types/${type}
+    method: DELETE
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        403: >-
+            {
+              "error_code": "",
+              "description": "不可删除（如 local 内置类型）",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 启用连接器类型
+    url: /api/vega-backend/v1/connector-types/${type}/enable
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 停用连接器类型
+    url: /api/vega-backend/v1/connector-types/${type}/disable
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 创建调度任务
+    url: /api/vega-backend/v1/discover-schedules
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+    resp_schema:
+        201: >-
+            {
+              "id": "discover_schedule_id"
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        406: >-
+            {
+              "error_code": "",
+              "description": "Content-Type 不是 application/json",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 查询调度任务列表
+    url: /api/vega-backend/v1/discover-schedules
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "entries": [],
+              "total_count": 0
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 查看调度任务详情
+    url: /api/vega-backend/v1/discover-schedules/${id}
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "id": "discover_schedule_id",
+              "catalog_id": "catalog_id",
+              "cron_expr": "0 0 * * *",
+              "start_time": 0,
+              "end_time": 0,
+              "enabled": true,
+              "strategies": [],
+              "last_run": 0,
+              "next_run": 0,
+              "creator": {"id": "", "type": "", "name": ""},
+              "create_time": 0,
+              "updater": {"id": "", "type": "", "name": ""},
+              "update_time": 0
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 编辑调度任务
+    url: /api/vega-backend/v1/discover-schedules/${id}
+    method: PUT
+    headers: >-
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        406: >-
+            {
+              "error_code": "",
+              "description": "Content-Type 不是 application/json",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 删除调度任务
+    url: /api/vega-backend/v1/discover-schedules/${id}
+    method: DELETE
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 启用调度任务
+    url: /api/vega-backend/v1/discover-schedules/${id}/enable
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 停用调度任务
+    url: /api/vega-backend/v1/discover-schedules/${id}/disable
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 查询构建任务列表
+    url: /api/vega-backend/v1/build-tasks
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "entries": [],
+              "total_count": 0
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 创建构建任务
+    url: /api/vega-backend/v1/build-tasks
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+    resp_schema:
+        201: >-
+            {
+              "id": "build_task_id",
+              "resource_id": "resource_id",
+              "status": "init"
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        406: >-
+            {
+              "error_code": "",
+              "description": "Content-Type 不是 application/json",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 查看构建任务详情
+    url: /api/vega-backend/v1/build-tasks/${id}
+    method: GET
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "id": "build_task_id",
+              "resource_id": "resource_id",
+              "catalog_id": "catalog_id",
+              "status": "init",
+              "mode": "streaming",
+              "total_count": 0,
+              "synced_count": 0,
+              "vectorized_count": 0,
+              "synced_mark": "",
+              "error_msg": "",
+              "creator": {"id": "", "type": "", "name": ""},
+              "create_time": 0,
+              "updater": {"id": "", "type": "", "name": ""},
+              "update_time": 0,
+              "embedding_fields": "",
+              "build_key_fields": "",
+              "embedding_model": "",
+              "model_dimensions": 0
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 删除构建任务
+    url: /api/vega-backend/v1/build-tasks/${ids}
+    method: DELETE
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 启动构建任务
+    url: /api/vega-backend/v1/build-tasks/${id}/start
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "id": "build_task_id",
+              "resource_id": "resource_id",
+              "catalog_id": "catalog_id",
+              "status": "init",
+              "mode": "streaming",
+              "total_count": 0,
+              "synced_count": 0,
+              "vectorized_count": 0,
+              "synced_mark": "",
+              "error_msg": "",
+              "creator": {"id": "", "type": "", "name": ""},
+              "create_time": 0,
+              "updater": {"id": "", "type": "", "name": ""},
+              "update_time": 0,
+              "embedding_fields": "",
+              "build_key_fields": "",
+              "embedding_model": "",
+              "model_dimensions": 0
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 停止构建任务
+    url: /api/vega-backend/v1/build-tasks/${id}/stop
+    method: POST
+    headers: >-
+        {
+          "Accept": "application/json"
+        }
+    resp_schema:
+        200: >-
+            {
+              "id": "build_task_id",
+              "resource_id": "resource_id",
+              "catalog_id": "catalog_id",
+              "status": "running",
+              "mode": "streaming",
+              "total_count": 0,
+              "synced_count": 0,
+              "vectorized_count": 0,
+              "synced_mark": "",
+              "error_msg": "",
+              "creator": {"id": "", "type": "", "name": ""},
+              "create_time": 0,
+              "updater": {"id": "", "type": "", "name": ""},
+              "update_time": 0,
+              "embedding_fields": "",
+              "build_key_fields": "",
+              "embedding_model": "",
+              "model_dimensions": 0
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "资源不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
               "solution": "",
               "error_link": "",
               "error_details": ""
