@@ -444,7 +444,7 @@ func CheckViewDataMatchesCondition(viewData map[string]any,
 
 		// 比较值是否相等。因为关系关联都是等于的关系，直接取值比较
 		// 从条件里取值，不能只取一个，还需要考虑多字段关联的情况
-		conditionValue := condition.ValueOptCfg.Value
+		conditionValue := condition.Value
 		if !CompareValues(expectedValue, conditionValue) {
 			return false
 		}
@@ -773,29 +773,29 @@ func evaluateConditionRecursive(ctx context.Context,
 	// Evaluate based on operation
 	switch condition.Operation {
 	case cond.OperationEq:
-		return compareValues(fieldValue, condition.ValueOptCfg.Value, "==", fieldType)
+		return compareValues(fieldValue, condition.Value, "==", fieldType)
 	case cond.OperationNotEq:
-		return compareValues(fieldValue, condition.ValueOptCfg.Value, "!=", fieldType)
+		return compareValues(fieldValue, condition.Value, "!=", fieldType)
 	case cond.OperationGt:
-		return compareValues(fieldValue, condition.ValueOptCfg.Value, ">", fieldType)
+		return compareValues(fieldValue, condition.Value, ">", fieldType)
 	case cond.OperationGte:
-		return compareValues(fieldValue, condition.ValueOptCfg.Value, ">=", fieldType)
+		return compareValues(fieldValue, condition.Value, ">=", fieldType)
 	case cond.OperationLt:
-		return compareValues(fieldValue, condition.ValueOptCfg.Value, "<", fieldType)
+		return compareValues(fieldValue, condition.Value, "<", fieldType)
 	case cond.OperationLte:
-		return compareValues(fieldValue, condition.ValueOptCfg.Value, "<=", fieldType)
+		return compareValues(fieldValue, condition.Value, "<=", fieldType)
 	case cond.OperationIn:
-		return evaluateIn(fieldValue, condition.ValueOptCfg.Value)
+		return evaluateIn(fieldValue, condition.Value)
 	case cond.OperationNotIn:
-		result, err := evaluateIn(fieldValue, condition.ValueOptCfg.Value)
+		result, err := evaluateIn(fieldValue, condition.Value)
 		if err != nil {
 			return false, err
 		}
 		return !result, nil
 	case cond.OperationRange:
-		return evaluateRange(fieldValue, condition.ValueOptCfg.Value, fieldType, true)
+		return evaluateRange(fieldValue, condition.Value, fieldType, true)
 	case cond.OperationOutRange:
-		result, err := evaluateRange(fieldValue, condition.ValueOptCfg.Value, fieldType, true)
+		result, err := evaluateRange(fieldValue, condition.Value, fieldType, true)
 		if err != nil {
 			return false, err
 		}
@@ -805,17 +805,17 @@ func evaluateConditionRecursive(ctx context.Context,
 	case cond.OperationFalse:
 		return isFalse(fieldValue), nil
 	case cond.OperationBefore:
-		return evaluateBefore(fieldValue, condition.ValueOptCfg.Value)
+		return evaluateBefore(fieldValue, condition.Value)
 	case cond.OperationBetween:
-		return evaluateRange(fieldValue, condition.ValueOptCfg.Value, fieldType, false)
+		return evaluateRange(fieldValue, condition.Value, fieldType, false)
 	case cond.OperationLike:
-		pattern, ok := condition.ValueOptCfg.Value.(string)
+		pattern, ok := condition.Value.(string)
 		if !ok {
 			return false, fmt.Errorf("like operation requires string value")
 		}
 		return evaluateLike(fieldValue, pattern)
 	case cond.OperationNotLike:
-		pattern, ok := condition.ValueOptCfg.Value.(string)
+		pattern, ok := condition.Value.(string)
 		if !ok {
 			return false, fmt.Errorf("not_like operation requires string value")
 		}
@@ -825,13 +825,13 @@ func evaluateConditionRecursive(ctx context.Context,
 		}
 		return !result, nil
 	case cond.OperationPrefix:
-		prefix, ok := condition.ValueOptCfg.Value.(string)
+		prefix, ok := condition.Value.(string)
 		if !ok {
 			return false, fmt.Errorf("prefix operation requires string value")
 		}
 		return evaluatePrefix(fieldValue, prefix)
 	case cond.OperationNotPrefix:
-		prefix, ok := condition.ValueOptCfg.Value.(string)
+		prefix, ok := condition.Value.(string)
 		if !ok {
 			return false, fmt.Errorf("not_prefix operation requires string value")
 		}
@@ -841,21 +841,21 @@ func evaluateConditionRecursive(ctx context.Context,
 		}
 		return !result, nil
 	case cond.OperationRegex:
-		pattern, ok := condition.ValueOptCfg.Value.(string)
+		pattern, ok := condition.Value.(string)
 		if !ok {
 			return false, fmt.Errorf("regex operation requires string value")
 		}
 		return evaluateRegex(fieldValue, pattern)
 	case cond.OperationContain:
-		return evaluateContain(fieldValue, condition.ValueOptCfg.Value)
+		return evaluateContain(fieldValue, condition.Value)
 	case cond.OperationNotContain:
-		result, err := evaluateContain(fieldValue, condition.ValueOptCfg.Value)
+		result, err := evaluateContain(fieldValue, condition.Value)
 		if err != nil {
 			return false, err
 		}
 		return !result, nil
 	case cond.OperationCurrent:
-		unit, ok := condition.ValueOptCfg.Value.(string)
+		unit, ok := condition.Value.(string)
 		if !ok {
 			return false, fmt.Errorf("current operation requires string value (year/month/week/day/hour/minute)")
 		}

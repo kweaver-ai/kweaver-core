@@ -28,11 +28,11 @@ func NewCurrentCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*Dat
 		return nil, fmt.Errorf("condition [current] left field is not a date/time field: %s:%s", cfg.NameField.Name, cfg.NameField.Type)
 	}
 
-	if cfg.ValueOptCfg.ValueFrom != ValueFrom_Const {
-		return nil, fmt.Errorf("condition [current] does not support value_from type '%s'", cfg.ValueOptCfg.ValueFrom)
+	if cfg.ValueFrom != ValueFrom_Const {
+		return nil, fmt.Errorf("condition [current] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
-	val, ok := cfg.ValueOptCfg.Value.(string)
+	val, ok := cfg.Value.(string)
 	if !ok {
 		return nil, fmt.Errorf("condition [current] right value should be string")
 	}

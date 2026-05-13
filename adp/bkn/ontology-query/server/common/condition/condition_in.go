@@ -23,17 +23,17 @@ type InCond struct {
 
 func NewInCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*DataProperty) (Condition, error) {
 
-	if !common.IsSlice(cfg.ValueOptCfg.Value) {
+	if !common.IsSlice(cfg.Value) {
 		return nil, fmt.Errorf("condition [in] right value should be an array")
 	}
 
-	if !common.IsSameType(cfg.ValueOptCfg.Value.([]any)) {
+	if !common.IsSameType(cfg.Value.([]any)) {
 		return nil, fmt.Errorf("condition [in] right value should be an array composed of elements of same type")
 	}
 
 	return &InCond{
 		mCfg:             cfg,
-		mValue:           cfg.ValueOptCfg.Value.([]any),
+		mValue:           cfg.Value.([]any),
 		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
 	}, nil
 }

@@ -452,14 +452,15 @@ func (s *actionLogsService) CancelExecution(ctx context.Context, knID, execID, r
 	cancelledCount := 0
 	completedCount := 0
 	for i := range exec.Results {
-		if exec.Results[i].Status == interfaces.ObjectStatusPending {
+		switch exec.Results[i].Status {
+		case interfaces.ObjectStatusPending:
 			exec.Results[i].Status = interfaces.ObjectStatusCancelled
 			exec.Results[i].ErrorMessage = "cancelled by user"
 			if reason != "" {
 				exec.Results[i].ErrorMessage = fmt.Sprintf("cancelled: %s", reason)
 			}
 			cancelledCount++
-		} else if exec.Results[i].Status == interfaces.ObjectStatusSuccess {
+		case interfaces.ObjectStatusSuccess:
 			completedCount++
 		}
 	}

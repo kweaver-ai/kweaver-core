@@ -78,7 +78,7 @@ func (o *openSearchAccess) CreateIndex(ctx context.Context, indexName string, bo
 	if err != nil {
 		return fmt.Errorf("failed to create index %s: %w", indexName, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
@@ -122,17 +122,18 @@ func (o *openSearchAccess) IndexExists(ctx context.Context, indexName string) (b
 	if err != nil {
 		return false, fmt.Errorf("failed to check index existence: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// 根据响应状态码判断索引是否存在
 	// 200 - 索引存在
 	// 404 - 索引不存在
 	// 其他状态码 - 错误
-	if res.StatusCode == 200 {
+	switch res.StatusCode {
+	case 200:
 		return true, nil
-	} else if res.StatusCode == 404 {
+	case 404:
 		return false, nil
-	} else {
+	default:
 		return false, fmt.Errorf("check index existence failed: %s, %s", res.Status(), res.String())
 	}
 }
@@ -153,7 +154,7 @@ func (o *openSearchAccess) DeleteIndex(ctx context.Context, indexName string) er
 	if err != nil {
 		return fmt.Errorf("failed to delete index %s: %w", indexName, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
@@ -200,7 +201,7 @@ func (o *openSearchAccess) InsertData(ctx context.Context, indexName string, doc
 	if err != nil {
 		return fmt.Errorf("failed to insert data with ID: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("insert data with ID failed: %s, %s", res.Status(), res.String())
@@ -275,7 +276,7 @@ func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string,
 	if err != nil {
 		return fmt.Errorf("failed to bulk insert data: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("bulk insert data failed: %s, %s", res.Status(), res.String())
@@ -343,7 +344,7 @@ func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, que
 	if err != nil {
 		return nil, fmt.Errorf("failed to search data: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, fmt.Errorf("search data failed: %s, %s", res.Status(), res.String())
@@ -402,7 +403,7 @@ func (o *openSearchAccess) DeleteData(ctx context.Context, indexName string, doc
 	if err != nil {
 		return fmt.Errorf("failed to delete data %s from index %s: %w", docID, indexName, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		// 404错误表示文档不存在，不视为错误
@@ -469,7 +470,7 @@ func (o *openSearchAccess) BulkDeleteData(ctx context.Context, indexName string,
 	if err != nil {
 		return fmt.Errorf("failed to bulk delete data: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
@@ -504,7 +505,7 @@ func (o *openSearchAccess) Count(ctx context.Context, indexName string, query an
 	if err != nil {
 		return nil, fmt.Errorf("failed to Count: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, fmt.Errorf("Count failed: %s, %s", res.Status(), res.String())

@@ -111,7 +111,7 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 	}
 
 	// 起点类已经查询完成，limit已经得到，后续的路径探索用系统默认的最大值进行探索
-	query.PageQuery.Limit = interfaces.MAX_PATHS
+	query.Limit = interfaces.MAX_PATHS
 	objectGraph, err := kns.buildObjectSubgraph(ctx, query, typePaths, startObjects)
 	if err != nil {
 		return resps, err
@@ -314,7 +314,7 @@ func (kns *knowledgeNetworkService) buildObjectSubgraph(ctx context.Context,
 ) (*interfaces.ObjectSubGraph, error) {
 
 	logger.Infof("开始构建对象子图 - 概念路径数: %d, 起点对象数: %d, 总限制: %d",
-		len(typePaths), len(startObjects.Datas), query.PathQuotaManager.TotalLimit)
+		len(typePaths), len(startObjects.Datas), query.TotalLimit)
 
 	errCh := make(chan error, len(typePaths))
 	typePathObjectCtx := &typePathObjectsContext{
@@ -422,10 +422,10 @@ func (kns *knowledgeNetworkService) buildSingleTypePathObjects(
 		defer typePathObjectCtx.mu.Unlock()
 
 		// 检查合并后是否会超过限制. 按需合并
-		currentGlobal := atomic.LoadInt64(&query.PathQuotaManager.GlobalCount)
-		if currentGlobal > query.PathQuotaManager.TotalLimit {
+		currentGlobal := atomic.LoadInt64(&query.GlobalCount)
+		if currentGlobal > query.TotalLimit {
 			// 合并一批超，那么就合并差的那部分进去，直到超
-			fixedNum := query.PathQuotaManager.TotalLimit - int64(len(typePathObjectCtx.relationPaths))
+			fixedNum := query.TotalLimit - int64(len(typePathObjectCtx.relationPaths))
 			// 限制 fixedNum 不超过当前批次的实际数量，避免数组越界
 			if fixedNum > int64(len(currentObjectPaths)) {
 				fixedNum = int64(len(currentObjectPaths))
@@ -1208,11 +1208,11 @@ func (kns *knowledgeNetworkService) extendPathsWithNewEdge(query *interfaces.Sub
 		for _, edge := range newPath.Relations {
 			pathKey = fmt.Sprintf("%s-%s:%s->%s", pathKey, edge.RelationTypeId, edge.SourceObjectId, edge.TargetObjectId)
 		}
-		if query.BatchQueryState.Visited[pathKey] {
+		if query.Visited[pathKey] {
 			logger.Warnf("检测到重复路径: %s", pathKey)
 			pathExisted = true
 		}
-		query.BatchQueryState.Visited[pathKey] = true
+		query.Visited[pathKey] = true
 
 		newPaths = append(newPaths, newPath)
 	}

@@ -19,7 +19,7 @@ type LtCond struct {
 
 func NewLtCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*DataProperty) (Condition, error) {
 
-	if common.IsSlice(cfg.ValueOptCfg.Value) {
+	if common.IsSlice(cfg.Value) {
 		return nil, fmt.Errorf("condition [eq] only supports single value")
 	}
 

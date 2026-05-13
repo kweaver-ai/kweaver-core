@@ -96,7 +96,7 @@ func Test_ontologyManagerAccess_GetObjectType(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(exists, ShouldBeTrue)
-			So(result.ObjectTypeWithKeyField.OTID, ShouldEqual, otID)
+			So(result.OTID, ShouldEqual, otID)
 		})
 
 		Convey("失败 - HTTP 请求错误", func() {
@@ -114,7 +114,7 @@ func Test_ontologyManagerAccess_GetObjectType(t *testing.T) {
 
 			So(err, ShouldNotBeNil)
 			So(exists, ShouldBeFalse)
-			So(result.ObjectTypeWithKeyField.OTID, ShouldEqual, "")
+			So(result.OTID, ShouldEqual, "")
 		})
 
 		Convey("失败 - 对象类不存在 (404)", func() {
@@ -132,7 +132,7 @@ func Test_ontologyManagerAccess_GetObjectType(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(exists, ShouldBeFalse)
-			So(result.ObjectTypeWithKeyField.OTID, ShouldEqual, "")
+			So(result.OTID, ShouldEqual, "")
 		})
 
 		Convey("失败 - HTTP 状态码非 200", func() {
@@ -156,7 +156,7 @@ func Test_ontologyManagerAccess_GetObjectType(t *testing.T) {
 
 			So(err, ShouldNotBeNil)
 			So(exists, ShouldBeFalse)
-			So(result.ObjectTypeWithKeyField.OTID, ShouldEqual, "")
+			So(result.OTID, ShouldEqual, "")
 		})
 
 		Convey("失败 - HTTP 状态码非 200 且解析 BaseError 失败", func() {
@@ -176,7 +176,7 @@ func Test_ontologyManagerAccess_GetObjectType(t *testing.T) {
 
 			So(err, ShouldNotBeNil)
 			So(exists, ShouldBeFalse)
-			So(result.ObjectTypeWithKeyField.OTID, ShouldEqual, "")
+			So(result.OTID, ShouldEqual, "")
 		})
 
 		Convey("失败 - 响应体为空", func() {
@@ -194,7 +194,7 @@ func Test_ontologyManagerAccess_GetObjectType(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(exists, ShouldBeFalse)
-			So(result.ObjectTypeWithKeyField.OTID, ShouldEqual, "")
+			So(result.OTID, ShouldEqual, "")
 		})
 
 		Convey("失败 - 响应体为空数组", func() {
@@ -219,7 +219,7 @@ func Test_ontologyManagerAccess_GetObjectType(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(exists, ShouldBeFalse)
-			So(result.ObjectTypeWithKeyField.OTID, ShouldEqual, "")
+			So(result.OTID, ShouldEqual, "")
 		})
 
 		Convey("失败 - 解析响应失败", func() {
@@ -239,7 +239,7 @@ func Test_ontologyManagerAccess_GetObjectType(t *testing.T) {
 
 			So(err, ShouldNotBeNil)
 			So(exists, ShouldBeFalse)
-			So(result.ObjectTypeWithKeyField.OTID, ShouldEqual, "")
+			So(result.OTID, ShouldEqual, "")
 		})
 
 		Convey("成功 - 无账户信息", func() {
@@ -263,7 +263,7 @@ func Test_ontologyManagerAccess_GetObjectType(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(exists, ShouldBeTrue)
-			So(result.ObjectTypeWithKeyField.OTID, ShouldEqual, otID)
+			So(result.OTID, ShouldEqual, otID)
 		})
 	})
 }

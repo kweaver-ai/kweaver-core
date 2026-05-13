@@ -20,7 +20,7 @@ type OutRangeCond struct {
 
 func NewOutRangeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*DataProperty) (Condition, error) {
 
-	val, ok := cfg.ValueOptCfg.Value.([]any)
+	val, ok := cfg.Value.([]any)
 	if !ok {
 		return nil, fmt.Errorf("condition [out_range] right value should be an array of length 2")
 	}

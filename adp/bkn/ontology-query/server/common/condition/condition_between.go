@@ -28,11 +28,11 @@ func NewBetweenCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*Dat
 		return nil, fmt.Errorf("condition [between] left field is not a numeric or date/time field: %s:%s", cfg.NameField.Name, cfg.NameField.Type)
 	}
 
-	if cfg.ValueOptCfg.ValueFrom != ValueFrom_Const {
-		return nil, fmt.Errorf("condition [between] does not support value_from type '%s'", cfg.ValueOptCfg.ValueFrom)
+	if cfg.ValueFrom != ValueFrom_Const {
+		return nil, fmt.Errorf("condition [between] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
-	val, ok := cfg.ValueOptCfg.Value.([]any)
+	val, ok := cfg.Value.([]any)
 	if !ok {
 		return nil, fmt.Errorf("condition [between] right value should be an array of length 2")
 	}
