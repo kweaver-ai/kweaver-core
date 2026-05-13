@@ -320,6 +320,7 @@ func (s *ToolServiceImpl) importByUpsert(ctx context.Context, tx *sql.Tx, toolBo
 	toolBoxDB.Description = item.BoxDesc
 	toolBoxDB.ServerURL = item.BoxSvcURL
 	toolBoxDB.Category = item.CategoryType
+	toolBoxDB.IsInternal = item.IsInternal
 	toolBoxDB.UpdateTime = time.Now().UnixNano()
 	toolBoxDB.UpdateUser = userID
 	toolBoxDB.Status = item.Status.String()

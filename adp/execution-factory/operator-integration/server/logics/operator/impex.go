@@ -300,6 +300,7 @@ func (m *operatorManager) updateOperatorConfig(ctx context.Context, tx *sql.Tx, 
 	operatorDB.Source = newOperatorDB.Source
 	operatorDB.ExecuteControl = newOperatorDB.ExecuteControl
 	operatorDB.ExtendInfo = newOperatorDB.ExtendInfo
+	operatorDB.IsInternal = newOperatorDB.IsInternal
 	operatorDB.UpdateUser = newOperatorDB.CreateUser
 	operatorDB.UpdateTime = time.Now().UnixNano()
 	operatorDB.MetadataType = newOperatorDB.MetadataType
