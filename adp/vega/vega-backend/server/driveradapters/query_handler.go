@@ -16,6 +16,7 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/trace"
 
+	"vega-backend/common/visitor"
 	"vega-backend/errors"
 	"vega-backend/interfaces"
 	"vega-backend/logics/query"
@@ -40,7 +41,7 @@ func (r *restHandler) RawQueryByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.rawQuery(c, ctx, span, visitor)
 }
 

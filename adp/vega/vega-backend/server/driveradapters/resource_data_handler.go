@@ -22,6 +22,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"go.opentelemetry.io/otel/trace"
 
+	"vega-backend/common/visitor"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 )
@@ -48,7 +49,7 @@ func (r *restHandler) PostResourceDataByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.postResourceData(c, ctx, span, visitor)
 }
 
@@ -235,7 +236,7 @@ func (r *restHandler) PutResourceDataByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.putResourceData(c, ctx, span, visitor)
 }
 
@@ -315,7 +316,7 @@ func (r *restHandler) GetResourceDataDocByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getResourceDataDoc(c, ctx, span, visitor)
 }
 
@@ -369,7 +370,7 @@ func (r *restHandler) PutResourceDataDocByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.putResourceDataDoc(c, ctx, span, visitor)
 }
 
@@ -435,7 +436,7 @@ func (r *restHandler) DeleteResourceDataByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.deleteResourceData(c, ctx, span, visitor)
 }
 

@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strings"
 	"vega-backend/common"
+	"vega-backend/common/visitor"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
@@ -48,7 +49,7 @@ func (r *restHandler) ListResourcesByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.listResources(c, ctx, span, visitor)
 }
 
@@ -130,7 +131,7 @@ func (r *restHandler) CreateResourceByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.createResource(c, ctx, span, visitor)
 }
 
@@ -252,7 +253,7 @@ func (r *restHandler) GetResourcesByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getResources(c, ctx, span, visitor)
 }
 
@@ -323,7 +324,7 @@ func (r *restHandler) UpdateResourceByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.updateResource(c, ctx, span, visitor)
 }
 
@@ -420,7 +421,7 @@ func (r *restHandler) DeleteResourcesByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.deleteResources(c, ctx, span, visitor)
 }
 

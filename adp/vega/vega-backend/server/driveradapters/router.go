@@ -8,6 +8,7 @@ package driveradapters
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"vega-backend/common"
+	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 	"vega-backend/logics/auth"
 	"vega-backend/logics/build_task"
@@ -78,14 +80,15 @@ func NewRestHandler(appSetting *common.AppSetting, sw *worker.ScheduleWorker) Re
 }
 
 // RegisterPublic registers public API routes.
-func (r *restHandler) RegisterPublic(engine *gin.Engine) {
-	engine.Use(r.accessLog())
-	engine.Use(middleware.TracingMiddleware())
+func (r *restHandler) RegisterPublic(c *gin.Engine) {
+	c.Use(r.AccessLog())
+	c.Use(middleware.TracingMiddleware())
+	c.Use(r.LanguageMiddleware())
 
-	engine.GET("/health", r.HealthCheck)
+	c.GET("/health", r.HealthCheck)
 
 	// 外部 API (External)
-	apiV1 := engine.Group("/api/vega-backend/v1")
+	apiV1 := c.Group("/api/vega-backend/v1")
 	{
 		// Catalog APIs - External
 		catalogs := apiV1.Group("/catalogs")
@@ -161,7 +164,7 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 	}
 
 	// 内部 API (Internal)
-	apiInV1 := engine.Group("/api/vega-backend/in/v1")
+	apiInV1 := c.Group("/api/vega-backend/in/v1")
 	{
 		// Catalog APIs - Internal
 		catalogs := apiInV1.Group("/catalogs")
@@ -231,37 +234,44 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 // HealthCheck 健康检查
 func (r *restHandler) HealthCheck(c *gin.Context) {
 	// 返回服务信息
-	serverInfo := struct {
-		ServerName    string
-		ServerVersion string
-		Language      string
-		GoVersion     string
-		GoArch        string
-	}{
-		ServerName:    version.ServerName,
-		ServerVersion: version.ServerVersion,
-		Language:      version.LanguageGo,
-		GoVersion:     version.GoVersion,
-		GoArch:        version.GoArch,
-	}
-	rest.ReplyOK(c, http.StatusOK, serverInfo)
+	rest.ReplyOK(c, http.StatusOK, gin.H{
+		"ServerName":    version.ServerName,
+		"ServerVersion": version.ServerVersion,
+		"Language":      version.LanguageGo,
+		"GoVersion":     version.GoVersion,
+		"GoArch":        version.GoArch,
+	})
 }
 
 // verifyJsonContentType middleware
 func (r *restHandler) verifyJsonContentType() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		//拦截请求，判断ContentType是否为XXX
 		if c.ContentType() != interfaces.CONTENT_TYPE_JSON {
-			httpErr := rest.NewHTTPError(c, http.StatusNotAcceptable, "VegaBackend.InvalidRequestHeader.ContentType")
+			httpErr := rest.NewHTTPError(c, http.StatusNotAcceptable, verrors.VegaBackend_InvalidRequestHeader_ContentType).
+				WithErrorDetails(fmt.Sprintf("Content-Type header [%s] is not supported, expected is [application/json].", c.ContentType()))
 			rest.ReplyError(c, httpErr)
+
 			c.Abort()
 			return
 		}
+
+		//执行后续操作
 		c.Next()
 	}
 }
 
-// accessLog middleware
-func (r *restHandler) accessLog() gin.HandlerFunc {
+// gin中间件 把 X-Language 头解析结果挂到 request ctx。
+// 注册顺序必须在 TracingMiddleware 之后，这样 language ctx 叠加在 trace ctx 上。
+func (r *restHandler) LanguageMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Request = c.Request.WithContext(rest.GetLanguageCtx(c))
+		c.Next()
+	}
+}
+
+// gin中间件 访问日志
+func (r *restHandler) AccessLog() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		beginTime := time.Now()
 		c.Next()
@@ -278,7 +288,7 @@ func (r *restHandler) accessLog() gin.HandlerFunc {
 	}
 }
 
-// verifyOAuth verifies OAuth token
+// 校验oauth
 func (r *restHandler) verifyOAuth(ctx context.Context, c *gin.Context) (hydra.Visitor, error) {
 	visitor, err := r.as.VerifyToken(ctx, c)
 	if err != nil {
@@ -289,24 +299,4 @@ func (r *restHandler) verifyOAuth(ctx context.Context, c *gin.Context) (hydra.Vi
 	}
 
 	return visitor, nil
-}
-
-// GenerateVisitor generates visitor from request headers (for internal APIs)
-func GenerateVisitor(c *gin.Context) hydra.Visitor {
-	accountInfo := interfaces.AccountInfo{
-		ID:   c.GetHeader(interfaces.HTTP_HEADER_ACCOUNT_ID),
-		Type: c.GetHeader(interfaces.HTTP_HEADER_ACCOUNT_TYPE),
-	}
-
-	visitor := hydra.Visitor{
-		ID:         accountInfo.ID,
-		Type:       hydra.VisitorType(accountInfo.Type),
-		TokenID:    "", // 无token
-		IP:         c.ClientIP(),
-		Mac:        c.GetHeader("X-Request-MAC"),
-		UserAgent:  c.GetHeader("User-Agent"),
-		ClientType: hydra.ClientType_Linux,
-	}
-
-	return visitor
 }

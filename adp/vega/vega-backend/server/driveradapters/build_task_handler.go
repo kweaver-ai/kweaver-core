@@ -19,6 +19,7 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/trace"
 
+	"vega-backend/common/visitor"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 )
@@ -51,7 +52,7 @@ func (r *restHandler) CreateBuildTaskByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.createBuildTask(c, ctx, span, visitor)
 }
 
@@ -154,7 +155,7 @@ func (r *restHandler) GetBuildTaskByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getBuildTask(c, ctx, span, visitor)
 }
 
@@ -196,7 +197,7 @@ func (r *restHandler) ListBuildTasksByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.listBuildTasks(c, ctx, span, visitor)
 }
 
@@ -281,7 +282,7 @@ func (r *restHandler) DeleteBuildTasksByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.deleteBuildTasks(c, ctx, span, visitor)
 }
 
@@ -344,7 +345,7 @@ func (r *restHandler) StartBuildTaskByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.startBuildTask(c, ctx, span, visitor)
 }
 
@@ -393,7 +394,7 @@ func (r *restHandler) StopBuildTaskByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.stopBuildTask(c, ctx, span, visitor)
 }
 

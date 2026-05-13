@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 	"vega-backend/common"
+	"vega-backend/common/visitor"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
@@ -64,7 +65,7 @@ func (r *restHandler) ListCatalogsByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.listCatalogs(c, ctx, span, visitor)
 }
 
@@ -145,7 +146,7 @@ func (r *restHandler) CreateCatalogByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.createCatalog(c, ctx, span, visitor)
 }
 
@@ -250,7 +251,7 @@ func (r *restHandler) GetCatalogsByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getCatalogs(c, ctx, span, visitor)
 }
 
@@ -321,7 +322,7 @@ func (r *restHandler) UpdateCatalogByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.updateCatalog(c, ctx, span, visitor)
 }
 
@@ -485,7 +486,7 @@ func (r *restHandler) DeleteCatalogsByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.deleteCatalogs(c, ctx, span, visitor)
 }
 
@@ -590,7 +591,7 @@ func (r *restHandler) GetCatalogHealthStatusByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getCatalogHealthStatus(c, ctx, span, visitor)
 }
 
@@ -647,7 +648,7 @@ func (r *restHandler) TestConnectionByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.testConnection(c, ctx, span, visitor)
 }
 
@@ -713,7 +714,7 @@ func (r *restHandler) DiscoverCatalogResourcesByIn(c *gin.Context) {
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.discoverCatalogResources(c, ctx, span, visitor)
 }
 

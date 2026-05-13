@@ -20,6 +20,7 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/trace"
 
+	"vega-backend/common/visitor"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 )
@@ -43,7 +44,7 @@ func (r *restHandler) ListDiscoverTasksByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.listDiscoverTasks(c, ctx, span, visitor)
 }
 
@@ -108,7 +109,7 @@ func (r *restHandler) GetDiscoverTaskByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getDiscoverTask(c, ctx, span, visitor)
 }
 
@@ -158,7 +159,7 @@ func (r *restHandler) DeleteDiscoverTasksByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.deleteDiscoverTasks(c, ctx, span, visitor)
 }
 

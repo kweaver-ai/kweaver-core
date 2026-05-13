@@ -20,6 +20,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"go.opentelemetry.io/otel/trace"
 
+	"vega-backend/common/visitor"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 )
@@ -43,7 +44,7 @@ func (r *restHandler) CreateDiscoverScheduleByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.createDiscoverSchedule(c, ctx, span, visitor)
 }
 
@@ -129,7 +130,7 @@ func (r *restHandler) ListDiscoverSchedulesByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.listDiscoverSchedules(c, ctx, span, visitor)
 }
 
@@ -185,7 +186,7 @@ func (r *restHandler) GetDiscoverScheduleByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getDiscoverSchedule(c, ctx, span, visitor)
 }
 
@@ -233,7 +234,7 @@ func (r *restHandler) UpdateDiscoverScheduleByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.updateDiscoverSchedule(c, ctx, span, visitor)
 }
 
@@ -341,7 +342,7 @@ func (r *restHandler) DeleteDiscoverScheduleByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.deleteDiscoverSchedule(c, ctx, span, visitor)
 }
 
@@ -404,7 +405,7 @@ func (r *restHandler) EnableDiscoverScheduleByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.toggleDiscoverSchedule(c, ctx, span, visitor, true)
 }
 
@@ -425,7 +426,7 @@ func (r *restHandler) DisableDiscoverScheduleByIn(c *gin.Context) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.toggleDiscoverSchedule(c, ctx, span, visitor, false)
 }
 

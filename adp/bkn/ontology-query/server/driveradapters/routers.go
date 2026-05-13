@@ -37,13 +37,12 @@ type RestHandler interface {
 type restHandler struct {
 	appSetting *common.AppSetting
 	as         interfaces.AuthService
-
-	als interfaces.ActionLogsService
-	ass interfaces.ActionSchedulerService
-	ats interfaces.ActionTypeService
-	kns interfaces.KnowledgeNetworkService
-	ms  interfaces.MetricQueryService
-	ots interfaces.ObjectTypeService
+	als        interfaces.ActionLogsService
+	ass        interfaces.ActionSchedulerService
+	ats        interfaces.ActionTypeService
+	kns        interfaces.KnowledgeNetworkService
+	ms         interfaces.MetricQueryService
+	ots        interfaces.ObjectTypeService
 }
 
 func NewRestHandler(appSetting *common.AppSetting) RestHandler {
