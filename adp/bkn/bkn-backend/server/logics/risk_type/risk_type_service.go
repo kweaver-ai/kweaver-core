@@ -644,6 +644,20 @@ func (rts *riskTypeService) GetAllRiskTypesByKnID(ctx context.Context, knID stri
 }
 
 func (rts *riskTypeService) DeleteRiskTypesByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) error {
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeleteRiskTypesByKnID")
+	defer span.End()
+
+	if tx == nil {
+		otellog.LogError(ctx, "missing transaction", nil)
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+			berrors.BknBackend_RiskType_InternalError).WithErrorDetails("missing transaction")
+	}
+
 	_, err := rts.rta.DeleteRiskTypesByKnID(ctx, tx, knID, branch)
+	if err != nil {
+		otellog.LogError(ctx, "DeleteRiskTypesByKnID failed", err)
+		return err
+	}
+	span.SetStatus(codes.Ok, "")
 	return err
 }

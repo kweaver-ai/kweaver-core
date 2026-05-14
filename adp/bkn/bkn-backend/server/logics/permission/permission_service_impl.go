@@ -12,8 +12,11 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	mqclient "github.com/kweaver-ai/proton-mq-sdk-go"
+	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	berrors "bkn-backend/errors"
@@ -45,13 +48,18 @@ func NewPermissionServiceImpl(appSetting *common.AppSetting) interfaces.Permissi
 }
 
 func (ps *PermissionServiceImpl) CheckPermission(ctx context.Context, resource interfaces.PermissionResource, ops []string) error {
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CheckPermission")
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{}
 	if ctx.Value(interfaces.ACCOUNT_INFO_KEY) != nil {
 		accountInfo = ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo)
 	}
 	if accountInfo.ID == "" || accountInfo.Type == "" {
-		return rest.NewHTTPError(ctx, http.StatusForbidden, rest.PublicError_Forbidden).
+		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden, rest.PublicError_Forbidden).
 			WithErrorDetails("Access denied: missing account ID or type")
+		otellog.LogError(ctx, "CheckPermission missing account ID or type", httpErr)
+		return httpErr
 	}
 
 	// todo: 暂时先去掉权限校验
@@ -64,25 +72,35 @@ func (ps *PermissionServiceImpl) CheckPermission(ctx context.Context, resource i
 		Operations: ops,
 	})
 	if err != nil {
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_InternalError_CheckPermissionFailed).WithErrorDetails(err)
+		otellog.LogError(ctx, "CheckPermission failed", httpErr)
+		return httpErr
 	}
 	if !ok {
-		return rest.NewHTTPError(ctx, http.StatusForbidden, rest.PublicError_Forbidden).
+		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden, rest.PublicError_Forbidden).
 			WithErrorDetails(fmt.Sprintf("Access denied: insufficient permissions for[%v]", ops))
+		otellog.LogError(ctx, "CheckPermission denied", httpErr)
+		return httpErr
 	}
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
 // 添加资源权限（新建决策）
 func (ps *PermissionServiceImpl) CreateResources(ctx context.Context, resources []interfaces.PermissionResource, ops []string) error {
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CreatePermissionResources")
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{}
 	if ctx.Value(interfaces.ACCOUNT_INFO_KEY) != nil {
 		accountInfo = ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo)
 	}
 	if accountInfo.ID == "" || accountInfo.Type == "" {
-		return rest.NewHTTPError(ctx, http.StatusForbidden, rest.PublicError_Forbidden).
+		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden, rest.PublicError_Forbidden).
 			WithErrorDetails("Access denied: missing account ID or type")
+		otellog.LogError(ctx, "CreateResources missing account ID or type", httpErr)
+		return httpErr
 	}
 
 	// todo: 创建资源权限暂时先去掉
@@ -110,15 +128,22 @@ func (ps *PermissionServiceImpl) CreateResources(ctx context.Context, resources 
 
 	err := ps.pa.CreateResources(ctx, policies)
 	if err != nil {
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_InternalError_CreateResourcesFailed).WithErrorDetails(err.Error())
+		otellog.LogError(ctx, "CreateResources failed", httpErr)
+		return httpErr
 	}
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
 // 删除策略
 func (ps *PermissionServiceImpl) DeleteResources(ctx context.Context, resourceType string, ids []string) error {
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeletePermissionResources")
+	defer span.End()
+
 	if len(ids) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return nil
 	}
 	// todo：删除权限资源暂时先去掉
@@ -133,23 +158,30 @@ func (ps *PermissionServiceImpl) DeleteResources(ctx context.Context, resourceTy
 
 	err := ps.pa.DeleteResources(ctx, resources)
 	if err != nil {
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_InternalError_DeleteResourcesFailed).WithErrorDetails(err)
+		otellog.LogError(ctx, "DeleteResources failed", httpErr)
+		return httpErr
 	}
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
 // 过滤资源列表
 func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceType string, ids []string,
 	ops []string, allowOperation bool, fullOps []string) (map[string]interfaces.PermissionResourceOps, error) {
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "FilterPermissionResources")
+	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{}
 	if ctx.Value(interfaces.ACCOUNT_INFO_KEY) != nil {
 		accountInfo = ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo)
 	}
 	if accountInfo.ID == "" || accountInfo.Type == "" {
-		return nil, rest.NewHTTPError(ctx, http.StatusForbidden, rest.PublicError_Forbidden).
+		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden, rest.PublicError_Forbidden).
 			WithErrorDetails("Access denied: missing account ID or type")
+		otellog.LogError(ctx, "FilterResources missing account ID or type", httpErr)
+		return nil, httpErr
 	}
 
 	resources := []interfaces.PermissionResource{}
@@ -171,8 +203,10 @@ func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceTy
 		AllowOperation: allowOperation,
 	})
 	if err != nil {
-		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_InternalError_FilterResourcesFailed).WithErrorDetails(err)
+		otellog.LogError(ctx, "FilterResources failed", httpErr)
+		return nil, httpErr
 	}
 
 	// id转map
@@ -181,22 +215,31 @@ func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceTy
 		idMap[resourceOps.ResourceID] = resourceOps
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return idMap, nil
 }
 
 // 更新资源名称
 func (ps *PermissionServiceImpl) UpdateResource(ctx context.Context, resource interfaces.PermissionResource) error {
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdatePermissionResource")
+	defer span.End()
+
 	bytes, err := sonic.Marshal(resource)
 	if err != nil {
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_InternalError_MarshalDataFailed).WithErrorDetails(err)
+		otellog.LogError(ctx, "UpdateResource marshal failed", httpErr)
+		return httpErr
 	}
 
 	err = ps.mqClient.Pub(interfaces.AUTHORIZATION_RESOURCE_NAME_MODIFY, bytes)
 	if err != nil {
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_InternalError_UpdateResourceFailed).WithErrorDetails(err)
+		otellog.LogError(ctx, "UpdateResource publish failed", httpErr)
+		return httpErr
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }

@@ -1205,6 +1205,9 @@ type batchQueryState struct {
 // 根据起点对象类，方向，长度获取路径
 func (kns *knowledgeNetworkService) GetRelationTypePaths(ctx context.Context,
 	query interfaces.RelationTypePathsBaseOnSource) ([]interfaces.RelationTypePath, error) {
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetRelationTypePaths")
+	defer span.End()
+
 	// 1. 获取起点对象类
 
 	allPaths := []interfaces.RelationTypePath{}
@@ -1241,6 +1244,7 @@ func (kns *knowledgeNetworkService) GetRelationTypePaths(ctx context.Context,
 				// 若currentNode.OTID不存在，此函数会报错： objetc type not found
 				objectType, err := kns.ots.GetObjectTypeByID(ctx, nil, query.KNID, query.Branch, currentNode.OTID)
 				if err != nil {
+					otellog.LogError(ctx, "Get source object type failed", err)
 					return nil, err
 				}
 				currentNode = interfaces.ObjectTypeWithKeyField{
@@ -1271,6 +1275,7 @@ func (kns *knowledgeNetworkService) GetRelationTypePaths(ctx context.Context,
 		if len(nextLevelNodes) > 0 {
 			neighborPathsMap, err := kns.getNeighborsBatch(ctx, nextLevelNodes, query, state)
 			if err != nil {
+				otellog.LogError(ctx, "Get neighbor paths failed", err)
 				return nil, err
 			}
 
@@ -1320,6 +1325,7 @@ func (kns *knowledgeNetworkService) GetRelationTypePaths(ctx context.Context,
 		allPaths = append(allPaths, queue[i])
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return allPaths, nil
 }
 

@@ -12,7 +12,9 @@ import (
 
 	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
 	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
+	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -50,7 +52,7 @@ func (bs *bknService) ExportToTar(ctx context.Context, knID string, branch strin
 
 	kn, err := bs.kns.GetKNByID(ctx, knID, branch, interfaces.Mode_Export)
 	if err != nil {
-		logger.Errorf("BKN GetKNByID failed: %s", err.Error())
+		otellog.LogError(ctx, "BKN GetKNByID failed", err)
 		return nil, err
 	}
 
@@ -74,11 +76,12 @@ func (bs *bknService) ExportToTar(ctx context.Context, knID string, branch strin
 	var buf bytes.Buffer
 	err = bknsdk.WriteNetworkToTar(bknNetwork, &buf)
 	if err != nil {
-		logger.Errorf("BKN ExportToTar failed: %s", err.Error())
+		otellog.LogError(ctx, "BKN ExportToTar failed", err)
 		return nil, err
 	}
 	tarData := buf.Bytes()
 
 	logger.Debugf("BKN ExportToTar Completed: size=%d", len(tarData))
+	span.SetStatus(codes.Ok, "")
 	return tarData, nil
 }
