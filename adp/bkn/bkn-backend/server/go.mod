@@ -10,7 +10,7 @@ require (
 	github.com/emirpasic/gods v1.18.1
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gin-gonic/gin v1.12.0
-	github.com/kweaver-ai/bkn-specification/sdk/golang v0.1.4-0.20260506063945-681f5603c6f7
+	github.com/kweaver-ai/bkn-specification/sdk/golang v0.1.4-0.20260514053906-8e69fe4593c7
 	github.com/kweaver-ai/kweaver-go-lib v1.0.5
 	github.com/kweaver-ai/proton-mq-sdk-go v1.9.1
 	github.com/mitchellh/mapstructure v1.5.0

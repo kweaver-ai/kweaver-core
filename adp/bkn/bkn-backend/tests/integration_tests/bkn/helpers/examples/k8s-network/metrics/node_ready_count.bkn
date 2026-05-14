@@ -1,0 +1,49 @@
+---
+type: metric
+id: node_ready_count
+name: Ready 节点数量
+tags: [Kubernetes, Node, 基础设施]
+---
+
+## Metric: Ready 节点数量
+
+统计当前知识网络快照中状态为 Ready 的工作节点数量；节点对象无单独业务时间字段时，以**全量/当前视图**解释结果，时间维度默认 **none**（与排班、节点心跳类数据源对齐时再挂时间列）。
+
+### Metric attributes
+
+| Metric Type | Unit Type | Unit |
+|-------------|-----------|------|
+| atomic | count | 个 |
+
+### Scope
+
+| Scope Type | Scope Ref |
+|------------|-----------|
+| object_type | node |
+
+### Calculation Formula
+
+```yaml
+kind: atomic
+
+atomic:
+  condition:
+    field: node_status
+    operation: ==
+    value: "Ready"
+  aggregation:
+    property: id
+    aggr: count
+```
+
+### Time Dimension
+
+| Property | Default Range Policy |
+|----------|----------------------|
+| — | none |
+
+### Analysis Dimensions
+
+| Name | Display Name |
+|------|--------------|
+| node_kubelet_version | Kubelet版本 |

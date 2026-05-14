@@ -72,6 +72,9 @@ func (bs *bknService) ExportToTar(ctx context.Context, knID string, branch strin
 	for _, cg := range kn.ConceptGroups {
 		bknNetwork.ConceptGroups = append(bknNetwork.ConceptGroups, logics.ToBKNConceptGroup(cg))
 	}
+	for _, m := range kn.Metrics {
+		bknNetwork.Metrics = append(bknNetwork.Metrics, logics.ToBKNMetricDefinition(m))
+	}
 
 	var buf bytes.Buffer
 	err = bknsdk.WriteNetworkToTar(bknNetwork, &buf)

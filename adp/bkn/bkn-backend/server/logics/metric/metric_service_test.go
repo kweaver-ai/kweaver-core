@@ -8,6 +8,7 @@ package metric
 import (
 	"context"
 	"database/sql"
+	"net/http"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -20,6 +21,7 @@ import (
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
 	bmock "bkn-backend/interfaces/mock"
+	"bkn-backend/logics/batchindex"
 )
 
 func Test_metricService_CheckMetricExistByID(t *testing.T) {
@@ -570,5 +572,35 @@ func Test_metricService_SearchMetrics(t *testing.T) {
 			So(result.TotalCount, ShouldEqual, 7)
 			So(len(result.Entries), ShouldEqual, 0)
 		})
+	})
+}
+
+func Test_metricService_ValidateMetrics_strict_batch_scopeNotInPayload(t *testing.T) {
+	Convey("ValidateMetrics strictMode + batch rejects unknown scope_ref without DB lookup\n", t, func() {
+		ctx := context.Background()
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		ots := bmock.NewMockObjectTypeService(mockCtrl)
+		service := &metricService{
+			appSetting: &common.AppSetting{},
+			ots:        ots,
+		}
+
+		batch := batchindex.NewBatchIDIndex("kn1", interfaces.MAIN_BRANCH)
+		entries := []*interfaces.MetricDefinition{
+			{
+				ID:       "m1",
+				ScopeRef: "no_such_ot",
+				CalculationFormula: &interfaces.MetricCalculationFormula{
+					Aggregation: interfaces.MetricAggregation{Property: "x", Aggr: interfaces.MetricAggrCount},
+				},
+			},
+		}
+
+		err := service.ValidateMetrics(ctx, entries, true, interfaces.ImportMode_Overwrite, batch)
+		So(err, ShouldNotBeNil)
+		httpErr := err.(*rest.HTTPError)
+		So(httpErr.HTTPCode, ShouldEqual, http.StatusBadRequest)
 	})
 }

@@ -127,7 +127,7 @@ func (r *restHandler) CreateMetrics(c *gin.Context, vis hydra.Visitor) {
 	}
 	metrics := body.Entries
 
-	if err := ValidateMetricRequests(ctx, metrics, strictMode, mode); err != nil {
+	if err := ValidateMetricRequests(ctx, metrics, strictMode); err != nil {
 		var httpErr *rest.HTTPError
 		if errors.As(err, &httpErr) {
 			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
@@ -246,7 +246,7 @@ func (r *restHandler) ValidateMetrics(c *gin.Context, vis hydra.Visitor) {
 		metrics[i].Branch = branch
 	}
 
-	if err := ValidateMetricRequests(ctx, metrics, strictMode, mode); err != nil {
+	if err := ValidateMetricRequests(ctx, metrics, strictMode); err != nil {
 		var httpErr *rest.HTTPError
 		if errors.As(err, &httpErr) {
 			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
@@ -257,7 +257,7 @@ func (r *restHandler) ValidateMetrics(c *gin.Context, vis hydra.Visitor) {
 		rest.ReplyError(c, err)
 		return
 	}
-	if err := r.ms.ValidateMetrics(ctx, metrics, strictMode, mode); err != nil {
+	if err := r.ms.ValidateMetrics(ctx, metrics, strictMode, mode, nil); err != nil {
 		httpErr := err.(*rest.HTTPError)
 		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)

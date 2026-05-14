@@ -25,6 +25,7 @@ func NewBatchIDIndex(knID, branch string) *interfaces.BatchIDIndex {
 		RelationTypeIDs: make(map[string]struct{}),
 		ActionTypeIDs:   make(map[string]struct{}),
 		ConceptGroupIDs: make(map[string]struct{}),
+		Metrics:         make(map[string]*interfaces.MetricDefinition),
 	}
 }
 
@@ -67,6 +68,11 @@ func MergeBatchIndex(dst, src *interfaces.BatchIDIndex) error {
 	for id := range src.ConceptGroupIDs {
 		dst.ConceptGroupIDs[id] = struct{}{}
 	}
+	for id, m := range src.Metrics {
+		if err := addMetric(dst, id, m); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -93,6 +99,11 @@ func CollectKNFromPayload(kn *interfaces.KN) (*interfaces.BatchIDIndex, error) {
 	}
 	for _, cg := range kn.ConceptGroups {
 		if err := ingestConceptGroup(idx, cg); err != nil {
+			return nil, err
+		}
+	}
+	for _, m := range kn.Metrics {
+		if err := ingestMetric(idx, m); err != nil {
 			return nil, err
 		}
 	}
@@ -161,6 +172,36 @@ func ingestActionType(b *interfaces.BatchIDIndex, at *interfaces.ActionType) {
 		return
 	}
 	b.ActionTypeIDs[at.ATID] = struct{}{}
+}
+
+func ingestMetric(b *interfaces.BatchIDIndex, m *interfaces.MetricDefinition) error {
+	if m == nil {
+		return nil
+	}
+	return addMetric(b, m.ID, m)
+}
+
+func addMetric(b *interfaces.BatchIDIndex, id string, m *interfaces.MetricDefinition) error {
+	if id == "" || m == nil {
+		return nil
+	}
+	if existing, ok := b.Metrics[id]; ok {
+		if !metricBatchPayloadEqual(existing, m) {
+			return fmt.Errorf("conflicting metric definitions for id %q", id)
+		}
+		return nil
+	}
+	b.Metrics[id] = m
+	return nil
+}
+
+func metricBatchPayloadEqual(a, b *interfaces.MetricDefinition) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	aj, e1 := json.Marshal(a)
+	bj, e2 := json.Marshal(b)
+	return e1 == nil && e2 == nil && string(aj) == string(bj)
 }
 
 func addObjectType(b *interfaces.BatchIDIndex, id string, ot *interfaces.ObjectType) error {
