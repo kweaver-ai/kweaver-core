@@ -18,7 +18,6 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
 	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -110,7 +109,6 @@ func (aoa *agentOperatorAccess) GetAgentOperatorByID(ctx context.Context, agentO
 	}
 	if result == nil {
 		err := fmt.Errorf("get operator info %s return null body", agentOperatorID)
-		span.SetStatus(codes.Error, "Http response body is null")
 		otellog.LogError(ctx, "Get agent operator returned null body", err)
 		return operatorInfo, err
 	}
@@ -130,7 +128,6 @@ func (aoa *agentOperatorAccess) GetToolByID(ctx context.Context, boxID, toolID s
 
 	if boxID == "" || toolID == "" {
 		err := fmt.Errorf("box_id and tool_id are required for tool binding check")
-		span.SetStatus(codes.Error, "Invalid tool binding parameter")
 		otellog.LogError(ctx, "Invalid tool binding parameter", err)
 		return err
 	}
@@ -200,7 +197,6 @@ func (aoa *agentOperatorAccess) GetMcpToolByName(ctx context.Context, mcpID, too
 
 	if mcpID == "" || toolName == "" {
 		err := fmt.Errorf("mcp_id and tool_name are required for MCP tool binding check")
-		span.SetStatus(codes.Error, "Invalid MCP tool binding parameter")
 		otellog.LogError(ctx, "Invalid MCP tool binding parameter", err)
 		return err
 	}
@@ -270,7 +266,6 @@ func (aoa *agentOperatorAccess) GetMcpToolByName(ctx context.Context, mcpID, too
 		}
 	}
 	err = fmt.Errorf("MCP tool not found: mcp_id=%s tool_name=%s", mcpID, toolName)
-	span.SetStatus(codes.Error, "MCP tool not found")
 	otellog.LogError(ctx, "MCP tool not found", err)
 	return err
 }

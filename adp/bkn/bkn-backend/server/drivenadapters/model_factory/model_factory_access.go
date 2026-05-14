@@ -259,7 +259,6 @@ func (mfa *modelFactoryAccess) GetVector(ctx context.Context,
 		// 检查返回的向量数量是否与输入文本数量一致
 		if len(response.Data) != len(currentWords) {
 			err := fmt.Errorf("vector count mismatch: expected %d, got %d", len(currentWords), len(response.Data))
-			span.SetStatus(codes.Error, "Vector count mismatch")
 			otellog.LogError(ctx, "Vector count mismatch", err)
 			return nil, err
 		}
