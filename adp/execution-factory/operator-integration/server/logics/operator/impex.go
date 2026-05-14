@@ -68,7 +68,7 @@ func (m *operatorManager) Import(ctx context.Context, tx *sql.Tx, mode interface
 		if err != nil {
 			return
 		}
-		}
+	}
 	// 导入算子元数据
 	createMap, updateMap, err := m.batchImportOperatorMetadata(ctx, tx, data.Configs, operatorList, accessor, userID)
 	if err != nil {
@@ -95,11 +95,11 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 				ID:   operatorDB.OperatorID,
 				Type: interfaces.AuthResourceTypeOperator.String(),
 				Name: operatorDB.Name,
-				})
+			})
 			if err != nil {
 				m.Logger.WithContext(ctx).Warnf("[importPostProcess] CreateOwnerPolicy err :%v", err)
-				}
 			}
+		}
 		// 记录设计日志及后续通知（内部调用不记录）
 		if accessor != nil {
 			go func() {
@@ -107,7 +107,7 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 				if !ok {
 					m.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
 					return
-					}
+				}
 				m.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
 					TokenInfo: accountAuthContext.TokenInfo,
 					Accessor:  accessor,
@@ -116,21 +116,22 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 						Type: metric.AuditLogObjectOperator,
 						ID:   operatorDB.OperatorID,
 						Name: operatorDB.Name,
-						},
-					})
-				}()
-			}
-			// 内置组件：创建全员授权策略（public_access + execute）
-			if operatorDB.IsInternal {
-				policyErr := m.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
-					ID:   operatorDB.OperatorID,
-					Type: interfaces.AuthResourceTypeOperator.String(),
-					Name: operatorDB.Name,
+					},
 				})
-				if policyErr != nil {
-					m.Logger.WithContext(ctx).Warnf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", policyErr)
-				}
+			}()
+		}
+		// 内置组件：创建全员授权策略（public_access + execute）
+		if operatorDB.IsInternal {
+			err = m.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
+				ID:   operatorDB.OperatorID,
+				Type: interfaces.AuthResourceTypeOperator.String(),
+				Name: operatorDB.Name,
+			})
+			if err != nil {
+				m.Logger.WithContext(ctx).Warnf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", err)
+				return
 			}
+		}
 	}
 	// 更新算子
 	for _, operatorDB := range updateMap {
@@ -162,7 +163,7 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 				if !ok {
 					m.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
 					return
-					}
+				}
 				m.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
 					TokenInfo: accountAuthContext.TokenInfo,
 					Accessor:  accessor,
@@ -171,10 +172,10 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 						Type: metric.AuditLogObjectOperator,
 						ID:   operatorDB.OperatorID,
 						Name: operatorDB.Name,
-						},
-					})
-				}()
-			}
+					},
+				})
+			}()
+		}
 	}
 	return nil
 }

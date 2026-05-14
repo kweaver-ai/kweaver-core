@@ -108,13 +108,14 @@ func (s *ToolServiceImpl) importPostProcess(ctx context.Context, createBoxMap, u
 		}
 		// 内置组件：创建全员授权策略（public_access + execute）
 		if boxDB.IsInternal {
-			policyErr := s.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
+			err = s.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
 				ID:   boxDB.BoxID,
 				Type: interfaces.AuthResourceTypeToolBox.String(),
 				Name: boxDB.Name,
 			})
-			if policyErr != nil {
-				s.Logger.WithContext(ctx).Errorf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", policyErr)
+			if err != nil {
+				s.Logger.WithContext(ctx).Errorf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", err)
+				return
 			}
 		}
 	}
