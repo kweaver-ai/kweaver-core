@@ -9,13 +9,14 @@
 SET SCHEMA kweaver;
 
 CREATE TABLE IF NOT EXISTS t_entity_extension (
+    f_entity_kind VARCHAR(20 CHAR) NOT NULL,
     f_entity_id   VARCHAR(40 CHAR) NOT NULL,
     f_key         VARCHAR(128 CHAR) NOT NULL,
     f_value       VARCHAR(512 CHAR) NOT NULL,
     f_create_time BIGINT NOT NULL DEFAULT 0,
     f_update_time BIGINT NOT NULL DEFAULT 0,
-    CLUSTER PRIMARY KEY (f_entity_id, f_key)
+    CLUSTER PRIMARY KEY (f_entity_kind, f_entity_id, f_key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_t_entity_extension_entity ON t_entity_extension(f_entity_id);
-CREATE INDEX IF NOT EXISTS idx_t_entity_extension_entity_key_value ON t_entity_extension(f_entity_id, f_key, f_value);
+CREATE INDEX IF NOT EXISTS idx_t_entity_extension_entity ON t_entity_extension(f_entity_kind, f_entity_id);
+CREATE INDEX IF NOT EXISTS idx_t_entity_extension_entity_key_value ON t_entity_extension(f_entity_kind, f_entity_id, f_key, f_value);

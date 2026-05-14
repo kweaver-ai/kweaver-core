@@ -89,9 +89,9 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 	extVals := c.QueryArray("extension_value")
 	if err := extensions.ValidateExtensionQueryPairs(ctx, extKeys, extVals); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}

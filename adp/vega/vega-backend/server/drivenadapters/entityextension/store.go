@@ -22,6 +22,12 @@ import (
 
 const tableName = "t_entity_extension"
 
+// 与 t_entity_extension.f_entity_kind 一致，区分 catalog / resource，避免同字符串 id 扩展行主键冲突
+const (
+	KindCatalog  = "catalog"
+	KindResource = "resource"
+)
+
 var (
 	storeOnce sync.Once
 	st        *Store
@@ -41,21 +47,21 @@ func NewStore(appSetting *common.AppSetting) *Store {
 }
 
 // Replace 整包替换某实体下的全部 KV（空 map 表示删除全部行）
-func (s *Store) Replace(ctx context.Context, entityID string, kv map[string]string) error {
+func (s *Store) Replace(ctx context.Context, kind string, entityID string, kv map[string]string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if err := deleteByEntityIDTx(ctx, tx, entityID); err != nil {
+	if err := deleteByEntityIDTx(ctx, tx, kind, entityID); err != nil {
 		return err
 	}
 	now := time.Now().UnixMilli()
 	for k, v := range kv {
 		q, args, err := sq.Insert(tableName).
-			Columns("f_entity_id", "f_key", "f_value", "f_create_time", "f_update_time").
-			Values(entityID, k, v, now, now).
+			Columns("f_entity_kind", "f_entity_id", "f_key", "f_value", "f_create_time", "f_update_time").
+			Values(kind, entityID, k, v, now, now).
 			ToSql()
 		if err != nil {
 			return err
@@ -67,8 +73,11 @@ func (s *Store) Replace(ctx context.Context, entityID string, kv map[string]stri
 	return tx.Commit()
 }
 
-func deleteByEntityIDTx(ctx context.Context, tx *sql.Tx, entityID string) error {
-	q, args, err := sq.Delete(tableName).Where(sq.Eq{"f_entity_id": entityID}).ToSql()
+func deleteByEntityIDTx(ctx context.Context, tx *sql.Tx, kind string, entityID string) error {
+	q, args, err := sq.Delete(tableName).Where(sq.Eq{
+		"f_entity_kind": kind,
+		"f_entity_id":   entityID,
+	}).ToSql()
 	if err != nil {
 		return err
 	}
@@ -77,11 +86,14 @@ func deleteByEntityIDTx(ctx context.Context, tx *sql.Tx, entityID string) error 
 }
 
 // DeleteByEntityIDs 删除多个实体下的全部扩展行（用于批量删 catalog/resource）
-func (s *Store) DeleteByEntityIDs(ctx context.Context, entityIDs []string) error {
+func (s *Store) DeleteByEntityIDs(ctx context.Context, kind string, entityIDs []string) error {
 	if len(entityIDs) == 0 {
 		return nil
 	}
-	q, args, err := sq.Delete(tableName).Where(sq.Eq{"f_entity_id": entityIDs}).ToSql()
+	q, args, err := sq.Delete(tableName).Where(sq.Eq{
+		"f_entity_kind": kind,
+		"f_entity_id":   entityIDs,
+	}).ToSql()
 	if err != nil {
 		return err
 	}
@@ -90,9 +102,9 @@ func (s *Store) DeleteByEntityIDs(ctx context.Context, entityIDs []string) error
 }
 
 // GetByEntityID 读取单实体 KV，无行时返回空 map（非 nil）
-func (s *Store) GetByEntityID(ctx context.Context, entityID string) (map[string]string, error) {
+func (s *Store) GetByEntityID(ctx context.Context, kind string, entityID string) (map[string]string, error) {
 	q, args, err := sq.Select("f_key", "f_value").From(tableName).
-		Where(sq.Eq{"f_entity_id": entityID}).
+		Where(sq.Eq{"f_entity_kind": kind, "f_entity_id": entityID}).
 		OrderBy("f_key").
 		ToSql()
 	if err != nil {
@@ -115,13 +127,13 @@ func (s *Store) GetByEntityID(ctx context.Context, entityID string) (map[string]
 }
 
 // GetByEntityIDs 批量读取，返回 entityID -> kv
-func (s *Store) GetByEntityIDs(ctx context.Context, entityIDs []string) (map[string]map[string]string, error) {
+func (s *Store) GetByEntityIDs(ctx context.Context, kind string, entityIDs []string) (map[string]map[string]string, error) {
 	res := make(map[string]map[string]string)
 	if len(entityIDs) == 0 {
 		return res, nil
 	}
 	q, args, err := sq.Select("f_entity_id", "f_key", "f_value").From(tableName).
-		Where(sq.Eq{"f_entity_id": entityIDs}).
+		Where(sq.Eq{"f_entity_kind": kind, "f_entity_id": entityIDs}).
 		OrderBy("f_entity_id", "f_key").
 		ToSql()
 	if err != nil {
@@ -153,10 +165,10 @@ func ApplyJoinsForCatalog(builder sq.SelectBuilder, keys, values []string) sq.Se
 	for i := range keys {
 		alias := fmt.Sprintf("vex%d", i)
 		join := fmt.Sprintf(
-			"t_entity_extension %s ON %s.f_entity_id = t_catalog.f_id AND %s.f_key = ? AND %s.f_value = ?",
-			alias, alias, alias, alias,
+			"t_entity_extension %s ON %s.f_entity_kind = ? AND %s.f_entity_id = t_catalog.f_id AND %s.f_key = ? AND %s.f_value = ?",
+			alias, alias, alias, alias, alias,
 		)
-		builder = builder.Join(join, keys[i], values[i])
+		builder = builder.Join(join, KindCatalog, keys[i], values[i])
 	}
 	return builder
 }
@@ -166,10 +178,10 @@ func ApplyJoinsForResource(builder sq.SelectBuilder, keys, values []string) sq.S
 	for i := range keys {
 		alias := fmt.Sprintf("vex%d", i)
 		join := fmt.Sprintf(
-			"t_entity_extension %s ON %s.f_entity_id = t_resource.f_id AND %s.f_key = ? AND %s.f_value = ?",
-			alias, alias, alias, alias,
+			"t_entity_extension %s ON %s.f_entity_kind = ? AND %s.f_entity_id = t_resource.f_id AND %s.f_key = ? AND %s.f_value = ?",
+			alias, alias, alias, alias, alias,
 		)
-		builder = builder.Join(join, keys[i], values[i])
+		builder = builder.Join(join, KindResource, keys[i], values[i])
 	}
 	return builder
 }

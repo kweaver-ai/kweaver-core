@@ -58,7 +58,7 @@ func attachCatalogExtensions(ctx context.Context, app *common.AppSetting, params
 		ids = append(ids, c.ID)
 	}
 	st := entityextension.NewStore(app)
-	m, err := st.GetByEntityIDs(ctx, ids)
+	m, err := st.GetByEntityIDs(ctx, entityextension.KindCatalog, ids)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func attachSingleCatalogExtensions(ctx context.Context, app *common.AppSetting, 
 		return nil
 	}
 	st := entityextension.NewStore(app)
-	kv, err := st.GetByEntityID(ctx, c.ID)
+	kv, err := st.GetByEntityID(ctx, entityextension.KindCatalog, c.ID)
 	if err != nil {
 		return err
 	}
