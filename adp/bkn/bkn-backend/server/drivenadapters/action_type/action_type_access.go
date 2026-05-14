@@ -184,7 +184,7 @@ func (ata *actionTypeAccess) CreateActionType(ctx context.Context, tx *sql.Tx, a
 	// 2.5 序列化 impact_contracts（为空则入库 NULL）
 	impactContractsBytes, err := marshalImpactContractsJSON(actionType)
 	if err != nil {
-		logger.Errorf("Failed to marshal ImpactContracts, err: %v", err.Error())
+		otellog.LogError(ctx, "Failed to marshal ImpactContracts, err", err)
 		return err
 	}
 
@@ -398,9 +398,7 @@ func (ata *actionTypeAccess) ListActionTypes(ctx context.Context, query interfac
 			return []*interfaces.ActionType{}, err
 		}
 		if err = unmarshalImpactContractsJSON(impactContractsRaw, &actionType); err != nil {
-			logger.Errorf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error()))
-			span.SetStatus(codes.Error, "Failed to unmarshal ImpactContracts after getting action type")
+			otellog.LogError(ctx, "Failed to unmarshal ImpactContracts after getting action type, err", err)
 			return []*interfaces.ActionType{}, err
 		}
 
@@ -578,9 +576,7 @@ func (ata *actionTypeAccess) GetActionTypesByIDs(ctx context.Context, knID strin
 			return []*interfaces.ActionType{}, err
 		}
 		if err = unmarshalImpactContractsJSON(impactContractsRaw, &actionType); err != nil {
-			logger.Errorf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error()))
-			span.SetStatus(codes.Error, "Failed to unmarshal ImpactContracts after getting action type")
+			otellog.LogError(ctx, "Failed to unmarshal ImpactContracts after getting action type, err", err)
 			return []*interfaces.ActionType{}, err
 		}
 
@@ -640,9 +636,7 @@ func (ata *actionTypeAccess) UpdateActionType(ctx context.Context, tx *sql.Tx, a
 	// 2.5 序列化 impact_contracts（为空则入库 NULL）
 	impactContractsBytes, err := marshalImpactContractsJSON(actionType)
 	if err != nil {
-		logger.Errorf("Failed to marshal ImpactContracts, err: %v", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to marshal ImpactContracts, err: %v", err.Error()))
-		span.SetStatus(codes.Error, "Failed to marshal ImpactContracts")
+		otellog.LogError(ctx, "Failed to marshal ImpactContracts, err", err)
 		return err
 	}
 
@@ -1003,9 +997,7 @@ func (ata *actionTypeAccess) GetAllActionTypesByKnID(ctx context.Context, knID s
 			return map[string]*interfaces.ActionType{}, err
 		}
 		if err = unmarshalImpactContractsJSON(impactContractsRaw, &actionType); err != nil {
-			logger.Errorf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal ImpactContracts after getting action type, err: %v", err.Error()))
-			span.SetStatus(codes.Error, "Failed to unmarshal ImpactContracts after getting action type")
+			otellog.LogError(ctx, "Failed to unmarshal ImpactContracts after getting action type, err", err)
 			return map[string]*interfaces.ActionType{}, err
 		}
 

@@ -478,6 +478,40 @@ func Test_ToADPActionType(t *testing.T) {
 			So(adp.Schedule.Type, ShouldEqual, "CRON")
 			So(adp.Schedule.Expression, ShouldEqual, "0 * * * *")
 		})
+
+		Convey("action_intent and impact_contracts\n", func() {
+			bknAct := &bknsdk.BknActionType{
+				BknActionTypeFrontmatter: bknsdk.BknActionTypeFrontmatter{
+					ID: "at1", Name: "AT1", ActionType: "modify", ActionIntent: "modify",
+				},
+				BoundObject: "ot1",
+				ImpactContracts: []*bknsdk.ImpactContractItem{
+					{
+						ObjectTypeID:      "ot2",
+						ExpectedOperation: "modify",
+						Description:       "d1",
+						AffectedFields:    []string{"f1"},
+					},
+				},
+			}
+			adp := ToADPActionType("kn1", "main", bknAct)
+			So(adp.ActionIntent, ShouldEqual, "modify")
+			So(len(adp.ImpactContracts), ShouldEqual, 1)
+			So(adp.ImpactContracts[0].ObjectTypeID, ShouldEqual, "ot2")
+			So(adp.ImpactContracts[0].ExpectedOperation, ShouldEqual, "modify")
+			So(adp.ImpactContracts[0].Description, ShouldEqual, "d1")
+			So(adp.ImpactContracts[0].AffectedFields, ShouldResemble, []string{"f1"})
+		})
+
+		Convey("action_intent falls back from legacy action_type frontmatter\n", func() {
+			bknAct := &bknsdk.BknActionType{
+				BknActionTypeFrontmatter: bknsdk.BknActionTypeFrontmatter{
+					ID: "at1", Name: "AT1", ActionType: "delete",
+				},
+			}
+			adp := ToADPActionType("kn1", "main", bknAct)
+			So(adp.ActionIntent, ShouldEqual, "delete")
+		})
 	})
 }
 
@@ -521,6 +555,29 @@ func Test_ToBKNActionType(t *testing.T) {
 			So(bknAct.Parameters[0].IfSystemGen, ShouldBeTrue)
 			So(bknAct.Parameters[0].Description, ShouldEqual, "d1")
 			So(bknAct.Schedule.Type, ShouldEqual, "CRON")
+		})
+
+		Convey("action_intent and impact_contracts\n", func() {
+			adpAct := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID: "at1", ATName: "AT1", ActionType: "add", ActionIntent: "add", ObjectTypeID: "ot1",
+					ImpactContracts: []interfaces.ImpactContractItem{
+						{
+							ObjectTypeID:      "ot2",
+							ExpectedOperation: "modify",
+							Description:       "c1",
+							AffectedFields:    []string{"a", "b"},
+						},
+					},
+				},
+			}
+			bknAct := ToBKNActionType(adpAct)
+			So(bknAct.ActionIntent, ShouldEqual, "add")
+			So(len(bknAct.ImpactContracts), ShouldEqual, 1)
+			So(bknAct.ImpactContracts[0].ObjectTypeID, ShouldEqual, "ot2")
+			So(bknAct.ImpactContracts[0].ExpectedOperation, ShouldEqual, "modify")
+			So(bknAct.ImpactContracts[0].Description, ShouldEqual, "c1")
+			So(bknAct.ImpactContracts[0].AffectedFields, ShouldResemble, []string{"a", "b"})
 		})
 
 		Convey("Parameters with nil Comment and IfSystemGen\n", func() {
