@@ -28,11 +28,8 @@ import (
 // CreateJobByEx 创建 job
 func (r *restHandler) CreateJobByEx(c *gin.Context) {
 	logger.Debug("Handler CreateJobByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -42,8 +39,6 @@ func (r *restHandler) CreateJobByEx(c *gin.Context) {
 // CreateJobByIn 创建 job
 func (r *restHandler) CreateJobByIn(c *gin.Context) {
 	logger.Debug("Handler CreateJobByIn Start")
-	_, span := oteltrace.StartServerSpan(c)
-	defer span.End()
 
 	// 内部接口 account_id从header中取，跳过用户有效认证，后面在权限校验时就会校验这个用户是否有权限，无效用户无权限
 	// 自行构建一个visitor
@@ -153,11 +148,8 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 // DeleteJobsByEx 批量删除 job
 func (r *restHandler) DeleteJobsByEx(c *gin.Context) {
 	logger.Debug("Handler DeleteJobsByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -167,8 +159,6 @@ func (r *restHandler) DeleteJobsByEx(c *gin.Context) {
 // DeleteJobsByIn 批量删除 job
 func (r *restHandler) DeleteJobsByIn(c *gin.Context) {
 	logger.Debug("Handler DeleteJobsByIn Start")
-	_, span := oteltrace.StartServerSpan(c)
-	defer span.End()
 
 	// 内部接口 account_id从header中取，跳过用户有效认证，后面在权限校验时就会校验这个用户是否有权限，无效用户无权限
 	// 自行构建一个visitor
@@ -291,11 +281,8 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 // ListJobsByEx 列出所有 job
 func (r *restHandler) ListJobsByEx(c *gin.Context) {
 	logger.Debug("Handler ListJobsByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -305,8 +292,6 @@ func (r *restHandler) ListJobsByEx(c *gin.Context) {
 // ListJobsByIn 列出所有 job
 func (r *restHandler) ListJobsByIn(c *gin.Context) {
 	logger.Debug("Handler ListJobsByIn Start")
-	_, span := oteltrace.StartServerSpan(c)
-	defer span.End()
 
 	// 内部接口 account_id从header中取，跳过用户有效认证，后面在权限校验时就会校验这个用户是否有权限，无效用户无权限
 	// 自行构建一个visitor
@@ -443,11 +428,8 @@ func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 // ListTasksByEx 列出指定 job 的子任务
 func (r *restHandler) ListTasksByEx(c *gin.Context) {
 	logger.Debug("Handler ListTasksByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -457,8 +439,6 @@ func (r *restHandler) ListTasksByEx(c *gin.Context) {
 // ListTasksByIn 列出指定 job 的子任务
 func (r *restHandler) ListTasksByIn(c *gin.Context) {
 	logger.Debug("Handler ListTasksByIn Start")
-	_, span := oteltrace.StartServerSpan(c)
-	defer span.End()
 
 	// 内部接口 account_id从header中取，跳过用户有效认证，后面在权限校验时就会校验这个用户是否有权限，无效用户无权限
 	// 自行构建一个visitor

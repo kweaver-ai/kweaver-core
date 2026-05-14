@@ -38,11 +38,8 @@ func (r *restHandler) CreateConceptGroupByIn(c *gin.Context) {
 // 创建概念分组（外部）
 func (r *restHandler) CreateConceptGroupByEx(c *gin.Context) {
 	logger.Debug("Handler CreateConceptGroupByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -221,9 +218,7 @@ func (r *restHandler) ValidateConceptGroupsByIn(c *gin.Context) {
 // ValidateConceptGroupsByEx 仅校验概念分组依赖存在性，不写库（外部）
 func (r *restHandler) ValidateConceptGroupsByEx(c *gin.Context) {
 	logger.Debug("Handler ValidateConceptGroupsByEx Start")
-	ctx, _ := oteltrace.StartServerSpan(c)
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -233,7 +228,9 @@ func (r *restHandler) ValidateConceptGroupsByEx(c *gin.Context) {
 // ValidateConceptGroups 仅校验概念分组依赖存在性，不写库
 func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler ValidateConceptGroups Start")
-	ctx, _ := oteltrace.StartServerSpan(c)
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
@@ -243,12 +240,14 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -258,11 +257,15 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -270,12 +273,15 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 		Entries []*interfaces.ConceptGroup `json:"entries"`
 	}
 	if err = c.ShouldBindJSON(&requestData); err != nil {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
-			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: " + err.Error())
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	conceptGroups := requestData.Entries
 	if len(conceptGroups) == 0 {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
 		return
 	}
@@ -287,14 +293,17 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 
 	for _, cg := range conceptGroups {
 		if err = ValidateConceptGroup(ctx, cg); err != nil {
+			oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 			return
 		}
 	}
 	if err = r.cgs.ValidateConceptGroups(ctx, knID, branch, conceptGroups, strictMode, nil, mode); err != nil {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 		return
 	}
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
 }
 
@@ -309,11 +318,8 @@ func (r *restHandler) UpdateConceptGroupByIn(c *gin.Context) {
 // 更新概念分组（外部）
 func (r *restHandler) UpdateConceptGroupByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateConceptGroupByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -583,11 +589,8 @@ func (r *restHandler) ListConceptGroupsByIn(c *gin.Context) {
 // 分页获取概念分组列表（外部）
 func (r *restHandler) ListConceptGroupsByEx(c *gin.Context) {
 	logger.Debug("Handler ListConceptGroupsByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -709,11 +712,8 @@ func (r *restHandler) GetConceptGroupByIn(c *gin.Context) {
 // 按 id 获取概念分组对象信息（外部）
 func (r *restHandler) GetConceptGroupByEx(c *gin.Context) {
 	logger.Debug("Handler GetKNByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -833,11 +833,8 @@ func (r *restHandler) AddObjectTypesToConceptGroupByIn(c *gin.Context) {
 // 创建概念分组（外部）
 func (r *restHandler) AddObjectTypesToConceptGroupByEx(c *gin.Context) {
 	logger.Debug("Handler AddObjectTypesToConceptGroupByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -975,11 +972,8 @@ func (r *restHandler) DeleteObjectTypesFromGroupByIn(c *gin.Context) {
 // 创建概念分组（外部）
 func (r *restHandler) DeleteObjectTypesFromGroupByEx(c *gin.Context) {
 	logger.Debug("Handler DeleteObjectTypesFromGroupByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}

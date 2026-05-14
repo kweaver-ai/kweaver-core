@@ -35,10 +35,7 @@ func (r *restHandler) CreateActionScheduleByIn(c *gin.Context) {
 // CreateActionScheduleByEx creates a new action schedule (external)
 func (r *restHandler) CreateActionScheduleByEx(c *gin.Context) {
 	logger.Debug("Handler CreateActionScheduleByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -141,10 +138,7 @@ func (r *restHandler) UpdateActionScheduleByIn(c *gin.Context) {
 // UpdateActionScheduleByEx updates an existing action schedule (external)
 func (r *restHandler) UpdateActionScheduleByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateActionScheduleByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -233,10 +227,7 @@ func (r *restHandler) UpdateActionScheduleStatusByIn(c *gin.Context) {
 // UpdateActionScheduleStatusByEx updates the status of an action schedule (external)
 func (r *restHandler) UpdateActionScheduleStatusByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateActionScheduleStatusByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -315,10 +306,7 @@ func (r *restHandler) DeleteActionSchedulesByIn(c *gin.Context) {
 // DeleteActionSchedulesByEx deletes action schedules (external)
 func (r *restHandler) DeleteActionSchedulesByEx(c *gin.Context) {
 	logger.Debug("Handler DeleteActionSchedulesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -385,10 +373,7 @@ func (r *restHandler) ListActionSchedulesByIn(c *gin.Context) {
 // ListActionSchedulesByEx lists action schedules (external)
 func (r *restHandler) ListActionSchedulesByEx(c *gin.Context) {
 	logger.Debug("Handler ListActionSchedulesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -496,10 +481,7 @@ func (r *restHandler) GetActionScheduleByIn(c *gin.Context) {
 // GetActionScheduleByEx gets a single action schedule (external)
 func (r *restHandler) GetActionScheduleByEx(c *gin.Context) {
 	logger.Debug("Handler GetActionScheduleByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}

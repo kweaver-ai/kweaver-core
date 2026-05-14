@@ -65,11 +65,8 @@ func (r *restHandler) CreateRelationTypesByIn(c *gin.Context) {
 // 创建关系类（外部）
 func (r *restHandler) CreateRelationTypesByEx(c *gin.Context) {
 	logger.Debug("Handler CreateRelationTypesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -224,9 +221,7 @@ func (r *restHandler) ValidateRelationTypesByIn(c *gin.Context) {
 // ValidateRelationTypesByEx 仅校验关系类依赖存在性，不写库（外部）
 func (r *restHandler) ValidateRelationTypesByEx(c *gin.Context) {
 	logger.Debug("Handler ValidateRelationTypesByEx Start")
-	ctx, _ := oteltrace.StartServerSpan(c)
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -236,7 +231,9 @@ func (r *restHandler) ValidateRelationTypesByEx(c *gin.Context) {
 // ValidateRelationTypesForKN 仅校验关系类依赖存在性，不写库
 func (r *restHandler) ValidateRelationTypesForKN(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler ValidateRelationTypesForKN Start")
-	ctx, _ := oteltrace.StartServerSpan(c)
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
@@ -246,12 +243,14 @@ func (r *restHandler) ValidateRelationTypesForKN(c *gin.Context, visitor hydra.V
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -261,11 +260,15 @@ func (r *restHandler) ValidateRelationTypesForKN(c *gin.Context, visitor hydra.V
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -273,12 +276,15 @@ func (r *restHandler) ValidateRelationTypesForKN(c *gin.Context, visitor hydra.V
 		Entries []*interfaces.RelationType `json:"entries"`
 	}
 	if err = c.ShouldBindJSON(&requestData); err != nil {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
-			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: " + err.Error())
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	relationTypes := requestData.Entries
 	if len(relationTypes) == 0 {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": true})
 		return
 	}
@@ -290,13 +296,16 @@ func (r *restHandler) ValidateRelationTypesForKN(c *gin.Context, visitor hydra.V
 	}
 
 	if err = ValidateRelationTypes(ctx, knID, relationTypes, strictMode); err != nil {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 		return
 	}
 	if err = r.rts.ValidateRelationTypes(ctx, knID, branch, relationTypes, strictMode, nil, mode); err != nil {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 		return
 	}
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": true})
 }
 
@@ -312,11 +321,8 @@ func (r *restHandler) UpdateRelationTypeByIn(c *gin.Context) {
 // 更新关系类（外部）
 func (r *restHandler) UpdateRelationTypeByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateRelationTypeByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -572,11 +578,8 @@ func (r *restHandler) ListRelationTypesByIn(c *gin.Context) {
 // 分页获取关系类列表（外部）
 func (r *restHandler) ListRelationTypesByEx(c *gin.Context) {
 	logger.Debug("Handler ListRelationTypesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -717,11 +720,8 @@ func (r *restHandler) GetRelationTypesByIn(c *gin.Context) {
 // 按 id 获取关系类对象信息（外部）
 func (r *restHandler) GetRelationTypesByEx(c *gin.Context) {
 	logger.Debug("Handler ListRelationTypesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -806,11 +806,8 @@ func (r *restHandler) SearchRelationTypesByIn(c *gin.Context) {
 // 检索关系类（外部）
 func (r *restHandler) SearchRelationTypesByEx(c *gin.Context) {
 	logger.Debug("Handler SearchRelationTypesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}

@@ -65,11 +65,8 @@ func (r *restHandler) CreateObjectTypesByIn(c *gin.Context) {
 // 创建对象类（外部）
 func (r *restHandler) CreateObjectTypesByEx(c *gin.Context) {
 	logger.Debug("Handler CreateObjectTypesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -114,6 +111,7 @@ func (r *restHandler) CreateObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -221,9 +219,7 @@ func (r *restHandler) ValidateObjectTypesByIn(c *gin.Context) {
 // ValidateObjectTypesByEx 仅校验对象类依赖存在性，不写库（外部）
 func (r *restHandler) ValidateObjectTypesByEx(c *gin.Context) {
 	logger.Debug("Handler ValidateObjectTypesByEx Start")
-	ctx, _ := oteltrace.StartServerSpan(c)
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -233,7 +229,9 @@ func (r *restHandler) ValidateObjectTypesByEx(c *gin.Context) {
 // ValidateObjectTypesForKN 仅校验对象类依赖存在性，不写库
 func (r *restHandler) ValidateObjectTypesForKN(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler ValidateObjectTypesForKN Start")
-	ctx, _ := oteltrace.StartServerSpan(c)
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
@@ -243,12 +241,14 @@ func (r *restHandler) ValidateObjectTypesForKN(c *gin.Context, visitor hydra.Vis
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -258,11 +258,15 @@ func (r *restHandler) ValidateObjectTypesForKN(c *gin.Context, visitor hydra.Vis
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -270,14 +274,18 @@ func (r *restHandler) ValidateObjectTypesForKN(c *gin.Context, visitor hydra.Vis
 		Entries []*interfaces.ObjectType `json:"entries"`
 	}
 	if err = c.ShouldBindJSON(&requestData); err != nil {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: " + err.Error())
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	objectTypes := requestData.Entries
 	if len(objectTypes) == 0 {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_RequestBody).
-			WithErrorDetails("No object type was passed in"))
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("No object type was passed in")
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -287,13 +295,16 @@ func (r *restHandler) ValidateObjectTypesForKN(c *gin.Context, visitor hydra.Vis
 		objectTypes[i].Branch = branch
 	}
 	if err = ValidateObjectTypes(ctx, knID, objectTypes, strictMode); err != nil {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 		return
 	}
 	if err = r.ots.ValidateObjectTypes(ctx, knID, branch, objectTypes, strictMode, nil, mode); err != nil {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 		return
 	}
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": true})
 }
 
@@ -309,11 +320,8 @@ func (r *restHandler) UpdateObjectTypeByIn(c *gin.Context) {
 // 更新对象类（外部）
 func (r *restHandler) UpdateObjectTypeByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateObjectTypeByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -802,11 +810,8 @@ func (r *restHandler) ListObjectTypesByIn(c *gin.Context) {
 // 分页获取对象类列表（外部）
 func (r *restHandler) ListObjectTypesByEx(c *gin.Context) {
 	logger.Debug("Handler ListObjectTypesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -931,11 +936,8 @@ func (r *restHandler) GetObjectTypesByIn(c *gin.Context) {
 // 按 id 获取对象类对象信息（外部）
 func (r *restHandler) GetObjectTypesByEx(c *gin.Context) {
 	logger.Debug("Handler GetObjectTypesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -1020,11 +1022,8 @@ func (r *restHandler) SearchObjectTypesByIn(c *gin.Context) {
 // 检索对象类（外部）
 func (r *restHandler) SearchObjectTypesByEx(c *gin.Context) {
 	logger.Debug("Handler SearchObjectTypesByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}

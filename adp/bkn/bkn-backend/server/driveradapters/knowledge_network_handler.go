@@ -37,11 +37,8 @@ func (r *restHandler) CreateKNByIn(c *gin.Context) {
 // 创建业务知识网络（外部）
 func (r *restHandler) CreateKNByEx(c *gin.Context) {
 	logger.Debug("Handler CreateKNByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -210,9 +207,7 @@ func (r *restHandler) ValidateKNByIn(c *gin.Context) {
 // ValidateKNByEx 仅校验知识网络整体依赖存在性，不写库（外部）
 func (r *restHandler) ValidateKNByEx(c *gin.Context) {
 	logger.Debug("Handler ValidateKNByEx Start")
-	ctx, _ := oteltrace.StartServerSpan(c)
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -222,7 +217,9 @@ func (r *restHandler) ValidateKNByEx(c *gin.Context) {
 // ValidateKN 仅校验知识网络整体依赖存在性，不写库
 func (r *restHandler) ValidateKN(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler ValidateKN Start")
-	ctx, _ := oteltrace.StartServerSpan(c)
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
@@ -232,12 +229,14 @@ func (r *restHandler) ValidateKN(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -247,41 +246,51 @@ func (r *restHandler) ValidateKN(c *gin.Context, visitor hydra.Visitor) {
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	kn := interfaces.KN{}
 	if err = c.ShouldBindJSON(&kn); err != nil {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
-			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: " + err.Error())
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	kn.KNID = knID
 	kn.Branch = branch
 
 	if err = ValidateKN(ctx, &kn); err != nil {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 		return
 	}
 	if len(kn.ObjectTypes) > 0 {
 		if err = ValidateObjectTypes(ctx, kn.KNID, kn.ObjectTypes, strictMode); err != nil {
+			oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 			return
 		}
 	}
 	if len(kn.RelationTypes) > 0 {
 		if err = ValidateRelationTypes(ctx, kn.KNID, kn.RelationTypes, strictMode); err != nil {
+			oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 			return
 		}
 	}
 	if len(kn.ActionTypes) > 0 {
 		if err = ValidateActionTypes(ctx, kn.KNID, kn.ActionTypes, strictMode); err != nil {
+			oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 			return
 		}
@@ -289,15 +298,18 @@ func (r *restHandler) ValidateKN(c *gin.Context, visitor hydra.Visitor) {
 	if len(kn.ConceptGroups) > 0 {
 		for _, cg := range kn.ConceptGroups {
 			if err = ValidateConceptGroup(ctx, cg); err != nil {
+				oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 				rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 				return
 			}
 		}
 	}
 	if err = r.kns.ValidateKN(ctx, &kn, strictMode, mode); err != nil {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 		return
 	}
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
 }
 
@@ -312,11 +324,8 @@ func (r *restHandler) UpdateKNByIn(c *gin.Context) {
 // 更新业务知识网络（外部）
 func (r *restHandler) UpdateKNByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateKNByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -541,11 +550,8 @@ func (r *restHandler) ListKNsByIn(c *gin.Context) {
 // 分页获取业务知识网络列表（外部）
 func (r *restHandler) ListKNsByEx(c *gin.Context) {
 	logger.Debug("Handler ListKNsByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -646,11 +652,8 @@ func (r *restHandler) GetKNByIn(c *gin.Context) {
 // 按 id 获取业务知识网络对象信息（外部）
 func (r *restHandler) GetKNByEx(c *gin.Context) {
 	logger.Debug("Handler GetKNByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -750,11 +753,8 @@ func (r *restHandler) GetRelationTypePathsByIn(c *gin.Context) {
 // 在业务知识网络下查找概念子图（外部）
 func (r *restHandler) GetRelationTypePathsByEx(c *gin.Context) {
 	logger.Debug("Handler GetRelationTypePathsByEx Start")
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
