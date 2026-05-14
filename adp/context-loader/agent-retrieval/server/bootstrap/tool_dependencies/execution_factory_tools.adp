@@ -9,7 +9,7 @@
         "status": "published",
         "category_type": "other_category",
         "category_name": "未分类",
-        "is_internal": false,
+        "is_internal": true,
         "source": "custom",
         "tools": [
           {

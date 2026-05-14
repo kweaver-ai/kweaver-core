@@ -9,7 +9,7 @@
         "status": "published",
         "category_type": "data_query",
         "category_name": "数据查询",
-        "is_internal": false,
+        "is_internal": true,
         "source": "custom",
         "tools": [
           {
