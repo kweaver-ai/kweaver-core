@@ -21,6 +21,7 @@ import (
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 	attr "go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -57,6 +58,7 @@ func (o *openSearchAccess) PutIndexTemplate(ctx context.Context, indexTemplateNa
 	// 将body转换为JSON字节
 	bodyBytes, err := sonic.Marshal(body)
 	if err != nil {
+		span.SetStatus(codes.Error, "Marshal index template body failed")
 		return fmt.Errorf("failed to marshal index template body: %w", err)
 	}
 
@@ -69,15 +71,18 @@ func (o *openSearchAccess) PutIndexTemplate(ctx context.Context, indexTemplateNa
 	// 执行创建索引模板请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Put index template failed")
 		return fmt.Errorf("failed to put index template %s: %w", indexTemplateName, err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Put index template response error")
 		return fmt.Errorf("put index template %s failed: %s, %s", indexTemplateName, res.Status(), res.String())
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -98,6 +103,7 @@ func (o *openSearchAccess) CreateIndex(ctx context.Context, indexName string, bo
 	// 将body转换为JSON字节
 	bodyBytes, err := sonic.Marshal(body)
 	if err != nil {
+		span.SetStatus(codes.Error, "Marshal index body failed")
 		return fmt.Errorf("failed to marshal index body: %w", err)
 	}
 
@@ -110,15 +116,18 @@ func (o *openSearchAccess) CreateIndex(ctx context.Context, indexName string, bo
 	// 执行创建索引请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Create index failed")
 		return fmt.Errorf("failed to create index %s: %w", indexName, err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Create index response error")
 		return fmt.Errorf("create index %s failed: %s, %s", indexName, res.Status(), res.String())
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -154,6 +163,7 @@ func (o *openSearchAccess) IndexExists(ctx context.Context, indexName string) (b
 	// 执行请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Check index existence failed")
 		return false, fmt.Errorf("failed to check index existence: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
@@ -164,10 +174,13 @@ func (o *openSearchAccess) IndexExists(ctx context.Context, indexName string) (b
 	// 其他状态码 - 错误
 	switch res.StatusCode {
 	case http.StatusOK:
+		span.SetStatus(codes.Ok, "")
 		return true, nil
 	case http.StatusNotFound:
+		span.SetStatus(codes.Ok, "")
 		return false, nil
 	default:
+		span.SetStatus(codes.Error, "Check index existence response error")
 		return false, fmt.Errorf("check index existence failed: %s, %s", res.Status(), res.String())
 	}
 }
@@ -186,15 +199,18 @@ func (o *openSearchAccess) DeleteIndex(ctx context.Context, indexName string) er
 	// 执行删除索引请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Delete index failed")
 		return fmt.Errorf("failed to delete index %s: %w", indexName, err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Delete index response error")
 		return fmt.Errorf("delete index %s failed: %s, %s", indexName, res.Status(), res.String())
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -220,6 +236,7 @@ func (o *openSearchAccess) InsertData(ctx context.Context, indexName string, doc
 	// 将数据编码为JSON
 	jsonData, err := sonic.Marshal(data)
 	if err != nil {
+		span.SetStatus(codes.Error, "Marshal data failed")
 		return fmt.Errorf("failed to marshal data: %w", err)
 	}
 
@@ -234,14 +251,17 @@ func (o *openSearchAccess) InsertData(ctx context.Context, indexName string, doc
 	// 执行请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Insert data failed")
 		return fmt.Errorf("failed to insert data with ID: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Insert data response error")
 		return fmt.Errorf("insert data with ID failed: %s, %s", res.Status(), res.String())
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -269,6 +289,7 @@ func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string,
 	span.SetAttributes(attr.Key("index_name").String(indexName))
 
 	if len(dataList) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return nil
 	}
 
@@ -286,6 +307,7 @@ func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string,
 		// 写入元数据行
 		metaJSON, err := sonic.Marshal(meta)
 		if err != nil {
+			span.SetStatus(codes.Error, "Marshal bulk metadata failed")
 			return fmt.Errorf("failed to marshal bulk metadata: %w", err)
 		}
 		buf.Write(metaJSON)
@@ -294,6 +316,7 @@ func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string,
 		// 写入数据行
 		dataJSON, err := sonic.Marshal(data)
 		if err != nil {
+			span.SetStatus(codes.Error, "Marshal bulk data failed")
 			return fmt.Errorf("failed to marshal bulk data: %w", err)
 		}
 		buf.Write(dataJSON)
@@ -309,16 +332,19 @@ func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string,
 	// 执行请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Bulk insert data failed")
 		return fmt.Errorf("failed to bulk insert data: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Bulk insert data response error")
 		return fmt.Errorf("bulk insert data failed: %s, %s", res.Status(), res.String())
 	}
 
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
+		span.SetStatus(codes.Error, "Read response body failed")
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
@@ -329,13 +355,16 @@ func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string,
 	}
 
 	if err := sonic.Unmarshal(resBody, &resp); err != nil {
+		span.SetStatus(codes.Error, "Unmarshal response body failed")
 		return fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 
 	if resp.Errors {
+		span.SetStatus(codes.Error, "Bulk insert data item error")
 		return fmt.Errorf("bulk insert data failed: %s", resp.Items)
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -364,6 +393,7 @@ func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, que
 	// 将查询条件编码为JSON
 	queryJSON, err := sonic.Marshal(query)
 	if err != nil {
+		span.SetStatus(codes.Error, "Marshal query failed")
 		return nil, fmt.Errorf("failed to marshal query: %w", err)
 	}
 	logger.Debug(string(queryJSON))
@@ -377,11 +407,13 @@ func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, que
 	// 执行请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Search data failed")
 		return nil, fmt.Errorf("failed to search data: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Search data response error")
 		return nil, fmt.Errorf("search data failed: %s, %s", res.Status(), res.String())
 	}
 
@@ -397,6 +429,7 @@ func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, que
 	}
 
 	if err := json.NewDecoder(res.Body).Decode(&searchResult); err != nil {
+		span.SetStatus(codes.Error, "Decode search response failed")
 		return nil, fmt.Errorf("failed to decode search response: %w", err)
 	}
 
@@ -406,6 +439,7 @@ func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, que
 		results = append(results, hit)
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return results, nil
 }
 
@@ -436,6 +470,7 @@ func (o *openSearchAccess) DeleteData(ctx context.Context, indexName string, doc
 
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Delete data failed")
 		return fmt.Errorf("failed to delete data %s from index %s: %w", docID, indexName, err)
 	}
 	defer func() { _ = res.Body.Close() }()
@@ -443,11 +478,14 @@ func (o *openSearchAccess) DeleteData(ctx context.Context, indexName string, doc
 	if res.IsError() {
 		// 404错误表示文档不存在，不视为错误
 		if res.StatusCode == 404 {
+			span.SetStatus(codes.Ok, "")
 			return nil
 		}
+		span.SetStatus(codes.Error, "Delete data response error")
 		return fmt.Errorf("delete data %s from index %s failed: %s, %s", docID, indexName, res.Status(), res.String())
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -470,6 +508,7 @@ func (o *openSearchAccess) BulkDeleteData(ctx context.Context, indexName string,
 	span.SetAttributes(attr.Key("index_name").String(indexName))
 
 	if len(docIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return nil // 空列表直接返回，避免不必要的网络请求
 	}
 
@@ -488,6 +527,7 @@ func (o *openSearchAccess) BulkDeleteData(ctx context.Context, indexName string,
 		// 写入操作元数据行
 		actionBytes, err := sonic.Marshal(action)
 		if err != nil {
+			span.SetStatus(codes.Error, "Marshal delete action failed")
 			return fmt.Errorf("failed to marshal delete action: %w", err)
 		}
 		buf.Write(actionBytes)
@@ -503,15 +543,18 @@ func (o *openSearchAccess) BulkDeleteData(ctx context.Context, indexName string,
 	// 执行批量删除请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Bulk delete data failed")
 		return fmt.Errorf("failed to bulk delete data: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Bulk delete data response error")
 		return fmt.Errorf("bulk delete data failed: %s, %s", res.Status(), res.String())
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -524,6 +567,7 @@ func (o *openSearchAccess) Count(ctx context.Context, indexName string, query an
 	// 将查询条件编码为JSON
 	queryJSON, err := sonic.Marshal(query)
 	if err != nil {
+		span.SetStatus(codes.Error, "Marshal query failed")
 		return nil, fmt.Errorf("failed to marshal query: %w", err)
 	}
 
@@ -538,19 +582,23 @@ func (o *openSearchAccess) Count(ctx context.Context, indexName string, query an
 	// 执行请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Count failed")
 		return nil, fmt.Errorf("failed to Count: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Count response error")
 		return nil, fmt.Errorf("Count failed: %s, %s", res.Status(), res.String())
 	}
 
 	resBytes, err := io.ReadAll(res.Body)
 	if err != nil {
+		span.SetStatus(codes.Error, "Read response body failed")
 		return nil, err
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return resBytes, nil
 }
 
@@ -570,16 +618,19 @@ func (o *openSearchAccess) GetIndexStats(ctx context.Context, indexName string) 
 
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Get index stats failed")
 		return nil, fmt.Errorf("failed to GetIndexStats: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Get index stats response error")
 		return nil, fmt.Errorf("GetIndexStats failed: %s, %s", res.Status(), res.String())
 	}
 
 	resBytes, err := io.ReadAll(res.Body)
 	if err != nil {
+		span.SetStatus(codes.Error, "Read response body failed")
 		return nil, err
 	}
 
@@ -599,6 +650,7 @@ func (o *openSearchAccess) GetIndexStats(ctx context.Context, indexName string) 
 
 	err = sonic.Unmarshal(resBytes, &resp)
 	if err != nil {
+		span.SetStatus(codes.Error, "Unmarshal GetIndexStats response failed")
 		return nil, fmt.Errorf("failed to unmarshal GetIndexStats response: %w", err)
 	}
 
@@ -607,6 +659,7 @@ func (o *openSearchAccess) GetIndexStats(ctx context.Context, indexName string) 
 		StorageSize: resp.All.Total.Store.SizeInBytes,
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return &stats, nil
 }
 
@@ -622,14 +675,17 @@ func (o *openSearchAccess) Refresh(ctx context.Context, indexName string) error 
 
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Refresh failed")
 		return fmt.Errorf("failed to Refresh: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Refresh response error")
 		return fmt.Errorf("Refresh failed: %s, %s", res.Status(), res.String())
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -643,6 +699,7 @@ func (o *openSearchAccess) DeleteByQuery(ctx context.Context, indexName string, 
 	// 将查询条件编码为JSON
 	queryJSON, err := sonic.Marshal(query)
 	if err != nil {
+		span.SetStatus(codes.Error, "Marshal query failed")
 		return fmt.Errorf("failed to marshal query: %w", err)
 	}
 
@@ -655,13 +712,16 @@ func (o *openSearchAccess) DeleteByQuery(ctx context.Context, indexName string, 
 	// 执行请求
 	res, err := req.Do(ctx, o.client)
 	if err != nil {
+		span.SetStatus(codes.Error, "Delete by query failed")
 		return fmt.Errorf("failed to DeleteByQuery: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
+		span.SetStatus(codes.Error, "Delete by query response error")
 		return fmt.Errorf("DeleteByQuery failed: %s, %s", res.Status(), res.String())
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }

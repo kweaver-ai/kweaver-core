@@ -11,6 +11,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
+	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -38,5 +41,15 @@ func NewHydraAuthAccess(appSetting *common.AppSetting) interfaces.AuthAccess {
 }
 
 func (haa *hydraAuthAccess) VerifyToken(ctx context.Context, c *gin.Context) (hydra.Visitor, error) {
-	return haa.hydra.VerifyToken(ctx, c)
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "VerifyToken")
+	defer span.End()
+
+	visitor, err := haa.hydra.VerifyToken(ctx, c)
+	if err != nil {
+		otellog.LogError(ctx, "Verify token failed", err)
+		return visitor, err
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return visitor, nil
 }

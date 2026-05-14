@@ -668,6 +668,7 @@ func (ata *actionTypeAccess) DeleteActionTypesByIDs(ctx context.Context, tx *sql
 	)
 
 	if len(atIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 

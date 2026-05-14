@@ -86,26 +86,31 @@ func (vba *vegaBackendAccess) GetCatalogByID(ctx context.Context, id string) (*i
 
 	if err != nil {
 		errDetails := fmt.Sprintf("GetCatalogByID http request failed: %s", err.Error())
-		otellog.LogError(ctx, errDetails, nil)
+		otellog.LogError(ctx, errDetails, err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get catalog by ID failed")
 		return nil, fmt.Errorf("GetCatalogByID http request failed: %s", err)
 	}
 
 	if respCode == http.StatusNotFound {
+		oteltrace.AddHttpAttrs4Ok(span, respCode)
 		return nil, nil
 	}
 
 	if respCode != http.StatusOK {
-		logger.Errorf("GetCatalogByID failed: %s", respData)
-		return nil, fmt.Errorf("GetCatalogByID failed: %s", respData)
+		err := fmt.Errorf("GetCatalogByID failed: %s", respData)
+		otellog.LogError(ctx, "GetCatalogByID failed", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		return nil, err
 	}
 
 	var catalog interfaces.Catalog
 	if err := json.Unmarshal([]byte(respData), &catalog); err != nil {
-		logger.Errorf("Failed to unmarshal GetCatalogByID response: %v", err)
+		otellog.LogError(ctx, "Failed to unmarshal GetCatalogByID response", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal GetCatalogByID response failed")
 		return nil, fmt.Errorf("failed to unmarshal GetCatalogByID response: %v", err)
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return &catalog, nil
 }
 
@@ -128,22 +133,26 @@ func (vba *vegaBackendAccess) CreateCatalog(ctx context.Context, req *interfaces
 
 	if err != nil {
 		errDetails := fmt.Sprintf("CreateCatalog http request failed: %s", err.Error())
-		otellog.LogError(ctx, errDetails, nil)
+		otellog.LogError(ctx, errDetails, err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http create catalog failed")
 		return nil, fmt.Errorf("CreateCatalog http request failed: %s", err)
 	}
 
 	if respCode != http.StatusCreated && respCode != http.StatusOK {
-		logger.Errorf("CreateCatalog failed: %s", respData)
-		return nil, fmt.Errorf("CreateCatalog failed: %s", respData)
+		err := fmt.Errorf("CreateCatalog failed: %s", respData)
+		otellog.LogError(ctx, "CreateCatalog failed", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 201 or 200")
+		return nil, err
 	}
 
 	var catalog interfaces.Catalog
 	if err := json.Unmarshal([]byte(respData), &catalog); err != nil {
-		logger.Errorf("Failed to unmarshal CreateCatalog response: %v", err)
+		otellog.LogError(ctx, "Failed to unmarshal CreateCatalog response", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal CreateCatalog response failed")
 		return nil, fmt.Errorf("failed to unmarshal CreateCatalog response: %v", err)
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return &catalog, nil
 }
 
@@ -167,32 +176,38 @@ func (vba *vegaBackendAccess) GetResourceByID(ctx context.Context, id string) (*
 
 	if err != nil {
 		errDetails := fmt.Sprintf("GetResourceByID http request failed: %s", err.Error())
-		otellog.LogError(ctx, errDetails, nil)
+		otellog.LogError(ctx, errDetails, err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get resource by ID failed")
 		return nil, fmt.Errorf("GetResourceByID http request failed: %s", err)
 	}
 
 	if respCode == http.StatusNotFound {
+		oteltrace.AddHttpAttrs4Ok(span, respCode)
 		return nil, nil
 	}
 
 	if respCode != http.StatusOK {
-		logger.Errorf("GetResourceByID failed: %s", respData)
-		return nil, fmt.Errorf("GetResourceByID failed: %s", respData)
+		err := fmt.Errorf("GetResourceByID failed: %s", respData)
+		otellog.LogError(ctx, "GetResourceByID failed", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		return nil, err
 	}
 
 	var resourceData struct {
 		Entries []*interfaces.VegaResource `json:"entries"`
 	}
 	if err := json.Unmarshal([]byte(respData), &resourceData); err != nil {
-		logger.Errorf("Failed to unmarshal GetResourceByID response: %v", err)
+		otellog.LogError(ctx, "Failed to unmarshal GetResourceByID response", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal GetResourceByID response failed")
 		return nil, fmt.Errorf("failed to unmarshal GetResourceByID response: %v", err)
 	}
 
 	if len(resourceData.Entries) == 0 {
+		oteltrace.AddHttpAttrs4Ok(span, respCode)
 		return nil, nil
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return resourceData.Entries[0], nil
 }
 
@@ -215,22 +230,26 @@ func (vba *vegaBackendAccess) CreateResource(ctx context.Context, req *interface
 
 	if err != nil {
 		errDetails := fmt.Sprintf("CreateResource http request failed: %s", err.Error())
-		otellog.LogError(ctx, errDetails, nil)
+		otellog.LogError(ctx, errDetails, err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http create resource failed")
 		return fmt.Errorf("CreateResource http request failed: %s", err)
 	}
 
 	if respCode != http.StatusCreated && respCode != http.StatusOK {
-		logger.Errorf("CreateResource failed: %s", respData)
-		return fmt.Errorf("CreateResource failed: %s", respData)
+		err := fmt.Errorf("CreateResource failed: %s", respData)
+		otellog.LogError(ctx, "CreateResource failed", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 201 or 200")
+		return err
 	}
 
 	var resource interfaces.VegaResource
 	if err := json.Unmarshal([]byte(respData), &resource); err != nil {
-		logger.Errorf("Failed to unmarshal CreateResource response: %v", err)
+		otellog.LogError(ctx, "Failed to unmarshal CreateResource response", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal CreateResource response failed")
 		return fmt.Errorf("failed to unmarshal CreateResource response: %v", err)
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return nil
 }
 
@@ -253,16 +272,19 @@ func (vba *vegaBackendAccess) DeleteResource(ctx context.Context, id string) err
 
 	if err != nil {
 		errDetails := fmt.Sprintf("DeleteResource http request failed: %s", err.Error())
-		otellog.LogError(ctx, errDetails, nil)
+		otellog.LogError(ctx, errDetails, err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http delete resource failed")
 		return fmt.Errorf("DeleteResource http request failed: %s", err)
 	}
 
 	if respCode != http.StatusNoContent && respCode != http.StatusOK {
-		logger.Errorf("DeleteResource failed: %s", respData)
-		return fmt.Errorf("DeleteResource failed: %s", respData)
+		err := fmt.Errorf("DeleteResource failed: %s", respData)
+		otellog.LogError(ctx, "DeleteResource failed", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 204 or 200")
+		return err
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return nil
 }
 
@@ -285,16 +307,19 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentByID(ctx context.Context, dat
 
 	if err != nil {
 		errDetails := fmt.Sprintf("DeleteDatasetDocumentByID http request failed: %s", err.Error())
-		otellog.LogError(ctx, errDetails, nil)
+		otellog.LogError(ctx, errDetails, err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http delete dataset document by ID failed")
 		return fmt.Errorf("DeleteDatasetDocumentByID http request failed: %s", err)
 	}
 
 	if respCode != http.StatusNoContent && respCode != http.StatusOK {
-		logger.Errorf("DeleteDatasetDocumentByID failed: %s", respData)
-		return fmt.Errorf("DeleteDatasetDocumentByID failed: %s", respData)
+		err := fmt.Errorf("DeleteDatasetDocumentByID failed: %s", respData)
+		otellog.LogError(ctx, "DeleteDatasetDocumentByID failed", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 204 or 200")
+		return err
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return nil
 }
 
@@ -324,17 +349,19 @@ func (vba *vegaBackendAccess) DeleteDatasetDocumentsByQuery(ctx context.Context,
 
 	if err != nil {
 		errDetails := fmt.Sprintf("DeleteDatasetDocumentsByQuery http request failed: %s", err.Error())
-		logger.Error(errDetails)
-		otellog.LogError(ctx, errDetails, nil)
+		otellog.LogError(ctx, errDetails, err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http delete dataset documents by query failed")
 		return fmt.Errorf("DeleteDatasetDocumentsByQuery http request failed: %s", err)
 	}
 
 	if respCode != http.StatusNoContent && respCode != http.StatusOK {
-		logger.Errorf("DeleteDatasetDocumentsByQuery failed: %s", respData)
-		return fmt.Errorf("DeleteDatasetDocumentsByQuery failed: %s", respData)
+		err := fmt.Errorf("DeleteDatasetDocumentsByQuery failed: %s", respData)
+		otellog.LogError(ctx, "DeleteDatasetDocumentsByQuery failed", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 204 or 200")
+		return err
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return nil
 }
 
@@ -361,22 +388,26 @@ func (vba *vegaBackendAccess) QueryResourceData(ctx context.Context, resourceID 
 
 	if err != nil {
 		errDetails := fmt.Sprintf("QueryDatasetData http request failed: %s", err.Error())
-		otellog.LogError(ctx, errDetails, nil)
+		otellog.LogError(ctx, errDetails, err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http query dataset data failed")
 		return nil, fmt.Errorf("QueryDatasetData http request failed: %s", err)
 	}
 
 	if respCode != http.StatusOK {
-		logger.Errorf("QueryDatasetData failed: %s", respData)
-		return nil, fmt.Errorf("QueryDatasetData failed: %s", respData)
+		err := fmt.Errorf("QueryDatasetData failed: %s", respData)
+		otellog.LogError(ctx, "QueryDatasetData failed", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		return nil, err
 	}
 
 	var response interfaces.DatasetQueryResponse
 	if err := json.Unmarshal([]byte(respData), &response); err != nil {
-		logger.Errorf("Failed to unmarshal QueryDatasetData response: %v", err)
+		otellog.LogError(ctx, "Failed to unmarshal QueryDatasetData response", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal QueryDatasetData response failed")
 		return nil, fmt.Errorf("failed to unmarshal QueryDatasetData response: %v", err)
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return &response, nil
 }
 
@@ -403,15 +434,18 @@ func (vba *vegaBackendAccess) WriteDatasetDocuments(ctx context.Context, dataset
 
 	if err != nil {
 		errDetails := fmt.Sprintf("WriteDatasetDocuments http request failed: %s", err.Error())
-		otellog.LogError(ctx, errDetails, nil)
+		otellog.LogError(ctx, errDetails, err)
 		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http write dataset documents failed")
 		return fmt.Errorf("WriteDatasetDocuments http request failed: %s", err)
 	}
 
 	if respCode != http.StatusCreated && respCode != http.StatusOK {
-		logger.Errorf("WriteDatasetDocuments failed: %s", respData)
-		return fmt.Errorf("WriteDatasetDocuments failed: %s", respData)
+		err := fmt.Errorf("WriteDatasetDocuments failed: %s", respData)
+		otellog.LogError(ctx, "WriteDatasetDocuments failed", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 201 or 200")
+		return err
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return nil
 }

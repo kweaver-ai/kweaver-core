@@ -644,6 +644,7 @@ func (rta *relationTypeAccess) DeleteRelationTypesByIDs(ctx context.Context, tx 
 	)
 
 	if len(rtIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 

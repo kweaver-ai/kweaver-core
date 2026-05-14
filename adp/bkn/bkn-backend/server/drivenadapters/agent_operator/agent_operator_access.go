@@ -15,7 +15,10 @@ import (
 	"time"
 
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
+	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -53,6 +56,9 @@ func NewAgentOperatorAccess(appSetting *common.AppSetting) interfaces.AgentOpera
 }
 
 func (aoa *agentOperatorAccess) GetAgentOperatorByID(ctx context.Context, agentOperatorID string) (interfaces.AgentOperator, error) {
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetAgentOperatorByID")
+	defer span.End()
+
 	operatorInfo := interfaces.AgentOperator{}
 
 	accountInfo := interfaces.AccountInfo{}
@@ -67,6 +73,11 @@ func (aoa *agentOperatorAccess) GetAgentOperatorByID(ctx context.Context, agentO
 
 	// GET .../api/agent-operator-integration/internal-v1/operator/market/:operator_id
 	url := fmt.Sprintf("%s/operator/market/%s", aoa.agentOperatorURL, agentOperatorID)
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
+		HttpUrl:         url,
+		HttpMethod:      http.MethodGet,
+		HttpContentType: rest.ContentTypeJson,
+	})
 
 	start := time.Now().UnixMilli()
 	respCode, result, err := aoa.httpClient.GetNoUnmarshal(ctx, url, nil, headers)
@@ -74,14 +85,16 @@ func (aoa *agentOperatorAccess) GetAgentOperatorByID(ctx context.Context, agentO
 		url, respCode, time.Now().UnixMilli()-start, err)
 
 	if err != nil {
-		logger.Errorf("get request failed: %v", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get agent operator failed")
+		otellog.LogError(ctx, "Get agent operator request failed", err)
 		return operatorInfo, fmt.Errorf("get request method failed: %w", err)
 	}
 	if respCode != http.StatusOK {
 		// 转成 baseerror
 		var opError OperatorError
 		if err = json.Unmarshal(result, &opError); err != nil {
-			logger.Errorf("unmalshal OperatorError failed: %v\n", err)
+			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal OperatorError failed")
+			otellog.LogError(ctx, "Unmarshal OperatorError failed", err)
 			return operatorInfo, err
 		}
 		httpErr := &rest.HTTPError{HTTPCode: respCode,
@@ -90,24 +103,36 @@ func (aoa *agentOperatorAccess) GetAgentOperatorByID(ctx context.Context, agentO
 				Description:  opError.Description,
 				ErrorDetails: opError.Detail,
 			}}
-		logger.Errorf("get operator info %s return error %v", agentOperatorID, httpErr.Error())
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("get operator info %s return error", agentOperatorID), httpErr)
 
 		return operatorInfo, fmt.Errorf("get operator info %s return error %v", agentOperatorID, httpErr.Error())
 	}
 	if result == nil {
-		return operatorInfo, fmt.Errorf("get operator info %s return null body", agentOperatorID)
-	}
-	if err = json.Unmarshal(result, &operatorInfo); err != nil {
-		logger.Errorf("Unmarshal operator info failed: %s", err)
+		err := fmt.Errorf("get operator info %s return null body", agentOperatorID)
+		span.SetStatus(codes.Error, "Http response body is null")
+		otellog.LogError(ctx, "Get agent operator returned null body", err)
 		return operatorInfo, err
 	}
+	if err = json.Unmarshal(result, &operatorInfo); err != nil {
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal operator info failed")
+		otellog.LogError(ctx, "Unmarshal operator info failed", err)
+		return operatorInfo, err
+	}
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return operatorInfo, nil
 }
 
 // GetToolByID verifies tool-box tool exists (GET .../tool-box/{box_id}/tool/{tool_id}).
 func (aoa *agentOperatorAccess) GetToolByID(ctx context.Context, boxID, toolID string) error {
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetToolByID")
+	defer span.End()
+
 	if boxID == "" || toolID == "" {
-		return fmt.Errorf("box_id and tool_id are required for tool binding check")
+		err := fmt.Errorf("box_id and tool_id are required for tool binding check")
+		span.SetStatus(codes.Error, "Invalid tool binding parameter")
+		otellog.LogError(ctx, "Invalid tool binding parameter", err)
+		return err
 	}
 
 	accountInfo := interfaces.AccountInfo{}
@@ -121,6 +146,11 @@ func (aoa *agentOperatorAccess) GetToolByID(ctx context.Context, boxID, toolID s
 	}
 
 	url := fmt.Sprintf("%s/tool-box/%s/tool/%s", aoa.agentOperatorURL, boxID, toolID)
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
+		HttpUrl:         url,
+		HttpMethod:      http.MethodGet,
+		HttpContentType: rest.ContentTypeJson,
+	})
 
 	start := time.Now().UnixMilli()
 	respCode, result, err := aoa.httpClient.GetNoUnmarshal(ctx, url, nil, headers)
@@ -128,19 +158,25 @@ func (aoa *agentOperatorAccess) GetToolByID(ctx context.Context, boxID, toolID s
 		url, respCode, time.Now().UnixMilli()-start, err)
 
 	if err != nil {
-		logger.Errorf("tool binding check request failed: %v", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get tool failed")
+		otellog.LogError(ctx, "Tool binding check request failed", err)
 		return fmt.Errorf("tool binding check failed: %w", err)
 	}
 	if respCode == http.StatusOK {
+		oteltrace.AddHttpAttrs4Ok(span, respCode)
 		return nil
 	}
 	if respCode == http.StatusNotFound {
-		return fmt.Errorf("tool not found: box_id=%s tool_id=%s", boxID, toolID)
+		err := fmt.Errorf("tool not found: box_id=%s tool_id=%s", boxID, toolID)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "NotFound", "Tool not found")
+		otellog.LogError(ctx, "Tool not found", err)
+		return err
 	}
 	if respCode != http.StatusOK {
 		var opError OperatorError
 		if err = json.Unmarshal(result, &opError); err != nil {
-			logger.Errorf("unmalshal OperatorError failed: %v\n", err)
+			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal OperatorError failed")
+			otellog.LogError(ctx, "Unmarshal OperatorError failed", err)
 			return fmt.Errorf("tool binding check failed: %w", err)
 		}
 		httpErr := &rest.HTTPError{HTTPCode: respCode,
@@ -149,16 +185,24 @@ func (aoa *agentOperatorAccess) GetToolByID(ctx context.Context, boxID, toolID s
 				Description:  opError.Description,
 				ErrorDetails: opError.Detail,
 			}}
-		logger.Errorf("tool binding check failed: %v", httpErr.Error())
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, "Tool binding check failed", httpErr)
 		return fmt.Errorf("tool binding check failed: %v", httpErr.Error())
 	}
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return nil
 }
 
 // CheckMCPToolBinding verifies MCP exposes a tool with toolName (GET .../mcp/proxy/{mcp_id}/tools).
 func (aoa *agentOperatorAccess) GetMcpToolByName(ctx context.Context, mcpID, toolName string) error {
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetMcpToolByName")
+	defer span.End()
+
 	if mcpID == "" || toolName == "" {
-		return fmt.Errorf("mcp_id and tool_name are required for MCP tool binding check")
+		err := fmt.Errorf("mcp_id and tool_name are required for MCP tool binding check")
+		span.SetStatus(codes.Error, "Invalid MCP tool binding parameter")
+		otellog.LogError(ctx, "Invalid MCP tool binding parameter", err)
+		return err
 	}
 
 	accountInfo := interfaces.AccountInfo{}
@@ -172,6 +216,11 @@ func (aoa *agentOperatorAccess) GetMcpToolByName(ctx context.Context, mcpID, too
 	}
 
 	url := fmt.Sprintf("%s/mcp/proxy/%s/tools", aoa.agentOperatorURL, mcpID)
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
+		HttpUrl:         url,
+		HttpMethod:      http.MethodGet,
+		HttpContentType: rest.ContentTypeJson,
+	})
 
 	start := time.Now().UnixMilli()
 	respCode, result, err := aoa.httpClient.GetNoUnmarshal(ctx, url, nil, headers)
@@ -179,19 +228,29 @@ func (aoa *agentOperatorAccess) GetMcpToolByName(ctx context.Context, mcpID, too
 		url, respCode, time.Now().UnixMilli()-start, err)
 
 	if err != nil {
-		logger.Errorf("MCP tools list request failed: %v", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get MCP tools failed")
+		otellog.LogError(ctx, "MCP tools list request failed", err)
 		return fmt.Errorf("MCP tool binding check failed: %w", err)
 	}
 	if respCode != http.StatusOK {
 		if respCode == http.StatusNotFound {
-			return fmt.Errorf("MCP server not found: mcp_id=%s", mcpID)
+			err := fmt.Errorf("MCP server not found: mcp_id=%s", mcpID)
+			oteltrace.AddHttpAttrs4Error(span, respCode, "NotFound", "MCP server not found")
+			otellog.LogError(ctx, "MCP server not found", err)
+			return err
 		}
 
 		var opError OperatorError
 		if len(result) > 0 && json.Unmarshal(result, &opError) == nil && opError.Description != "" {
-			return fmt.Errorf("MCP tool binding check failed (status %d): %s", respCode, opError.Description)
+			err := fmt.Errorf("MCP tool binding check failed (status %d): %s", respCode, opError.Description)
+			oteltrace.AddHttpAttrs4Error(span, respCode, opError.Code, opError.Description)
+			otellog.LogError(ctx, "MCP tool binding check failed", err)
+			return err
 		}
-		return fmt.Errorf("MCP tool binding check failed: unexpected status %d", respCode)
+		err := fmt.Errorf("MCP tool binding check failed: unexpected status %d", respCode)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unexpected MCP tool binding response status")
+		otellog.LogError(ctx, "MCP tool binding check failed", err)
+		return err
 	}
 	var list struct {
 		Tools []struct {
@@ -199,13 +258,19 @@ func (aoa *agentOperatorAccess) GetMcpToolByName(ctx context.Context, mcpID, too
 		} `json:"tools"`
 	}
 	if err := json.Unmarshal(result, &list); err != nil {
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Parse MCP tools response failed")
+		otellog.LogError(ctx, "Parse MCP tools response failed", err)
 		return fmt.Errorf("parse MCP tools response: %w", err)
 	}
 	want := strings.TrimSpace(toolName)
 	for _, t := range list.Tools {
 		if strings.TrimSpace(t.Name) == want {
+			oteltrace.AddHttpAttrs4Ok(span, respCode)
 			return nil
 		}
 	}
-	return fmt.Errorf("MCP tool not found: mcp_id=%s tool_name=%s", mcpID, toolName)
+	err = fmt.Errorf("MCP tool not found: mcp_id=%s tool_name=%s", mcpID, toolName)
+	span.SetStatus(codes.Error, "MCP tool not found")
+	otellog.LogError(ctx, "MCP tool not found", err)
+	return err
 }

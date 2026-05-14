@@ -230,6 +230,7 @@ func (a *actionScheduleAccess) DeleteSchedules(ctx context.Context, tx *sql.Tx, 
 	defer span.End()
 
 	if len(scheduleIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return nil
 	}
 
@@ -263,6 +264,7 @@ func (a *actionScheduleAccess) GetSchedule(ctx context.Context, scheduleID strin
 	defer span.End()
 
 	if scheduleID == "" {
+		span.SetStatus(codes.Ok, "")
 		return nil, nil
 	}
 
@@ -277,6 +279,7 @@ func (a *actionScheduleAccess) GetSchedule(ctx context.Context, scheduleID strin
 	row := a.db.QueryRowContext(ctx, sqlStr, vals...)
 	schedule, err := a.scanSchedule(row)
 	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "")
 		return nil, nil
 	} else if err != nil {
 		span.SetStatus(codes.Error, "Scan data error")
@@ -293,6 +296,7 @@ func (a *actionScheduleAccess) GetSchedules(ctx context.Context, scheduleIDs []s
 	defer span.End()
 
 	if len(scheduleIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return map[string]*interfaces.ActionSchedule{}, nil
 	}
 

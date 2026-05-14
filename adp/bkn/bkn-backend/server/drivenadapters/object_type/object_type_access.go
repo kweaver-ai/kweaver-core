@@ -585,6 +585,7 @@ func (ota *objectTypeAccess) GetObjectTypeByID(ctx context.Context, tx *sql.Tx, 
 		&objectType.Status.UpdateTime,
 	)
 	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Error, "Object type not found")
 		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ObjectType_ObjectTypeNotFound).
 			WithErrorDetails(fmt.Sprintf("对象类[%s]不存在: %v", otID, err))
 	} else if err != nil {
@@ -965,6 +966,7 @@ func (ota *objectTypeAccess) DeleteObjectTypesByIDs(ctx context.Context, tx *sql
 	)
 
 	if len(otIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 
@@ -1020,6 +1022,7 @@ func (ota *objectTypeAccess) DeleteObjectTypeStatusByIDs(ctx context.Context, tx
 	)
 
 	if len(otIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 

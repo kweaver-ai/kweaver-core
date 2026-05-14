@@ -227,6 +227,7 @@ func (ma *metricAccess) CheckMetricExistByID(ctx context.Context, knID string, b
 	var name string
 	err = ma.db.QueryRow(sqlStr, vals...).Scan(&name)
 	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	}
 	if err != nil {
@@ -234,6 +235,7 @@ func (ma *metricAccess) CheckMetricExistByID(ctx context.Context, knID string, b
 		span.SetStatus(codes.Error, err.Error())
 		return "", false, err
 	}
+	span.SetStatus(codes.Ok, "")
 	return name, true, nil
 }
 
@@ -256,6 +258,7 @@ func (ma *metricAccess) CheckMetricExistByName(ctx context.Context, knID string,
 	var id string
 	err = ma.db.QueryRow(sqlStr, vals...).Scan(&id)
 	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	}
 	if err != nil {
@@ -263,6 +266,7 @@ func (ma *metricAccess) CheckMetricExistByName(ctx context.Context, knID string,
 		span.SetStatus(codes.Error, err.Error())
 		return "", false, err
 	}
+	span.SetStatus(codes.Ok, "")
 	return id, true, nil
 }
 
@@ -326,6 +330,7 @@ func (ma *metricAccess) GetMetricsByIDs(ctx context.Context, knID string, branch
 	defer span.End()
 
 	if len(metricIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return []*interfaces.MetricDefinition{}, nil
 	}
 
@@ -526,6 +531,7 @@ func (ma *metricAccess) DeleteMetricsByIDs(ctx context.Context, tx *sql.Tx, knID
 	defer span.End()
 
 	if len(metricIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return nil
 	}
 	sqlStr, vals, err := sq.Delete(METRIC_TABLE_NAME).

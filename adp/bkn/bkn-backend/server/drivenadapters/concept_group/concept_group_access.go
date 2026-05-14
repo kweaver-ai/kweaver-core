@@ -602,6 +602,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupByID(ctx context.Context, tx *s
 	)
 
 	if cgID == "" {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 

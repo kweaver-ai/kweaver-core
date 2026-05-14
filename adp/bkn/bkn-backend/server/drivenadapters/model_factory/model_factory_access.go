@@ -13,8 +13,10 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
 	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
+	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	cond "bkn-backend/common/condition"
@@ -85,26 +87,32 @@ func (mfa *modelFactoryAccess) GetModelByID(ctx context.Context, modelID string)
 	logger.Debugf("get [%s] finished, response code is [%d], result is [%s], error is [%v]", httpUrl, respCode, result, err)
 
 	if err != nil {
-		logger.Errorf("Get model request failed: %v", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get model failed")
+		otellog.LogError(ctx, "Get model request failed", err)
 		return nil, fmt.Errorf("get model request failed: %w", err)
 	}
 
 	if respCode == http.StatusNotFound {
 		logger.Warnf("Get model request failed with status code: %d, %s", respCode, result)
+		oteltrace.AddHttpAttrs4Ok(span, respCode)
 		return nil, nil
 	}
 	if respCode != http.StatusOK {
-		logger.Errorf("Get model request failed with status code: %d, %s", respCode, result)
-		return nil, fmt.Errorf("get model request failed with status code: %d, %s", respCode, result)
+		err := fmt.Errorf("get model request failed with status code: %d, %s", respCode, result)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		otellog.LogError(ctx, "Get model request failed", err)
+		return nil, err
 	}
 
 	// 解析响应数据
 	smallModel := interfaces.SmallModel{}
 	if err := sonic.Unmarshal(result, &smallModel); err != nil {
-		logger.Errorf("Unmarshal model response failed: %v", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal model response failed")
+		otellog.LogError(ctx, "Unmarshal model response failed", err)
 		return nil, fmt.Errorf("unmarshal model response failed: %w", err)
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return &smallModel, nil
 }
 
@@ -131,26 +139,32 @@ func (mfa *modelFactoryAccess) GetModelByName(ctx context.Context, modelName str
 	logger.Debugf("get [%s] finished, response code is [%d], result is [%s], error is [%v]", httpUrl, respCode, result, err)
 
 	if err != nil {
-		logger.Errorf("Get model request failed: %v", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get model by name failed")
+		otellog.LogError(ctx, "Get model request failed", err)
 		return nil, fmt.Errorf("get model request failed: %w", err)
 	}
 
 	if respCode == http.StatusNotFound {
 		logger.Warnf("Get model request failed with status code: %d, %s", respCode, result)
+		oteltrace.AddHttpAttrs4Ok(span, respCode)
 		return nil, nil
 	}
 	if respCode != http.StatusOK {
-		logger.Errorf("Get model request failed with status code: %d, %s", respCode, result)
-		return nil, fmt.Errorf("get model request failed with status code: %d, %s", respCode, result)
+		err := fmt.Errorf("get model request failed with status code: %d, %s", respCode, result)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		otellog.LogError(ctx, "Get model request failed", err)
+		return nil, err
 	}
 
 	// 解析响应数据
 	smallModel := interfaces.SmallModel{}
 	if err := sonic.Unmarshal(result, &smallModel); err != nil {
-		logger.Errorf("Unmarshal model response failed: %v", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal model response failed")
+		otellog.LogError(ctx, "Unmarshal model response failed", err)
 		return nil, fmt.Errorf("unmarshal model response failed: %w", err)
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return &smallModel, nil
 }
 
@@ -161,9 +175,11 @@ func (mfa *modelFactoryAccess) GetVector(ctx context.Context,
 	defer span.End()
 
 	if model == nil {
+		span.SetStatus(codes.Error, "Model is nil")
 		return []*cond.VectorResp{}, fmt.Errorf("model is nil")
 	}
 	if len(words) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return []*cond.VectorResp{}, nil
 	}
 
@@ -216,13 +232,16 @@ func (mfa *modelFactoryAccess) GetVector(ctx context.Context,
 			httpUrl, modelInfo, respCode, err)
 
 		if err != nil {
-			logger.Errorf("Get vector request failed: %v", err)
+			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get vector failed")
+			otellog.LogError(ctx, "Get vector request failed", err)
 			return nil, fmt.Errorf("get vector request failed: %w", err)
 		}
 
 		if respCode != 200 {
-			logger.Errorf("Get vector request failed with status code: %d, %s", respCode, result)
-			return nil, fmt.Errorf("get vector request failed with status code: %d, %s", respCode, result)
+			err := fmt.Errorf("get vector request failed with status code: %d, %s", respCode, result)
+			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+			otellog.LogError(ctx, "Get vector request failed", err)
+			return nil, err
 		}
 
 		// 解析响应数据
@@ -231,19 +250,23 @@ func (mfa *modelFactoryAccess) GetVector(ctx context.Context,
 		}
 
 		if err := sonic.Unmarshal(result, &response); err != nil {
-			logger.Errorf("Unmarshal vector response failed: %v", err)
+			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal vector response failed")
+			otellog.LogError(ctx, "Unmarshal vector response failed", err)
 			return nil, fmt.Errorf("unmarshal vector response failed: %w", err)
 		}
 		logger.Debugf("vectorized result length is [%d]", len(response.Data))
 
 		// 检查返回的向量数量是否与输入文本数量一致
 		if len(response.Data) != len(currentWords) {
-			logger.Errorf("Vector count mismatch: expected %d, got %d", len(currentWords), len(response.Data))
-			return nil, fmt.Errorf("vector count mismatch: expected %d, got %d", len(currentWords), len(response.Data))
+			err := fmt.Errorf("vector count mismatch: expected %d, got %d", len(currentWords), len(response.Data))
+			span.SetStatus(codes.Error, "Vector count mismatch")
+			otellog.LogError(ctx, "Vector count mismatch", err)
+			return nil, err
 		}
 
 		allVectorResps = append(allVectorResps, response.Data...)
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return allVectorResps, nil
 }

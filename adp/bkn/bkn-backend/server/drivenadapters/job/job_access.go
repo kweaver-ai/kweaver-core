@@ -122,6 +122,7 @@ func (ja *jobAccess) DeleteJobsByIDs(ctx context.Context, tx *sql.Tx, jobIDs []s
 	)
 
 	if len(jobIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 
@@ -164,6 +165,7 @@ func (ja *jobAccess) DeleteTasksByJobIDs(ctx context.Context, tx *sql.Tx, jobIDs
 	)
 
 	if len(jobIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 
@@ -255,6 +257,7 @@ func (ja *jobAccess) GetJobByID(ctx context.Context, jobID string) (*interfaces.
 	)
 
 	if jobID == "" {
+		span.SetStatus(codes.Ok, "")
 		return nil, nil
 	}
 
@@ -304,6 +307,7 @@ func (ja *jobAccess) GetJobByID(ctx context.Context, jobID string) (*interfaces.
 		&jobInfo.TimeCost,
 	)
 	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "")
 		return nil, nil
 	} else if err != nil {
 		otellog.LogError(ctx, "Scan data error", err)
@@ -331,6 +335,7 @@ func (ja *jobAccess) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[str
 	)
 
 	if len(jobIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return map[string]*interfaces.JobInfo{}, nil
 	}
 
@@ -664,6 +669,7 @@ func (ja *jobAccess) CreateTasks(ctx context.Context, tx *sql.Tx, taskInfos map[
 	)
 
 	if len(taskInfos) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return nil
 	}
 

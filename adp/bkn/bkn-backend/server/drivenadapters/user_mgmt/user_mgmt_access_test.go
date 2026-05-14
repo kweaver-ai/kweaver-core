@@ -76,7 +76,7 @@ func Test_userMgmtAccess_GetAccountNames(t *testing.T) {
 			respData, _ := sonic.Marshal(response)
 
 			mockHTTPClient.EXPECT().
-				PostNoUnmarshal(ctx, httpUrl, gomock.Any(), gomock.Any()).
+				PostNoUnmarshal(gomock.Any(), httpUrl, gomock.Any(), gomock.Any()).
 				Return(http.StatusOK, respData, nil)
 
 			err := uma.GetAccountNames(ctx, accountInfos)
@@ -96,7 +96,7 @@ func Test_userMgmtAccess_GetAccountNames(t *testing.T) {
 			}
 
 			mockHTTPClient.EXPECT().
-				PostNoUnmarshal(ctx, httpUrl, gomock.Any(), gomock.Any()).
+				PostNoUnmarshal(gomock.Any(), httpUrl, gomock.Any(), gomock.Any()).
 				Return(0, []byte(""), errors.New("network error"))
 
 			err := uma.GetAccountNames(ctx, accountInfos)
@@ -109,7 +109,7 @@ func Test_userMgmtAccess_GetAccountNames(t *testing.T) {
 			}
 
 			mockHTTPClient.EXPECT().
-				PostNoUnmarshal(ctx, httpUrl, gomock.Any(), gomock.Any()).
+				PostNoUnmarshal(gomock.Any(), httpUrl, gomock.Any(), gomock.Any()).
 				Return(http.StatusInternalServerError, []byte("error"), nil)
 
 			err := uma.GetAccountNames(ctx, accountInfos)
@@ -122,7 +122,7 @@ func Test_userMgmtAccess_GetAccountNames(t *testing.T) {
 			}
 
 			mockHTTPClient.EXPECT().
-				PostNoUnmarshal(ctx, httpUrl, gomock.Any(), gomock.Any()).
+				PostNoUnmarshal(gomock.Any(), httpUrl, gomock.Any(), gomock.Any()).
 				Return(http.StatusOK, []byte("invalid json"), nil)
 
 			err := uma.GetAccountNames(ctx, accountInfos)

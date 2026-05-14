@@ -56,17 +56,21 @@ func (rta *riskTypeAccess) CheckRiskTypeExistByID(ctx context.Context, knID stri
 		Where(sq.Eq{"f_id": rtID}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return "", false, err
 	}
 
 	var name string
 	err = rta.db.QueryRow(sqlStr, vals...).Scan(&name)
 	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	}
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return "", false, err
 	}
+	span.SetStatus(codes.Ok, "")
 	return name, true, nil
 }
 
@@ -81,17 +85,21 @@ func (rta *riskTypeAccess) CheckRiskTypeExistByName(ctx context.Context, knID st
 		Where(sq.Eq{"f_name": rtName}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return "", false, err
 	}
 
 	var rtID string
 	err = rta.db.QueryRow(sqlStr, vals...).Scan(&rtID)
 	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	}
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return "", false, err
 	}
+	span.SetStatus(codes.Ok, "")
 	return rtID, true, nil
 }
 
@@ -138,11 +146,17 @@ func (rta *riskTypeAccess) CreateRiskType(ctx context.Context, tx *sql.Tx, riskT
 		).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return err
 	}
 
 	_, err = tx.Exec(sqlStr, vals...)
-	return err
+	if err != nil {
+		span.SetStatus(codes.Error, "Insert data failed")
+		return err
+	}
+	span.SetStatus(codes.Ok, "")
+	return nil
 }
 
 func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.RiskTypesQueryParams) ([]*interfaces.RiskType, error) {
@@ -179,11 +193,13 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return nil, err
 	}
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -211,6 +227,7 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 			&rt.UpdateTime,
 		)
 		if err != nil {
+			span.SetStatus(codes.Error, "Scan data failed")
 			return nil, err
 		}
 
@@ -231,12 +248,14 @@ func (rta *riskTypeAccess) GetRiskTypesTotal(ctx context.Context, query interfac
 	builder := processRiskTypeQueryCondition(query, subBuilder)
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return 0, err
 	}
 
 	var total int
 	err = rta.db.QueryRow(sqlStr, vals...).Scan(&total)
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return 0, err
 	}
 	span.SetStatus(codes.Ok, "")
@@ -248,6 +267,7 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 	defer span.End()
 
 	if len(rtIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return []*interfaces.RiskType{}, nil
 	}
 
@@ -273,11 +293,13 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 		Where(sq.Eq{"f_id": rtIDs}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return nil, err
 	}
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -305,6 +327,7 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 			&rt.UpdateTime,
 		)
 		if err != nil {
+			span.SetStatus(codes.Error, "Scan data failed")
 			return nil, err
 		}
 
@@ -342,11 +365,17 @@ func (rta *riskTypeAccess) UpdateRiskType(ctx context.Context, tx *sql.Tx, riskT
 		Where(sq.Eq{"f_branch": riskType.Branch}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return err
 	}
 
 	_, err = tx.Exec(sqlStr, vals...)
-	return err
+	if err != nil {
+		span.SetStatus(codes.Error, "Update data failed")
+		return err
+	}
+	span.SetStatus(codes.Ok, "")
+	return nil
 }
 
 func (rta *riskTypeAccess) DeleteRiskTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, rtIDs []string) (int64, error) {
@@ -354,6 +383,7 @@ func (rta *riskTypeAccess) DeleteRiskTypesByIDs(ctx context.Context, tx *sql.Tx,
 	defer span.End()
 
 	if len(rtIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 
@@ -363,14 +393,22 @@ func (rta *riskTypeAccess) DeleteRiskTypesByIDs(ctx context.Context, tx *sql.Tx,
 		Where(sq.Eq{"f_id": rtIDs}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return 0, err
 	}
 
 	result, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
+		span.SetStatus(codes.Error, "Delete data failed")
 		return 0, err
 	}
-	return result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		span.SetStatus(codes.Error, "Get RowsAffected failed")
+		return 0, err
+	}
+	span.SetStatus(codes.Ok, "")
+	return rowsAffected, nil
 }
 
 func (rta *riskTypeAccess) GetAllRiskTypesByKnID(ctx context.Context, knID string, branch string) ([]*interfaces.RiskType, error) {
@@ -389,14 +427,22 @@ func (rta *riskTypeAccess) DeleteRiskTypesByKnID(ctx context.Context, tx *sql.Tx
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return 0, err
 	}
 
 	result, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
+		span.SetStatus(codes.Error, "Delete data failed")
 		return 0, err
 	}
-	return result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		span.SetStatus(codes.Error, "Get RowsAffected failed")
+		return 0, err
+	}
+	span.SetStatus(codes.Ok, "")
+	return rowsAffected, nil
 }
 
 func processRiskTypeQueryCondition(query interfaces.RiskTypesQueryParams, subBuilder sq.SelectBuilder) sq.SelectBuilder {
