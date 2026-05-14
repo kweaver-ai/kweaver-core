@@ -75,9 +75,6 @@ var (
 	}
 )
 
-// ExpectedOperation 表示 impact_contracts / affect 中的「预期操作」语义，**枚举与 action_type、action_intent 一致**（add / modify / delete）。
-type ExpectedOperation string
-
 const (
 	ExpectedOperationAdd    string = "add"
 	ExpectedOperationModify string = "modify"
@@ -194,7 +191,7 @@ func IsValidActionTypeIntentValue(s string) bool {
 	return ActionTypeMap[s]
 }
 
-// IsValidActionTypeIntentValue 报告 s 是否为与 action_type 对齐的合法 action_intent（阶段 B1-5，供阶段 V2 校验复用；与 `IsValidExpectedOperation` 同集合）。
+// IsValidExpectedOperation 报告 s 是否是有效枚举值
 func IsValidExpectedOperation(s string) bool {
 	return ExpectedOperationMap[s]
 }

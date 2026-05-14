@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"slices"
 	"strings"
 
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
@@ -282,7 +281,15 @@ func foldedImpactMatchesAffect(at *interfaces.ActionType) bool {
 	if strings.TrimSpace(ic.Description) != strings.TrimSpace(a.Comment) {
 		return false
 	}
-	return slices.Equal(ic.AffectedFields, a.AffectedFields)
+	if len(ic.AffectedFields) != len(a.AffectedFields) {
+		return false
+	}
+	for i := range ic.AffectedFields {
+		if strings.TrimSpace(ic.AffectedFields[i]) != strings.TrimSpace(a.AffectedFields[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 // 校验行动条件的合法性
