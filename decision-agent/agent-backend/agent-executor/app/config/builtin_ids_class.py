@@ -24,6 +24,9 @@ class BuiltinIdsConfig:
             "获取agent详情": "获取agent详情",
             "online_search_cite_tool": "online_search_cite_tool",
             "查询可观测数据": "查询可观测数据",
+            "builtin_skill_load": "builtin_skill_load",
+            "builtin_skill_read_file": "builtin_skill_read_file",
+            "builtin_skill_execute_script": "builtin_skill_execute_script",
         }
 
         self.tool_box_ids = {
@@ -34,6 +37,7 @@ class BuiltinIdsConfig:
             "DataAgent配置相关工具": "DataAgent配置工具",
             "联网搜索添加引用工具": "联网搜索添加引用工具",
             "Agent可观测数据查询API": "Agent可观测数据查询API",
+            "Skill内置工具": "Skill内置工具",
         }
 
     def get_agent_id(self, agent_name):

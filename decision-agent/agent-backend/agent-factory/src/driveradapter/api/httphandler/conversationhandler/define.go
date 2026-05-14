@@ -19,7 +19,7 @@ type conversationHTTPHandler struct {
 }
 
 func (h *conversationHTTPHandler) RegPubRouter(router *gin.RouterGroup) {
-	router.GET("/app/:app_key/conversation", h.List)                   // 获取会话列表
+	router.GET("/app/:app_key/conversation", h.List)                   // 获取对话列表
 	router.GET("/app/:app_key/conversation/:id", h.Detail)             // 获取会话详情
 	router.PUT("/app/:app_key/conversation/:id", h.Update)             // 更新会话
 	router.DELETE("/app/:app_key/conversation/:id", h.Delete)          // 删除会话

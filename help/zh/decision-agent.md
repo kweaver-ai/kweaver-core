@@ -8,13 +8,24 @@
 
 | 前缀 | 作用 |
 | --- | --- |
-| `/api/agent-factory/v1` | 工厂 API（模板、智能体、运行） |
-| `/api/agent-factory/v2`、`/api/agent-factory/v3` | 版本化工厂接口 |
-| `/api/agent-app/v1` | 面向应用的智能体 API |
+| `/api/agent-factory/v3` | Agent 管理、发布、个人空间、市场、权限等管理接口 |
+| `/api/agent-factory/v1` | 对话执行、会话、session 管理和 API Chat 等运行接口 |
 
 **相关模块：** [Context Loader](context-loader.md)、[Execution Factory](execution-factory.md)、[BKN 引擎](bkn.md)、[Trace AI](trace-ai.md)。
 
 > **模型配置前置条件**：Agent 需要 LLM（大语言模型）和 Embedding 小模型。`--minimum` 安装不包含预置模型，使用前请先完成 [安装与部署 — 配置模型](install.md#配置模型)。创建 Agent 时需通过 `--llm-id` 指定已注册的 LLM ID。
+
+## 📚 更多文档
+
+Decision Agent 的完整用户手册和场景示例在代码仓库中维护，可从这里继续查看：
+
+- [Decision Agent 用户手册](../../decision-agent/docs/user_manual/README.md)：统一入口，包含概念、REST API、CLI、TypeScript SDK、安装与示例说明。
+- [基础概念](../../decision-agent/docs/user_manual/concepts/README.md)：解释 Agent、个人空间、广场、发布、Agent 模式、人工干预、终止与断线续连等概念。
+- [REST 接入指南](../../decision-agent/docs/user_manual/api/README.md)：面向直接调用 Agent Factory REST API 的开发者。
+- [CLI 用户指南](../../decision-agent/docs/user_manual/cli/README.md)：面向安装并使用 `kweaver` 命令的用户。
+- [TypeScript SDK 用户指南](../../decision-agent/docs/user_manual/sdk/typescript/README.md)：面向通过 `@kweaver-ai/kweaver-sdk` 接入的开发者。
+- [Examples](../../decision-agent/docs/user_manual/examples/README.md)：API、CLI、SDK 的可运行示例与检查命令。
+- [Cookbook](../../decision-agent/docs/cookbook/README.md)：按业务场景组织的接入示例，例如合同摘要、Sub-Agent 审查和人工干预/终止流程。
 
 ## 🚀 使用方式
 
@@ -395,40 +406,40 @@ curl -sk -X POST "https://<访问地址>/api/agent-factory/v1/agents/agt_001/pub
   -d '{"category_id": "cat_customer_service"}'
 
 # 对话（非流式）
-curl -sk -X POST "https://<访问地址>/api/agent-app/v1/agents/agt_001/chat" \
+curl -sk -X POST "https://<访问地址>/api/agent-factory/v1/app/<agent_key>/chat/completion" \
   -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "最近一周有多少新客户注册？",
+    "query": "最近一周有多少新客户注册？",
     "stream": false
   }'
 
 # 对话（流式 SSE）
-curl -sk -N -X POST "https://<访问地址>/api/agent-app/v1/agents/agt_001/chat" \
+curl -sk -N -X POST "https://<访问地址>/api/agent-factory/v1/app/<agent_key>/chat/completion" \
   -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
-    "message": "分析一下华东区的销售趋势",
+    "query": "分析一下华东区的销售趋势",
     "stream": true
   }'
 
 # 在已有会话中继续对话
-curl -sk -X POST "https://<访问地址>/api/agent-app/v1/agents/agt_001/chat" \
+curl -sk -X POST "https://<访问地址>/api/agent-factory/v1/app/<agent_key>/chat/completion" \
   -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "能否按月份细分？",
+    "query": "能否按月份细分？",
     "conversation_id": "conv_20250115_001",
     "stream": false
   }'
 
 # 列出会话
-curl -sk "https://<访问地址>/api/agent-app/v1/agents/agt_001/sessions" \
+curl -sk "https://<访问地址>/api/agent-factory/v1/app/<agent_key>/conversation?page=1&size=10" \
   -H "Authorization: Bearer $(kweaver token)"
 
-# 查看会话历史
-curl -sk "https://<访问地址>/api/agent-app/v1/agents/agt_001/sessions/conv_20250115_001/history" \
+# 查看会话详情
+curl -sk "https://<访问地址>/api/agent-factory/v1/app/<agent_key>/conversation/conv_20250115_001" \
   -H "Authorization: Bearer $(kweaver token)"
 
 # 删除智能体

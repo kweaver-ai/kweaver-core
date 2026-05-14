@@ -5,6 +5,82 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 
+class TestValidateToolName:
+    """测试 validate_tool_name 函数"""
+
+    def test_valid_tool_name_simple(self):
+        """测试简单的有效工具名称"""
+        from app.common.tool_v2.tool import validate_tool_name
+
+        assert validate_tool_name("test_tool") is True
+        assert validate_tool_name("TestTool") is True
+        assert validate_tool_name("test123") is True
+
+    def test_valid_tool_name_with_underscore(self):
+        """测试包含下划线的有效工具名称"""
+        from app.common.tool_v2.tool import validate_tool_name
+
+        assert validate_tool_name("test_tool_name") is True
+        assert validate_tool_name("_test") is True
+        assert validate_tool_name("test_") is True
+
+    def test_valid_tool_name_with_hyphen(self):
+        """测试包含连字符的有效工具名称"""
+        from app.common.tool_v2.tool import validate_tool_name
+
+        assert validate_tool_name("test-tool-name") is True
+        assert validate_tool_name("-test") is True
+        assert validate_tool_name("test-") is True
+
+    def test_valid_tool_name_mixed(self):
+        """测试混合字符的有效工具名称"""
+        from app.common.tool_v2.tool import validate_tool_name
+
+        assert validate_tool_name("test_tool-123") is True
+        assert validate_tool_name("My-Tool_v2") is True
+        assert validate_tool_name("a1_b2-c3") is True
+
+    def test_valid_tool_name_max_length(self):
+        """测试最大长度的有效工具名称"""
+        from app.common.tool_v2.tool import validate_tool_name, TOOL_NAME_MAX_LENGTH
+
+        max_length_name = "a" * TOOL_NAME_MAX_LENGTH
+        assert validate_tool_name(max_length_name) is True
+
+    def test_invalid_tool_name_chinese(self):
+        """测试包含中文的无效工具名称"""
+        from app.common.tool_v2.tool import validate_tool_name
+
+        assert validate_tool_name("查询可观测数据") is False
+        assert validate_tool_name("获取agent详情") is False
+        assert validate_tool_name("test工具") is False
+
+    def test_invalid_tool_name_special_chars(self):
+        """测试包含特殊字符的无效工具名称"""
+        from app.common.tool_v2.tool import validate_tool_name
+
+        assert validate_tool_name("test.tool") is False
+        assert validate_tool_name("test tool") is False
+        assert validate_tool_name("test@tool") is False
+        assert validate_tool_name("test#tool") is False
+        assert validate_tool_name("test$tool") is False
+        assert validate_tool_name("test%tool") is False
+
+    def test_invalid_tool_name_empty(self):
+        """测试空工具名称"""
+        from app.common.tool_v2.tool import validate_tool_name
+
+        assert validate_tool_name("") is False
+        assert validate_tool_name(None) is False
+
+    def test_invalid_tool_name_too_long(self):
+        """测试超过最大长度的工具名称"""
+        from app.common.tool_v2.tool import validate_tool_name, TOOL_NAME_MAX_LENGTH
+
+        too_long_name = "a" * (TOOL_NAME_MAX_LENGTH + 1)
+        assert validate_tool_name(too_long_name) is False
+
+
 class TestBuildTools:
     """测试 build_tools 函数"""
 

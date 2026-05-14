@@ -122,12 +122,13 @@ func (p *Config) ValObjCheckWithCtx(...)
 
 其处理顺序中，与 Agent Mode 最相关的步骤如下：
 
-1. 调用 `normalizeMode()` 对模式字段做归一化
-2. 执行 `p.Mode.EnumCheck()`
-3. 执行 `checkAboutDolphin()`
-4. 校验 `plan_mode`
-5. 校验 `react_config`
-6. 校验 `conversation_history_config`
+1. 当请求中 `mode` 非空时，先执行 `p.Mode.EnumCheck()`，避免非法模式被兼容逻辑吞掉
+2. 调用 `normalizeMode()` 对新旧模式字段做归一化
+3. 再次执行 `p.Mode.EnumCheck()`，保证空 `mode` 推导后的结果合法
+4. 执行 `checkAboutDolphin()`
+5. 校验 `plan_mode`
+6. 校验 `react_config`
+7. 校验 `conversation_history_config`
 
 ---
 
@@ -141,26 +142,40 @@ src/domain/valueobject/daconfvalobj/config.go
 
 逻辑摘要：
 
-### 4.2.1 `mode == dolphin`
-
-当 `mode == "dolphin"` 时：
-
-1. 自动将 `is_dolphin_mode` 对齐为启用
-
-### 4.2.2 `mode == default` 或 `mode == react`
-
-当 `mode` 为 `default` 或 `react` 时：
-
-1. 如果当前不是 dolphin，则将 `is_dolphin_mode` 对齐为关闭
-
-### 4.2.3 `mode == ""`
+### 4.2.1 `mode == ""`
 
 当 `mode` 为空时：
 
 1. 调用 `GetMode()` 推导实际模式
-2. 如果推导结果为 `dolphin`，则将 `is_dolphin_mode` 对齐为启用
+2. 如果 `is_dolphin_mode == true`，推导结果为 `dolphin`
+3. 否则推导结果为 `default`
 
-这一分支的主要作用是兼容历史数据或旧存量数据中 `mode` 为空的情况。
+这一分支的主要作用是兼容历史数据或旧前端未传 `mode` 的情况。
+
+### 4.2.2 `mode != "" && mode != react`
+
+当 `mode` 非空且不是 `react` 时：
+
+1. 先要求 `mode` 本身是合法枚举值
+2. 再根据历史字段 `is_dolphin_mode` 重算最终 `mode`
+3. `is_dolphin_mode == true` 时，最终 `mode` 为 `dolphin`
+4. `is_dolphin_mode == false` 时，最终 `mode` 为 `default`
+
+这一分支的主要作用是兼容尚未对接新 `mode` 字段、或仍以 `is_dolphin_mode` 作为模式来源的前端。
+
+### 4.2.3 `mode == react`
+
+当 `mode == "react"` 时：
+
+1. 保留 `react` 模式，不受 `is_dolphin_mode` 覆盖
+2. 后续兜底将 `is_dolphin_mode` 对齐为关闭
+
+### 4.2.4 最终字段对齐
+
+完成最终 `mode` 设置后，统一按 `mode` 回写 `is_dolphin_mode`：
+
+1. `mode == dolphin` 时，`is_dolphin_mode = enabled`
+2. 其他模式下，`is_dolphin_mode = disabled`
 
 ---
 
@@ -192,17 +207,12 @@ func (p *Config) checkAboutDolphin() error
 关键规则：
 
 1. `is_dolphin_mode` 必须是合法枚举值
-2. 当 `mode != ""` 且 `mode != dolphin` 且 `is_dolphin_mode == true` 时，报错：
-
-```text
-[Config]: mode conflicts with is_dolphin_mode
-```
-
+2. `normalizeMode()` 已经保证 `mode` 与 `is_dolphin_mode` 一致，历史冲突输入会被兼容归一化
 3. 当 `is_dolphin_mode == true` 时，`pre_dolphin` / `post_dolphin` / `dolphin` 至少有一个有内容，否则报错
 
 这保证了：
 
-1. 非 Dolphin 模式不会与 `is_dolphin_mode` 形成自相矛盾
+1. 非 `react` 模式可以继续兼容历史字段 `is_dolphin_mode`
 2. Dolphin 模式在配置层必须具备最基本的执行内容
 
 ---
@@ -535,14 +545,14 @@ config.mode must be "react"
 [Config]: react_config is only allowed when mode is react
 ```
 
-### 9.3 非 dolphin 模式与 is_dolphin_mode 冲突
+### 9.3 非 react 模式继续兼容 is_dolphin_mode
 
 请求：
 
 ```json
 {
   "config": {
-    "mode": "react",
+    "mode": "default",
     "is_dolphin_mode": 1
   }
 }
@@ -550,12 +560,11 @@ config.mode must be "react"
 
 结果：
 
-1. 配置校验失败
-2. 错误信息：
+1. 配置校验成功
+2. 最终 `mode` 会按历史字段归一化为 `dolphin`
+3. 最终 `is_dolphin_mode` 保持启用
 
-```text
-[Config]: mode conflicts with is_dolphin_mode
-```
+如果 `mode` 非空但不是合法枚举值，则会在归一化前返回 `[Config]: mode is invalid`。
 
 ### 9.4 Dolphin 模式启用 plan_mode
 
@@ -576,7 +585,11 @@ config.mode must be "react"
 3. Swagger / OpenAPI 中 `/agent/react` 使用与普通创建一致的 schema
 4. 详情接口返回中 `react_config` 正常序列化
 5. 详情接口在 `mode` 为空时返回补齐后的 `mode`
-6. `react` 枚举值与 `react_config` 字段在 swagger 模型中正常存在
+6. `mode` 为空时按 `is_dolphin_mode` 推导最终模式
+7. `mode` 非空且非 `react` 时按 `is_dolphin_mode` 兼容归一化
+8. `mode == react` 时不会被 `is_dolphin_mode` 覆盖
+9. 非空非法 `mode` 会返回模式非法错误
+10. `react` 枚举值与 `react_config` 字段在 swagger 模型中正常存在
 
 本地验证命令包括：
 

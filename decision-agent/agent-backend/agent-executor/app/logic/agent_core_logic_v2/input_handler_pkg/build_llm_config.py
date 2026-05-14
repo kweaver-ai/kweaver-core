@@ -82,7 +82,7 @@ async def build_llm_config(
 
         llm_config["llms"][llm["llm_config"]["name"]] = llm["llm_config"]
 
-    
+
 
     return llm_config
 

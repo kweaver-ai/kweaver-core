@@ -217,8 +217,14 @@ GET /api/agent-factory/v3/agent/{agent_id}
 
 如果 Agent 处于 Dolphin 模式，则不能启用 `plan_mode`。
 
+### 7.3 旧字段 `is_dolphin_mode` 的兼容优先级
 
+为兼容尚未完成新 `mode` 字段对接的前端，后端会在保存校验时对齐新旧模式字段：
 
+1. 当 `mode` 为空时，后端会根据 `is_dolphin_mode` 推导最终 `mode`
+2. 当 `mode` 非空且不是 `react` 时，后端仍以 `is_dolphin_mode` 作为兼容优先字段
+3. 当 `mode == react` 时，后端保留 `react`，不会被 `is_dolphin_mode` 覆盖
+4. 当 `mode` 非空但不是合法枚举值时，后端会直接返回非法模式错误
 
 ### 7.4 详情接口会补齐空的 `mode`
 
@@ -255,8 +261,9 @@ GET /api/agent-factory/v3/agent/{agent_id}
 
 1. `mode` 是 Agent 模式的唯一主表达字段
 2. `react_config` 是 ReAct 模式的唯一专属配置字段
-3. `POST /v3/agent/react` 是一个语义化更强的专用创建入口，但其请求体结构不区别于普通创建接口
-4. 前端读取详情时，以 `config.mode` 作为页面渲染与校验分支的主依据
+3. 写入链路仍兼容历史字段 `is_dolphin_mode`：非 `react` 模式下它会决定最终 Dolphin/default 状态
+4. `POST /v3/agent/react` 是一个语义化更强的专用创建入口，但其请求体结构不区别于普通创建接口
+5. 前端读取详情时，以 `config.mode` 作为页面渲染与校验分支的主依据
 
 ---
 

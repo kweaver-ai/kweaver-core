@@ -108,13 +108,16 @@ func (p *Config) ValObjCheckWithCtx(ctx context.Context, isPrivateAPI bool) (err
 		return
 	}
 
+	if p.Mode != "" {
+		if err = p.Mode.EnumCheck(); err != nil {
+			err = errors.Wrap(err, "[Config]: mode is invalid")
+			return
+		}
+	}
+
 	// 0. 对齐新旧模式字段
 	p.normalizeMode()
 
-	if err = p.Mode.EnumCheck(); err != nil {
-		err = errors.Wrap(err, "[Config]: mode is invalid")
-		return
-	}
 
 	// 2. 验证Input的有效性
 	if err = p.Input.ValObjCheck(); err != nil {
@@ -325,10 +328,6 @@ func (p *Config) GetMode() cdaenum.AgentMode {
 		return cdaenum.AgentModeDefault
 	}
 
-	if p.Mode == cdaenum.AgentModeDolphin {
-		return cdaenum.AgentModeDolphin
-	}
-
 	return p.Mode
 }
 
@@ -337,25 +336,27 @@ func (p *Config) normalizeMode() {
 		return
 	}
 
-	if p.ReactConfig == nil {
-		p.ReactConfig = nil
+	// 1. 先设置p.Mode
+	if p.Mode == "" {
+		p.Mode = p.GetMode()
+	} else if p.Mode != cdaenum.AgentModeReact {
+
+		// 当mode不为cdaenum.AgentModeReact时，根据IsDolphinMode的值设置mode（因考虑兼容性，IsDolphinMode的优先级高于mode）
+		if p.IsDolphinMode.Bool() {
+			p.Mode = cdaenum.AgentModeDolphin
+		} else {
+			p.Mode = cdaenum.AgentModeDefault
+		}
 	}
 
+	// 2. 根据p.Mode设置IsDolphinMode（保证IsDolphinMode与mode的一致性）
 	switch p.Mode {
 	case cdaenum.AgentModeDolphin:
 		p.IsDolphinMode = cdaenum.DolphinModeEnabled
-	case cdaenum.AgentModeDefault, cdaenum.AgentModeReact:
-		if !p.IsDolphinMode.Bool() {
-			p.IsDolphinMode = cdaenum.DolphinModeDisabled
-		}
-	case "":
-		p.Mode = p.GetMode()
-		if p.Mode == cdaenum.AgentModeDolphin {
-			p.IsDolphinMode = cdaenum.DolphinModeEnabled
-		}
 	default:
-		// invalid mode 留给 EnumCheck 兜底
+		p.IsDolphinMode = cdaenum.DolphinModeDisabled
 	}
+
 }
 
 // CheckProductAndDataSource 检查产品类型与数据源是否相符
