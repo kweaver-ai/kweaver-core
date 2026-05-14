@@ -4,6 +4,7 @@
 -- See the LICENSE file in the project root for details.
 
 -- Issue #382 方案 B：实体级 extensions 副表
+-- Vega 0.8.0 版本线（#426：自 0.9.0 目录迁入，与发布版本一致）
 
 SET SCHEMA kweaver;
 
