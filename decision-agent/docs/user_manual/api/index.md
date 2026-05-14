@@ -13,8 +13,9 @@ Decision Agent REST 接入指南适合需要查看底层 REST 协议、排障或
 1. [Agent 生命周期](./agent-lifecycle.md)：创建、查看、更新和删除 Agent。
 2. [Agent 配置](./agent-config.md) 与 [Agent config 示例](./agent-config-examples.md)：准备可创建、可更新的 `config`。
 3. [发布与广场](./publish-and-market.md)：发布 Agent 并解析 `agent_key`。
-4. [对话](./chat-and-conversation.md) 与 [增量流式](./incremental-streaming.md)：完成实际调用。
-5. [Debug 对话](./debug-chat.md) 和 [对话、会话与执行](./conversation-session-run.md)：排障和理解运行期概念。
+4. [对话](./chat-and-conversation.md)、[对话响应](./chat-response.md) 与 [增量流式](./incremental-streaming.md)：完成实际调用并理解返回结构。
+5. [人工干预与终止](./intervention-termination.md)：处理人工确认、中断恢复、终止执行和断线续连。
+6. [Debug 对话](./debug-chat.md) 和 [对话、会话与执行](./conversation-session-run.md)：排障和理解运行期概念。
 
 配套可运行示例见 [../examples/api](../examples/api/README.md)。示例使用 Shell + cURL，并提供 `make quick-check` 与 `make flow`。
 
@@ -78,7 +79,9 @@ af_curl "$AF_BASE_URL/health/ready"
 - [Agent config 示例](./agent-config-examples.md)
 - [发布与广场](./publish-and-market.md)
 - [对话](./chat-and-conversation.md)
+- [对话响应](./chat-response.md)
 - [增量流式](./incremental-streaming.md)
+- [人工干预与终止](./intervention-termination.md)
 - [Debug 对话](./debug-chat.md)
 - [对话、会话与执行](./conversation-session-run.md)
 - [导入导出与辅助接口](./import-export-and-auxiliary.md)

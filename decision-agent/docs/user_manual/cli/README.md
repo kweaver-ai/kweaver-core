@@ -25,4 +25,4 @@ make -C docs/user_manual/cli aggregate
 
 - [../examples/cli](../examples/cli/README.md)
 - 示例使用 Shell + `kweaver` 命令，并提供独立 Makefile。
-- 默认运行 `make quick-check`；`make smoke` 是兼容别名。完整创建、发布、取消发布、删除流程运行 `make flow`。
+- 默认运行 `make quick-check`；`make smoke` 是兼容别名。完整创建、查询、更新、发布、取消发布、删除流程运行 `make flow`；单步操作可运行 `make create`、`make update`、`make publish`、`make unpublish`、`make delete`。

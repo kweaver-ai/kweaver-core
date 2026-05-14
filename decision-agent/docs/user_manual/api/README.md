@@ -19,7 +19,7 @@ make -C docs/user_manual/api aggregate
 
 - [index.md](./index.md)
 - 适合按章节阅读和维护。
-- 子章节包括 Agent 生命周期、Agent 配置、发布与广场、对话、增量流式、Debug 对话、会话/执行/缓存、导入导出与辅助接口。
+- 子章节包括 Agent 生命周期、Agent 配置、发布与广场、对话、对话响应、增量流式、人工干预与终止、Debug 对话、会话/执行/缓存、导入导出与辅助接口。
 
 ## 可运行示例
 

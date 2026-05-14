@@ -15,6 +15,18 @@ Typical ingress prefixes:
 
 > **Model configuration prerequisite**: Agents require an LLM and an Embedding model. A `--minimum` install does not include pre-configured models — complete [Install and deploy — Configure models](install.md#configure-models) before using agents. Use `--llm-id` when creating an agent to specify the registered LLM ID.
 
+## 📚 More Documentation
+
+The complete Decision Agent user manual and scenario examples are maintained in the repository:
+
+- [Decision Agent User Manual](../../decision-agent/docs/user_manual/README.md): the main entry for concepts, REST API, CLI, TypeScript SDK, setup, and examples.
+- [Concepts](../../decision-agent/docs/user_manual/concepts/README.md): Agent basics, personal workspace, square, publishing, Agent modes, human intervention, termination, and stream reconnection.
+- [REST Integration Guide](../../decision-agent/docs/user_manual/api/README.md): for developers calling Agent Factory REST APIs directly.
+- [CLI User Guide](../../decision-agent/docs/user_manual/cli/README.md): for users who install and run the `kweaver` command.
+- [TypeScript SDK Guide](../../decision-agent/docs/user_manual/sdk/typescript/README.md): for developers integrating through `@kweaver-ai/kweaver-sdk`.
+- [Examples](../../decision-agent/docs/user_manual/examples/README.md): runnable API, CLI, and SDK examples with check commands.
+- [Cookbook](../../decision-agent/docs/cookbook/README.md): scenario-based integration examples, including contract summary, Sub-Agent review, and intervention/termination flows.
+
 ## 🚀 Usage
 
 Run `kweaver auth login <platform-url>` first (`-k` for self-signed TLS). The CLI examples below assume a saved session. For raw HTTP, see the **curl** section at the end.

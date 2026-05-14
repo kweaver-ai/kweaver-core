@@ -15,6 +15,18 @@
 
 > **模型配置前置条件**：Agent 需要 LLM（大语言模型）和 Embedding 小模型。`--minimum` 安装不包含预置模型，使用前请先完成 [安装与部署 — 配置模型](install.md#配置模型)。创建 Agent 时需通过 `--llm-id` 指定已注册的 LLM ID。
 
+## 📚 更多文档
+
+Decision Agent 的完整用户手册和场景示例在代码仓库中维护，可从这里继续查看：
+
+- [Decision Agent 用户手册](../../decision-agent/docs/user_manual/README.md)：统一入口，包含概念、REST API、CLI、TypeScript SDK、安装与示例说明。
+- [基础概念](../../decision-agent/docs/user_manual/concepts/README.md)：解释 Agent、个人空间、广场、发布、Agent 模式、人工干预、终止与断线续连等概念。
+- [REST 接入指南](../../decision-agent/docs/user_manual/api/README.md)：面向直接调用 Agent Factory REST API 的开发者。
+- [CLI 用户指南](../../decision-agent/docs/user_manual/cli/README.md)：面向安装并使用 `kweaver` 命令的用户。
+- [TypeScript SDK 用户指南](../../decision-agent/docs/user_manual/sdk/typescript/README.md)：面向通过 `@kweaver-ai/kweaver-sdk` 接入的开发者。
+- [Examples](../../decision-agent/docs/user_manual/examples/README.md)：API、CLI、SDK 的可运行示例与检查命令。
+- [Cookbook](../../decision-agent/docs/cookbook/README.md)：按业务场景组织的接入示例，例如合同摘要、Sub-Agent 审查和人工干预/终止流程。
+
 ## 🚀 使用方式
 
 推荐先 `kweaver auth login <平台地址>`（自签名证书加 `-k`），再使用下文 CLI；REST 示例见文档末尾 curl 一节。
