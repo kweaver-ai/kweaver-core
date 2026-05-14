@@ -57,7 +57,8 @@ paths:
             type: string
           in: query
         - name: action_type
-          description: 行动类型
+          description: |-
+            **查询过滤**：按行动分类枚举筛选（与响应体中 `action_type` / `action_intent` 取值域相同）。
           schema:
             enum:
               - add
@@ -97,6 +98,7 @@ paths:
                     color: ""
                     branch: main
                     action_type: modify
+                    action_intent: modify
                     object_type_id: pod
                     condition:
                       object_type_id: pod
@@ -106,9 +108,11 @@ paths:
                       value:
                         - Unknown
                         - Failed
-                    affect:
-                      object_type_id: pod
-                      comment: 重启pod
+                    impact_contracts:
+                      - object_type_id: pod
+                        expected_operation: modify
+                        description: 重启 pod
+                        affected_fields: []
                     action_source:
                       type: tool
                       box_id: tool_123
@@ -228,7 +232,13 @@ paths:
                         update_time: 1758098535626
                         kn_id: kn_system_incident_event_network
                         action_type: modify
+                        action_intent: modify
                         object_type_id: pod
+                        impact_contracts:
+                          - object_type_id: pod
+                            expected_operation: modify
+                            description: 重启pod
+                            affected_fields: []
                         object_type:
                           id: ""
                           name: ""
@@ -242,14 +252,6 @@ paths:
                           value:
                             - Unknown
                             - Failed
-                        affect:
-                          object_type_id: pod
-                          object_type:
-                            id: ""
-                            name: ""
-                            icon: ""
-                            color: ""
-                          comment: 重启pod
                         action_source:
                           type: tool
                           box_id: tool_123
@@ -291,7 +293,13 @@ paths:
                         update_time: 1758346280120
                         kn_id: kn_system_incident_event_network
                         action_type: modify
+                        action_intent: modify
                         object_type_id: pod
+                        impact_contracts:
+                          - object_type_id: pod
+                            expected_operation: modify
+                            description: 重启pod
+                            affected_fields: []
                         object_type:
                           id: ""
                           name: ""
@@ -305,14 +313,6 @@ paths:
                           value:
                             - Unknown
                             - Failed
-                        affect:
-                          object_type_id: pod
-                          object_type:
-                            id: ""
-                            name: ""
-                            icon: ""
-                            color: ""
-                          comment: 重启pod
                         action_source:
                           type: tool
                           box_id: tool_123
@@ -569,8 +569,38 @@ components:
     Object:
       description: json，字段不定
       type: object
+    ExpectedImpactOperation:
+      description: |
+        契约中的预期操作语义；**与 `action_intent`、`action_type` 同一枚举**（add / modify / delete）。
+        `impact_contracts[].expected_operation` 必填；`affect.expected_operation` 若填写则须合法。
+      type: string
+      enum:
+        - add
+        - modify
+        - delete
+    ImpactContractItem:
+      description: |
+        行动影响契约的单条声明（结构化元数据）；与运行时 JSON、`t_action_type.f_impact_contracts` 序列化形状一致。**平台据契约做完整性等校验但不将其当作执行编排依据。** 参阅 `docs/design/bkn/features/action_type_rebuild/DESIGN.md` §7。
+      type: object
+      properties:
+        object_type_id:
+          description: 受影响对象类 ID
+          type: string
+        expected_operation:
+          $ref: "#/components/schemas/ExpectedImpactOperation"
+        description:
+          description: 可读说明（风险提示文案等）
+          type: string
+        affected_fields:
+          description: 预期牵涉的数据属性名列表
+          type: array
+          items:
+            type: string
     Affect:
-      description: 行动影响
+      deprecated: true
+      description: |
+        **[已废弃]** 请使用 `impact_contracts`（`ImpactContractItem` 数组）声明影响面。仅存单行影响时的兼容写法仍可能被服务端接受并折合为一元数组。
+        详见 `docs/design/bkn/features/action_type_rebuild/DESIGN.md` §5.9、§7.5。
       required: []
       type: object
       properties:
@@ -580,6 +610,17 @@ components:
         object_type_id:
           description: 影响的对象类ID
           type: string
+        expected_operation:
+          allOf:
+            - $ref: "#/components/schemas/ExpectedImpactOperation"
+          description: |
+            若填写须为 add / modify / delete 之一（与行动类 `action_intent` 一致）。
+            仅提交 `affect` 且服务端折行生成 `impact_contracts` 时，**仍以 `action_type` 写入契约行的 expected_operation**；本字段可省略。
+        affected_fields:
+          description: 预期牵涉的数据属性名列表（与 `impact_contracts[].affected_fields` 对齐）
+          type: array
+          items:
+            type: string
     Schedule:
       description: 执行频率配置项
       required:
@@ -660,7 +701,6 @@ components:
       description: 工具资源
       required:
         - type
-        - id
         - tool_id
         - box_id
       type: object
@@ -711,7 +751,10 @@ components:
           description: 对象类颜色
           type: string
     AffectDetail:
-      description: 行动影响
+      deprecated: true
+      description: |
+        **[已废弃]** 列表/详情中为兼容回填的单行影响；推荐使用响应中的 `impact_contracts`。
+        详见 `docs/design/bkn/features/action_type_rebuild/DESIGN.md` §7.5。
       required:
         - object_type
         - comment
@@ -724,6 +767,15 @@ components:
         object_type_id:
           description: 影响的对象类ID
           type: string
+        expected_operation:
+          allOf:
+            - $ref: "#/components/schemas/ExpectedImpactOperation"
+          description: 若存在须为合法枚举（与 `action_intent` / `action_type` 一致）。
+        affected_fields:
+          description: 预期牵涉的数据属性名列表
+          type: array
+          items:
+            type: string
         object_type:
           $ref: "#/components/schemas/SimpleObjectType"
           description: 对象类信息
@@ -736,7 +788,7 @@ components:
         mapping:
           x-http-method-override:POST: "#/components/schemas/ReqActionTypes"
           x-http-method-override:GET: "#/components/schemas/override--get"
-        propertyName": x-http-method-override
+        propertyName: x-http-method-override
       description: post 重载批量创建、行动类检索接口
       type: object
     override--get:
@@ -944,7 +996,17 @@ components:
           description: 分支ID
           type: string
         action_type:
-          description: 行动类型
+          deprecated: true
+          description: |
+            **[已废弃]** 请优先使用 `action_intent`（枚举 `add`/`modify`/`delete`）。可同时出现但须与 `action_intent` 一致；仅填其一可由服务端回填。
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        action_intent:
+          description: |
+            **推荐**：与历史 `action_type` 同枚举；对应列 `f_action_intent`。参阅 DESIGN §1.3。
           enum:
             - add
             - modify
@@ -957,8 +1019,17 @@ components:
           $ref: "#/components/schemas/ActionCondition"
           description: 行动条件
         affect:
-          $ref: "#/components/schemas/Affect"
-          description: 行动影响
+          deprecated: true
+          description: |
+            **[已废弃]** 请使用 `impact_contracts`。除「仅单行 affect、由服务端折行」外，勿与 `impact_contracts` 同时提交。
+          allOf:
+            - $ref: "#/components/schemas/Affect"
+        impact_contracts:
+          description: |
+            影响契约数组；列 `f_impact_contracts`（JSON）。与 `affect` 勿混写。
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactContractItem"
         action_source:
           oneOf:
             - $ref: "#/components/schemas/ToolSource"
@@ -1007,7 +1078,16 @@ components:
           description: 分支ID
           type: string
         action_type:
-          description: 行动类型
+          deprecated: true
+          description: |
+            **[已废弃]** 请优先使用 `action_intent`；双写须一致。
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        action_intent:
+          description: 推荐；列 `f_action_intent`。
           enum:
             - add
             - modify
@@ -1020,8 +1100,15 @@ components:
           $ref: "#/components/schemas/ActionCondition"
           description: 行动条件
         affect:
-          $ref: "#/components/schemas/Affect"
-          description: 行动影响
+          deprecated: true
+          description: "**[已废弃]** 使用 `impact_contracts`。"
+          allOf:
+            - $ref: "#/components/schemas/Affect"
+        impact_contracts:
+          description: 列 `f_impact_contracts`（JSON）。
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactContractItem"
         action_source:
           oneOf:
             - $ref: "#/components/schemas/ToolSource"
@@ -1089,7 +1176,15 @@ components:
           description: 业务知识网络ID
           type: string
         action_type:
-          description: 行动类型
+          deprecated: true
+          description: "**[已废弃]** 与 `action_intent` 等价；读侧二者通常同时返回。"
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        action_intent:
+          description: 服务端返回的意图（`f_action_intent`）。
           enum:
             - add
             - modify
@@ -1105,8 +1200,15 @@ components:
           $ref: "#/components/schemas/ActionCondition"
           description: 行动条件
         affect:
-          $ref: "#/components/schemas/AffectDetail"
-          description: 行动影响
+          deprecated: true
+          description: "**[已废弃]** 单行影响视图；等价见 `impact_contracts`。"
+          allOf:
+            - $ref: "#/components/schemas/AffectDetail"
+        impact_contracts:
+          description: 契约数组（`f_impact_contracts`）。
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactContractItem"
         action_source:
           oneOf:
             - $ref: "#/components/schemas/ToolSource"
@@ -1195,7 +1297,15 @@ components:
           description: 业务知识网络ID
           type: string
         action_type:
-          description: 行动类型
+          deprecated: true
+          description: "**[已废弃]** 请读 `action_intent`。"
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        action_intent:
+          description: 意图字段（与 `action_type` 回填一致）。
           enum:
             - add
             - modify
@@ -1208,8 +1318,14 @@ components:
           $ref: "#/components/schemas/ActionCondition"
           description: 行动条件
         affect:
-          $ref: "#/components/schemas/Affect"
-          description: 行动影响
+          deprecated: true
+          description: "**[已废弃]** 见 `impact_contracts`。"
+          allOf:
+            - $ref: "#/components/schemas/Affect"
+        impact_contracts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactContractItem"
         action_source:
           oneOf:
             - $ref: "#/components/schemas/ToolSource"

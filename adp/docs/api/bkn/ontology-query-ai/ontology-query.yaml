@@ -786,15 +786,19 @@ paths:
         type: string
       in: path
       required: true
-  /api/ontology-query/v1/knowledge-networks/{kn_id}/action-types/{at_id}/:
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/action-types/{at_id}:
     summary: 行动查询
-    description: 获取相关行动的具体行动详情，可支持获取多个对象的行动详情
+    description: |
+      使用 **POST + JSON 请求体**，并在请求头中设置 `X-HTTP-Method-Override: GET` 以语义上执行行动数据查询。
+      JSON 请求体字段与实现对齐，仅包含 `_instance_identities`、`dynamic_params`；`kn_id`、`at_id` 取自路径，`branch`、`include_type_info`、`exclude_system_properties` 取自查询参数。
+
+      `_instance_identities` 可为空或省略，由服务端按行动类条件拉取实例。
     post:
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InstanceIdentities'
+              $ref: '#/components/schemas/ActionQuery'
             examples:
               行动查询-request:
                 value:
@@ -821,13 +825,16 @@ paths:
         description: 分支名称，默认 main
         schema:
           type: string
+          default: main
         in: query
         required: false
       - name: include_type_info
-        description: "是否包含行动类信息, 默认false，不包含"
+        description: 是否包含行动类信息（`true`/`false`）。未传时按 `false` 处理。
         schema:
           type: boolean
+          default: false
         in: query
+        required: false
       - name: exclude_system_properties
         description: 需要排除的系统字段列表。可选值：_instance_id（实例ID）、_instance_identity（实例唯一标识）、_display（显示值）。如果指定了某个字段，则在返回的对象数据中不包含该字段。可以传递多个值，例如：?exclude_system_properties=_instance_id&exclude_system_properties=_display
         schema:
@@ -840,7 +847,7 @@ paths:
         in: query
         required: false
       - name: x-http-method-override
-        description: 重载POST
+        description: 必须为 `GET`，与 POST 语义组合以实现「POST 载荷 + GET 语义」的行动查询。
         schema:
           enum:
           - GET
@@ -910,49 +917,6 @@ paths:
                 $ref: '#/components/schemas/ErrorBody'
           description: 请求参数错误。例如行动类存在 value_from 为 input 的参数时，须在请求体 dynamic_params 中传入全部对应取值，否则返回 400（如 OntologyQuery.ActionType.InvalidParameter.DynamicParams）。
       summary: 行动查询
-    parameters:
-    - name: kn_id
-      description: 业务知识网络id
-      schema:
-        type: string
-      in: path
-      required: true
-    - name: at_id
-      description: 行动类id
-      schema:
-        type: string
-      in: path
-      required: true
-    - name: branch
-      description: 分支名称，默认 main
-      schema:
-        type: string
-      in: query
-      required: false
-    - name: include_type_info
-      description: "是否包含行动类信息, 默认false，不包含"
-      schema:
-        type: boolean
-      in: query
-    - name: exclude_system_properties
-      description: 需要排除的系统字段列表。可选值：_instance_id（实例ID）、_instance_identity（实例唯一标识）、_display（显示值）。如果指定了某个字段，则在返回的对象数据中不包含该字段。可以传递多个值，例如：?exclude_system_properties=_instance_id&exclude_system_properties=_display
-      schema:
-        type: array
-        items:
-          type: string
-          enum: ["_instance_id", "_instance_identity", "_display"]
-      style: form
-      explode: true
-      in: query
-      required: false
-    - name: x-http-method-override
-      description: 重载POST
-      schema:
-        enum:
-        - GET
-        type: string
-      in: header
-      required: true
   /api/ontology-query/v1/knowledge-networks/{kn_id}/subgraph:
     summary: 获取对象子图
     post:
@@ -3688,8 +3652,32 @@ components:
         tool_id:
           description: 工具ID
           type: string
+    ExpectedImpactOperation:
+      description: |
+        与 `action_intent` / `action_type` 同一枚举（add / modify / delete）。`impact_contracts[].expected_operation` 必填；`affect.expected_operation` 若填写须合法。
+      type: string
+      enum:
+        - add
+        - modify
+        - delete
+    ImpactContractItem:
+      description: 行动影响契约单条（与 bkn-backend `impact_contracts` 一致）。
+      type: object
+      properties:
+        object_type_id:
+          type: string
+        expected_operation:
+          $ref: '#/components/schemas/ExpectedImpactOperation'
+        description:
+          type: string
+        affected_fields:
+          type: array
+          items:
+            type: string
     Affect:
-      description: 行动影响
+      deprecated: true
+      description: |
+        **[已废弃]** 使用 `impact_contracts`。
       required: []
       type: object
       properties:
@@ -3699,6 +3687,14 @@ components:
         object_type_id:
           description: 影响的对象类ID
           type: string
+        expected_operation:
+          allOf:
+            - $ref: '#/components/schemas/ExpectedImpactOperation'
+          description: 若填写须合法；折行时服务端仍以 `action_type` 写入 `impact_contracts`。
+        affected_fields:
+          type: array
+          items:
+            type: string
     Schedule:
       description: 执行频率配置项
       required:
@@ -4212,7 +4208,15 @@ components:
           description: 行动类名称
           type: string
         action_type:
-          description: 行动类型
+          deprecated: true
+          description: "**[已废弃]** 等价于 `action_intent`。若同时传入须与同名字段取值一致。"
+          enum:
+          - add
+          - modify
+          - delete
+          type: string
+        action_intent:
+          description: 推荐：`add`/`modify`/`delete`（与历史上 `action_type` 对齐）。
           enum:
           - add
           - modify
@@ -4225,8 +4229,14 @@ components:
           $ref: '#/components/schemas/ActionCondition'
           description: 行动条件
         affect:
-          $ref: '#/components/schemas/Affect'
-          description: 行动影响
+          deprecated: true
+          description: "**[已废弃]** 使用 `impact_contracts`。"
+          allOf:
+          - $ref: '#/components/schemas/Affect'
+        impact_contracts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImpactContractItem'
         action_source:
           oneOf:
           - $ref: '#/components/schemas/ToolSource'
@@ -4268,7 +4278,8 @@ components:
       properties:
         action_type:
           $ref: '#/components/schemas/ActionType'
-          description: 行动类信息
+          description: |
+            内嵌的行动类负载（外层键名仍为 `action_type`，与载荷内枚举字段 **`action_intent`** 不相同）。载荷内推荐消费 `ActionType.action_intent` / `impact_contracts`。
         action_source:
           oneOf:
           - $ref: '#/components/schemas/ToolSource'
@@ -5044,21 +5055,21 @@ components:
         oneOf:
         - type: string
         - type: integer
-    InstanceIdentities:
-      description: 行动查询请求体。除实例唯一标识外，当行动类 parameters 中存在 value_from 为 input 的项时，须在本对象的 dynamic_params 中按参数名传入非空取值；缺失或值为 null 时返回 400。
-      required:
-      - _instance_identities
+    ActionQuery:
+      description: |
+        行动查询。
       type: object
       properties:
         _instance_identities:
-          description: 对象主键的数组，代表多个对象。每项为 map，key 为主键属性名，value 为对应的属性值
+          description: |
+            目标对象主键列表。每项为主键字段名到值的映射。可为空数组或省略，表示由服务端依据行动类绑定与条件拉取候选实例。
           type: array
           items:
             $ref: '#/components/schemas/InstanceIdentity'
         dynamic_params:
           description: |
             行动类「动态输入」参数取值（与行动类 parameters 中 value_from=input 的 name 对应，支持点分路径表示嵌套键）。
-            当行动类定义了此类参数时必填且取值不能为 null；否则接口返回 400（错误码 OntologyQuery.ActionType.InvalidParameter.DynamicParams）。
+            当行动类定义了此类参数且要求客户端提供时须传入对应非 null 取值，否则可能在业务层返回 400（例如 OntologyQuery.ActionType.InvalidParameter.DynamicParams）。
           type: object
           additionalProperties: true
 

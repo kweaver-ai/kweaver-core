@@ -1001,6 +1001,25 @@ func GetBKNConceptSchemaDefinition(vectorDim int, defaultSmallModelEnabled bool)
 			},
 		},
 		{
+			Name:         "action_intent",
+			Type:         data_type.DATATYPE_STRING,
+			DisplayName:  "action_intent",
+			OriginalName: "action_intent",
+			Description:  "BKN行动类概念的行动意图",
+			Features: []PropertyFeature{
+				{
+					FeatureName: "keyword_action_intent",
+					DisplayName: "keyword_action_intent",
+					FeatureType: FieldFeatureType_Keyword,
+					Description: "BKN行动意图的关键词特征",
+					RefProperty: "action_intent",
+					IsDefault:   true,
+					IsNative:    false,
+					Config:      map[string]any{FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE: FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE_VALUE},
+				},
+			},
+		},
+		{
 			Name:         "object_type_id",
 			Type:         data_type.DATATYPE_STRING,
 			DisplayName:  "object_type_id",
@@ -1044,6 +1063,14 @@ func GetBKNConceptSchemaDefinition(vectorDim int, defaultSmallModelEnabled bool)
 			DisplayName:  "affect",
 			OriginalName: "affect",
 			Description:  "BKN行动类概念的影响范围配置",
+			Features:     []PropertyFeature{},
+		},
+		{
+			Name:         "impact_contracts",
+			Type:         data_type.DATATYPE_JSON,
+			DisplayName:  "impact_contracts",
+			OriginalName: "impact_contracts",
+			Description:  "BKN行动类概念的影响契约配置",
 			Features:     []PropertyFeature{},
 		},
 		{

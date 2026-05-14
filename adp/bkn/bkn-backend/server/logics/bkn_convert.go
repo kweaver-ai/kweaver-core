@@ -574,6 +574,7 @@ func ToADPActionType(knID string, branch string, bknAction *bknsdk.BknActionType
 			ATID:         bknAction.ID,
 			ATName:       bknAction.Name,
 			ActionType:   bknAction.ActionType,
+			ActionIntent: bknAction.ActionIntent,
 			ObjectTypeID: bknAction.BoundObject,
 		},
 		CommonInfo: interfaces.CommonInfo{
@@ -582,6 +583,21 @@ func ToADPActionType(knID string, branch string, bknAction *bknsdk.BknActionType
 		},
 		KNID:   knID,
 		Branch: branch,
+	}
+	if adpAction.ActionIntent == "" && bknAction.ActionType != "" {
+		adpAction.ActionIntent = bknAction.ActionType
+	}
+
+	for _, ic := range bknAction.ImpactContracts {
+		if ic == nil {
+			continue
+		}
+		adpAction.ImpactContracts = append(adpAction.ImpactContracts, interfaces.ImpactContractItem{
+			ObjectTypeID:      ic.ObjectTypeID,
+			ExpectedOperation: ic.ExpectedOperation,
+			Description:       ic.Description,
+			AffectedFields:    append([]string(nil), ic.AffectedFields...),
+		})
 	}
 
 	// 转换 Affect
@@ -637,15 +653,33 @@ func ToADPActionType(knID string, branch string, bknAction *bknsdk.BknActionType
 func ToBKNActionType(adpAction *interfaces.ActionType) *bknsdk.BknActionType {
 	bknAction := &bknsdk.BknActionType{
 		BknActionTypeFrontmatter: bknsdk.BknActionTypeFrontmatter{
-			Type:       interfaces.MODULE_TYPE_ACTION_TYPE,
-			ID:         adpAction.ATID,
-			Name:       adpAction.ATName,
-			Tags:       adpAction.Tags,
-			ActionType: adpAction.ActionType,
+			Type:         interfaces.MODULE_TYPE_ACTION_TYPE,
+			ID:           adpAction.ATID,
+			Name:         adpAction.ATName,
+			Tags:         adpAction.Tags,
+			ActionType:   adpAction.ActionType,
+			ActionIntent: adpAction.ActionIntent,
 		},
 		Summary:     bknsdk.ExtractSummary(adpAction.Comment),
 		Description: adpAction.Comment,
 		BoundObject: adpAction.ObjectTypeID,
+	}
+	if bknAction.ActionIntent == "" && bknAction.ActionType != "" {
+		bknAction.ActionIntent = bknAction.ActionType
+	}
+	if bknAction.ActionType == "" && bknAction.ActionIntent != "" {
+		bknAction.ActionType = bknAction.ActionIntent
+	}
+
+	for _, ic := range adpAction.ImpactContracts {
+		bknAction.ImpactContracts = append(bknAction.ImpactContracts,
+			&bknsdk.ImpactContractItem{
+				ObjectTypeID:      ic.ObjectTypeID,
+				ExpectedOperation: ic.ExpectedOperation,
+				Description:       ic.Description,
+				AffectedFields:    append([]string(nil), ic.AffectedFields...),
+			},
+		)
 	}
 
 	if adpAction.Affect != nil {
