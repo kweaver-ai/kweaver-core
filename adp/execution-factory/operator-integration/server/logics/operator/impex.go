@@ -93,7 +93,7 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 		if accessor != nil {
 			err := m.AuthService.CreateOwnerPolicy(ctx, accessor, &interfaces.AuthResource{
 				ID:   operatorDB.OperatorID,
-				Type: string(interfaces.AuthResourceTypeOperator),
+				Type: interfaces.AuthResourceTypeOperator.String(),
 				Name: operatorDB.Name,
 				})
 			if err != nil {
@@ -120,6 +120,17 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 					})
 				}()
 			}
+			// 内置组件：创建全员授权策略（public_access + execute）
+			if operatorDB.IsInternal {
+				policyErr := m.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
+					ID:   operatorDB.OperatorID,
+					Type: interfaces.AuthResourceTypeOperator.String(),
+					Name: operatorDB.Name,
+				})
+				if policyErr != nil {
+					m.Logger.WithContext(ctx).Warnf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", policyErr)
+				}
+			}
 	}
 	// 更新算子
 	for _, operatorDB := range updateMap {
@@ -127,11 +138,22 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 		authResource := &interfaces.AuthResource{
 			ID:   operatorDB.OperatorID,
 			Name: operatorDB.Name,
-			Type: string(interfaces.AuthResourceTypeOperator),
+			Type: interfaces.AuthResourceTypeOperator.String(),
 		}
 		err := m.AuthService.NotifyResourceChange(ctx, authResource)
 		if err != nil {
 			m.Logger.WithContext(ctx).Warnf("[importPostProcess] NotifyResourceChange err :%v", err)
+		}
+		// 内置组件：创建全员授权策略（public_access + execute）
+		if operatorDB.IsInternal {
+			policyErr := m.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
+				ID:   operatorDB.OperatorID,
+				Type: interfaces.AuthResourceTypeOperator.String(),
+				Name: operatorDB.Name,
+			})
+			if policyErr != nil {
+				m.Logger.WithContext(ctx).Warnf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", policyErr)
+			}
 		}
 		// 记录设计日志及后续通知（内部调用不记录）
 		if accessor != nil {

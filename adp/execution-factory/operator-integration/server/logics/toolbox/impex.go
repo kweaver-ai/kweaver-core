@@ -79,7 +79,7 @@ func (s *ToolServiceImpl) importPostProcess(ctx context.Context, createBoxMap, u
 		if accessor != nil {
 			err := s.AuthService.CreateOwnerPolicy(ctx, accessor, &interfaces.AuthResource{
 				ID:   boxDB.BoxID,
-				Type: string(interfaces.AuthResourceTypeToolBox),
+				Type: interfaces.AuthResourceTypeToolBox.String(),
 				Name: boxDB.Name,
 			})
 			if err != nil {
@@ -106,6 +106,17 @@ func (s *ToolServiceImpl) importPostProcess(ctx context.Context, createBoxMap, u
 				})
 			}()
 		}
+		// 内置组件：创建全员授权策略（public_access + execute）
+		if boxDB.IsInternal {
+			policyErr := s.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
+				ID:   boxDB.BoxID,
+				Type: interfaces.AuthResourceTypeToolBox.String(),
+				Name: boxDB.Name,
+			})
+			if policyErr != nil {
+				s.Logger.WithContext(ctx).Errorf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", policyErr)
+			}
+		}
 	}
 	// 更新工具箱
 	for _, boxDB := range updateBoxMap {
@@ -113,11 +124,22 @@ func (s *ToolServiceImpl) importPostProcess(ctx context.Context, createBoxMap, u
 		authResource := &interfaces.AuthResource{
 			ID:   boxDB.BoxID,
 			Name: boxDB.Name,
-			Type: string(interfaces.AuthResourceTypeToolBox),
+			Type: interfaces.AuthResourceTypeToolBox.String(),
 		}
 		err := s.AuthService.NotifyResourceChange(ctx, authResource)
 		if err != nil {
 			s.Logger.WithContext(ctx).Errorf("[importPostProcess] NotifyResourceChange err:%v", err)
+		}
+		// 内置组件：创建全员授权策略（public_access + execute）
+		if boxDB.IsInternal {
+			policyErr := s.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
+				ID:   boxDB.BoxID,
+				Type: interfaces.AuthResourceTypeToolBox.String(),
+				Name: boxDB.Name,
+			})
+			if policyErr != nil {
+				s.Logger.WithContext(ctx).Errorf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", policyErr)
+			}
 		}
 		// 记录设计日志及后续通知（内部调用不记录）
 		if accessor != nil {
