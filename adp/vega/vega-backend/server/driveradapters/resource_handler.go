@@ -98,6 +98,19 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 	includeExt := strings.EqualFold(strings.TrimSpace(c.Query("include_extensions")), "true")
 	includeExtKeys := strings.TrimSpace(c.Query("include_extension_keys"))
 
+	extKeys := c.QueryArray("extension_key")
+	extVals := c.QueryArray("extension_value")
+	if err := extensions.ValidateExtensionQueryPairs(ctx, extKeys, extVals); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	includeExt := strings.EqualFold(strings.TrimSpace(c.Query("include_extensions")), "true")
+	includeExtKeys := strings.TrimSpace(c.Query("include_extension_keys"))
+
 	params := interfaces.ResourcesQueryParams{
 		PaginationQueryParams: pageParam,
 		CatalogID:             catalogID,
