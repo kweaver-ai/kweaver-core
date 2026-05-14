@@ -176,7 +176,7 @@ func (ota *objectTypeAccess) CreateObjectType(ctx context.Context, tx *sql.Tx, o
 	// 2.4 序列化过滤条件
 	conditionBytes, err := sonic.Marshal(objectType.Condition)
 	if err != nil {
-		otellog.LogError(ctx, "Marshal Condition failed", err)
+		otellog.LogError(ctx, "Failed to marshal Condition", err)
 		return err
 	}
 

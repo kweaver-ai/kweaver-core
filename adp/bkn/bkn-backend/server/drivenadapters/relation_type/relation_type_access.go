@@ -295,9 +295,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 			var sb interfaces.ScopeBindingMapping
 			err = sonic.Unmarshal(mappingRulesBytes, &sb)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type", err)
 				return []*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &sb
@@ -452,9 +450,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		var sb interfaces.ScopeBindingMapping
 		err = sonic.Unmarshal(mappingRulesBytes, &sb)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
-			span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
+			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type", err)
 			return nil, err
 		}
 		relationType.MappingRules = &sb
@@ -583,9 +579,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 			var sb interfaces.ScopeBindingMapping
 			err = sonic.Unmarshal(mappingRulesBytes, &sb)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type", err)
 				return []*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &sb
@@ -964,9 +958,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 			var sb interfaces.ScopeBindingMapping
 			err = sonic.Unmarshal(mappingRulesBytes, &sb)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type", err)
 				return map[string]*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &sb
