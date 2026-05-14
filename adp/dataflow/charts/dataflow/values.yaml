@@ -324,6 +324,9 @@ depServices:
     memory: "512Mi"
     disk: "1Gi"
     timeout: 30
+  vegabackend:
+    host: vega-backend-svc
+    port: 13014
 
 # Common Resource Limits
 resources:

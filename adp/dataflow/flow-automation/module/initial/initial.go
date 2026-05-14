@@ -309,6 +309,7 @@ func Init(opt *InitialOption) error {
 		&actions.AnyshareFileUpdate{},
 		&actions.SubFlowCallWorkflow{},
 		&actions.SubFlowCallDataflow{},
+		&actions.DatasetWriteDocs{},
 	})
 
 	if opt.ReadDagFromDir != "" {
