@@ -105,22 +105,9 @@ func (r *restHandler) listCatalogs(c *gin.Context, ctx context.Context, span tra
 	extVals := c.QueryArray("extension_value")
 	if err := extensions.ValidateExtensionQueryPairs(ctx, extKeys, extVals); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-	includeExt := strings.EqualFold(strings.TrimSpace(c.Query("include_extensions")), "true")
-	includeExtKeys := strings.TrimSpace(c.Query("include_extension_keys"))
-
-	extKeys := c.QueryArray("extension_key")
-	extVals := c.QueryArray("extension_value")
-	if err := extensions.ValidateExtensionQueryPairs(ctx, extKeys, extVals); err != nil {
-		httpErr := err.(*rest.HTTPError)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}

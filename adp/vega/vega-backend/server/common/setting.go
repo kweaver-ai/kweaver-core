@@ -276,32 +276,6 @@ func overrideDBSettingFromEnv() {
 	}
 }
 
-// overrideDBSettingFromEnv 联调/脚本用：覆盖 depServices 解析出的 DB 连接（如本地 127.0.0.1:3306）
-func overrideDBSettingFromEnv() {
-	if h := strings.TrimSpace(os.Getenv("VEGA_DB_HOST")); h != "" {
-		appSetting.DBSetting.Host = h
-		logger.Infof("DB Host overridden by VEGA_DB_HOST=%s", h)
-	}
-	if p := strings.TrimSpace(os.Getenv("VEGA_DB_PORT")); p != "" {
-		if v, err := strconv.Atoi(p); err == nil && v > 0 && v < 65536 {
-			appSetting.DBSetting.Port = v
-			logger.Infof("DB Port overridden by VEGA_DB_PORT=%d", v)
-		}
-	}
-	if u := strings.TrimSpace(os.Getenv("VEGA_DB_USER")); u != "" {
-		appSetting.DBSetting.Username = u
-		logger.Infof("DB Username overridden by VEGA_DB_USER")
-	}
-	if pw, ok := os.LookupEnv("VEGA_DB_PASSWORD"); ok {
-		appSetting.DBSetting.Password = pw
-		logger.Info("DB Password overridden by VEGA_DB_PASSWORD")
-	}
-	if db := strings.TrimSpace(os.Getenv("VEGA_DB_NAME")); db != "" {
-		appSetting.DBSetting.DBName = db
-		logger.Infof("DB Name overridden by VEGA_DB_NAME=%s", db)
-	}
-}
-
 func SetMQSetting() {
 	setting, ok := appSetting.DepServices[mqServiceName]
 	if !ok {
