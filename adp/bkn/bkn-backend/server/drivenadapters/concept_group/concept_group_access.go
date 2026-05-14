@@ -12,14 +12,13 @@ import (
 	"sync"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	attr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/drivenadapters/action_type"
@@ -55,7 +54,7 @@ func NewConceptGroupAccess(appSetting *common.AppSetting) interfaces.ConceptGrou
 
 // 根据ID获取概念分组存在性
 func (cga *conceptGroupAccess) CheckConceptGroupExistByID(ctx context.Context, knID string, branch string, cgID string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CheckConceptGroupExistByID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CheckConceptGroupExistByID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -72,14 +71,12 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByID(ctx context.Context, k
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get concept group id by f_id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get concept group id by f_id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of get concept group id by f_id, error", err)
 		return "", false, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("获取概念分组信息的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("获取概念分组信息的 sql 语句: %s", sqlStr))
 
 	var name string
 	err = cga.db.QueryRow(sqlStr, vals...).Scan(&name)
@@ -88,9 +85,7 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByID(ctx context.Context, k
 		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Row scan failed, err: %v", err))
-		span.SetStatus(codes.Error, "Row scan failed ")
+		otellog.LogError(ctx, "Row scan failed, err", err)
 		return "", false, err
 	}
 
@@ -100,7 +95,7 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByID(ctx context.Context, k
 
 // 根据名称获取概念分组存在性
 func (cga *conceptGroupAccess) CheckConceptGroupExistByName(ctx context.Context, knID string, branch string, name string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CheckConceptGroupExistByName", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CheckConceptGroupExistByName")
 	defer span.End()
 
 	span.SetAttributes(
@@ -116,14 +111,12 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByName(ctx context.Context,
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get id by name, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get id by name, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of get id by name, error", err)
 		return "", false, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("获取概念分组信息的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("获取概念分组信息的 sql 语句: %s", sqlStr))
 
 	var cgID string
 	err = cga.db.QueryRow(sqlStr, vals...).Scan(
@@ -134,9 +127,7 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByName(ctx context.Context,
 		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Row scan failed, err: %v", err))
-		span.SetStatus(codes.Error, "Row scan failed ")
+		otellog.LogError(ctx, "Row scan failed, err", err)
 		return "", false, err
 	}
 
@@ -146,7 +137,7 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByName(ctx context.Context,
 
 // 创建概念分组
 func (cga *conceptGroupAccess) CreateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *interfaces.ConceptGroup) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateConceptGroup", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CreateConceptGroup")
 	defer span.End()
 
 	span.SetAttributes(
@@ -193,19 +184,16 @@ func (cga *conceptGroupAccess) CreateConceptGroup(ctx context.Context, tx *sql.T
 			conceptGroup.UpdateTime).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert concept group, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of insert concept group, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of insert concept group, error", err)
 		return err
 	}
+
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("创建概念分组的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("创建概念分组的 sql 语句: %s", sqlStr))
 
 	_, err = tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("insert data error: %v\n", err)
-		span.SetStatus(codes.Error, "Insert data error")
-		o11y.Error(ctx, fmt.Sprintf("Insert data error: %v ", err))
+		otellog.LogError(ctx, "Insert data error", err)
 		return err
 	}
 
@@ -215,7 +203,7 @@ func (cga *conceptGroupAccess) CreateConceptGroup(ctx context.Context, tx *sql.T
 
 // 查询概念分组列表。查主线的当前版本为true的概念分组
 func (cga *conceptGroupAccess) ListConceptGroups(ctx context.Context, query interfaces.ConceptGroupsQueryParams) ([]*interfaces.ConceptGroup, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListConceptGroups", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListConceptGroups")
 	defer span.End()
 
 	span.SetAttributes(
@@ -250,23 +238,19 @@ func (cga *conceptGroupAccess) ListConceptGroups(ctx context.Context, query inte
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept groups, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select concept groups, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select concept groups, error", err)
 		return []*interfaces.ConceptGroup{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询概念分组列表的 sql 语句: %s; queryParams: %v", sqlStr, query))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组列表的 sql 语句: %s; queryParams: %v", sqlStr, query))
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		span.SetStatus(codes.Error, "List data error")
+		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.ConceptGroup{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptGroups := make([]*interfaces.ConceptGroup, 0)
 
@@ -293,9 +277,7 @@ func (cga *conceptGroupAccess) ListConceptGroups(ctx context.Context, query inte
 			&conceptGroup.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			span.SetStatus(codes.Error, "Row scan error")
+			otellog.LogError(ctx, "Row scan error", err)
 			return []*interfaces.ConceptGroup{}, err
 		}
 
@@ -311,7 +293,7 @@ func (cga *conceptGroupAccess) ListConceptGroups(ctx context.Context, query inte
 
 // 批量获取概念分组
 func (cga *conceptGroupAccess) GetConceptGroupsByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, cgIDs []string) ([]*interfaces.ConceptGroup, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetConceptGroupsByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetConceptGroupsByIDs")
 	defer span.End()
 
 	span.SetAttributes(
@@ -342,22 +324,19 @@ func (cga *conceptGroupAccess) GetConceptGroupsByIDs(ctx context.Context, tx *sq
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group by id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select concept group by id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select concept group by id, error", err)
 		return []*interfaces.ConceptGroup{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("批量查询概念分组信息的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("批量查询概念分组信息的 sql 语句: %s.", sqlStr))
+
 	rows, err := tx.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		span.SetStatus(codes.Error, "List data error")
+		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.ConceptGroup{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptGroups := make([]*interfaces.ConceptGroup, 0)
 	for rows.Next() {
@@ -383,9 +362,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByIDs(ctx context.Context, tx *sq
 			&conceptGroup.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			span.SetStatus(codes.Error, "Row scan error")
+			otellog.LogError(ctx, "Row scan error", err)
 			return []*interfaces.ConceptGroup{}, err
 		}
 
@@ -401,7 +378,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByIDs(ctx context.Context, tx *sq
 
 // 获取概念分组总数
 func (cga *conceptGroupAccess) GetConceptGroupsTotal(ctx context.Context, query interfaces.ConceptGroupsQueryParams) (int, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetConceptGroupsTotal", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetConceptGroupsTotal")
 	defer span.End()
 
 	span.SetAttributes(
@@ -413,21 +390,17 @@ func (cga *conceptGroupAccess) GetConceptGroupsTotal(ctx context.Context, query 
 	builder := processQueryCondition(query, subBuilder)
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept groups total, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select concept groups total, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select concept groups total, error", err)
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询概念分组总数的 sql 语句: %s; queryParams: %v", sqlStr, query))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组总数的 sql 语句: %s; queryParams: %v", sqlStr, query))
 
 	total := 0
 	err = cga.db.QueryRow(sqlStr, vals...).Scan(&total)
 	if err != nil {
-		logger.Errorf("get concept group total error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Get concept group total error: %v", err))
-		span.SetStatus(codes.Error, "Get concept group total error")
+		otellog.LogError(ctx, "Get concept group total error", err)
 		return 0, err
 	}
 
@@ -436,7 +409,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsTotal(ctx context.Context, query 
 }
 
 func (cga *conceptGroupAccess) GetConceptGroupByID(ctx context.Context, knID string, branch string, cgID string) (*interfaces.ConceptGroup, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetConceptGroupByID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetConceptGroupByID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -467,14 +440,13 @@ func (cga *conceptGroupAccess) GetConceptGroupByID(ctx context.Context, knID str
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group by id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select concept group by id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select concept group by id, error", err)
 		return &interfaces.ConceptGroup{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询概念分组信息的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组信息的 sql 语句: %s.", sqlStr))
+
 	tagsStr := ""
 	conceptGroup := &interfaces.ConceptGroup{
 		ModuleType: interfaces.MODULE_TYPE_CONCEPT_GROUP,
@@ -501,9 +473,7 @@ func (cga *conceptGroupAccess) GetConceptGroupByID(ctx context.Context, knID str
 		span.SetStatus(codes.Ok, "")
 		return nil, nil
 	} else if err != nil {
-		logger.Errorf("Get concept group by id error: %v\n", err)
-		span.SetStatus(codes.Error, "Get concept group by id error")
-		o11y.Error(ctx, fmt.Sprintf("Get concept group by id error: %v", err))
+		otellog.LogError(ctx, "Get concept group by id error", err)
 		return nil, err
 	}
 
@@ -515,7 +485,7 @@ func (cga *conceptGroupAccess) GetConceptGroupByID(ctx context.Context, knID str
 }
 
 func (cga *conceptGroupAccess) UpdateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *interfaces.ConceptGroup) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateConceptGroup", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "UpdateConceptGroup")
 	defer span.End()
 
 	span.SetAttributes(
@@ -544,37 +514,29 @@ func (cga *conceptGroupAccess) UpdateConceptGroup(ctx context.Context, tx *sql.T
 		Where(sq.Eq{"f_branch": conceptGroup.Branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update concept group by concept group id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of update concept group by concept group id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of update concept group by concept group id, error", err)
 		return err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("修改概念分组的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("修改概念分组的 sql 语句: %s", sqlStr))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("update concept group error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Update data error: %v ", err))
-		span.SetStatus(codes.Error, "Update data error")
+		otellog.LogError(ctx, "update concept group error", err)
 		return err
 	}
 
 	//sql语句影响的行数
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
-		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
-		span.SetStatus(codes.Error, "Get RowsAffected error")
+		otellog.LogError(ctx, "Get RowsAffected error", err)
 		return err
 	}
 
 	if RowsAffected != 1 {
 		// 影响行数不等于1不报错，更新操作已经发生
-		logger.Errorf("UPDATE %d RowsAffected not equal 1, RowsAffected is %d, ActionType is %v",
-			conceptGroup.CGID, RowsAffected, conceptGroup)
-		o11y.Warn(ctx, fmt.Sprintf("Update %s RowsAffected not equal 1, RowsAffected is %d, ActionType is %v",
+		otellog.LogWarn(ctx, fmt.Sprintf("Update %s RowsAffected not equal 1, RowsAffected is %d, ActionType is %v",
 			conceptGroup.CGID, RowsAffected, conceptGroup))
 	}
 
@@ -583,7 +545,7 @@ func (cga *conceptGroupAccess) UpdateConceptGroup(ctx context.Context, tx *sql.T
 }
 
 func (cga *conceptGroupAccess) UpdateConceptGroupDetail(ctx context.Context, knID string, branch string, cgID string, detail string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateConceptGroupDetail", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "UpdateConceptGroupDetail")
 	defer span.End()
 
 	span.SetAttributes(
@@ -601,33 +563,28 @@ func (cga *conceptGroupAccess) UpdateConceptGroupDetail(ctx context.Context, knI
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update concept group detail by concept group id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of update concept group detail by concept group id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of update concept group detail by concept group id, error", err)
 		return err
 	}
+
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("修改概念分组详情的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("修改概念分组详情的 sql 语句: %s", sqlStr))
 
 	ret, err := cga.db.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("update concept groupk detail error: %v\n", err)
-		span.SetStatus(codes.Error, "Update data error")
-		o11y.Error(ctx, fmt.Sprintf("Update data error: %v ", err))
+		otellog.LogError(ctx, "update concept group detail error", err)
 		return err
 	}
 
 	//sql语句影响的行数
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
-		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
+		otellog.LogError(ctx, "Get RowsAffected error", err)
+		return err
 	}
 
 	if RowsAffected != 1 {
-		logger.Errorf("UPDATE concept group detail %d RowsAffected not equal 1, RowsAffected is %d, KNID is %s",
-			knID, RowsAffected, knID)
-		o11y.Warn(ctx, fmt.Sprintf("Update concept group detail %s RowsAffected not equal 1, RowsAffected is %d",
+		otellog.LogWarn(ctx, fmt.Sprintf("Update concept group detail %s RowsAffected not equal 1, RowsAffected is %d",
 			knID, RowsAffected))
 	}
 
@@ -636,7 +593,7 @@ func (cga *conceptGroupAccess) UpdateConceptGroupDetail(ctx context.Context, knI
 }
 
 func (cga *conceptGroupAccess) DeleteConceptGroupByID(ctx context.Context, tx *sql.Tx, knID string, branch string, cgID string) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteConceptGroupByID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteConceptGroupByID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -645,6 +602,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupByID(ctx context.Context, tx *s
 	)
 
 	if cgID == "" {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 
@@ -654,29 +612,24 @@ func (cga *conceptGroupAccess) DeleteConceptGroupByID(ctx context.Context, tx *s
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete concept group by concept group id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of delete concept group by concept group id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of delete concept group by concept group id, error", err)
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("删除概念分组的 sql 语句: %s; 删除的概念分组id: %s in kn_id [%s] branch [%s]", sqlStr, cgID, knID, branch))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除概念分组的 sql 语句: %s; 删除的概念分组id: %s in kn_id [%s] branch [%s]", sqlStr, cgID, knID, branch))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete data error: %v ", err))
-		span.SetStatus(codes.Error, "Delete data error")
+		otellog.LogError(ctx, "Delete data error", err)
 		return 0, err
 	}
 
 	//sql语句影响的行数
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
-		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
-		span.SetStatus(codes.Error, "Get RowsAffected error")
+		otellog.LogError(ctx, "Get RowsAffected error", err)
+		return 0, err
 	}
 
 	logger.Infof("RowsAffected: %d", RowsAffected)
@@ -685,7 +638,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupByID(ctx context.Context, tx *s
 }
 
 func (cga *conceptGroupAccess) DeleteConceptGroupsByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteConceptGroupByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteConceptGroupByKnID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -698,29 +651,24 @@ func (cga *conceptGroupAccess) DeleteConceptGroupsByKnID(ctx context.Context, tx
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete concept group by concept group id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of delete concept group by concept group id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of delete concept group by concept group id, error", err)
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("删除概念分组的 sql 语句: %s; 删除的概念分组: kn_id [%s] branch [%s]", sqlStr, knID, branch))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除概念分组的 sql 语句: %s; 删除的概念分组: kn_id [%s] branch [%s]", sqlStr, knID, branch))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete data error: %v ", err))
-		span.SetStatus(codes.Error, "Delete data error")
+		otellog.LogError(ctx, "Delete data error", err)
 		return 0, err
 	}
 
 	//sql语句影响的行数
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
-		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
-		span.SetStatus(codes.Error, "Get RowsAffected error")
+		otellog.LogError(ctx, "Get RowsAffected error", err)
+		return 0, err
 	}
 
 	logger.Infof("RowsAffected: %d", RowsAffected)
@@ -729,7 +677,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupsByKnID(ctx context.Context, tx
 }
 
 func (cga *conceptGroupAccess) DeleteConceptGroupRelationsByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteConceptGroupRelationsByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteConceptGroupRelationsByKnID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -742,29 +690,24 @@ func (cga *conceptGroupAccess) DeleteConceptGroupRelationsByKnID(ctx context.Con
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete concept group relation by kn_id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of delete concept group relation by kn_id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of delete concept group relation by kn_id, error", err)
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("删除概念分组关联的 sql 语句: %s; 删除的概念分组关联: kn_id [%s] branch [%s]", sqlStr, knID, branch))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除概念分组关联的 sql 语句: %s; 删除的概念分组关联: kn_id [%s] branch [%s]", sqlStr, knID, branch))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete data error: %v ", err))
-		span.SetStatus(codes.Error, "Delete data error")
+		otellog.LogError(ctx, "Delete data error", err)
 		return 0, err
 	}
 
 	//sql语句影响的行数
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
-		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
-		span.SetStatus(codes.Error, "Get RowsAffected error")
+		otellog.LogError(ctx, "Get RowsAffected error", err)
+		return 0, err
 	}
 
 	logger.Infof("RowsAffected: %d", RowsAffected)
@@ -773,7 +716,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupRelationsByKnID(ctx context.Con
 }
 
 func (cga *conceptGroupAccess) GetConceptGroupIDsByKnID(ctx context.Context, knID string, branch string) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetConceptGroupIDsByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetConceptGroupIDsByKnID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -789,22 +732,19 @@ func (cga *conceptGroupAccess) GetConceptGroupIDsByKnID(ctx context.Context, knI
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group ids by kn_id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select concept group ids by kn_id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select concept group ids by kn_id, error", err)
 		return nil, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询概念分组的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组的 sql 语句: %s.", sqlStr))
+
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		span.SetStatus(codes.Error, "List data error")
+		otellog.LogError(ctx, "List data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	cgIDs := []string{}
 	for rows.Next() {
@@ -814,9 +754,7 @@ func (cga *conceptGroupAccess) GetConceptGroupIDsByKnID(ctx context.Context, knI
 			&atID,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			span.SetStatus(codes.Error, "Row scan error")
+			otellog.LogError(ctx, "Row scan error", err)
 			return nil, err
 		}
 
@@ -858,7 +796,7 @@ func processQueryCondition(query interfaces.ConceptGroupsQueryParams, subBuilder
 
 // 查询概念分组列表。查主线的当前版本为true的概念分组
 func (cga *conceptGroupAccess) GetAllConceptGroupsByKnID(ctx context.Context, knID string, branch string) (map[string]*interfaces.ConceptGroup, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetAllConceptGroupsByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetAllConceptGroupsByKnID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -888,23 +826,19 @@ func (cga *conceptGroupAccess) GetAllConceptGroupsByKnID(ctx context.Context, kn
 		ToSql()
 
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept groups, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select concept groups, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select concept groups, error", err)
 		return map[string]*interfaces.ConceptGroup{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询概念分组列表的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组列表的 sql 语句: %s.", sqlStr))
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		span.SetStatus(codes.Error, "List data error")
+		otellog.LogError(ctx, "List data error", err)
 		return map[string]*interfaces.ConceptGroup{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptGroups := make(map[string]*interfaces.ConceptGroup)
 	for rows.Next() {
@@ -931,9 +865,7 @@ func (cga *conceptGroupAccess) GetAllConceptGroupsByKnID(ctx context.Context, kn
 			&conceptGroup.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			span.SetStatus(codes.Error, "Row scan error")
+			otellog.LogError(ctx, "Row scan error", err)
 			return map[string]*interfaces.ConceptGroup{}, err
 		}
 
@@ -951,7 +883,7 @@ func (cga *conceptGroupAccess) GetAllConceptGroupsByKnID(ctx context.Context, kn
 func (cga *conceptGroupAccess) ListConceptGroupRelations(ctx context.Context, tx *sql.Tx,
 	query interfaces.ConceptGroupRelationsQueryParams) ([]interfaces.ConceptGroupRelation, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListConceptGroupRelations", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListConceptGroupRelations")
 	defer span.End()
 
 	span.SetAttributes(
@@ -974,23 +906,19 @@ func (cga *conceptGroupAccess) ListConceptGroupRelations(ctx context.Context, tx
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group by id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select concept group by id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select concept group by id, error", err)
 		return []interfaces.ConceptGroupRelation{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询概念分组信息的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组信息的 sql 语句: %s.", sqlStr))
 
 	rows, err := tx.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		span.SetStatus(codes.Error, "List data error")
+		otellog.LogError(ctx, "List data error", err)
 		return []interfaces.ConceptGroupRelation{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptGroupRelations := make([]interfaces.ConceptGroupRelation, 0)
 	for rows.Next() {
@@ -1008,9 +936,7 @@ func (cga *conceptGroupAccess) ListConceptGroupRelations(ctx context.Context, tx
 			&conceptGroupRelation.CreateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			span.SetStatus(codes.Error, "Row scan error")
+			otellog.LogError(ctx, "Row scan error", err)
 			return []interfaces.ConceptGroupRelation{}, err
 		}
 
@@ -1021,7 +947,7 @@ func (cga *conceptGroupAccess) ListConceptGroupRelations(ctx context.Context, tx
 }
 
 func (cga *conceptGroupAccess) CreateConceptGroupRelation(ctx context.Context, tx *sql.Tx, conceptGroupRelation *interfaces.ConceptGroupRelation) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateConceptGroupRelation", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CreateConceptGroupRelation")
 	defer span.End()
 
 	span.SetAttributes(
@@ -1049,19 +975,16 @@ func (cga *conceptGroupAccess) CreateConceptGroupRelation(ctx context.Context, t
 			conceptGroupRelation.CreateTime).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert concept group relation, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of insert concept group relation, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of insert concept group relation, error", err)
 		return err
 	}
+
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("创建概念与分组关系的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("创建概念与分组关系的 sql 语句: %s", sqlStr))
 
 	_, err = tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("insert data error: %v\n", err)
-		span.SetStatus(codes.Error, "Insert data error")
-		o11y.Error(ctx, fmt.Sprintf("Insert data error: %v ", err))
+		otellog.LogError(ctx, "Insert data error", err)
 		return err
 	}
 
@@ -1100,7 +1023,7 @@ func processConceptGroupRelationsQueryCondition(query interfaces.ConceptGroupRel
 
 // 从分组中删除对象类，即删除概念与分组的绑定关系
 func (cga *conceptGroupAccess) DeleteObjectTypesFromGroup(ctx context.Context, tx *sql.Tx, query interfaces.ConceptGroupRelationsQueryParams) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteObjectTypesFromGroup", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteObjectTypesFromGroup")
 	defer span.End()
 
 	span.SetAttributes(
@@ -1123,30 +1046,25 @@ func (cga *conceptGroupAccess) DeleteObjectTypesFromGroup(ctx context.Context, t
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete concept group by concept group id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of delete concept group by concept group id, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of delete concept group by concept group id, error", err)
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("删除概念与分组关系的 sql 语句: %s; 删除的概念分组id: %s in kn_id [%s] branch [%s] concept_ids [%v]",
+	otellog.LogInfo(ctx, fmt.Sprintf("删除概念与分组关系的 sql 语句: %s; 删除的概念分组id: %s in kn_id [%s] branch [%s] concept_ids [%v]",
 		sqlStr, query.CGIDs, query.KNID, query.Branch, query.OTIDs))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete data error: %v ", err))
-		span.SetStatus(codes.Error, "Delete data error")
+		otellog.LogError(ctx, "Delete data error", err)
 		return 0, err
 	}
 
 	//sql语句影响的行数
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
-		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
-		span.SetStatus(codes.Error, "Get RowsAffected error")
+		otellog.LogError(ctx, "Get RowsAffected error", err)
+		return 0, err
 	}
 
 	logger.Infof("RowsAffected: %d", RowsAffected)
@@ -1155,7 +1073,7 @@ func (cga *conceptGroupAccess) DeleteObjectTypesFromGroup(ctx context.Context, t
 }
 
 func (cga *conceptGroupAccess) GetConceptIDsByConceptGroupIDs(ctx context.Context, knID string, branch string, cgIDs []string, conceptType string) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetConceptIDsByConceptGroupIDs", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetConceptIDsByConceptGroupIDs")
 	defer span.End()
 
 	span.SetAttributes(
@@ -1173,23 +1091,19 @@ func (cga *conceptGroupAccess) GetConceptIDsByConceptGroupIDs(ctx context.Contex
 		Where(sq.Eq{"f_group_id": cgIDs}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept ids by concept group, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select concept ids by concept group, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select concept ids by concept group, error", err)
 		return []string{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询概念分组下的概念ID的 sql 语句: %s. 分组ids: %s", sqlStr, cgIDs))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组下的概念ID的 sql 语句: %s. 分组ids: %s", sqlStr, cgIDs))
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		span.SetStatus(codes.Error, "List data error")
+		otellog.LogError(ctx, "List data error", err)
 		return []string{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptIDs := make([]string, 0)
 	for rows.Next() {
@@ -1198,9 +1112,7 @@ func (cga *conceptGroupAccess) GetConceptIDsByConceptGroupIDs(ctx context.Contex
 			&conceptID,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			span.SetStatus(codes.Error, "Row scan error")
+			otellog.LogError(ctx, "Row scan error", err)
 			return []string{}, err
 		}
 
@@ -1213,7 +1125,7 @@ func (cga *conceptGroupAccess) GetConceptIDsByConceptGroupIDs(ctx context.Contex
 
 // 获取概念分组下的关系类ID
 func (cga *conceptGroupAccess) GetRelationTypeIDsFromConceptGroupRelation(ctx context.Context, query interfaces.ConceptGroupRelationsQueryParams) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetRelationTypeIDsFromConceptGroupRelation", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetRelationTypeIDsFromConceptGroupRelation")
 	defer span.End()
 
 	span.SetAttributes(
@@ -1249,23 +1161,19 @@ func (cga *conceptGroupAccess) GetRelationTypeIDsFromConceptGroupRelation(ctx co
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select relation type ids by concept group, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select relation type ids by concept group, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select relation type ids by concept group, error", err)
 		return []string{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询概念分组下的关系类ID的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组下的关系类ID的 sql 语句: %s.", sqlStr))
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		span.SetStatus(codes.Error, "List data error")
+		otellog.LogError(ctx, "List data error", err)
 		return []string{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	rtIDs := make([]string, 0)
 	for rows.Next() {
@@ -1275,9 +1183,7 @@ func (cga *conceptGroupAccess) GetRelationTypeIDsFromConceptGroupRelation(ctx co
 			&rtID,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			span.SetStatus(codes.Error, "Row scan error")
+			otellog.LogError(ctx, "Row scan error", err)
 			return []string{}, err
 		}
 
@@ -1290,7 +1196,7 @@ func (cga *conceptGroupAccess) GetRelationTypeIDsFromConceptGroupRelation(ctx co
 
 // 获取概念分组下的行动类ID
 func (cga *conceptGroupAccess) GetActionTypeIDsFromConceptGroupRelation(ctx context.Context, query interfaces.ConceptGroupRelationsQueryParams) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetActionTypeIDsFromConceptGroupRelation", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetActionTypeIDsFromConceptGroupRelation")
 	defer span.End()
 
 	span.SetAttributes(
@@ -1325,23 +1231,19 @@ func (cga *conceptGroupAccess) GetActionTypeIDsFromConceptGroupRelation(ctx cont
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select action type ids by concept group, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select action type ids by concept group, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select action type ids by concept group, error", err)
 		return []string{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询概念分组下的行动类ID的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组下的行动类ID的 sql 语句: %s.", sqlStr))
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		span.SetStatus(codes.Error, "List data error")
+		otellog.LogError(ctx, "List data error", err)
 		return []string{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	atIDs := make([]string, 0)
 	for rows.Next() {
@@ -1351,9 +1253,7 @@ func (cga *conceptGroupAccess) GetActionTypeIDsFromConceptGroupRelation(ctx cont
 			&atID,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			span.SetStatus(codes.Error, "Row scan error")
+			otellog.LogError(ctx, "Row scan error", err)
 			return []string{}, err
 		}
 
@@ -1368,7 +1268,7 @@ func (cga *conceptGroupAccess) GetActionTypeIDsFromConceptGroupRelation(ctx cont
 func (cga *conceptGroupAccess) GetConceptGroupsByOTIDs(ctx context.Context, tx *sql.Tx,
 	query interfaces.ConceptGroupRelationsQueryParams) (map[string][]*interfaces.ConceptGroup, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetConceptGroupsByOTIDs", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetConceptGroupsByOTIDs")
 	defer span.End()
 
 	span.SetAttributes(
@@ -1399,23 +1299,19 @@ func (cga *conceptGroupAccess) GetConceptGroupsByOTIDs(ctx context.Context, tx *
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group by object type ids, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select concept group by object type ids, error: %s", err.Error()))
-		span.SetStatus(codes.Error, "Build sql failed ")
+		otellog.LogError(ctx, "Failed to build the sql of select concept group by object type ids, error", err)
 		return map[string][]*interfaces.ConceptGroup{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询对象类ID所属的概念分组的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询对象类ID所属的概念分组的 sql 语句: %s.", sqlStr))
 
 	rows, err := tx.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		span.SetStatus(codes.Error, "List data error")
+		otellog.LogError(ctx, "List data error", err)
 		return map[string][]*interfaces.ConceptGroup{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	results := map[string][]*interfaces.ConceptGroup{}
 	for rows.Next() {
@@ -1437,9 +1333,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByOTIDs(ctx context.Context, tx *
 			&conceptGroup.Branch,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			span.SetStatus(codes.Error, "Row scan error")
+			otellog.LogError(ctx, "Row scan error", err)
 			return map[string][]*interfaces.ConceptGroup{}, err
 		}
 

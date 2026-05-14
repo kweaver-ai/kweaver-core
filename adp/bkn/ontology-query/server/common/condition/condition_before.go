@@ -27,8 +27,8 @@ func NewBeforeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*Data
 		return nil, fmt.Errorf("condition [before] left field is not a date/time field: %s:%s", cfg.NameField.Name, cfg.NameField.Type)
 	}
 
-	if cfg.ValueOptCfg.ValueFrom != ValueFrom_Const {
-		return nil, fmt.Errorf("condition [before] does not support value_from type '%s'", cfg.ValueOptCfg.ValueFrom)
+	if cfg.ValueFrom != ValueFrom_Const {
+		return nil, fmt.Errorf("condition [before] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
 	unit, exist := cfg.RemainCfg["unit"].(string)
@@ -38,7 +38,7 @@ func NewBeforeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*Data
 
 	return &BeforeCond{
 		mCfg:             cfg,
-		mValue:           cfg.ValueOptCfg.Value,
+		mValue:           cfg.Value,
 		mUnit:            unit,
 		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
 	}, nil
@@ -62,7 +62,7 @@ func (cond *BeforeCond) Convert(ctx context.Context, vectorizer func(ctx context
 	}
 
 	// 统一处理数值类型
-	var val any = cond.mValue
+	var val = cond.mValue
 	if f, ok := val.(float64); ok {
 		val = int64(f)
 	}

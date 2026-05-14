@@ -80,8 +80,8 @@ func Test_RestHandler_HealthCheck(t *testing.T) {
 	})
 }
 
-func Test_RestHandler_verifyJsonContentTypeMiddleWare(t *testing.T) {
-	Convey("Test RestHandler verifyJsonContentTypeMiddleWare", t, func() {
+func Test_RestHandler_verifyJsonContentType(t *testing.T) {
+	Convey("Test RestHandler verifyJsonContentType", t, func() {
 		test := setGinMode()
 		defer test()
 
@@ -100,7 +100,7 @@ func Test_RestHandler_verifyJsonContentTypeMiddleWare(t *testing.T) {
 		handler := MockNewRestHandler(appSetting, as, ats, kns, ots)
 
 		// 注册一个测试路由使用中间件
-		engine.POST("/test", handler.verifyJsonContentTypeMiddleWare(), func(c *gin.Context) {
+		engine.POST("/test", handler.verifyJsonContentType(), func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		})
 

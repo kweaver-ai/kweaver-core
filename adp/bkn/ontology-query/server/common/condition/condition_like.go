@@ -30,7 +30,7 @@ func NewLikeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*DataPr
 		return nil, fmt.Errorf("condition [like] left field is not a string field: %s:%s", cfg.NameField.Name, cfg.NameField.Type)
 	}
 
-	val, ok := cfg.ValueOptCfg.Value.(string)
+	val, ok := cfg.Value.(string)
 	if !ok {
 		return nil, fmt.Errorf("condition [like] right value is not a string value: %v", cfg.Value)
 	}
@@ -79,8 +79,8 @@ func rewriteLikeCond(cfg *CondCfg) (*CondCfg, error) {
 		Name:      cfg.NameField.MappedField.Name,
 		Operation: cfg.Operation,
 		ValueOptCfg: ValueOptCfg{
-			Value:     cfg.ValueOptCfg.Value,
-			RealValue: cfg.ValueOptCfg.Value, // 把本体的like的 value 传到视图的 like 过滤的 real_value
+			Value:     cfg.Value,
+			RealValue: cfg.Value, // 把本体的like的 value 传到视图的 like 过滤的 real_value
 		},
 	}, nil
 }

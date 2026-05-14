@@ -30,7 +30,7 @@ func NewNotLikeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*Dat
 		return nil, fmt.Errorf("condition [not_like] left field is not a string field: %s:%s", cfg.NameField.Name, cfg.NameField.Type)
 	}
 
-	val, ok := cfg.ValueOptCfg.Value.(string)
+	val, ok := cfg.Value.(string)
 	if !ok {
 		return nil, fmt.Errorf("condition [not_like] right value is not a string value: %v", cfg.Value)
 	}
@@ -86,8 +86,8 @@ func rewriteNotLikeCond(cfg *CondCfg) (*CondCfg, error) {
 		Name:      cfg.NameField.MappedField.Name,
 		Operation: cfg.Operation,
 		ValueOptCfg: ValueOptCfg{
-			Value:     cfg.ValueOptCfg.Value,
-			RealValue: cfg.ValueOptCfg.Value, // 把本体的 not_like 的 value 传到视图的 not_like 过滤的 real_value
+			Value:     cfg.Value,
+			RealValue: cfg.Value, // 把本体的 not_like 的 value 传到视图的 not_like 过滤的 real_value
 		},
 	}, nil
 }

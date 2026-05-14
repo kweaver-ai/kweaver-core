@@ -618,7 +618,7 @@ func Test_conceptGroupAccess_UpdateConceptGroupDetail(t *testing.T) {
 			smock.ExpectExec(sqlStr).WithArgs(detail, cgID, knID, branch).WillReturnResult(sqlmock.NewErrorResult(expectedErr))
 
 			err := cga.UpdateConceptGroupDetail(testCtx, knID, branch, cgID, detail)
-			So(err, ShouldBeNil) // 注意：代码中 RowsAffected 错误时只记录警告，不返回错误
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -697,7 +697,7 @@ func Test_conceptGroupAccess_DeleteConceptGroupByID(t *testing.T) {
 
 			tx, _ := cga.db.Begin()
 			_, err := cga.DeleteConceptGroupByID(testCtx, tx, knID, branch, cgID)
-			So(err, ShouldBeNil) // 注意：代码中 RowsAffected 错误时只记录警告，不返回错误
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -993,7 +993,7 @@ func Test_conceptGroupAccess_DeleteObjectTypesFromGroup(t *testing.T) {
 
 			tx, _ := cga.db.Begin()
 			_, err := cga.DeleteObjectTypesFromGroup(testCtx, tx, query)
-			So(err, ShouldBeNil) // 注意：代码中 RowsAffected 错误时只记录警告，不返回错误
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)

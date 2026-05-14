@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -97,17 +97,12 @@ func NewKNService(appSetting *common.AppSetting) interfaces.KNService {
 }
 
 func (kns *knowledgeNetworkService) CheckKNExistByID(ctx context.Context, KNID string, branch string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验业务知识网络[%v]的存在性", KNID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验业务知识网络[%v]的存在性", KNID))
 	defer span.End()
 
 	otName, exist, err := kns.kna.CheckKNExistByID(ctx, KNID, branch)
 	if err != nil {
-		logger.Errorf("CheckKNExistByID error: %s", err.Error())
-
-		span.SetStatus(codes.Error, fmt.Sprintf("按ID[%v]获取业务知识网络失败", KNID))
-		// 记录处理的 sql 字符串
-		o11y.Error(ctx, fmt.Sprintf("按ID[%v]获取业务知识网络失败: %v", KNID, err))
-
+		otellog.LogError(ctx, fmt.Sprintf("按ID[%v]获取业务知识网络失败", KNID), err)
 		return "", exist, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_KnowledgeNetwork_InternalError_CheckKNIfExistFailed).WithErrorDetails(err.Error())
 	}
@@ -117,17 +112,12 @@ func (kns *knowledgeNetworkService) CheckKNExistByID(ctx context.Context, KNID s
 }
 
 func (kns *knowledgeNetworkService) CheckKNExistByName(ctx context.Context, knName string, branch string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验业务知识网络[%v]的存在性", knName))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验业务知识网络[%v]的存在性", knName))
 	defer span.End()
 
 	KNID, exist, err := kns.kna.CheckKNExistByName(ctx, knName, branch)
 	if err != nil {
-		logger.Errorf("CheckKNExistByName error: %s", err.Error())
-
-		span.SetStatus(codes.Error, fmt.Sprintf("按名称[%v]获取业务知识网络失败", knName))
-		// 记录处理的 sql 字符串
-		o11y.Error(ctx, fmt.Sprintf("按名称[%v]获取业务知识网络失败: %v", knName, err))
-
+		otellog.LogError(ctx, fmt.Sprintf("按名称[%v]获取业务知识网络失败", knName), err)
 		return KNID, exist, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_KnowledgeNetwork_InternalError_CheckKNIfExistFailed).WithErrorDetails(err.Error())
 	}
@@ -137,7 +127,7 @@ func (kns *knowledgeNetworkService) CheckKNExistByName(ctx context.Context, knNa
 }
 
 func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces.KN, mode string, strictMode bool) (string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create knowledge network")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create knowledge network")
 	defer span.End()
 
 	// 判断userid是否有创建业务知识网络的权限（策略决策）
@@ -186,10 +176,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 	// 0. 开始事务
 	tx, err := kns.db.Begin()
 	if err != nil {
-		logger.Errorf("Begin transaction error: %s", err.Error())
-		span.SetStatus(codes.Error, "事务开启失败")
-		o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+		otellog.LogError(ctx, "Begin transaction error", err)
 		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_KnowledgeNetwork_InternalError_BeginTransactionFailed).
 			WithErrorDetails(err.Error())
@@ -202,19 +189,14 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 			// 提交事务
 			err = tx.Commit()
 			if err != nil {
-				logger.Errorf("CreateKN Transaction Commit Failed:%v", err)
-				span.SetStatus(codes.Error, "提交事务失败")
-				o11y.Error(ctx, fmt.Sprintf("CreateKN Transaction Commit Failed: %s", err.Error()))
+				otellog.LogError(ctx, "CreateKN Transaction Commit Failed", err)
 				return
 			}
-			logger.Infof("CreateKN Transaction Commit Success")
-			o11y.Debug(ctx, "CreateKN Transaction Commit Success")
+			otellog.LogDebug(ctx, "CreateKN Transaction Commit Success")
 		default:
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				logger.Errorf("CreateKN Transaction Rollback Error:%v", rollbackErr)
-				span.SetStatus(codes.Error, "事务回滚失败")
-				o11y.Error(ctx, fmt.Sprintf("CreateKN Transaction Rollback Error: %s", err.Error()))
+				otellog.LogError(ctx, "CreateKN Transaction Rollback Error", err)
 			}
 		}
 	}()
@@ -412,7 +394,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 // ValidateKN checks whole-KN dependency existence only; does not write to the database.
 func (kns *knowledgeNetworkService) ValidateKN(ctx context.Context, kn *interfaces.KN, strictMode bool, mode string) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "ValidateKN")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ValidateKN")
 	defer span.End()
 
 	if kn == nil {
@@ -467,7 +449,7 @@ func (kns *knowledgeNetworkService) ValidateKN(ctx context.Context, kn *interfac
 
 func (kns *knowledgeNetworkService) ListKNs(ctx context.Context, parameter interfaces.KNsQueryParams) ([]*interfaces.KN, int, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询业务知识网络列表")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询业务知识网络列表")
 	defer span.End()
 
 	//获取业务知识网络列表
@@ -545,7 +527,7 @@ func (kns *knowledgeNetworkService) ListKNs(ctx context.Context, parameter inter
 func (kns *knowledgeNetworkService) GetKNByID(ctx context.Context, knID string, branch string, mode string) (*interfaces.KN, error) {
 
 	// 获取业务知识网络
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("查询业务知识网络[%s]信息", knID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("查询业务知识网络[%s]信息", knID))
 	defer span.End()
 
 	// 获取模型基本信息
@@ -654,7 +636,7 @@ func (kns *knowledgeNetworkService) GetKNByID(ctx context.Context, knID string, 
 
 func (kns *knowledgeNetworkService) GetStatByKN(ctx context.Context, kn *interfaces.KN) (*interfaces.Statistics, error) {
 	// 获取业务知识网络
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("查询业务知识网络[%s]信息", kn.KNID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("查询业务知识网络[%s]信息", kn.KNID))
 	defer span.End()
 
 	// 获取业务知识网络下的对象类、关系类、行动类的数量
@@ -741,7 +723,7 @@ func (kns *knowledgeNetworkService) GetStatByKN(ctx context.Context, kn *interfa
 
 // 更新业务知识网络
 func (kns *knowledgeNetworkService) UpdateKN(ctx context.Context, tx *sql.Tx, kn *interfaces.KN, strictMode bool) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update knowledge network")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update knowledge network")
 	defer span.End()
 
 	// 判断userid是否有创建业务知识网络的权限（策略决策）
@@ -775,10 +757,7 @@ func (kns *knowledgeNetworkService) UpdateKN(ctx context.Context, tx *sql.Tx, kn
 		// 0. 开始事务
 		tx, err = kns.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_KnowledgeNetwork_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -790,18 +769,14 @@ func (kns *knowledgeNetworkService) UpdateKN(ctx context.Context, tx *sql.Tx, kn
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("UpdateKN Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateKN Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "UpdateKN Transaction Commit Failed", err)
+					return
 				}
-				logger.Infof("UpdateKN Transaction Commit Success:%v", kn.KNName)
-				o11y.Debug(ctx, fmt.Sprintf("UpdateKN Transaction Commit Success: %s", kn.KNName))
+				otellog.LogDebug(ctx, fmt.Sprintf("UpdateKN Transaction Commit Success: %s", kn.KNName))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("UpdateKN Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateKN Transaction Rollback Error: %s", rollbackErr.Error()))
+					otellog.LogError(ctx, "UpdateKN Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -845,7 +820,7 @@ func (kns *knowledgeNetworkService) UpdateKN(ctx context.Context, tx *sql.Tx, kn
 }
 
 func (kns *knowledgeNetworkService) DeleteKN(ctx context.Context, kn *interfaces.KN) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete knowledge network")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete knowledge network")
 	defer span.End()
 
 	// 判断userid是否有删除业务知识网络的权限
@@ -880,10 +855,7 @@ func (kns *knowledgeNetworkService) DeleteKN(ctx context.Context, kn *interfaces
 	// 0. 开始事务
 	tx, err := kns.db.Begin()
 	if err != nil {
-		logger.Errorf("Begin transaction error: %s", err.Error())
-		span.SetStatus(codes.Error, "事务开启失败")
-		o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+		otellog.LogError(ctx, "Begin transaction error", err)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_KnowledgeNetwork_InternalError_BeginTransactionFailed).
 			WithErrorDetails(err.Error())
@@ -896,19 +868,14 @@ func (kns *knowledgeNetworkService) DeleteKN(ctx context.Context, kn *interfaces
 			// 提交事务
 			err = tx.Commit()
 			if err != nil {
-				logger.Errorf("DeleteKN Transaction Commit Failed:%v", err)
-				span.SetStatus(codes.Error, "提交事务失败")
-				o11y.Error(ctx, fmt.Sprintf("CreateKN Transaction Commit Failed: %s", err.Error()))
+				otellog.LogError(ctx, "CreateKN Transaction Commit Failed", err)
 				return
 			}
-			logger.Infof("DeleteKN Transaction Commit Success")
-			o11y.Debug(ctx, "DeleteKN Transaction Commit Success")
+			otellog.LogDebug(ctx, "DeleteKN Transaction Commit Success")
 		default:
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				logger.Errorf("DeleteKN Transaction Rollback Error:%v", rollbackErr)
-				span.SetStatus(codes.Error, "事务回滚失败")
-				o11y.Error(ctx, fmt.Sprintf("CreateKN Transaction Rollback Error: %s", err.Error()))
+				otellog.LogError(ctx, "CreateKN Transaction Rollback Error", err)
 			}
 		}
 	}()
@@ -924,8 +891,7 @@ func (kns *knowledgeNetworkService) DeleteKN(ctx context.Context, kn *interfaces
 	}
 	logger.Infof("DeleteKN: Rows affected is %v, request delete KNID is %s!", rowsAffect, kn.KNID)
 	if rowsAffect != 1 {
-		logger.Warnf("Delete kns number %v not equal 1!", rowsAffect)
-		o11y.Warn(ctx, fmt.Sprintf("Delete kns number %v not equal 1!", rowsAffect))
+		otellog.LogWarn(ctx, fmt.Sprintf("Delete kns number %v not equal 1!", rowsAffect))
 	}
 
 	// 删除业务知识网络下的所有对象类、关系类、行动类, 概念分组, 任务
@@ -1044,7 +1010,7 @@ func (kns *knowledgeNetworkService) DeleteKN(ctx context.Context, kn *interfaces
 
 // 更新知识网络详情
 func (kns *knowledgeNetworkService) UpdateKNDetail(ctx context.Context, knID string, branch string, detail string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateKNDetail")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdateKNDetail")
 	defer span.End()
 
 	// 更新知识网络详情
@@ -1065,7 +1031,7 @@ func (kns *knowledgeNetworkService) UpdateKNDetail(ctx context.Context, knID str
 func (kns *knowledgeNetworkService) handleKNImportMode(ctx context.Context, mode string,
 	kn *interfaces.KN) (isCreate bool, isUpdate bool, err error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "knowledge network import mode logic")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "knowledge network import mode logic")
 	defer span.End()
 
 	isCreate = false
@@ -1156,7 +1122,7 @@ func (kns *knowledgeNetworkService) handleKNImportMode(ctx context.Context, mode
 }
 
 func (kns *knowledgeNetworkService) InsertDatasetData(ctx context.Context, origKN *interfaces.KN) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "业务知识网络概念索引写入")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "业务知识网络概念索引写入")
 	defer span.End()
 
 	kn := &interfaces.KN{
@@ -1239,6 +1205,9 @@ type batchQueryState struct {
 // 根据起点对象类，方向，长度获取路径
 func (kns *knowledgeNetworkService) GetRelationTypePaths(ctx context.Context,
 	query interfaces.RelationTypePathsBaseOnSource) ([]interfaces.RelationTypePath, error) {
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetRelationTypePaths")
+	defer span.End()
+
 	// 1. 获取起点对象类
 
 	allPaths := []interfaces.RelationTypePath{}
@@ -1275,6 +1244,7 @@ func (kns *knowledgeNetworkService) GetRelationTypePaths(ctx context.Context,
 				// 若currentNode.OTID不存在，此函数会报错： objetc type not found
 				objectType, err := kns.ots.GetObjectTypeByID(ctx, nil, query.KNID, query.Branch, currentNode.OTID)
 				if err != nil {
+					otellog.LogError(ctx, "Get source object type failed", err)
 					return nil, err
 				}
 				currentNode = interfaces.ObjectTypeWithKeyField{
@@ -1305,6 +1275,7 @@ func (kns *knowledgeNetworkService) GetRelationTypePaths(ctx context.Context,
 		if len(nextLevelNodes) > 0 {
 			neighborPathsMap, err := kns.getNeighborsBatch(ctx, nextLevelNodes, query, state)
 			if err != nil {
+				otellog.LogError(ctx, "Get neighbor paths failed", err)
 				return nil, err
 			}
 
@@ -1354,6 +1325,7 @@ func (kns *knowledgeNetworkService) GetRelationTypePaths(ctx context.Context,
 		allPaths = append(allPaths, queue[i])
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return allPaths, nil
 }
 
@@ -1407,7 +1379,7 @@ func buildPathKey(path interfaces.RelationTypePath, neighborPath interfaces.Rela
 func (kns *knowledgeNetworkService) ListKnSrcs(ctx context.Context,
 	parameter interfaces.KNsQueryParams) ([]interfaces.PermissionResource, int, error) {
 
-	listCtx, listSpan := ar_trace.Tracer.Start(ctx, "查询业务知识网络实例列表")
+	listCtx, listSpan := oteltrace.StartNamedInternalSpan(ctx, "查询业务知识网络实例列表")
 	defer listSpan.End()
 
 	//获取业务知识网络列表（不分页，获取所有的业务知识网络)

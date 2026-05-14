@@ -12,14 +12,14 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/trace"
 
+	"vega-backend/common/visitor"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 )
@@ -37,8 +37,7 @@ type buildTaskListQuery struct {
 
 // CreateBuildTaskByEx handles POST /api/vega-backend/v1/build-tasks (External).
 func (r *restHandler) CreateBuildTaskByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"CreateBuildTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -50,11 +49,10 @@ func (r *restHandler) CreateBuildTaskByEx(c *gin.Context) {
 
 // CreateBuildTaskByIn handles POST /api/vega-backend/in/v1/build-tasks (Internal).
 func (r *restHandler) CreateBuildTaskByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"CreateBuildTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.createBuildTask(c, ctx, span, visitor)
 }
 
@@ -64,13 +62,13 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 		Type: string(visitor.Type),
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	var req interfaces.CreateBuildTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -78,7 +76,7 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 	resource, err := r.rs.GetByID(ctx, req.ResourceID)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -86,7 +84,7 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 	if req.BuildKeyFields == "" && req.Mode == interfaces.BuildTaskModeBatch {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails("build_key_fields is required for batch mode")
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -101,7 +99,7 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 			if key != "" && !schemaFields[key] {
 				httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 					WithErrorDetails(fmt.Sprintf("build_key_field '%s' not found in resource schema", key))
-				o11y.AddHttpAttrs4HttpError(span, httpErr)
+				oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 				rest.ReplyError(c, httpErr)
 				return
 			}
@@ -113,7 +111,7 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 			if field != "" && !schemaFields[field] {
 				httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 					WithErrorDetails(fmt.Sprintf("embedding_field '%s' not found in resource schema", field))
-				o11y.AddHttpAttrs4HttpError(span, httpErr)
+				oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 				rest.ReplyError(c, httpErr)
 				return
 			}
@@ -123,7 +121,7 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 	taskID, err := r.bts.CreateBuildTask(ctx, &req)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -132,7 +130,7 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 		interfaces.GenerateResourceAuditObject(req.ResourceID, ""), "")
 
 	logger.Debug("Handler CreateBuildTask Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusCreated)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusCreated)
 	rest.ReplyOK(c, http.StatusCreated, map[string]any{
 		"id":          taskID,
 		"resource_id": req.ResourceID,
@@ -143,8 +141,7 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 // =========================== GET /build-tasks/:id ===========================
 
 func (r *restHandler) GetBuildTaskByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetBuildTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -155,11 +152,10 @@ func (r *restHandler) GetBuildTaskByEx(c *gin.Context) {
 }
 
 func (r *restHandler) GetBuildTaskByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetBuildTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getBuildTask(c, ctx, span, visitor)
 }
 
@@ -169,26 +165,25 @@ func (r *restHandler) getBuildTask(c *gin.Context, ctx context.Context, span tra
 		Type: string(visitor.Type),
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	taskID := c.Param("id")
 	buildTask, err := r.bts.GetBuildTaskByID(ctx, taskID)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, buildTask)
 }
 
 // =========================== GET /build-tasks ===========================
 
 func (r *restHandler) ListBuildTasksByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListBuildTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -199,11 +194,10 @@ func (r *restHandler) ListBuildTasksByEx(c *gin.Context) {
 }
 
 func (r *restHandler) ListBuildTasksByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListBuildTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.listBuildTasks(c, ctx, span, visitor)
 }
 
@@ -213,13 +207,13 @@ func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span t
 		Type: string(visitor.Type),
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	var q buildTaskListQuery
 	if err := c.ShouldBindQuery(&q); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -236,14 +230,14 @@ func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span t
 	if q.Status != "" && !isValidBuildTaskStatus(q.Status) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_InvalidStatus).
 			WithErrorDetails(fmt.Sprintf("invalid status: %s", q.Status))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if q.Mode != "" && !isValidBuildTaskMode(q.Mode) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_InvalidParameter_Mode).
 			WithErrorDetails(fmt.Sprintf("invalid mode: %s", q.Mode))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -258,11 +252,11 @@ func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span t
 	tasks, total, err := r.bts.ListBuildTasks(ctx, params)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]any{
 		"entries":     tasks,
 		"total_count": total,
@@ -274,8 +268,7 @@ func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span t
 // DeleteBuildTasksByEx handles DELETE /build-tasks/:ids (External).
 // `ids` is a comma-separated list. Optional query: ?ignore_missing=true
 func (r *restHandler) DeleteBuildTasksByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteBuildTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -286,11 +279,10 @@ func (r *restHandler) DeleteBuildTasksByEx(c *gin.Context) {
 }
 
 func (r *restHandler) DeleteBuildTasksByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteBuildTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.deleteBuildTasks(c, ctx, span, visitor)
 }
 
@@ -300,7 +292,7 @@ func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span
 		Type: string(visitor.Type),
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	idsStr := c.Param("ids")
 	ids := make([]string, 0)
@@ -313,7 +305,7 @@ func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span
 	if len(ids) == 0 {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails("ids path parameter is required")
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -322,7 +314,7 @@ func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span
 
 	if err := r.bts.DeleteBuildTasks(ctx, ids, ignoreMissing); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -332,15 +324,14 @@ func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span
 			interfaces.GenerateResourceAuditObject(id, ""), audit.SUCCESS, "")
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
 // =========================== POST /build-tasks/:id/start ===========================
 
 func (r *restHandler) StartBuildTaskByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"StartBuildTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -351,11 +342,10 @@ func (r *restHandler) StartBuildTaskByEx(c *gin.Context) {
 }
 
 func (r *restHandler) StartBuildTaskByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"StartBuildTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.startBuildTask(c, ctx, span, visitor)
 }
 
@@ -365,7 +355,7 @@ func (r *restHandler) startBuildTask(c *gin.Context, ctx context.Context, span t
 		Type: string(visitor.Type),
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	taskID := c.Param("id")
 	var req interfaces.StartBuildTaskRequest
@@ -375,7 +365,7 @@ func (r *restHandler) startBuildTask(c *gin.Context, ctx context.Context, span t
 	buildTask, err := r.bts.StartBuildTask(ctx, taskID, req.ExecuteType)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -383,15 +373,14 @@ func (r *restHandler) startBuildTask(c *gin.Context, ctx context.Context, span t
 	audit.NewInfoLog(audit.OPERATION, "start", audit.TransforOperator(visitor),
 		interfaces.GenerateResourceAuditObject(taskID, ""), "")
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, buildTask)
 }
 
 // =========================== POST /build-tasks/:id/stop ===========================
 
 func (r *restHandler) StopBuildTaskByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"StopBuildTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -402,11 +391,10 @@ func (r *restHandler) StopBuildTaskByEx(c *gin.Context) {
 }
 
 func (r *restHandler) StopBuildTaskByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"StopBuildTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.stopBuildTask(c, ctx, span, visitor)
 }
 
@@ -416,13 +404,13 @@ func (r *restHandler) stopBuildTask(c *gin.Context, ctx context.Context, span tr
 		Type: string(visitor.Type),
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	taskID := c.Param("id")
 	buildTask, err := r.bts.StopBuildTask(ctx, taskID)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -430,7 +418,7 @@ func (r *restHandler) stopBuildTask(c *gin.Context, ctx context.Context, span tr
 	audit.NewInfoLog(audit.OPERATION, "stop", audit.TransforOperator(visitor),
 		interfaces.GenerateResourceAuditObject(taskID, ""), "")
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, buildTask)
 }
 

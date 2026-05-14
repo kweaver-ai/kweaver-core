@@ -9,7 +9,7 @@ data:
       {{- toYaml .Values.config.server | nindent 6 }}
     log:
       {{- toYaml .Values.config.log | nindent 6 }}
-    observability:
-      {{- toYaml .Values.config.observability | nindent 6 }}
+    otel:
+      {{- toYaml .Values.config.otel | nindent 6 }}
     depServices: 
       {{- toYaml .Values.depServices | nindent 6 }}

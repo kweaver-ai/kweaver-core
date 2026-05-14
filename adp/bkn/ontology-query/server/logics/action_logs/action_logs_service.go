@@ -12,10 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"ontology-query/common"
 	"ontology-query/interfaces"
@@ -45,7 +44,7 @@ func NewActionLogsService(appSetting *common.AppSetting) interfaces.ActionLogsSe
 
 // CreateExecution creates a new execution record in OpenSearch
 func (s *actionLogsService) CreateExecution(ctx context.Context, exec *interfaces.ActionExecution) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateExecution", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CreateExecution")
 	defer span.End()
 
 	span.SetAttributes(
@@ -74,7 +73,7 @@ func (s *actionLogsService) CreateExecution(ctx context.Context, exec *interface
 
 // UpdateExecution updates an existing execution record
 func (s *actionLogsService) UpdateExecution(ctx context.Context, knID, execID string, updates map[string]any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateExecution", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdateExecution")
 	defer span.End()
 
 	span.SetAttributes(
@@ -113,7 +112,7 @@ func (s *actionLogsService) UpdateExecution(ctx context.Context, knID, execID st
 
 // GetExecution retrieves a single execution by ID with optional results pagination
 func (s *actionLogsService) GetExecution(ctx context.Context, query *interfaces.ActionLogDetailQuery) (*interfaces.ActionExecution, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetExecution", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetExecution")
 	defer span.End()
 
 	span.SetAttributes(
@@ -211,7 +210,7 @@ func (s *actionLogsService) GetExecution(ctx context.Context, query *interfaces.
 
 // QueryExecutions queries executions based on filter criteria
 func (s *actionLogsService) QueryExecutions(ctx context.Context, query *interfaces.ActionLogQuery) (*interfaces.ActionExecutionList, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "QueryExecutions", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "QueryExecutions")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("kn_id").String(query.KNID))
@@ -422,7 +421,7 @@ func (s *actionLogsService) ensureIndexExists(ctx context.Context, indexName str
 
 // CancelExecution cancels a running or pending execution
 func (s *actionLogsService) CancelExecution(ctx context.Context, knID, execID, reason string) (*interfaces.CancelExecutionResponse, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CancelExecution", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CancelExecution")
 	defer span.End()
 
 	span.SetAttributes(
@@ -453,14 +452,15 @@ func (s *actionLogsService) CancelExecution(ctx context.Context, knID, execID, r
 	cancelledCount := 0
 	completedCount := 0
 	for i := range exec.Results {
-		if exec.Results[i].Status == interfaces.ObjectStatusPending {
+		switch exec.Results[i].Status {
+		case interfaces.ObjectStatusPending:
 			exec.Results[i].Status = interfaces.ObjectStatusCancelled
 			exec.Results[i].ErrorMessage = "cancelled by user"
 			if reason != "" {
 				exec.Results[i].ErrorMessage = fmt.Sprintf("cancelled: %s", reason)
 			}
 			cancelledCount++
-		} else if exec.Results[i].Status == interfaces.ObjectStatusSuccess {
+		case interfaces.ObjectStatusSuccess:
 			completedCount++
 		}
 	}

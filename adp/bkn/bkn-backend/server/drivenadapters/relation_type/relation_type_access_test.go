@@ -759,7 +759,7 @@ func Test_relationTypeAccess_UpdateRelationType(t *testing.T) {
 
 			tx, _ := rta.db.Begin()
 			err := rta.UpdateRelationType(testCtx, tx, relationType)
-			So(err, ShouldBeNil) // RowsAffected error 不会导致函数返回错误
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -840,9 +840,8 @@ func Test_relationTypeAccess_DeleteRelationTypesByIDs(t *testing.T) {
 			smock.ExpectExec(sqlStr).WithArgs(knID, branch, "rt1", "rt2").WillReturnResult(sqlmock.NewErrorResult(expectedErr))
 
 			tx, _ := rta.db.Begin()
-			rowsAffected, err := rta.DeleteRelationTypesByIDs(testCtx, tx, knID, branch, rtIDs)
-			So(err, ShouldBeNil)
-			So(rowsAffected, ShouldEqual, 0)
+			_, err := rta.DeleteRelationTypesByIDs(testCtx, tx, knID, branch, rtIDs)
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)

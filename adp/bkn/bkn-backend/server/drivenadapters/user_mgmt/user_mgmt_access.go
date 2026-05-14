@@ -13,7 +13,10 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
+	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -44,12 +47,21 @@ func NewUserMgmtAccess(appSetting *common.AppSetting) interfaces.UserMgmtAccess 
 }
 
 func (uma *userMgmtAccess) GetAccountNames(ctx context.Context, accountInfos []*interfaces.AccountInfo) error {
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetAccountNames")
+	defer span.End()
+
 	if len(accountInfos) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return nil
 	}
 
 	// 构建请求URL
 	httpUrl := fmt.Sprintf("%s/api/user-management/v2/names", uma.userMgmtUrl)
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
+		HttpUrl:         httpUrl,
+		HttpMethod:      http.MethodPost,
+		HttpContentType: rest.ContentTypeJson,
+	})
 
 	userIDMap := map[string]string{}
 	appIDMap := map[string]string{}
@@ -88,13 +100,16 @@ func (uma *userMgmtAccess) GetAccountNames(ctx context.Context, accountInfos []*
 	logger.Debugf("post [%s] finished, response code is [%d], result is [%s], error is [%v]", httpUrl, respCode, result, err)
 
 	if err != nil {
-		logger.Errorf("Get account names request failed: %v", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http get account names failed")
+		otellog.LogError(ctx, "Get account names request failed", err)
 		return fmt.Errorf("get account names request failed: %w", err)
 	}
 
 	if respCode != 200 {
-		logger.Errorf("Get account names request failed with status code: %d", respCode)
-		return fmt.Errorf("get account names request failed with status code: %d", respCode)
+		err := fmt.Errorf("get account names request failed with status code: %d", respCode)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		otellog.LogError(ctx, "Get account names request failed", err)
+		return err
 	}
 
 	// "{\"app_names\":[{\"id\":\"91efa756-11cc-49d7-ab25-f6e18f9305fe\",\"name\":\"kwww\"}],\"user_names\":[{\"id\":\"f6c6e398-ce82-11f0-888f-3ac1298ec09f\",\"name\":\"kww\"}],\"department_names\":[],\"contactor_names\":[],\"group_names\":[]}"
@@ -111,7 +126,8 @@ func (uma *userMgmtAccess) GetAccountNames(ctx context.Context, accountInfos []*
 	}{}
 
 	if err := sonic.Unmarshal(result, &response); err != nil {
-		logger.Errorf("Unmarshal account names response failed: %v", err)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmarshal account names response failed")
+		otellog.LogError(ctx, "Unmarshal account names response failed", err)
 		return fmt.Errorf("unmarshal account names response failed: %w", err)
 	}
 
@@ -138,5 +154,6 @@ func (uma *userMgmtAccess) GetAccountNames(ctx context.Context, accountInfos []*
 		}
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return nil
 }

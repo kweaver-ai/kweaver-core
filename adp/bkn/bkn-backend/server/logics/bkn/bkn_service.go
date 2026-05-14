@@ -10,10 +10,11 @@ import (
 	"context"
 	"sync"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
+	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -44,14 +45,14 @@ func NewBKNService(appSetting *common.AppSetting) interfaces.BKNService {
 
 // ExportToTar 将知识网络导出为 tar 包
 func (bs *bknService) ExportToTar(ctx context.Context, knID string, branch string) ([]byte, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "BKN导出为Tar", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "BKN导出为Tar")
 	defer span.End()
 
 	logger.Debugf("BKN ExportToTar Start: kn_id=%s", knID)
 
 	kn, err := bs.kns.GetKNByID(ctx, knID, branch, interfaces.Mode_Export)
 	if err != nil {
-		logger.Errorf("BKN GetKNByID failed: %s", err.Error())
+		otellog.LogError(ctx, "BKN GetKNByID failed", err)
 		return nil, err
 	}
 
@@ -75,11 +76,12 @@ func (bs *bknService) ExportToTar(ctx context.Context, knID string, branch strin
 	var buf bytes.Buffer
 	err = bknsdk.WriteNetworkToTar(bknNetwork, &buf)
 	if err != nil {
-		logger.Errorf("BKN ExportToTar failed: %s", err.Error())
+		otellog.LogError(ctx, "BKN ExportToTar failed", err)
 		return nil, err
 	}
 	tarData := buf.Bytes()
 
 	logger.Debugf("BKN ExportToTar Completed: size=%d", len(tarData))
+	span.SetStatus(codes.Ok, "")
 	return tarData, nil
 }

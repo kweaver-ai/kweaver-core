@@ -21,8 +21,8 @@ type NotContainCond struct {
 
 // 不包含 not_contain，左侧属性值为数组，右侧值为单个值或数组，如果为数组，意味着数组内的值都应在属性值外
 func NewNotContainCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*DataProperty) (Condition, error) {
-	if cfg.ValueOptCfg.ValueFrom != ValueFrom_Const {
-		return nil, fmt.Errorf("condition [not_contain] does not support value_from type '%s'", cfg.ValueOptCfg.ValueFrom)
+	if cfg.ValueFrom != ValueFrom_Const {
+		return nil, fmt.Errorf("condition [not_contain] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
 	notContainCond := &NotContainCond{
@@ -30,8 +30,8 @@ func NewNotContainCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*
 		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
 	}
 
-	if IsSlice(cfg.ValueOptCfg.Value) {
-		val, ok := cfg.ValueOptCfg.Value.([]any)
+	if IsSlice(cfg.Value) {
+		val, ok := cfg.Value.([]any)
 		if !ok {
 			return nil, fmt.Errorf("condition [not_contain] right value is not a valid array")
 		}
@@ -44,7 +44,7 @@ func NewNotContainCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*
 
 	} else {
 		notContainCond.IsSliceValue = false
-		notContainCond.mValue = cfg.ValueOptCfg.Value
+		notContainCond.mValue = cfg.Value
 	}
 
 	return notContainCond, nil

@@ -18,11 +18,11 @@ type NotEqCond struct {
 }
 
 func NewNotEqCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField) (Condition, error) {
-	if cfg.ValueOptCfg.ValueFrom != ValueFrom_Const {
+	if cfg.ValueFrom != ValueFrom_Const {
 		return nil, fmt.Errorf("condition [not_eq] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
-	if common.IsSlice(cfg.ValueOptCfg.Value) {
+	if common.IsSlice(cfg.Value) {
 		return nil, fmt.Errorf("condition [not_eq] only supports single value")
 	}
 

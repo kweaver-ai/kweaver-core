@@ -15,13 +15,12 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	attr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
 	"vega-backend/interfaces"
@@ -43,8 +42,7 @@ type discoverTaskAccess struct {
 
 // GetScheduledTaskStrategies retrieves strategies from t_discover_schedule table by ID.
 func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, scheduledTaskID string) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query discover_schedule by ID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query discover_schedule by ID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -56,9 +54,7 @@ func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, sc
 		Where(sq.Eq{"f_id": scheduledTaskID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build select discover_schedule sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build select discover_schedule sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build select discover_schedule sql", err)
 		return nil, err
 	}
 
@@ -101,8 +97,7 @@ func NewDiscoverTaskAccess(appSetting *common.AppSetting) interfaces.DiscoverTas
 
 // Create creates a new DiscoverTask.
 func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.DiscoverTask) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Insert into discover_task",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Insert into discover_task")
 	defer span.End()
 
 	span.SetAttributes(
@@ -114,9 +109,7 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 	if len(task.Strategies) > 0 {
 		strategiesBytes, err := sonic.Marshal(task.Strategies)
 		if err != nil {
-			logger.Errorf("Failed to marshal strategies: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to marshal strategies: %v", err))
-			span.SetStatus(codes.Error, "Marshal strategies failed")
+			otellog.LogError(ctx, "Failed to marshal strategies", err)
 			return err
 		}
 		strategiesStr = string(strategiesBytes)
@@ -156,19 +149,15 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 			task.CreateTime,
 		).ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build insert discover_schedule sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build insert discover_schedule sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build insert discover_schedule sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Insert discover_task SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Insert discover_task SQL: %s", sqlStr))
 
 	_, err = da.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Insert discover_schedule failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Insert discover_schedule failed: %v", err))
-		span.SetStatus(codes.Error, "Insert failed")
+		otellog.LogError(ctx, "Insert discover_schedule failed", err)
 		return err
 	}
 
@@ -178,8 +167,7 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 
 // GetByID retrieves a DiscoverTask by ID.
 func (da *discoverTaskAccess) GetByID(ctx context.Context, id string) (*interfaces.DiscoverTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query discover_task by ID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query discover_task by ID")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("task_id").String(id))
@@ -261,8 +249,7 @@ func (da *discoverTaskAccess) GetByID(ctx context.Context, id string) (*interfac
 
 // List lists DiscoverTasks with filters.
 func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.DiscoverTaskQueryParams) ([]*interfaces.DiscoverTask, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List discover_tasks",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "List discover_tasks")
 	defer span.End()
 
 	builder := sq.Select(
@@ -381,8 +368,7 @@ func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.Discov
 
 // UpdateStatus updates a DiscoverTask's status and message.
 func (da *discoverTaskAccess) UpdateStatus(ctx context.Context, id, status, message string, stime int64) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update discover_task status",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update discover_task status")
 	defer span.End()
 
 	span.SetAttributes(
@@ -418,8 +404,7 @@ func (da *discoverTaskAccess) UpdateStatus(ctx context.Context, id, status, mess
 
 // UpdateProgress updates a DiscoverTask's progress.
 func (da *discoverTaskAccess) UpdateProgress(ctx context.Context, id string, progress int) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update discover_task progress",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update discover_task progress")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Update(DISCOVER_TASK_TABLE_NAME).
@@ -444,8 +429,7 @@ func (da *discoverTaskAccess) UpdateProgress(ctx context.Context, id string, pro
 
 // UpdateResult updates a DiscoverTask's result and sets status to completed.
 func (da *discoverTaskAccess) UpdateResult(ctx context.Context, id string, result *interfaces.DiscoverResult, stime int64) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update discover_task result",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update discover_task result")
 	defer span.End()
 
 	resultBytes, _ := sonic.MarshalString(result)
@@ -474,8 +458,7 @@ func (da *discoverTaskAccess) UpdateResult(ctx context.Context, id string, resul
 
 // CheckExistByStatuses checks if DiscoverTasks exist by catalog ID and statuses.
 func (da *discoverTaskAccess) CheckExistByStatuses(ctx context.Context, catalogID string, statuses []string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Check discover_tasks exist",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Check discover_tasks exist")
 	defer span.End()
 
 	countBuilder := sq.Select("COUNT(*)").From(DISCOVER_TASK_TABLE_NAME)
@@ -502,8 +485,7 @@ func (da *discoverTaskAccess) CheckExistByStatuses(ctx context.Context, catalogI
 
 // Delete deletes a DiscoverTask by ID. Returns sql.ErrNoRows if no row was affected.
 func (da *discoverTaskAccess) Delete(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete discover_task",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Delete discover_task")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("id").String(id))
@@ -519,9 +501,7 @@ func (da *discoverTaskAccess) Delete(ctx context.Context, id string) error {
 
 	res, err := da.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Delete discover_task failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete discover_task failed: %v", err))
-		span.SetStatus(codes.Error, "Delete failed")
+		otellog.LogError(ctx, "Delete discover_task failed", err)
 		return err
 	}
 

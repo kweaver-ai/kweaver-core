@@ -12,14 +12,13 @@ import (
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
@@ -29,8 +28,7 @@ import (
 // UploadBKN 上传 BKN tar 包并导入（外部接口）
 func (r *restHandler) UploadBKN(c *gin.Context) {
 	logger.Debug("Handler UploadBKN Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"上传BKN并导入", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 校验token
@@ -47,18 +45,18 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 获取上传的文件
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
 			WithErrorDetails("Failed to get uploaded file: " + err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// 验证文件类型
 	if header.Header.Get("Content-Type") != "application/octet-stream" {
@@ -67,7 +65,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		if ext != ".tar" && ext != ".tgz" && ext != ".tar.gz" {
 			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
 				WithErrorDetails("Invalid file type, expected tar archive")
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -88,7 +86,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		logger.Errorf("Failed to load network from tar: %s", err.Error())
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
 			WithErrorDetails("Failed to load network from tar: " + err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -132,12 +130,12 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Validate knowledge network[%s] failed: %s. %v", kn.KNName,
-			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("Validate knowledge network[%s] failed: %s. %v", kn.KNName,
+			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
 		span.SetAttributes(attr.Key("kn_name").String(kn.KNName))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -147,7 +145,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		err = ValidateObjectTypes(ctx, kn.KNID, kn.ObjectTypes, false)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -156,7 +154,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		err = ValidateRelationTypes(ctx, kn.KNID, kn.RelationTypes, false)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -165,7 +163,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		err = ValidateActionTypes(ctx, kn.KNID, kn.ActionTypes, false)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -175,7 +173,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 			err = ValidateConceptGroup(ctx, conceptGroup)
 			if err != nil {
 				httpErr := err.(*rest.HTTPError)
-				o11y.AddHttpAttrs4HttpError(span, httpErr)
+				oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 				rest.ReplyError(c, httpErr)
 				return
 			}
@@ -185,7 +183,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		err = ValidateRiskTypes(ctx, kn.KNID, kn.RiskTypes)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -197,7 +195,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -207,15 +205,14 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		interfaces.GenerateKNAuditObject(knID, kn.KNName), "")
 
 	logger.Debugf("Upload BKN completed: kn_id=%s", knID)
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]string{"kn_id": knID})
 }
 
 // DownloadBKN 下载 BKN tar 包（外部接口）
 func (r *restHandler) DownloadBKN(c *gin.Context) {
 	logger.Debug("Handler DownloadBKN Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"下载BKN包", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 校验token
@@ -231,14 +228,14 @@ func (r *restHandler) DownloadBKN(c *gin.Context) {
 	// accountID 存入 context 中
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 获取路径参数
 	kn_id := c.Param("kn_id")
 	if kn_id == "" {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
 			WithErrorDetails("kn_id is required")
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -254,7 +251,7 @@ func (r *restHandler) DownloadBKN(c *gin.Context) {
 		logger.Errorf("Download BKN failed: %s", err.Error())
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_KnowledgeNetwork_InternalError).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}

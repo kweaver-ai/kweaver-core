@@ -16,31 +16,35 @@ log:
   maxAge: 100
   maxBackups: 20
   maxSize: 100
-observability:
-  logEnabled: false
-  traceEnabled: false
-  metricEnabled: false
-  logExporter: console
-  traceProvider: http
-  metricProvider: http
-  logLoadInternal: 1
-  logLoadMaxLog: 10
-  traceMaxQueueSize: 50000
-  metricIntervalSecond: 60
-  httpLogFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
-  httpTraceFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
-  httpMetricFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
-  grpcTraceFeedIngesterUrl: feed-ingester-service:30013
-  grpcTraceJobId: dip-o11y-trace-grpc
+# OTel Collector 配置
+otel:
+  # 服务名称
+  service_name: "bkn-backend"
+  # 运行环境
+  environment: "production"
+  # OTLP 上报端点
+  otlp_endpoint: "otelcol-contrib:4318"
+
+  # Trace 配置
+  trace:
+    enabled: false
+    # 采样率: 0.0 - 1.0
+    sampling_rate: 1.0
+
+  # Log 配置
+  log:
+    enabled: false
+    # 日志级别: debug, info, warn, error
+    level: "info"
 
 depServices:
   class-443:
     ingressClass: class-443
   rds:
-    host: 0.0.0.0
+    host: mariadb-mariadb-master.resource.svc.cluster.local.
     port: 3330
     user: root
-    password: "eisoo.com"
+    password: ""
     type: MariaDB
   mq:
     mqType: kafka

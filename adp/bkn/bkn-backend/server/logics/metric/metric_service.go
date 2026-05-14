@@ -17,8 +17,8 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -67,7 +67,7 @@ func NewMetricService(appSetting *common.AppSetting) interfaces.MetricService {
 }
 
 func (ms *metricService) InsertDatasetData(ctx context.Context, metrics []*interfaces.MetricDefinition) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "metric index write")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "metric index write")
 	defer span.End()
 
 	if len(metrics) == 0 {
@@ -138,7 +138,7 @@ func (ms *metricService) deleteDatasetDocs(ctx context.Context, knID string, bra
 }
 
 func (ms *metricService) CreateMetrics(ctx context.Context, tx *sql.Tx, entries []*interfaces.MetricDefinition, strictMode bool, importMode string) (ids []string, err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateMetrics")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CreateMetrics")
 	defer span.End()
 
 	if len(entries) == 0 {
@@ -300,7 +300,7 @@ func (ms *metricService) handleMetricImportMode(ctx context.Context, mode string
 }
 
 func (ms *metricService) ListMetrics(ctx context.Context, query interfaces.MetricsListQueryParams) (*interfaces.MetricsList, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListMetrics")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ListMetrics")
 	defer span.End()
 
 	err := ms.ps.CheckPermission(ctx, interfaces.PermissionResource{
@@ -344,7 +344,7 @@ func (ms *metricService) ListMetrics(ctx context.Context, query interfaces.Metri
 }
 
 func (ms *metricService) GetMetricByID(ctx context.Context, knID, branch, metricID string) (*interfaces.MetricDefinition, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetMetricByID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetMetricByID")
 	defer span.End()
 
 	err := ms.ps.CheckPermission(ctx, interfaces.PermissionResource{
@@ -367,7 +367,7 @@ func (ms *metricService) GetMetricByID(ctx context.Context, knID, branch, metric
 }
 
 func (ms *metricService) GetMetricsByIDs(ctx context.Context, knID, branch string, metricIDs []string) ([]*interfaces.MetricDefinition, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetMetricsByIDs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetMetricsByIDs")
 	defer span.End()
 
 	metricIDs = common.DuplicateSlice(metricIDs)
@@ -381,7 +381,7 @@ func (ms *metricService) GetMetricsByIDs(ctx context.Context, knID, branch strin
 }
 
 func (ms *metricService) CheckMetricExistByID(ctx context.Context, knID, branch, metricID string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验指标[%s]的存在性", metricID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验指标[%s]的存在性", metricID))
 	defer span.End()
 
 	name, exist, err := ms.ma.CheckMetricExistByID(ctx, knID, branch, metricID)
@@ -397,7 +397,7 @@ func (ms *metricService) CheckMetricExistByID(ctx context.Context, knID, branch,
 }
 
 func (ms *metricService) CheckMetricExistByName(ctx context.Context, knID, branch, name string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验指标名称[%s]的存在性", name))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验指标名称[%s]的存在性", name))
 	defer span.End()
 
 	id, exist, err := ms.ma.CheckMetricExistByName(ctx, knID, branch, name)
@@ -428,7 +428,7 @@ func (ms *metricService) ValidateMetrics(ctx context.Context, entries []*interfa
 }
 
 func (ms *metricService) UpdateMetric(ctx context.Context, tx *sql.Tx, req *interfaces.MetricDefinition, strictMode bool) (err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateMetric")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdateMetric")
 	defer span.End()
 
 	knID := strings.TrimSpace(req.KnID)
@@ -513,7 +513,7 @@ func (ms *metricService) UpdateMetric(ctx context.Context, tx *sql.Tx, req *inte
 }
 
 func (ms *metricService) DeleteMetricsByIDs(ctx context.Context, tx *sql.Tx, knID, branch string, metricIDs []string) (err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteMetricsByIDs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeleteMetricsByIDs")
 	defer span.End()
 
 	if len(metricIDs) == 0 {
@@ -574,7 +574,7 @@ func (ms *metricService) DeleteMetricsByIDs(ctx context.Context, tx *sql.Tx, knI
 
 // DeleteMetricsByKnID 内部接口，不校验权限；tx 必须传（与 DeleteActionTypesByKnID 一致）。
 func (ms *metricService) DeleteMetricsByKnID(ctx context.Context, tx *sql.Tx, knID, branch string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteMetricsByKnID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeleteMetricsByKnID")
 	defer span.End()
 
 	if tx == nil {
@@ -605,7 +605,7 @@ func (ms *metricService) DeleteMetricsByKnID(ctx context.Context, tx *sql.Tx, kn
 }
 
 func (ms *metricService) SearchMetrics(ctx context.Context, query *interfaces.ConceptsQuery) (interfaces.MetricSearchResult, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "SearchMetrics")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "SearchMetrics")
 	defer span.End()
 
 	response := interfaces.MetricSearchResult{
@@ -794,7 +794,7 @@ func (ms *metricService) SearchMetrics(ctx context.Context, query *interfaces.Co
 
 // getMetricDatasetTotal returns total document count for the metric concept query (same pattern as object_type.GetTotal).
 func (ms *metricService) getMetricDatasetTotal(ctx context.Context, filterCondition map[string]any) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "logic layer: search metric concept total")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "logic layer: search metric concept total")
 	defer span.End()
 
 	params := &interfaces.ResourceDataQueryParams{

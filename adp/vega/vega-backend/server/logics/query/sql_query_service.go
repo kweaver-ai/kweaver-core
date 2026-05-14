@@ -12,10 +12,10 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel/codes"
 
 	"vega-backend/common"
 	verrors "vega-backend/errors"
@@ -57,7 +57,7 @@ func NewRawQueryServiceWithDeps(cs interfaces.CatalogService, rs interfaces.Reso
 
 // Execute 执行SQL查询
 func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryRequest) (*interfaces.RawQueryResponse, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "SQLQueryExecute")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "SQLQueryExecute")
 	defer span.End()
 
 	// 记录请求参数
@@ -65,7 +65,7 @@ func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryR
 
 	// 1. 校验请求
 	if err := s.validateRequest(ctx, req); err != nil {
-		span.SetStatus(codes.Error, "validate request failed")
+		otellog.LogError(ctx, "Validate request failed", err)
 		return nil, err
 	}
 
@@ -92,25 +92,27 @@ func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryR
 			// 获取资源信息
 			resource, err := s.rs.GetByID(ctx, resourceID)
 			if err != nil {
-				span.SetStatus(codes.Error, "get resource failed")
+				otellog.LogError(ctx, "Get resource failed", err)
 				return nil, err.(*rest.HTTPError)
 			}
 			if resource == nil {
-				span.SetStatus(codes.Error, "resource not found")
-				return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_ResourceNotFound).
+				httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_ResourceNotFound).
 					WithErrorDetails(fmt.Sprintf("resource %s not found", resourceID))
+				otellog.LogError(ctx, "Resource not found", httpErr)
+				return nil, httpErr
 			}
 
 			// 获取catalog
 			catalog, err := s.cs.GetByID(ctx, resource.CatalogID, true)
 			if err != nil {
-				span.SetStatus(codes.Error, "get catalog failed")
+				otellog.LogError(ctx, "Get catalog failed", err)
 				return nil, err.(*rest.HTTPError)
 			}
 			if catalog == nil {
-				span.SetStatus(codes.Error, "catalog not found")
-				return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_CatalogNotFound).
+				httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_CatalogNotFound).
 					WithErrorDetails(fmt.Sprintf("catalog %s not found", resource.CatalogID))
+				otellog.LogError(ctx, "Catalog not found", httpErr)
+				return nil, httpErr
 			}
 
 			return s.executeOpenSearchQuery(ctx, req, []string{}, catalog)
@@ -140,25 +142,27 @@ func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryR
 		// 获取资源信息
 		resource, err := s.rs.GetByID(ctx, resourceID)
 		if err != nil {
-			span.SetStatus(codes.Error, "get resource failed")
+			otellog.LogError(ctx, "Get resource failed", err)
 			return nil, err.(*rest.HTTPError)
 		}
 		if resource == nil {
-			span.SetStatus(codes.Error, "resource not found")
-			return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_ResourceNotFound).
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_ResourceNotFound).
 				WithErrorDetails(fmt.Sprintf("resource %s not found", resourceID))
+			otellog.LogError(ctx, "Resource not found", httpErr)
+			return nil, httpErr
 		}
 
 		// 获取catalog
 		catalog, err := s.cs.GetByID(ctx, resource.CatalogID, true)
 		if err != nil {
-			span.SetStatus(codes.Error, "get catalog failed")
+			otellog.LogError(ctx, "Get catalog failed", err)
 			return nil, err.(*rest.HTTPError)
 		}
 		if catalog == nil {
-			span.SetStatus(codes.Error, "catalog not found")
-			return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_CatalogNotFound).
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_CatalogNotFound).
 				WithErrorDetails(fmt.Sprintf("catalog %s not found", resource.CatalogID))
+			otellog.LogError(ctx, "Catalog not found", httpErr)
+			return nil, httpErr
 		}
 
 		return s.executeOpenSearchQuery(ctx, req, []string{}, catalog)
@@ -167,7 +171,7 @@ func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryR
 	// 3. 从SQL中提取所有{{.resource_id}}占位符
 	resourceIds, err := s.extractResourceIds(req.Query)
 	if err != nil {
-		span.SetStatus(codes.Error, "extract resource ids failed")
+		otellog.LogError(ctx, "Extract resource ids failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("extract resource ids failed: %v", err))
 	}
@@ -176,9 +180,10 @@ func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryR
 	if len(resourceIds) == 0 {
 		// 没有resource_id，直接执行原生SQL（需要指定resource_type）
 		if req.ResourceType == "" {
-			span.SetStatus(codes.Error, "resource_type is required")
-			return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
+			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
 				WithErrorDetails("resource_type is required when no resource_id in query")
+			otellog.LogError(ctx, "Resource type is required", httpErr)
+			return nil, httpErr
 		}
 		return s.executeNativeSQL(ctx, req)
 	}
@@ -189,24 +194,26 @@ func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryR
 		// 如果有resource_id，使用第一个resource_id获取catalog
 		resource, err := s.rs.GetByID(ctx, resourceIds[0])
 		if err != nil {
-			span.SetStatus(codes.Error, "get resource failed")
+			otellog.LogError(ctx, "Get resource failed", err)
 			return nil, err.(*rest.HTTPError)
 		}
 		if resource == nil {
-			span.SetStatus(codes.Error, "resource not found")
-			return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_ResourceNotFound).
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_ResourceNotFound).
 				WithErrorDetails(fmt.Sprintf("resource %s not found", resourceIds[0]))
+			otellog.LogError(ctx, "Resource not found", httpErr)
+			return nil, httpErr
 		}
 		// 获取catalog
 		catalog, err := s.cs.GetByID(ctx, resource.CatalogID, true)
 		if err != nil {
-			span.SetStatus(codes.Error, "get catalog failed")
+			otellog.LogError(ctx, "Get catalog failed", err)
 			return nil, err.(*rest.HTTPError)
 		}
 		if catalog == nil {
-			span.SetStatus(codes.Error, "catalog not found")
-			return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_CatalogNotFound).
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Query_CatalogNotFound).
 				WithErrorDetails(fmt.Sprintf("catalog %s not found", resource.CatalogID))
+			otellog.LogError(ctx, "Catalog not found", httpErr)
+			return nil, httpErr
 		}
 
 		// 根据catalog的ConnectorType来决定调用哪个方法
@@ -219,14 +226,14 @@ func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryR
 			// 将resource_id替换为catalog.schema.table格式
 			replacedSQL, err := s.replaceResourceIdWithSchemaTable(ctx, req.Query, resourceIds, catalog)
 			if err != nil {
-				span.SetStatus(codes.Error, "replace resource id failed")
+				otellog.LogError(ctx, "Replace resource id failed", err)
 				return nil, err
 			}
 
 			// 直接执行SQL，不进行转换
 			result, err := s.executeSQLWithQueryType(ctx, catalog, replacedSQL, req.QueryType)
 			if err != nil {
-				span.SetStatus(codes.Error, "execute SQL failed")
+				otellog.LogError(ctx, "Execute SQL failed", err)
 				return nil, err
 			}
 
@@ -249,14 +256,14 @@ func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryR
 	// 6. 判断所有resource_id是否来自同一个数据源
 	dataSource, err := s.checkSameDataSource(ctx, resourceIds)
 	if err != nil {
-		span.SetStatus(codes.Error, "check data source failed")
+		otellog.LogError(ctx, "Check data source failed", err)
 		return nil, err
 	}
 
 	// 7. 将resource_id替换为catalog.schema.table格式
 	replacedSQL, err := s.replaceResourceIdWithSchemaTable(ctx, req.Query, resourceIds, dataSource)
 	if err != nil {
-		span.SetStatus(codes.Error, "replace resource id failed")
+		otellog.LogError(ctx, "Replace resource id failed", err)
 		return nil, err
 	}
 
@@ -268,15 +275,16 @@ func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryR
 	case interfaces.ConnectorTypePostgreSQL:
 		targetDialect = "postgres"
 	default:
-		span.SetStatus(codes.Error, "unsupported connector type")
-		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("unsupported connector type: %s", dataSource.ConnectorType))
+		otellog.LogError(ctx, "Unsupported connector type", httpErr)
+		return nil, httpErr
 	}
 
 	// 9. 使用sqlglot将Trino SQL转换为目标SQL方言
 	sqlParseResult, err := sqlglot.TranspileSQL(replacedSQL, "trino", targetDialect)
 	if err != nil {
-		span.SetStatus(codes.Error, "transpile SQL failed")
+		otellog.LogError(ctx, "Transpile SQL failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Query_ExecuteFailed).
 			WithErrorDetails(fmt.Sprintf("transpile SQL failed: %v", err))
 	}
@@ -493,7 +501,7 @@ func (s *rawQueryService) executeSQLWithQueryType(ctx context.Context, catalog *
 	// 创建connector
 	connector, err := factory.GetFactory().CreateConnectorInstance(ctx, catalog.ConnectorType, catalog.ConnectorCfg)
 	if err != nil {
-		logger.Errorf("create connector failed: %v", err)
+		otellog.LogError(ctx, "Create connector failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Query_ExecuteFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -513,7 +521,7 @@ func (s *rawQueryService) executeSQLWithQueryType(ctx context.Context, catalog *
 	}
 
 	if err != nil {
-		logger.Errorf("execute SQL failed: %v", err)
+		otellog.LogError(ctx, "Execute SQL failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Query_ExecuteFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -595,7 +603,7 @@ func (s *rawQueryService) executeOpenSearchQuery(ctx context.Context, req *inter
 	// 创建connector
 	connector, err := factory.GetFactory().CreateConnectorInstance(ctx, catalog.ConnectorType, catalog.ConnectorCfg)
 	if err != nil {
-		logger.Errorf("create connector failed: %v", err)
+		otellog.LogError(ctx, "Create connector failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Query_ExecuteFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -645,7 +653,7 @@ func (s *rawQueryService) executeOpenSearchQuery(ctx context.Context, req *inter
 
 	result, err := opensearchConnector.ExecuteRawQuery(ctx, indexName, queryMap)
 	if err != nil {
-		logger.Errorf("execute OpenSearch query failed: %v", err)
+		otellog.LogError(ctx, "Execute OpenSearch query failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Query_ExecuteFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -735,7 +743,7 @@ func (s *rawQueryService) executeStreamQueryNewSession(ctx context.Context, req 
 	streamManager := GetStreamQueryManager()
 	session, err := streamManager.CreateSession(catalog.ConnectorType, catalog.Name, catalog.ID, catalog, req.StreamSize, originalSQL, resourceIds)
 	if err != nil {
-		logger.Errorf("create stream query session failed: %v", err)
+		otellog.LogError(ctx, "Create stream query session failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Query_ExecuteFailed).
 			WithErrorDetails(err.Error())
 	}

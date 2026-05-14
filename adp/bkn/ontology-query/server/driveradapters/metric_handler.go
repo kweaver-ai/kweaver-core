@@ -13,11 +13,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel/trace"
 
 	"ontology-query/common/visitor"
 	oerrors "ontology-query/errors"
@@ -26,7 +25,7 @@ import (
 
 // PostMetricDataByEx 外部：POST .../metrics/:metric_id/data
 func (r *restHandler) PostMetricDataByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "PostMetricDataByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	vis, err := r.verifyOAuth(ctx, c)
@@ -95,7 +94,7 @@ func (r *restHandler) postMetricData(c *gin.Context, vis hydra.Visitor) {
 
 // PostMetricDryRunByEx 外部：POST .../metrics/dry-run
 func (r *restHandler) PostMetricDryRunByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "PostMetricDryRunByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	vis, err := r.verifyOAuth(ctx, c)

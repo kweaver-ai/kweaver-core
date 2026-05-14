@@ -17,10 +17,10 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -74,15 +74,12 @@ func NewRelationTypeService(appSetting *common.AppSetting) interfaces.RelationTy
 
 func (rts *relationTypeService) CheckRelationTypeExistByID(ctx context.Context, knID string, branch string, rtID string) (string, bool, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验关系类[%s]的存在性", rtID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验关系类[%s]的存在性", rtID))
 	defer span.End()
 
 	rtName, exist, err := rts.rta.CheckRelationTypeExistByID(ctx, knID, branch, rtID)
 	if err != nil {
-		logger.Errorf("CheckRelationTypeExistByID error: %s", err.Error())
-		// 记录处理的 sql 字符串
-		o11y.Error(ctx, fmt.Sprintf("按ID[%s]获取关系类失败: %v", rtID, err))
-		span.SetStatus(codes.Error, fmt.Sprintf("按ID[%s]获取关系类失败", rtID))
+		otellog.LogError(ctx, fmt.Sprintf("按ID[%s]获取关系类失败", rtID), err)
 		return "", exist, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_RelationType_InternalError_CheckRelationTypeIfExistFailed).WithErrorDetails(err.Error())
 	}
@@ -94,7 +91,7 @@ func (rts *relationTypeService) CheckRelationTypeExistByID(ctx context.Context, 
 func (rts *relationTypeService) CreateRelationTypes(ctx context.Context, tx *sql.Tx,
 	relationTypes []*interfaces.RelationType, mode string, strictMode bool) ([]string, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create relation type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create relation type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -110,9 +107,7 @@ func (rts *relationTypeService) CreateRelationTypes(ctx context.Context, tx *sql
 	if tx == nil {
 		tx, err = rts.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return []string{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_RelationType_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -124,19 +119,14 @@ func (rts *relationTypeService) CreateRelationTypes(ctx context.Context, tx *sql
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("CreateRelationType Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateRelationType Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "CreateRelationType Transaction Commit Failed", err)
 					return
 				}
-				logger.Infof("CreateRelationType Transaction Commit Success")
-				o11y.Debug(ctx, "CreateRelationType Transaction Commit Success")
+				otellog.LogDebug(ctx, "CreateRelationType Transaction Commit Success")
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("CreateRelationType Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateRelationType Transaction Rollback Error: %s", err.Error()))
+					otellog.LogError(ctx, "CreateRelationType Transaction Rollback Error", err)
 				}
 			}
 		}()
@@ -215,7 +205,7 @@ func (rts *relationTypeService) CreateRelationTypes(ctx context.Context, tx *sql
 func (rts *relationTypeService) ValidateRelationTypes(ctx context.Context, knID string, branch string,
 	relationTypes []*interfaces.RelationType, strictMode bool, batch *interfaces.BatchIDIndex, mode string) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "ValidateRelationTypes")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ValidateRelationTypes")
 	defer span.End()
 
 	if len(relationTypes) == 0 {
@@ -251,7 +241,7 @@ func (rts *relationTypeService) ValidateRelationTypes(ctx context.Context, knID 
 func (rts *relationTypeService) ListRelationTypes(ctx context.Context,
 	query interfaces.RelationTypesQueryParams) ([]*interfaces.RelationType, int, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询关系类列表")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询关系类列表")
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -344,7 +334,7 @@ func (rts *relationTypeService) ListRelationTypes(ctx context.Context,
 
 func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID string, branch string, rtIDs []string) ([]*interfaces.RelationType, error) {
 	// 获取关系类
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("查询关系类[%v]信息", rtIDs))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("查询关系类[%v]信息", rtIDs))
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -445,7 +435,7 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 							WithErrorDetails(err.Error())
 					}
 					if res == nil {
-						o11y.Warn(ctx, fmt.Sprintf("Relation type [%s]'s backing vega Resource %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
+						otellog.LogWarn(ctx, fmt.Sprintf("Relation type [%s]'s backing vega Resource %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
 						if sourceObj == nil && targetObj == nil {
 							continue
 						}
@@ -461,7 +451,7 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 							WithErrorDetails(err.Error())
 					}
 					if dataView == nil {
-						o11y.Warn(ctx, fmt.Sprintf("Relation type [%s]'s Backing Data view %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
+						otellog.LogWarn(ctx, fmt.Sprintf("Relation type [%s]'s Backing Data view %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
 						if sourceObj == nil && targetObj == nil {
 							continue
 						}
@@ -551,7 +541,7 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 
 // 更新关系类
 func (rts *relationTypeService) UpdateRelationType(ctx context.Context, tx *sql.Tx, relationType *interfaces.RelationType, strictMode bool) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update relation type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update relation type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -579,9 +569,7 @@ func (rts *relationTypeService) UpdateRelationType(ctx context.Context, tx *sql.
 		// 0. 开始事务
 		tx, err = rts.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_RelationType_InternalError_BeginTransactionFailed).
@@ -594,18 +582,14 @@ func (rts *relationTypeService) UpdateRelationType(ctx context.Context, tx *sql.
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("UpdateRelationType Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateRelationType Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "UpdateRelationType Transaction Commit Failed", err)
+					return
 				}
-				logger.Infof("UpdateRelationType Transaction Commit Success:%v", relationType.RTName)
-				o11y.Debug(ctx, fmt.Sprintf("UpdateRelationType Transaction Commit Success: %s", relationType.RTName))
+				otellog.LogDebug(ctx, fmt.Sprintf("UpdateRelationType Transaction Commit Success: %s", relationType.RTName))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("UpdateRelationType Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateRelationType Transaction Rollback Error: %s", err.Error()))
+					otellog.LogError(ctx, "UpdateRelationType Transaction Rollback Error", err)
 				}
 			}
 		}()
@@ -643,7 +627,7 @@ func (rts *relationTypeService) UpdateRelationType(ctx context.Context, tx *sql.
 }
 
 func (rts *relationTypeService) DeleteRelationTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, rtIDs []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete relation types")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete relation types")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -659,9 +643,7 @@ func (rts *relationTypeService) DeleteRelationTypesByIDs(ctx context.Context, tx
 		// 0. 开始事务
 		tx, err = rts.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_RelationType_InternalError_BeginTransactionFailed).
@@ -674,18 +656,14 @@ func (rts *relationTypeService) DeleteRelationTypesByIDs(ctx context.Context, tx
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("DeleteRelationTypes Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("DeleteRelationTypes Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "DeleteRelationTypes Transaction Commit Failed", err)
+					return
 				}
-				logger.Infof("DeleteRelationTypes Transaction Commit Success: kn_id:%s,ot_ids:%v", knID, rtIDs)
-				o11y.Debug(ctx, fmt.Sprintf("DeleteRelationTypes Transaction Commit Success: kn_id:%s,ot_ids:%v", knID, rtIDs))
+				otellog.LogDebug(ctx, fmt.Sprintf("DeleteRelationTypes Transaction Commit Success: kn_id:%s,ot_ids:%v", knID, rtIDs))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("DeleteRelationTypes Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("DeleteRelationTypes Transaction Rollback Error: %s", rollbackErr.Error()))
+					otellog.LogError(ctx, "DeleteRelationTypes Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -703,8 +681,7 @@ func (rts *relationTypeService) DeleteRelationTypesByIDs(ctx context.Context, tx
 
 	logger.Infof("DeleteRelationTypes: Rows affected is %v, request delete RTIDs is %v!", rowsAffect, len(rtIDs))
 	if rowsAffect != int64(len(rtIDs)) {
-		logger.Warnf("Delete relation types number %v not equal requerst relation types number %v!", rowsAffect, len(rtIDs))
-		o11y.Warn(ctx, fmt.Sprintf("Delete relation types number %v not equal requerst relation types number %v!", rowsAffect, len(rtIDs)))
+		otellog.LogWarn(ctx, fmt.Sprintf("Delete relation types number %v not equal requerst relation types number %v!", rowsAffect, len(rtIDs)))
 	}
 
 	for _, rtID := range rtIDs {
@@ -723,13 +700,11 @@ func (rts *relationTypeService) DeleteRelationTypesByIDs(ctx context.Context, tx
 
 // 内部接口，根据业务知识网络ID删除所有关系类，不校验权限，tx必须传入
 func (rts *relationTypeService) DeleteRelationTypesByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete relation types by kn_id")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete relation types by kn_id")
 	defer span.End()
 
 	if tx == nil {
-		logger.Errorf("missing transaction")
-		o11y.Error(ctx, "missing transaction")
-		span.SetStatus(codes.Error, "缺少事务")
+		otellog.LogError(ctx, "missing transaction", nil)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_RelationType_InternalError_MissingTransaction).
 			WithErrorDetails("missing transaction")
@@ -753,7 +728,7 @@ func (rts *relationTypeService) DeleteRelationTypesByKnID(ctx context.Context, t
 func (rts *relationTypeService) handleRelationTypeImportMode(ctx context.Context, mode string,
 	relationTypes []*interfaces.RelationType) ([]*interfaces.RelationType, []*interfaces.RelationType, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "relation type import mode logic")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "relation type import mode logic")
 	defer span.End()
 
 	creates := []*interfaces.RelationType{}
@@ -794,7 +769,7 @@ func (rts *relationTypeService) handleRelationTypeImportMode(ctx context.Context
 }
 
 func (rts *relationTypeService) InsertDatasetData(ctx context.Context, relationTypes []*interfaces.RelationType) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "关系类索引写入")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "关系类索引写入")
 	defer span.End()
 
 	// 关系类索引写入
@@ -875,7 +850,7 @@ func (rts *relationTypeService) InsertDatasetData(ctx context.Context, relationT
 func (rts *relationTypeService) SearchRelationTypes(ctx context.Context,
 	query *interfaces.ConceptsQuery) (interfaces.RelationTypes, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "业务知识网络关系类检索")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "业务知识网络关系类检索")
 	defer span.End()
 
 	response := interfaces.RelationTypes{}
@@ -1099,7 +1074,7 @@ func (rts *relationTypeService) SearchRelationTypes(ctx context.Context,
 }
 
 func (rts *relationTypeService) GetTotal(ctx context.Context, filterCondition map[string]any) (total int64, err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "logic layer: search relation type total ")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "logic layer: search relation type total ")
 	defer span.End()
 
 	params := &interfaces.ResourceDataQueryParams{
@@ -1126,7 +1101,7 @@ func (rts *relationTypeService) GetTotal(ctx context.Context, filterCondition ma
 // 内部调用，不加权限校验
 func (rts *relationTypeService) GetRelationTypeIDsByKnID(ctx context.Context, knID string, branch string) ([]string, error) {
 	// 获取关系类
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("按kn_id[%s]获取关系类IDs", knID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("按kn_id[%s]获取关系类IDs", knID))
 	defer span.End()
 
 	// 获取对象类基本信息

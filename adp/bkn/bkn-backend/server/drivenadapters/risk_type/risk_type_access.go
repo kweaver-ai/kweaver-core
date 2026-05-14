@@ -12,11 +12,10 @@ import (
 	"sync"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/interfaces"
@@ -47,7 +46,7 @@ func NewRiskTypeAccess(appSetting *common.AppSetting) interfaces.RiskTypeAccess 
 }
 
 func (rta *riskTypeAccess) CheckRiskTypeExistByID(ctx context.Context, knID string, branch string, rtID string) (string, bool, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "CheckRiskTypeExistByID", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "CheckRiskTypeExistByID")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Select("f_name").
@@ -57,22 +56,26 @@ func (rta *riskTypeAccess) CheckRiskTypeExistByID(ctx context.Context, knID stri
 		Where(sq.Eq{"f_id": rtID}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return "", false, err
 	}
 
 	var name string
 	err = rta.db.QueryRow(sqlStr, vals...).Scan(&name)
 	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	}
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return "", false, err
 	}
+	span.SetStatus(codes.Ok, "")
 	return name, true, nil
 }
 
 func (rta *riskTypeAccess) CheckRiskTypeExistByName(ctx context.Context, knID string, branch string, rtName string) (string, bool, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "CheckRiskTypeExistByName", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "CheckRiskTypeExistByName")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Select("f_id").
@@ -82,22 +85,26 @@ func (rta *riskTypeAccess) CheckRiskTypeExistByName(ctx context.Context, knID st
 		Where(sq.Eq{"f_name": rtName}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return "", false, err
 	}
 
 	var rtID string
 	err = rta.db.QueryRow(sqlStr, vals...).Scan(&rtID)
 	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	}
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return "", false, err
 	}
+	span.SetStatus(codes.Ok, "")
 	return rtID, true, nil
 }
 
 func (rta *riskTypeAccess) CreateRiskType(ctx context.Context, tx *sql.Tx, riskType *interfaces.RiskType) error {
-	_, span := ar_trace.Tracer.Start(ctx, "CreateRiskType", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "CreateRiskType")
 	defer span.End()
 
 	tagsStr := libCommon.TagSlice2TagString(riskType.Tags)
@@ -139,15 +146,21 @@ func (rta *riskTypeAccess) CreateRiskType(ctx context.Context, tx *sql.Tx, riskT
 		).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return err
 	}
 
 	_, err = tx.Exec(sqlStr, vals...)
-	return err
+	if err != nil {
+		span.SetStatus(codes.Error, "Insert data failed")
+		return err
+	}
+	span.SetStatus(codes.Ok, "")
+	return nil
 }
 
 func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.RiskTypesQueryParams) ([]*interfaces.RiskType, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "ListRiskTypes", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "ListRiskTypes")
 	defer span.End()
 
 	subBuilder := sq.Select(
@@ -180,14 +193,16 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return nil, err
 	}
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var riskTypes []*interfaces.RiskType
 	for rows.Next() {
@@ -212,6 +227,7 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 			&rt.UpdateTime,
 		)
 		if err != nil {
+			span.SetStatus(codes.Error, "Scan data failed")
 			return nil, err
 		}
 
@@ -225,19 +241,21 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 }
 
 func (rta *riskTypeAccess) GetRiskTypesTotal(ctx context.Context, query interfaces.RiskTypesQueryParams) (int, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "GetRiskTypesTotal", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "GetRiskTypesTotal")
 	defer span.End()
 
 	subBuilder := sq.Select("COUNT(f_id)").From(RT_TABLE_NAME)
 	builder := processRiskTypeQueryCondition(query, subBuilder)
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return 0, err
 	}
 
 	var total int
 	err = rta.db.QueryRow(sqlStr, vals...).Scan(&total)
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return 0, err
 	}
 	span.SetStatus(codes.Ok, "")
@@ -245,10 +263,11 @@ func (rta *riskTypeAccess) GetRiskTypesTotal(ctx context.Context, query interfac
 }
 
 func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, branch string, rtIDs []string) ([]*interfaces.RiskType, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "GetRiskTypesByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "GetRiskTypesByIDs")
 	defer span.End()
 
 	if len(rtIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return []*interfaces.RiskType{}, nil
 	}
 
@@ -274,14 +293,16 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 		Where(sq.Eq{"f_id": rtIDs}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return nil, err
 	}
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
+		span.SetStatus(codes.Error, "Query data failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var riskTypes []*interfaces.RiskType
 	for rows.Next() {
@@ -306,6 +327,7 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 			&rt.UpdateTime,
 		)
 		if err != nil {
+			span.SetStatus(codes.Error, "Scan data failed")
 			return nil, err
 		}
 
@@ -319,7 +341,7 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 }
 
 func (rta *riskTypeAccess) UpdateRiskType(ctx context.Context, tx *sql.Tx, riskType *interfaces.RiskType) error {
-	_, span := ar_trace.Tracer.Start(ctx, "UpdateRiskType", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "UpdateRiskType")
 	defer span.End()
 
 	tagsStr := libCommon.TagSlice2TagString(riskType.Tags)
@@ -343,18 +365,25 @@ func (rta *riskTypeAccess) UpdateRiskType(ctx context.Context, tx *sql.Tx, riskT
 		Where(sq.Eq{"f_branch": riskType.Branch}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return err
 	}
 
 	_, err = tx.Exec(sqlStr, vals...)
-	return err
+	if err != nil {
+		span.SetStatus(codes.Error, "Update data failed")
+		return err
+	}
+	span.SetStatus(codes.Ok, "")
+	return nil
 }
 
 func (rta *riskTypeAccess) DeleteRiskTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, rtIDs []string) (int64, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "DeleteRiskTypesByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "DeleteRiskTypesByIDs")
 	defer span.End()
 
 	if len(rtIDs) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return 0, nil
 	}
 
@@ -364,14 +393,22 @@ func (rta *riskTypeAccess) DeleteRiskTypesByIDs(ctx context.Context, tx *sql.Tx,
 		Where(sq.Eq{"f_id": rtIDs}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return 0, err
 	}
 
 	result, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
+		span.SetStatus(codes.Error, "Delete data failed")
 		return 0, err
 	}
-	return result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		span.SetStatus(codes.Error, "Get RowsAffected failed")
+		return 0, err
+	}
+	span.SetStatus(codes.Ok, "")
+	return rowsAffected, nil
 }
 
 func (rta *riskTypeAccess) GetAllRiskTypesByKnID(ctx context.Context, knID string, branch string) ([]*interfaces.RiskType, error) {
@@ -382,7 +419,7 @@ func (rta *riskTypeAccess) GetAllRiskTypesByKnID(ctx context.Context, knID strin
 }
 
 func (rta *riskTypeAccess) DeleteRiskTypesByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) (int64, error) {
-	_, span := ar_trace.Tracer.Start(ctx, "DeleteRiskTypesByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "DeleteRiskTypesByKnID")
 	defer span.End()
 
 	sqlStr, vals, err := sq.Delete(RT_TABLE_NAME).
@@ -390,14 +427,22 @@ func (rta *riskTypeAccess) DeleteRiskTypesByKnID(ctx context.Context, tx *sql.Tx
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
 		return 0, err
 	}
 
 	result, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
+		span.SetStatus(codes.Error, "Delete data failed")
 		return 0, err
 	}
-	return result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		span.SetStatus(codes.Error, "Get RowsAffected failed")
+		return 0, err
+	}
+	span.SetStatus(codes.Ok, "")
+	return rowsAffected, nil
 }
 
 func processRiskTypeQueryCondition(query interfaces.RiskTypesQueryParams, subBuilder sq.SelectBuilder) sq.SelectBuilder {

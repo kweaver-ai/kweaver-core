@@ -12,9 +12,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
-	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/codes"
 
@@ -53,7 +52,7 @@ func NewConnectorTypeService(appSetting *common.AppSetting) interfaces.Connector
 
 // Register register a new ConnectorType.
 func (cts *connectorTypeService) Register(ctx context.Context, req *interfaces.ConnectorTypeReq) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Register connector type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Register connector type")
 	defer span.End()
 
 	// 判断userid是否有创建业务知识网络的权限（策略决策）
@@ -78,18 +77,14 @@ func (cts *connectorTypeService) Register(ctx context.Context, req *interfaces.C
 
 	err = cts.cta.Create(ctx, ct)
 	if err != nil {
-		logger.Errorf("Register connector type failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Register connector type failed: %v", err))
-		span.SetStatus(codes.Error, "Register connector type failed")
+		otellog.LogError(ctx, "Register connector type failed", err)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_ConnectorType_InternalError_RegisterFailed).
 			WithErrorDetails(err.Error())
 	}
 
 	err = cts.cf.RegisterConnector(ctx, ct.Type, ct)
 	if err != nil {
-		logger.Errorf("Register connector type failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Register connector type failed: %v", err))
-		span.SetStatus(codes.Error, "Register connector type failed")
+		otellog.LogError(ctx, "Register connector type failed", err)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_ConnectorType_InternalError_RegisterFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -100,7 +95,7 @@ func (cts *connectorTypeService) Register(ctx context.Context, req *interfaces.C
 
 // GetByType retrieves a ConnectorType by Type.
 func (cts *connectorTypeService) GetByType(ctx context.Context, tp string) (*interfaces.ConnectorType, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get connector type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get connector type")
 	defer span.End()
 
 	ct, err := cts.cta.GetByType(ctx, tp)
@@ -135,7 +130,7 @@ func (cts *connectorTypeService) GetByType(ctx context.Context, tp string) (*int
 
 // List lists ConnectorTypes with filters.
 func (cts *connectorTypeService) List(ctx context.Context, params interfaces.ConnectorTypesQueryParams) ([]*interfaces.ConnectorType, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List connector types")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "List connector types")
 	defer span.End()
 
 	connectorTypesArr, _, err := cts.cta.List(ctx, params)
@@ -192,7 +187,7 @@ func (cts *connectorTypeService) List(ctx context.Context, params interfaces.Con
 
 // Update updates a ConnectorType.
 func (cts *connectorTypeService) Update(ctx context.Context, req *interfaces.ConnectorTypeReq) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update connector type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update connector type")
 	defer span.End()
 
 	ct := req.OriginConnectorType
@@ -241,9 +236,7 @@ func (cts *connectorTypeService) Update(ctx context.Context, req *interfaces.Con
 	}
 
 	if err := cts.cf.RegisterConnector(ctx, ct.Type, ct); err != nil {
-		logger.Errorf("Register connector type failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Register connector type failed: %v", err))
-		span.SetStatus(codes.Error, "Register connector type failed")
+		otellog.LogError(ctx, "Register connector type failed", err)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_ConnectorType_InternalError_RegisterFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -266,7 +259,7 @@ func (cts *connectorTypeService) Update(ctx context.Context, req *interfaces.Con
 
 // Delete deletes a ConnectorType.
 func (cts *connectorTypeService) DeleteByType(ctx context.Context, tp string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete connector type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete connector type")
 	defer span.End()
 
 	// 判断userid是否有删除权限
@@ -285,9 +278,7 @@ func (cts *connectorTypeService) DeleteByType(ctx context.Context, tp string) er
 	}
 
 	if err := cts.cf.DeleteConnector(ctx, tp); err != nil {
-		logger.Errorf("Delete connector type failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete connector type failed: %v", err))
-		span.SetStatus(codes.Error, "Delete connector type failed")
+		otellog.LogError(ctx, "Delete connector type failed", err)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_ConnectorType_InternalError_DeleteFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -304,7 +295,7 @@ func (cts *connectorTypeService) DeleteByType(ctx context.Context, tp string) er
 
 // SetEnabled sets the enabled status of a ConnectorType.
 func (cts *connectorTypeService) SetEnabled(ctx context.Context, tp string, enabled bool) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Set enabled connector type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Set enabled connector type")
 	defer span.End()
 
 	// 判断userid是否有修改权限
@@ -328,7 +319,7 @@ func (cts *connectorTypeService) SetEnabled(ctx context.Context, tp string, enab
 
 // CheckExistByType checks if a ConnectorType exists by Type.
 func (cts *connectorTypeService) CheckExistByType(ctx context.Context, tp string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Check connector type exist by Type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Check connector type exist by Type")
 	defer span.End()
 
 	ct, err := cts.cta.GetByType(ctx, tp)
@@ -344,7 +335,7 @@ func (cts *connectorTypeService) CheckExistByType(ctx context.Context, tp string
 
 // CheckExistByName checks if a ConnectorType exists by Name.
 func (cts *connectorTypeService) CheckExistByName(ctx context.Context, name string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Check connector type exist by Name")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Check connector type exist by Name")
 	defer span.End()
 
 	ct, err := cts.cta.GetByName(ctx, name)
