@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
 	myErr "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/errors"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/logger"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
@@ -65,6 +66,7 @@ func TestImport(t *testing.T) {
 			},
 		}
 		accessor := &interfaces.AuthAccessor{}
+		publicCtx := common.SetPublicAPIToCtx(context.TODO(), true)
 		toolInfo := interfaces.ToolInfo{
 			Name:         "tool_a",
 			Description:  "tool_desc_a",
@@ -133,7 +135,7 @@ func TestImport(t *testing.T) {
 			mockToolBoxDB.EXPECT().SelectToolBoxByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil, nil)
 			mockToolBoxDB.EXPECT().SelectListByBoxIDs(gomock.Any(), gomock.Any()).Return([]*model.ToolboxDB{}, nil)
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("GetAccessor"))
-			err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			So(err, ShouldNotBeNil)
 		})
 		Convey("创建模式: 批量导入工具箱及工具元数据", func() {
@@ -144,7 +146,7 @@ func TestImport(t *testing.T) {
 				importData.Toolbox.Configs[0].BoxName = " BoxName"
 				mockValidator.EXPECT().ValidatorToolBoxName(gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("ValidatorToolBoxName"))
 				mockValidator.EXPECT().ValidatorStruct(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-				err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+				err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 				So(err, ShouldNotBeNil)
 			})
 			Convey("校验导入的工具箱信息: 工具箱desc不合法", func() {
@@ -152,7 +154,7 @@ func TestImport(t *testing.T) {
 				mockValidator.EXPECT().ValidatorStruct(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockValidator.EXPECT().ValidatorToolBoxName(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockValidator.EXPECT().ValidatorToolBoxDesc(gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("ValidatorToolBoxDesc")).Times(1)
-				err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+				err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 				So(err, ShouldNotBeNil)
 			})
 			Convey("校验导入的工具箱信息: 工具名字不合法", func() {
@@ -168,7 +170,7 @@ func TestImport(t *testing.T) {
 				mockValidator.EXPECT().ValidatorToolBoxDesc(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockValidator.EXPECT().ValidatorToolName(gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("ValidatorToolName")).Times(1)
 				mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
-				err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+				err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 				So(err, ShouldNotBeNil)
 			})
 			Convey("校验导入的工具箱信息: 工具Desc不合法", func() {
@@ -185,7 +187,7 @@ func TestImport(t *testing.T) {
 				mockValidator.EXPECT().ValidatorToolName(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockValidator.EXPECT().ValidatorToolDesc(gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("ValidatorToolDesc")).Times(1)
 				mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
-				err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+				err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 				So(err, ShouldNotBeNil)
 			})
 			Convey("校验导入的工具箱信息: 工具元数据为空", func() {
@@ -202,7 +204,7 @@ func TestImport(t *testing.T) {
 				mockValidator.EXPECT().ValidatorToolName(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockValidator.EXPECT().ValidatorToolDesc(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
-				err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+				err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 				So(err, ShouldNotBeNil)
 				httpErr, ok := err.(*myErr.HTTPError)
 				So(ok, ShouldBeTrue)
@@ -222,7 +224,7 @@ func TestImport(t *testing.T) {
 			// 	mockValidator.EXPECT().ValidatorToolName(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			// 	mockValidator.EXPECT().ValidatorToolDesc(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			// 	mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
-			// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			// 	So(err, ShouldNotBeNil)
 			// 	httpErr, ok := err.(*myErr.HTTPError)
 			// 	So(ok, ShouldBeTrue)
@@ -238,7 +240,7 @@ func TestImport(t *testing.T) {
 			// 	}
 
 			// 	mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
-			// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			// 	So(err, ShouldNotBeNil)
 			// 	httpErr, ok := err.(*myErr.HTTPError)
 			// 	So(ok, ShouldBeTrue)
@@ -256,7 +258,7 @@ func TestImport(t *testing.T) {
 			// 		},
 			// 	}
 			// 	mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
-			// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			// 	So(err, ShouldNotBeNil)
 			// 	httpErr, ok := err.(*myErr.HTTPError)
 			// 	So(ok, ShouldBeTrue)
@@ -271,7 +273,7 @@ func TestImport(t *testing.T) {
 			// 	}
 			// 	mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
 			// 	mockToolBoxDB.EXPECT().InsertToolBox(gomock.Any(), gomock.Any(), gomock.Any()).Return("", mocks.MockFuncErr("InsertToolBox"))
-			// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			// 	So(err, ShouldNotBeNil)
 			// 	httpErr, ok := err.(*myErr.HTTPError)
 			// 	So(ok, ShouldBeTrue)
@@ -287,7 +289,7 @@ func TestImport(t *testing.T) {
 			// 	mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
 			// 	mockToolBoxDB.EXPECT().InsertToolBox(gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil)
 			// 	mockMetadataDB.EXPECT().InsertAPIMetadatas(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("InsertAPIMetadatas"))
-			// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			// 	So(err, ShouldNotBeNil)
 			// 	httpErr, ok := err.(*myErr.HTTPError)
 			// 	So(ok, ShouldBeTrue)
@@ -304,7 +306,7 @@ func TestImport(t *testing.T) {
 			// 	mockToolBoxDB.EXPECT().InsertToolBox(gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil)
 			// 	mockMetadataDB.EXPECT().InsertAPIMetadatas(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil)
 			// 	mockToolDB.EXPECT().InsertTools(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("InsertTools"))
-			// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			// 	So(err, ShouldNotBeNil)
 			// 	httpErr, ok := err.(*myErr.HTTPError)
 			// 	So(ok, ShouldBeTrue)
@@ -327,7 +329,7 @@ func TestImport(t *testing.T) {
 			// 	mockMetadataDB.EXPECT().InsertAPIMetadatas(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil)
 			// 	mockToolDB.EXPECT().InsertTools(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil)
 			// 	mockOperatorMgnt.EXPECT().Import(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("Import"))
-			// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			// 	So(err, ShouldNotBeNil)
 			// })
 			// Convey("添加所有者权限失败", func() {
@@ -349,7 +351,7 @@ func TestImport(t *testing.T) {
 			// 	mockOperatorMgnt.EXPECT().Import(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			// 	mockAuthService.EXPECT().CreateOwnerPolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("CreateOwnerPolicy"))
 			// 	mockAuditLog.EXPECT().Logger(gomock.Any(), gomock.Any())
-			// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			// 	So(err, ShouldBeNil)
 			// 	time.Sleep(100 * time.Millisecond)
 			// })
@@ -366,7 +368,7 @@ func TestImport(t *testing.T) {
 			// 	mockToolDB.EXPECT().InsertTools(gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{}, nil)
 			// 	mockAuthService.EXPECT().CreateOwnerPolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			// 	mockAuditLog.EXPECT().Logger(gomock.Any(), gomock.Any())
-			// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeCreate, importData, "")
+			// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeCreate, importData, "")
 			// 	So(err, ShouldBeNil)
 			// 	time.Sleep(100 * time.Millisecond)
 			// })
@@ -384,14 +386,14 @@ func TestImport(t *testing.T) {
 		// 	Convey("检查编辑权限失败", func() {
 		// 		mockToolBoxDB.EXPECT().SelectListByBoxIDs(gomock.Any(), gomock.Any()).Return(boxList, nil)
 		// 		mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeToolBox).Return(mocks.MockFuncErr("CheckModifyPermission"))
-		// 		err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeUpsert, importData, "")
+		// 		err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeUpsert, importData, "")
 		// 		So(err, ShouldNotBeNil)
 		// 	})
 		// 	Convey("内置工具箱不允许编辑", func() {
 		// 		boxList[0].IsInternal = true
 		// 		mockToolBoxDB.EXPECT().SelectListByBoxIDs(gomock.Any(), gomock.Any()).Return(boxList, nil)
 		// 		mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeToolBox).Return(nil)
-		// 		err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeUpsert, importData, "")
+		// 		err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeUpsert, importData, "")
 		// 		So(err, ShouldNotBeNil)
 		// 		httpErr, ok := err.(*myErr.HTTPError)
 		// 		So(ok, ShouldBeTrue)
@@ -401,7 +403,7 @@ func TestImport(t *testing.T) {
 		// 		importData.Toolbox.Configs[0].BoxName = "mock name err 不允许空格"
 		// 		mockToolBoxDB.EXPECT().SelectListByBoxIDs(gomock.Any(), gomock.Any()).Return(boxList, nil)
 		// 		mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeToolBox).Return(nil)
-		// 		err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeUpsert, importData, "")
+		// 		err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeUpsert, importData, "")
 		// 		So(err, ShouldNotBeNil)
 		// 		httpErr, ok := err.(*myErr.HTTPError)
 		// 		So(ok, ShouldBeTrue)
@@ -413,7 +415,7 @@ func TestImport(t *testing.T) {
 		// 		mockAuthService.EXPECT().CheckModifyPermission(gomock.Any(), gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeToolBox).Return(nil)
 		// 		mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
 		// 		mockToolBoxDB.EXPECT().UpdateToolBox(gomock.Any(), gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("UpdateToolBox"))
-		// 		err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeUpsert, importData, "")
+		// 		err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeUpsert, importData, "")
 		// 		So(err, ShouldNotBeNil)
 		// 		httpErr, ok := err.(*myErr.HTTPError)
 		// 		So(ok, ShouldBeTrue)
@@ -425,7 +427,7 @@ func TestImport(t *testing.T) {
 		// 		mockCategoryManager.EXPECT().CheckCategory(gomock.Any()).Return(false)
 		// 		mockToolBoxDB.EXPECT().UpdateToolBox(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		// 		mockToolDB.EXPECT().SelectToolByBoxID(gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("SelectToolByBoxID"))
-		// 		err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeUpsert, importData, "")
+		// 		err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeUpsert, importData, "")
 		// 		So(err, ShouldNotBeNil)
 		// 		httpErr, ok := err.(*myErr.HTTPError)
 		// 		So(ok, ShouldBeTrue)
@@ -438,7 +440,7 @@ func TestImport(t *testing.T) {
 		// 		mockToolBoxDB.EXPECT().UpdateToolBox(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		// 		mockToolDB.EXPECT().SelectToolByBoxID(gomock.Any(), gomock.Any()).Return(tools, nil)
 		// 		mockToolDB.EXPECT().DeleteBoxByIDAndTools(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(mocks.MockFuncErr("DeleteBoxByIDAndTools"))
-		// 		err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeUpsert, importData, "")
+		// 		err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeUpsert, importData, "")
 		// 		So(err, ShouldNotBeNil)
 		// 		httpErr, ok := err.(*myErr.HTTPError)
 		// 		So(ok, ShouldBeTrue)
@@ -452,7 +454,7 @@ func TestImport(t *testing.T) {
 		// 	mockToolDB.EXPECT().SelectToolByBoxID(gomock.Any(), gomock.Any()).Return(tools, nil)
 		// 	mockToolDB.EXPECT().DeleteBoxByIDAndTools(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		// 	mockMetadataDB.EXPECT().InsertAPIMetadatas(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("InsertAPIMetadatas"))
-		// 	err := toolbox.Import(context.TODO(), nil, interfaces.ImportTypeUpsert, importData, "")
+		// 	err := toolbox.Import(publicCtx, nil, interfaces.ImportTypeUpsert, importData, "")
 		// 	So(err, ShouldNotBeNil)
 		// 	httpErr, ok := err.(*myErr.HTTPError)
 		// 	So(ok, ShouldBeTrue)
@@ -493,6 +495,7 @@ func TestExport(t *testing.T) {
 		}
 		boxID := "box_id_1"
 		accessor := &interfaces.AuthAccessor{}
+		publicCtx := common.SetPublicAPIToCtx(context.TODO(), true)
 		ids := []string{boxID}
 		exportReq := &interfaces.ExportReq{
 			IDs: ids,
@@ -524,21 +527,21 @@ func TestExport(t *testing.T) {
 		Convey("导出预检查", func() {
 			Convey("获取accessor信息失败", func() {
 				mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("GetAccessor"))
-				_, err := toolbox.Export(context.TODO(), exportReq)
+				_, err := toolbox.Export(publicCtx, exportReq)
 				So(err, ShouldNotBeNil)
 			})
 			Convey("检查权限失败", func() {
 				mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(accessor, nil)
 				mockAuthService.EXPECT().ResourceFilterIDs(gomock.Any(), gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeToolBox,
 					interfaces.AuthOperationTypeView).Return(nil, mocks.MockFuncErr("ResourceFilterIDs"))
-				_, err := toolbox.Export(context.TODO(), exportReq)
+				_, err := toolbox.Export(publicCtx, exportReq)
 				So(err, ShouldNotBeNil)
 			})
 			Convey("没有查看权限", func() {
 				mockAuthService.EXPECT().GetAccessor(gomock.Any(), gomock.Any()).Return(accessor, nil)
 				mockAuthService.EXPECT().ResourceFilterIDs(gomock.Any(), gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeToolBox,
 					interfaces.AuthOperationTypeView).Return([]string{}, nil)
-				_, err := toolbox.Export(context.TODO(), exportReq)
+				_, err := toolbox.Export(publicCtx, exportReq)
 				So(err, ShouldNotBeNil)
 				httpErr, ok := err.(*myErr.HTTPError)
 				So(ok, ShouldBeTrue)
@@ -549,7 +552,7 @@ func TestExport(t *testing.T) {
 				mockAuthService.EXPECT().ResourceFilterIDs(gomock.Any(), gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeToolBox,
 					interfaces.AuthOperationTypeView).Return(ids, nil)
 				mockToolBoxDB.EXPECT().SelectListByBoxIDs(gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("SelectListByBoxIDs"))
-				_, err := toolbox.Export(context.TODO(), exportReq)
+				_, err := toolbox.Export(publicCtx, exportReq)
 				So(err, ShouldNotBeNil)
 				httpErr, ok := err.(*myErr.HTTPError)
 				So(ok, ShouldBeTrue)
@@ -560,7 +563,7 @@ func TestExport(t *testing.T) {
 				mockAuthService.EXPECT().ResourceFilterIDs(gomock.Any(), gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeToolBox,
 					interfaces.AuthOperationTypeView).Return(ids, nil)
 				mockToolBoxDB.EXPECT().SelectListByBoxIDs(gomock.Any(), gomock.Any()).Return([]*model.ToolboxDB{}, nil)
-				_, err := toolbox.Export(context.TODO(), exportReq)
+				_, err := toolbox.Export(publicCtx, exportReq)
 				So(err, ShouldNotBeNil)
 				httpErr, ok := err.(*myErr.HTTPError)
 				So(ok, ShouldBeTrue)
@@ -574,7 +577,7 @@ func TestExport(t *testing.T) {
 			Convey("内置工具箱不允许导出", func() {
 				toolBoxDB.IsInternal = true
 				mockToolBoxDB.EXPECT().SelectListByBoxIDs(gomock.Any(), gomock.Any()).Return([]*model.ToolboxDB{toolBoxDB}, nil)
-				_, err := toolbox.Export(context.TODO(), exportReq)
+				_, err := toolbox.Export(publicCtx, exportReq)
 				So(err, ShouldNotBeNil)
 				httpErr, ok := err.(*myErr.HTTPError)
 				So(ok, ShouldBeTrue)
@@ -584,7 +587,7 @@ func TestExport(t *testing.T) {
 				mockToolBoxDB.EXPECT().SelectListByBoxIDs(gomock.Any(), gomock.Any()).Return([]*model.ToolboxDB{toolBoxDB}, nil)
 				mockCategoryManager.EXPECT().GetCategoryName(gomock.Any(), gomock.Any()).Return("")
 				mockToolDB.EXPECT().SelectToolBoxByIDs(gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("SelectToolBoxByIDs"))
-				_, err := toolbox.Export(context.TODO(), exportReq)
+				_, err := toolbox.Export(publicCtx, exportReq)
 				So(err, ShouldNotBeNil)
 				httpErr, ok := err.(*myErr.HTTPError)
 				So(ok, ShouldBeTrue)
@@ -595,7 +598,7 @@ func TestExport(t *testing.T) {
 				mockToolBoxDB.EXPECT().SelectListByBoxIDs(gomock.Any(), gomock.Any()).Return([]*model.ToolboxDB{toolBoxDB}, nil)
 				mockCategoryManager.EXPECT().GetCategoryName(gomock.Any(), gomock.Any()).Return("")
 				mockToolDB.EXPECT().SelectToolBoxByIDs(gomock.Any(), gomock.Any()).Return(tools, nil)
-				_, err := toolbox.Export(context.TODO(), exportReq)
+				_, err := toolbox.Export(publicCtx, exportReq)
 				So(err, ShouldNotBeNil)
 				httpErr, ok := err.(*myErr.HTTPError)
 				So(ok, ShouldBeTrue)
@@ -606,7 +609,7 @@ func TestExport(t *testing.T) {
 			// 	mockCategoryManager.EXPECT().GetCategoryName(gomock.Any(), gomock.Any()).Return("")
 			// 	mockToolDB.EXPECT().SelectToolBoxByIDs(gomock.Any(), gomock.Any()).Return(tools, nil)
 			// 	mockMetadataDB.EXPECT().SelectListByVersion(gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("SelectListByVersion"))
-			// 	_, err := toolbox.Export(context.TODO(), exportReq)
+			// 	_, err := toolbox.Export(publicCtx, exportReq)
 			// 	So(err, ShouldNotBeNil)
 			// 	httpErr, ok := err.(*myErr.HTTPError)
 			// 	So(ok, ShouldBeTrue)
@@ -618,7 +621,7 @@ func TestExport(t *testing.T) {
 			// 	mockCategoryManager.EXPECT().GetCategoryName(gomock.Any(), gomock.Any()).Return("")
 			// 	mockToolDB.EXPECT().SelectToolBoxByIDs(gomock.Any(), gomock.Any()).Return(tools, nil)
 			// 	mockMetadataDB.EXPECT().SelectListByVersion(gomock.Any(), gomock.Any()).Return([]*model.APIMetadataDB{metadataDB}, nil)
-			// 	_, err := toolbox.Export(context.TODO(), exportReq)
+			// 	_, err := toolbox.Export(publicCtx, exportReq)
 			// 	So(err, ShouldNotBeNil)
 			// 	httpErr, ok := err.(*myErr.HTTPError)
 			// 	So(ok, ShouldBeTrue)
@@ -629,7 +632,7 @@ func TestExport(t *testing.T) {
 			// 	mockCategoryManager.EXPECT().GetCategoryName(gomock.Any(), gomock.Any()).Return("")
 			// 	mockToolDB.EXPECT().SelectToolBoxByIDs(gomock.Any(), gomock.Any()).Return([]*model.ToolDB{tools[0]}, nil)
 			// 	mockMetadataDB.EXPECT().SelectListByVersion(gomock.Any(), gomock.Any()).Return([]*model.APIMetadataDB{metadataDB}, nil)
-			// 	_, err := toolbox.Export(context.TODO(), exportReq)
+			// 	_, err := toolbox.Export(publicCtx, exportReq)
 			// 	So(err, ShouldBeNil)
 			// })
 		})
@@ -642,7 +645,7 @@ func TestExport(t *testing.T) {
 		// 	mockToolDB.EXPECT().SelectToolBoxByIDs(gomock.Any(), gomock.Any()).Return(tools, nil)
 		// 	mockMetadataDB.EXPECT().SelectListByVersion(gomock.Any(), gomock.Any()).Return([]*model.APIMetadataDB{metadataDB}, nil)
 		// 	mockOperatorMgnt.EXPECT().Export(gomock.Any(), gomock.Any()).Return(nil, mocks.MockFuncErr("OperatorMgntExport"))
-		// 	_, err := toolbox.Export(context.TODO(), exportReq)
+		// 	_, err := toolbox.Export(publicCtx, exportReq)
 		// 	So(err, ShouldNotBeNil)
 		// })
 		// Convey("导出成功", func() {
@@ -654,7 +657,7 @@ func TestExport(t *testing.T) {
 		// 	mockToolDB.EXPECT().SelectToolBoxByIDs(gomock.Any(), gomock.Any()).Return(tools, nil)
 		// 	mockMetadataDB.EXPECT().SelectListByVersion(gomock.Any(), gomock.Any()).Return([]*model.APIMetadataDB{metadataDB}, nil)
 		// 	mockOperatorMgnt.EXPECT().Export(gomock.Any(), gomock.Any()).Return(&interfaces.ComponentImpexConfigModel{}, nil)
-		// 	data, err := toolbox.Export(context.TODO(), exportReq)
+		// 	data, err := toolbox.Export(publicCtx, exportReq)
 		// 	So(err, ShouldBeNil)
 		// 	So(data, ShouldNotBeNil)
 		// 	So(data.Toolbox, ShouldNotBeNil)

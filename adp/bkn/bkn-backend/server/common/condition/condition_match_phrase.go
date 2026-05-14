@@ -18,7 +18,7 @@ type MatchPhraseCond struct {
 }
 
 func NewMatchPhraseCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*ViewField) (Condition, error) {
-	if cfg.ValueOptCfg.ValueFrom != ValueFrom_Const {
+	if cfg.ValueFrom != ValueFrom_Const {
 		return nil, fmt.Errorf("condition [match_phrase] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 

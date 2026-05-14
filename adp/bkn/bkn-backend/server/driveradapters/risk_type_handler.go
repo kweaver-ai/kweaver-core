@@ -12,14 +12,13 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/common/visitor"
@@ -59,10 +58,7 @@ func (r *restHandler) CreateRiskTypesByIn(c *gin.Context) {
 }
 
 func (r *restHandler) CreateRiskTypesByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "创建风险类", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -70,12 +66,12 @@ func (r *restHandler) CreateRiskTypesByEx(c *gin.Context) {
 }
 
 func (r *restHandler) CreateRiskTypes(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "创建风险类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -83,16 +79,21 @@ func (r *restHandler) CreateRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -101,14 +102,18 @@ func (r *restHandler) CreateRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 		Entries []*interfaces.RiskType `json:"entries"`
 	}
 	if err = c.ShouldBindJSON(&requestData); err != nil {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RiskType_InvalidParameter).
-			WithErrorDetails("Binding Parameter Failed:"+err.Error()))
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RiskType_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed:" + err.Error())
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	riskTypes := requestData.Entries
 	if len(riskTypes) == 0 {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_RequestBody).
-			WithErrorDetails("No risk type was passed in"))
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("No risk type was passed in")
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -119,13 +124,17 @@ func (r *restHandler) CreateRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	if err = ValidateRiskTypes(ctx, knID, riskTypes); err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	rtIDs, err := r.rtsRisk.CreateRiskTypes(ctx, nil, riskTypes, mode)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -138,6 +147,7 @@ func (r *restHandler) CreateRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 	for _, id := range rtIDs {
 		result = append(result, map[string]any{"id": id})
 	}
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusCreated)
 	rest.ReplyOK(c, http.StatusCreated, result)
 }
 
@@ -155,12 +165,12 @@ func (r *restHandler) UpdateRiskTypeByEx(c *gin.Context) {
 }
 
 func (r *restHandler) UpdateRiskType(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "修改风险类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	rtID := c.Param("rt_id")
@@ -169,18 +179,24 @@ func (r *restHandler) UpdateRiskType(c *gin.Context, visitor hydra.Visitor) {
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	var riskType interfaces.RiskType
 	if err = c.ShouldBindJSON(&riskType); err != nil {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RiskType_InvalidParameter).
-			WithErrorDetails("Binding Parameter Failed:"+err.Error()))
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RiskType_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed:" + err.Error())
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	riskType.RTID = rtID
@@ -189,46 +205,59 @@ func (r *restHandler) UpdateRiskType(c *gin.Context, visitor hydra.Visitor) {
 
 	oldName, exist, err := r.rtsRisk.CheckRiskTypeExistByID(ctx, knID, branch, rtID)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_RiskType_RiskTypeNotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_RiskType_RiskTypeNotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	if err = ValidateRiskType(ctx, &riskType); err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	if oldName != riskType.RTName {
 		_, exist, err = r.rtsRisk.CheckRiskTypeExistByName(ctx, knID, branch, riskType.RTName)
 		if err != nil {
-			rest.ReplyError(c, err.(*rest.HTTPError))
+			httpErr := err.(*rest.HTTPError)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
 			return
 		}
 		if exist {
 			errDetails := fmt.Sprintf("risk type name '%s' already exists", riskType.RTName)
-			rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RiskType_RiskTypeNameExisted).
+			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RiskType_RiskTypeNameExisted).
 				WithDescription(map[string]any{"name": riskType.RTName}).
-				WithErrorDetails(errDetails))
+				WithErrorDetails(errDetails)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
 			return
 		}
 	}
 
 	if err = r.rtsRisk.UpdateRiskType(ctx, nil, &riskType); err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	audit.NewInfoLog(audit.OPERATION, audit.UPDATE, audit.TransforOperator(visitor),
 		interfaces.GenerateRiskTypeAuditObject(rtID, riskType.RTName), "")
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
 func (r *restHandler) DeleteRiskTypes(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "删除风险类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -237,7 +266,7 @@ func (r *restHandler) DeleteRiskTypes(c *gin.Context) {
 	}
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	rtIDsStr := c.Param("rt_ids")
@@ -246,11 +275,15 @@ func (r *restHandler) DeleteRiskTypes(c *gin.Context) {
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -259,18 +292,24 @@ func (r *restHandler) DeleteRiskTypes(c *gin.Context) {
 	for _, rtID := range rtIDs {
 		rtName, exist, e := r.rtsRisk.CheckRiskTypeExistByID(ctx, knID, branch, rtID)
 		if e != nil {
-			rest.ReplyError(c, e.(*rest.HTTPError))
+			httpErr := e.(*rest.HTTPError)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
 			return
 		}
 		if !exist {
-			rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_RiskType_RiskTypeNotFound))
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_RiskType_RiskTypeNotFound)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
 			return
 		}
 		riskTypes = append(riskTypes, &interfaces.RiskType{RTID: rtID, RTName: rtName})
 	}
 
 	if err = r.rtsRisk.DeleteRiskTypesByIDs(ctx, nil, knID, branch, rtIDs); err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -278,6 +317,7 @@ func (r *restHandler) DeleteRiskTypes(c *gin.Context) {
 		audit.NewWarnLog(audit.OPERATION, audit.DELETE, audit.TransforOperator(visitor),
 			interfaces.GenerateRiskTypeAuditObject(rt.RTID, rt.RTName), audit.SUCCESS, "")
 	}
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -295,12 +335,12 @@ func (r *restHandler) ListRiskTypesByEx(c *gin.Context) {
 }
 
 func (r *restHandler) ListRiskTypes(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "分页获取风险类列表", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -308,11 +348,15 @@ func (r *restHandler) ListRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -325,7 +369,9 @@ func (r *restHandler) ListRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 
 	pageParam, err := validatePaginationQueryParameters(ctx, offset, limit, sort, direction, interfaces.RiskTypeSort)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -344,11 +390,14 @@ func (r *restHandler) ListRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 
 	list, total, err := r.rtsRisk.ListRiskTypes(ctx, query)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	logger.Debug("Handler ListRiskTypes Success")
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]any{"entries": list, "total_count": total})
 }
 
@@ -361,12 +410,12 @@ func (r *restHandler) GetRiskTypesByEx(c *gin.Context) {
 }
 
 func (r *restHandler) GetRiskTypes(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "按ID获取风险类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	rtIDsStr := c.Param("rt_ids")
@@ -375,18 +424,24 @@ func (r *restHandler) GetRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	rtIDs := common.StringToStringSlice(rtIDsStr)
 	list, err := r.rtsRisk.GetRiskTypesByIDs(ctx, knID, branch, rtIDs)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -401,11 +456,14 @@ func (r *restHandler) GetRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 				missing = append(missing, id)
 			}
 		}
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_RiskType_RiskTypeNotFound).
-			WithErrorDetails(fmt.Sprintf("Risk types not found: %v", missing)))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_RiskType_RiskTypeNotFound).
+			WithErrorDetails(fmt.Sprintf("Risk types not found: %v", missing))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]any{"entries": list})
 }
 
@@ -416,7 +474,7 @@ func (r *restHandler) GetRiskTypesByInWithPath(c *gin.Context) {
 
 // GetRiskTypesByIn 内部 API：按 risk_type_ids、branch 批量获取风险类（供 ontology-query 调用）
 func (r *restHandler) GetRiskTypesByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "内部获取风险类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	knID := c.Param("kn_id")
@@ -425,6 +483,7 @@ func (r *restHandler) GetRiskTypesByIn(c *gin.Context) {
 	span.SetAttributes(attr.Key("kn_id").String(knID), attr.Key("risk_type_ids").String(rtIDsStr), attr.Key("branch").String(branch))
 
 	if rtIDsStr == "" {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"entries": []*interfaces.RiskType{}})
 		return
 	}
@@ -432,10 +491,13 @@ func (r *restHandler) GetRiskTypesByIn(c *gin.Context) {
 	rtIDs := common.StringToStringSlice(rtIDsStr)
 	list, err := r.rtsRisk.GetRiskTypesByIDs(ctx, knID, branch, rtIDs)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]any{"entries": list})
 }
 
@@ -449,11 +511,7 @@ func (r *restHandler) SearchRiskTypesByIn(c *gin.Context) {
 // 检索风险类（外部）
 func (r *restHandler) SearchRiskTypesByEx(c *gin.Context) {
 	logger.Debug("Handler SearchRiskTypesByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"检索风险类", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -463,8 +521,7 @@ func (r *restHandler) SearchRiskTypesByEx(c *gin.Context) {
 // 检索风险类
 func (r *restHandler) SearchRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("SearchRiskTypes Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"检索风险类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -473,8 +530,8 @@ func (r *restHandler) SearchRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
-	o11y.Info(ctx, fmt.Sprintf("检索风险类请求参数: [%s]", c.Request.RequestURI))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
+	otellog.LogInfo(ctx, fmt.Sprintf("检索风险类请求参数: [%s]", c.Request.RequestURI))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -486,13 +543,13 @@ func (r *restHandler) SearchRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -502,12 +559,15 @@ func (r *restHandler) SearchRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RiskType_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Binding Concept Query Paramter Failed:%s", err.Error()))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
+
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
+
 	query.KNID = knID
 	query.Branch = branch
 	query.ModuleType = interfaces.MODULE_TYPE_RISK_TYPE
@@ -532,9 +592,11 @@ func (r *restHandler) SearchRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 	err = validateConceptsQuery(ctx, &query)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
+
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -542,12 +604,12 @@ func (r *restHandler) SearchRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 	result, err := r.rtsRisk.SearchRiskTypes(ctx, &query)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	logger.Debug("Handler SearchRiskTypes Success")
 	rest.ReplyOK(c, http.StatusOK, result)
 }

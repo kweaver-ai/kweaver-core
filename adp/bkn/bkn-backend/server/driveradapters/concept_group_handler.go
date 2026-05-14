@@ -13,14 +13,13 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/common/visitor"
@@ -39,12 +38,8 @@ func (r *restHandler) CreateConceptGroupByIn(c *gin.Context) {
 // 创建概念分组（外部）
 func (r *restHandler) CreateConceptGroupByEx(c *gin.Context) {
 	logger.Debug("Handler CreateConceptGroupByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"创建概念分组", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -54,8 +49,7 @@ func (r *restHandler) CreateConceptGroupByEx(c *gin.Context) {
 // 创建概念分组
 func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler CreateConceptGroup Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"创建概念分组", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -66,13 +60,13 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 导入模式
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	httpErr := validateImportMode(ctx, mode)
 	if httpErr != nil {
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -89,7 +83,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -106,14 +100,14 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -126,10 +120,10 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 			WithErrorDetails("Binding Paramter Failed:" + err.Error())
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -137,14 +131,14 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	cg.Branch = branch
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("创建概念分组请求参数: [%s,%v]", c.Request.RequestURI, cg))
+	otellog.LogInfo(ctx, fmt.Sprintf("创建概念分组请求参数: [%s,%v]", c.Request.RequestURI, cg))
 
 	// 校验导入模型时模块是否是概念分组
 	if cg.ModuleType != "" && cg.ModuleType != interfaces.MODULE_TYPE_CONCEPT_GROUP {
 		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_InvalidParameter_ModuleType).
 			WithErrorDetails("Concept Group's Module Type is not 'concept_group'")
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -155,12 +149,12 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Validate concept group[%s] failed: %s. %v", cg.CGName,
-			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("Validate concept group[%s] failed: %s. %v", cg.CGName,
+			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
 		span.SetAttributes(attr.Key("cg_name").String(cg.CGName))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -170,7 +164,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		err = ValidateObjectTypes(ctx, cg.KNID, cg.ObjectTypes, strictMode)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -179,7 +173,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		err = ValidateRelationTypes(ctx, cg.KNID, cg.RelationTypes, strictMode)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -188,7 +182,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		err = ValidateActionTypes(ctx, cg.KNID, cg.ActionTypes, strictMode)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -200,7 +194,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -210,7 +204,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		interfaces.GenerateConceptGroupAuditObject(knID, cg.CGName), "")
 
 	logger.Debug("Handler CreateConceptGroup Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, map[string]any{"id": cgID})
 }
 
@@ -224,10 +218,7 @@ func (r *restHandler) ValidateConceptGroupsByIn(c *gin.Context) {
 // ValidateConceptGroupsByEx 仅校验概念分组依赖存在性，不写库（外部）
 func (r *restHandler) ValidateConceptGroupsByEx(c *gin.Context) {
 	logger.Debug("Handler ValidateConceptGroupsByEx Start")
-	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"校验概念分组", trace.WithSpanKind(trace.SpanKindServer))
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -237,8 +228,9 @@ func (r *restHandler) ValidateConceptGroupsByEx(c *gin.Context) {
 // ValidateConceptGroups 仅校验概念分组依赖存在性，不写库
 func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler ValidateConceptGroups Start")
-	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"校验概念分组", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
@@ -248,12 +240,14 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -263,11 +257,15 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
-		rest.ReplyError(c, err.(*rest.HTTPError))
+		httpErr := err.(*rest.HTTPError)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 
@@ -275,12 +273,15 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 		Entries []*interfaces.ConceptGroup `json:"entries"`
 	}
 	if err = c.ShouldBindJSON(&requestData); err != nil {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
-			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: " + err.Error())
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
 		return
 	}
 	conceptGroups := requestData.Entries
 	if len(conceptGroups) == 0 {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
 		return
 	}
@@ -292,14 +293,17 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 
 	for _, cg := range conceptGroups {
 		if err = ValidateConceptGroup(ctx, cg); err != nil {
+			oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 			return
 		}
 	}
 	if err = r.cgs.ValidateConceptGroups(ctx, knID, branch, conceptGroups, strictMode, nil, mode); err != nil {
+		oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 		return
 	}
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
 }
 
@@ -314,12 +318,8 @@ func (r *restHandler) UpdateConceptGroupByIn(c *gin.Context) {
 // 更新概念分组（外部）
 func (r *restHandler) UpdateConceptGroupByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateConceptGroupByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"修改概念分组", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -329,8 +329,7 @@ func (r *restHandler) UpdateConceptGroupByEx(c *gin.Context) {
 // 更新概念分组
 func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler UpdateConceptGroup Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"修改概念分组", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -341,7 +340,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -357,7 +356,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -367,14 +366,14 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -391,19 +390,20 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 			WithErrorDetails("Binding Paramter Failed:" + err.Error())
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
+
 	cg.CGID = cgID
 	cg.KNID = knID
 	cg.Branch = branch // 分组的 branch 从query参数中取
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("修改概念分组请求参数: [%s, %v]", c.Request.RequestURI, cg))
+	otellog.LogInfo(ctx, fmt.Sprintf("修改概念分组请求参数: [%s, %v]", c.Request.RequestURI, cg))
 
 	// 先按id获取原对象.
 	oldKNName, exist, err := r.cgs.CheckConceptGroupExistByID(ctx, knID, branch, cgID)
@@ -411,7 +411,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -420,7 +420,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -431,12 +431,12 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Validate concept group[%s] failed: %s. %v", cg.CGName,
-			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("Validate concept group[%s] failed: %s. %v", cg.CGName,
+			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
 		span.SetAttributes(attr.Key("kn_name").String(cg.CGName))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -450,7 +450,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 			httpErr := err.(*rest.HTTPError)
 
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -459,7 +459,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 				berrors.BknBackend_ConceptGroup_ConceptGroupNameExisted)
 
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -472,7 +472,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -481,15 +481,14 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		interfaces.GenerateConceptGroupAuditObject(knID, cg.CGName), "")
 
 	logger.Debug("Handler UpdateConceptGroup Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
 // 批量删除概念分组
 func (r *restHandler) DeleteConceptGroup(c *gin.Context) {
 	logger.Debug("Handler DeleteConceptGroup Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"删除概念分组", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -505,10 +504,10 @@ func (r *restHandler) DeleteConceptGroup(c *gin.Context) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("删除概念分组请求参数: [%s]", c.Request.RequestURI))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除概念分组请求参数: [%s]", c.Request.RequestURI))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -523,14 +522,14 @@ func (r *restHandler) DeleteConceptGroup(c *gin.Context) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -545,7 +544,7 @@ func (r *restHandler) DeleteConceptGroup(c *gin.Context) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 
 		rest.ReplyError(c, httpErr)
 		return
@@ -554,7 +553,7 @@ func (r *restHandler) DeleteConceptGroup(c *gin.Context) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -564,7 +563,7 @@ func (r *restHandler) DeleteConceptGroup(c *gin.Context) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -574,7 +573,7 @@ func (r *restHandler) DeleteConceptGroup(c *gin.Context) {
 		interfaces.GenerateConceptGroupAuditObject(knID, cgName), audit.SUCCESS, "")
 
 	logger.Debug("Handler DeleteConceptGroup Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -590,12 +589,8 @@ func (r *restHandler) ListConceptGroupsByIn(c *gin.Context) {
 // 分页获取概念分组列表（外部）
 func (r *restHandler) ListConceptGroupsByEx(c *gin.Context) {
 	logger.Debug("Handler ListConceptGroupsByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"分页获取概念分组列表", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -605,8 +600,7 @@ func (r *restHandler) ListConceptGroupsByEx(c *gin.Context) {
 // 分页获取概念分组列表
 func (r *restHandler) ListConceptGroups(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("ListConceptGroups Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"分页获取概念分组列表", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -617,10 +611,10 @@ func (r *restHandler) ListConceptGroups(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("分页获取概念分组列表请求参数: [%s]", c.Request.RequestURI))
+	otellog.LogInfo(ctx, fmt.Sprintf("分页获取概念分组列表请求参数: [%s]", c.Request.RequestURI))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -634,14 +628,14 @@ func (r *restHandler) ListConceptGroups(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -664,11 +658,11 @@ func (r *restHandler) ListConceptGroups(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -692,17 +686,17 @@ func (r *restHandler) ListConceptGroups(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	logger.Debug("Handler ListConceptGroups Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }
 
@@ -718,12 +712,8 @@ func (r *restHandler) GetConceptGroupByIn(c *gin.Context) {
 // 按 id 获取概念分组对象信息（外部）
 func (r *restHandler) GetConceptGroupByEx(c *gin.Context) {
 	logger.Debug("Handler GetKNByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"分页获取概念分组列表", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -733,8 +723,7 @@ func (r *restHandler) GetConceptGroupByEx(c *gin.Context) {
 // 按 id 获取概念分组对象信息
 func (r *restHandler) GetConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler GetConceptGroup Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"driver layer: Get concept group", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -745,7 +734,7 @@ func (r *restHandler) GetConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -759,14 +748,14 @@ func (r *restHandler) GetConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -775,7 +764,7 @@ func (r *restHandler) GetConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 	if mode != "" && mode != interfaces.Mode_Export {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_Mode).
 			WithErrorDetails(fmt.Sprintf("The mode:%s is invalid", mode))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -789,14 +778,13 @@ func (r *restHandler) GetConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 			berrors.BknBackend_ConceptGroup_InvalidParameter_IncludeStatistics).
 			WithErrorDetails(fmt.Sprintf("The include_statistics:%s is invalid", includeStatistics))
 
-		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
 
+		// 设置 trace 的错误信息的 attributes
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
-
 		return
 	}
 
@@ -810,7 +798,7 @@ func (r *restHandler) GetConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -822,14 +810,14 @@ func (r *restHandler) GetConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 			httpErr := err.(*rest.HTTPError)
 
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
 		cg.Statistics = statistics
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	logger.Debug("Handler GetConceptGroup Success")
 	rest.ReplyOK(c, http.StatusOK, cg)
 }
@@ -845,12 +833,8 @@ func (r *restHandler) AddObjectTypesToConceptGroupByIn(c *gin.Context) {
 // 创建概念分组（外部）
 func (r *restHandler) AddObjectTypesToConceptGroupByEx(c *gin.Context) {
 	logger.Debug("Handler AddObjectTypesToConceptGroupByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"给概念分组添加对象类", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -860,8 +844,7 @@ func (r *restHandler) AddObjectTypesToConceptGroupByEx(c *gin.Context) {
 // 创建概念分组
 func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler AddObjectTypesToConceptGroup Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"添加对象类到概念分组", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -872,7 +855,7 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -886,14 +869,14 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -908,7 +891,7 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -916,7 +899,7 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -931,10 +914,10 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 			WithErrorDetails("Binding Paramter Failed:" + err.Error())
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -948,7 +931,7 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 	if parseErr != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -959,7 +942,7 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -974,7 +957,7 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 	}
 
 	logger.Debug("Handler AddObjectTypeToGroup Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, result)
 }
 
@@ -989,12 +972,8 @@ func (r *restHandler) DeleteObjectTypesFromGroupByIn(c *gin.Context) {
 // 创建概念分组（外部）
 func (r *restHandler) DeleteObjectTypesFromGroupByEx(c *gin.Context) {
 	logger.Debug("Handler DeleteObjectTypesFromGroupByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"从概念分组中移除对象类", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -1004,8 +983,7 @@ func (r *restHandler) DeleteObjectTypesFromGroupByEx(c *gin.Context) {
 // 创建概念分组
 func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler DeleteObjectTypesFromGroup Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"从概念分组中移除对象类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -1016,7 +994,7 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -1030,14 +1008,14 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -1052,7 +1030,7 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -1060,7 +1038,7 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -1088,7 +1066,7 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -1100,7 +1078,7 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 			berrors.BknBackend_ConceptGroup_ConceptGroupRelationNotExisted).WithErrorDetails(errStr)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -1111,7 +1089,7 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -1124,6 +1102,6 @@ func (r *restHandler) DeleteObjectTypesFromGroup(c *gin.Context, visitor hydra.V
 	}
 
 	logger.Debug("Handler DeleteObjectTypes Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }

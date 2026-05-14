@@ -31,7 +31,7 @@ func NewRegexCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*DataP
 		return nil, fmt.Errorf("condition [regex] left field is not a string field: %s:%s", cfg.NameField.Name, cfg.NameField.Type)
 	}
 
-	val, ok := cfg.ValueOptCfg.Value.(string)
+	val, ok := cfg.Value.(string)
 	if !ok {
 		return nil, fmt.Errorf("condition [regex] right value is not a string value: %v", cfg.Value)
 	}

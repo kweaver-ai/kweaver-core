@@ -14,14 +14,13 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	attr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
 	"vega-backend/interfaces"
@@ -54,8 +53,7 @@ func NewConnectorTypeAccess(appSetting *common.AppSetting) interfaces.ConnectorT
 
 // Create creates a new ConnectorType.
 func (cta *connectorTypeAccess) Create(ctx context.Context, ct *interfaces.ConnectorType) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Insert into connector_type",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Insert into connector_type")
 	defer span.End()
 
 	span.SetAttributes(
@@ -68,9 +66,7 @@ func (cta *connectorTypeAccess) Create(ctx context.Context, ct *interfaces.Conne
 	// Serialize FieldConfig to JSON
 	fieldConfigStr, err := sonic.MarshalString(ct.FieldConfig)
 	if err != nil {
-		logger.Errorf("Failed to marshal field config: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to marshal field config: %v", err))
-		span.SetStatus(codes.Error, "Marshal field failed")
+		otellog.LogError(ctx, "Failed to marshal field config", err)
 		return err
 	}
 
@@ -98,19 +94,15 @@ func (cta *connectorTypeAccess) Create(ctx context.Context, ct *interfaces.Conne
 			ct.Enabled,
 		).ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build insert connector_type sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build insert connector_type sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build insert connector_type sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Insert connector_type SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Insert connector_type SQL: %s", sqlStr))
 
 	_, err = cta.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Insert connector_type failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Insert connector_type failed: %v", err))
-		span.SetStatus(codes.Error, "Insert failed")
+		otellog.LogError(ctx, "Insert connector_type failed", err)
 		return err
 	}
 
@@ -120,8 +112,7 @@ func (cta *connectorTypeAccess) Create(ctx context.Context, ct *interfaces.Conne
 
 // GetByType retrieves a ConnectorType by Type.
 func (cta *connectorTypeAccess) GetByType(ctx context.Context, tp string) (*interfaces.ConnectorType, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query connector_type by Type",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query connector_type by Type")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("connector_type").String(tp))
@@ -178,9 +169,7 @@ func (cta *connectorTypeAccess) GetByType(ctx context.Context, tp string) (*inte
 	if fieldConfigStr != "" {
 		err = sonic.UnmarshalString(fieldConfigStr, &ct.FieldConfig)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal field config: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal field config: %v", err))
-			span.SetStatus(codes.Error, "Unmarshal field failed")
+			otellog.LogError(ctx, "Failed to unmarshal field config", err)
 			return nil, err
 		}
 	}
@@ -191,8 +180,7 @@ func (cta *connectorTypeAccess) GetByType(ctx context.Context, tp string) (*inte
 
 // GetByName retrieves a ConnectorType by Name.
 func (cta *connectorTypeAccess) GetByName(ctx context.Context, name string) (*interfaces.ConnectorType, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query connector_type by Name",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query connector_type by Name")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("name").String(name))
@@ -249,9 +237,7 @@ func (cta *connectorTypeAccess) GetByName(ctx context.Context, name string) (*in
 	if fieldConfigStr != "" {
 		err = sonic.UnmarshalString(fieldConfigStr, &ct.FieldConfig)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal field config: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal field config: %v", err))
-			span.SetStatus(codes.Error, "Unmarshal field failed")
+			otellog.LogError(ctx, "Failed to unmarshal field config", err)
 			return nil, err
 		}
 	}
@@ -262,8 +248,7 @@ func (cta *connectorTypeAccess) GetByName(ctx context.Context, name string) (*in
 
 // List lists ConnectorTypes with filters.
 func (cta *connectorTypeAccess) List(ctx context.Context, params interfaces.ConnectorTypesQueryParams) ([]*interfaces.ConnectorType, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List connector_types",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "List connector_types")
 	defer span.End()
 
 	builder := sq.Select(
@@ -355,9 +340,7 @@ func (cta *connectorTypeAccess) List(ctx context.Context, params interfaces.Conn
 		if fieldConfigStr != "" {
 			err = sonic.UnmarshalString(fieldConfigStr, &ct.FieldConfig)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal field config: %v", err)
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal field config: %v", err))
-				span.SetStatus(codes.Error, "Unmarshal field failed")
+				otellog.LogError(ctx, "Failed to unmarshal field config", err)
 				return nil, 0, err
 			}
 		}
@@ -371,8 +354,7 @@ func (cta *connectorTypeAccess) List(ctx context.Context, params interfaces.Conn
 
 // Update updates a ConnectorType.
 func (cta *connectorTypeAccess) Update(ctx context.Context, ct *interfaces.ConnectorType) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update connector_type",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update connector_type")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("connector_type").String(ct.Type))
@@ -415,8 +397,7 @@ func (cta *connectorTypeAccess) Update(ctx context.Context, ct *interfaces.Conne
 
 // Delete deletes a ConnectorType by Type.
 func (cta *connectorTypeAccess) DeleteByType(ctx context.Context, tp string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete connector_type",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Delete connector_type")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("connector_type").String(tp))
@@ -437,8 +418,7 @@ func (cta *connectorTypeAccess) DeleteByType(ctx context.Context, tp string) err
 
 // SetEnabled enables/disables a ConnectorType.
 func (cta *connectorTypeAccess) SetEnabled(ctx context.Context, tp string, enabled bool) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Set connector_type enabled",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Set connector_type enabled")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("connector_type").String(tp))

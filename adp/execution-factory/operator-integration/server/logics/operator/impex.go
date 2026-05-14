@@ -62,12 +62,15 @@ func (m *operatorManager) Import(ctx context.Context, tx *sql.Tx, mode interface
 	if err != nil {
 		return
 	}
-	accessor, err := m.AuthService.GetAccessor(ctx, userID)
-	if err != nil {
-		return
+	var accessor *interfaces.AuthAccessor
+	if icommon.IsPublicAPIFromCtx(ctx) {
+		accessor, err = m.AuthService.GetAccessor(ctx, userID)
+		if err != nil {
+			return
+		}
 	}
 	// 导入算子元数据
-	createMap, updateMap, err := m.batchImportOperatorMetadata(ctx, tx, data.Configs, operatorList, accessor)
+	createMap, updateMap, err := m.batchImportOperatorMetadata(ctx, tx, data.Configs, operatorList, accessor, userID)
 	if err != nil {
 		return
 	}
@@ -86,33 +89,49 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 			return
 		}
 
-		// 触发新建策略，创建人默认拥有对当前资源的所有操作权限
-		err := m.AuthService.CreateOwnerPolicy(ctx, accessor, &interfaces.AuthResource{
-			ID:   operatorDB.OperatorID,
-			Type: string(interfaces.AuthResourceTypeOperator),
-			Name: operatorDB.Name,
-		})
-		if err != nil {
-			m.Logger.WithContext(ctx).Warnf("[importPostProcess] CreateOwnerPolicy err :%v", err)
+		// 触发新建策略，创建人默认拥有对当前资源的所有操作权限（内部调用不创建）
+		if accessor != nil {
+			err := m.AuthService.CreateOwnerPolicy(ctx, accessor, &interfaces.AuthResource{
+				ID:   operatorDB.OperatorID,
+				Type: interfaces.AuthResourceTypeOperator.String(),
+				Name: operatorDB.Name,
+			})
+			if err != nil {
+				m.Logger.WithContext(ctx).Warnf("[importPostProcess] CreateOwnerPolicy err :%v", err)
+			}
 		}
-		// 记录设计日志及后续通知
-		go func() {
-			accountAuthContext, ok := icommon.GetAccountAuthContextFromCtx(ctx)
-			if !ok {
-				m.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
+		// 记录设计日志及后续通知（内部调用不记录）
+		if accessor != nil {
+			go func() {
+				accountAuthContext, ok := icommon.GetAccountAuthContextFromCtx(ctx)
+				if !ok {
+					m.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
+					return
+				}
+				m.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
+					TokenInfo: accountAuthContext.TokenInfo,
+					Accessor:  accessor,
+					Operation: metric.AuditLogOperationCreate,
+					Object: &metric.AuditLogObject{
+						Type: metric.AuditLogObjectOperator,
+						ID:   operatorDB.OperatorID,
+						Name: operatorDB.Name,
+					},
+				})
+			}()
+		}
+		// 内置组件：创建全员授权策略（public_access + execute）
+		if operatorDB.IsInternal {
+			err = m.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
+				ID:   operatorDB.OperatorID,
+				Type: interfaces.AuthResourceTypeOperator.String(),
+				Name: operatorDB.Name,
+			})
+			if err != nil {
+				m.Logger.WithContext(ctx).Warnf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", err)
 				return
 			}
-			m.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
-				TokenInfo: accountAuthContext.TokenInfo,
-				Accessor:  accessor,
-				Operation: metric.AuditLogOperationCreate,
-				Object: &metric.AuditLogObject{
-					Type: metric.AuditLogObjectOperator,
-					ID:   operatorDB.OperatorID,
-					Name: operatorDB.Name,
-				},
-			})
-		}()
+		}
 	}
 	// 更新算子
 	for _, operatorDB := range updateMap {
@@ -120,30 +139,43 @@ func (m *operatorManager) importPostProcess(ctx context.Context, createMap, upda
 		authResource := &interfaces.AuthResource{
 			ID:   operatorDB.OperatorID,
 			Name: operatorDB.Name,
-			Type: string(interfaces.AuthResourceTypeOperator),
+			Type: interfaces.AuthResourceTypeOperator.String(),
 		}
 		err := m.AuthService.NotifyResourceChange(ctx, authResource)
 		if err != nil {
 			m.Logger.WithContext(ctx).Warnf("[importPostProcess] NotifyResourceChange err :%v", err)
 		}
-		// 记录设计日志及后续通知
-		go func() {
-			accountAuthContext, ok := icommon.GetAccountAuthContextFromCtx(ctx)
-			if !ok {
-				m.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
-				return
-			}
-			m.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
-				TokenInfo: accountAuthContext.TokenInfo,
-				Accessor:  accessor,
-				Operation: metric.AuditLogOperationEdit,
-				Object: &metric.AuditLogObject{
-					Type: metric.AuditLogObjectOperator,
-					ID:   operatorDB.OperatorID,
-					Name: operatorDB.Name,
-				},
+		// 内置组件：创建全员授权策略（public_access + execute）
+		if operatorDB.IsInternal {
+			policyErr := m.AuthService.CreateIntCompPolicyForAllUsers(ctx, &interfaces.AuthResource{
+				ID:   operatorDB.OperatorID,
+				Type: interfaces.AuthResourceTypeOperator.String(),
+				Name: operatorDB.Name,
 			})
-		}()
+			if policyErr != nil {
+				m.Logger.WithContext(ctx).Warnf("[importPostProcess] CreateIntCompPolicyForAllUsers err:%v", policyErr)
+			}
+		}
+		// 记录设计日志及后续通知（内部调用不记录）
+		if accessor != nil {
+			go func() {
+				accountAuthContext, ok := icommon.GetAccountAuthContextFromCtx(ctx)
+				if !ok {
+					m.Logger.WithContext(ctx).Warnf("[importPostProcess] GetAccountAuthContextFromCtx err :%v", err)
+					return
+				}
+				m.AuditLog.Logger(ctx, &metric.AuditLogBuilderParams{
+					TokenInfo: accountAuthContext.TokenInfo,
+					Accessor:  accessor,
+					Operation: metric.AuditLogOperationEdit,
+					Object: &metric.AuditLogObject{
+						Type: metric.AuditLogObjectOperator,
+						ID:   operatorDB.OperatorID,
+						Name: operatorDB.Name,
+					},
+				})
+			}()
+		}
 	}
 	return nil
 }
@@ -155,7 +187,7 @@ func (m *operatorManager) importPreCheck(ctx context.Context, mode interfaces.Im
 	for _, operatorItem := range items {
 		operatorIDs = append(operatorIDs, operatorItem.OperatorID)
 		// 内置算子不允许导入
-		if operatorItem.IsInternal {
+		if icommon.IsPublicAPIFromCtx(ctx) && operatorItem.IsInternal {
 			err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonInternalComponentNotAllowed,
 				fmt.Sprintf("internal operator %v not allowed to import", operatorItem.OperatorID), operatorItem.OperatorName)
 			return
@@ -183,22 +215,24 @@ func (m *operatorManager) importPreCheck(ctx context.Context, mode interfaces.Im
 
 // 批量导入算子元数据
 func (m *operatorManager) batchImportOperatorMetadata(ctx context.Context, tx *sql.Tx, items []*interfaces.OperatorImpexItem, needUpdateOperatorList []*model.OperatorRegisterDB,
-	accessor *interfaces.AuthAccessor) (createMap, updateMap map[string]*model.OperatorRegisterDB, err error) {
+	accessor *interfaces.AuthAccessor, userID string) (createMap, updateMap map[string]*model.OperatorRegisterDB, err error) {
 	// 需要新增的算子列表
 	createMap = map[string]*model.OperatorRegisterDB{}
 	// 需要更新的算子列表
 	updateMap = map[string]*model.OperatorRegisterDB{}
 	for _, operatorDB := range needUpdateOperatorList {
-		// 检查算子编辑权限
-		err = m.AuthService.CheckModifyPermission(ctx, accessor, operatorDB.OperatorID, interfaces.AuthResourceTypeOperator)
-		if err != nil {
-			return
-		}
-		// 内置算子不允许更新
-		if operatorDB.IsInternal {
-			err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonInternalComponentNotAllowed,
-				fmt.Sprintf("internal operator %v not allowed to update", operatorDB.OperatorID), operatorDB.Name)
-			return
+		// 检查算子编辑权限（内部调用不鉴权）
+		if icommon.IsPublicAPIFromCtx(ctx) {
+			err = m.AuthService.CheckModifyPermission(ctx, accessor, operatorDB.OperatorID, interfaces.AuthResourceTypeOperator)
+			if err != nil {
+				return
+			}
+			// 内置算子不允许更新
+			if operatorDB.IsInternal {
+				err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonInternalComponentNotAllowed,
+					fmt.Sprintf("internal operator %v not allowed to update", operatorDB.OperatorID), operatorDB.Name)
+				return
+			}
 		}
 		updateMap[operatorDB.OperatorID] = operatorDB
 	}
@@ -206,7 +240,11 @@ func (m *operatorManager) batchImportOperatorMetadata(ctx context.Context, tx *s
 		// 参数预备检查
 		var newOperatorDB *model.OperatorRegisterDB
 		var newMetadataDB interfaces.IMetadataDB
-		newOperatorDB, newMetadataDB, err = m.importCheck(ctx, operatorItem, accessor.ID)
+		uid := userID
+		if accessor != nil {
+			uid = accessor.ID
+		}
+		newOperatorDB, newMetadataDB, err = m.importCheck(ctx, operatorItem, uid)
 		if err != nil {
 			return
 		}
@@ -285,6 +323,7 @@ func (m *operatorManager) updateOperatorConfig(ctx context.Context, tx *sql.Tx, 
 	operatorDB.Source = newOperatorDB.Source
 	operatorDB.ExecuteControl = newOperatorDB.ExecuteControl
 	operatorDB.ExtendInfo = newOperatorDB.ExtendInfo
+	operatorDB.IsInternal = newOperatorDB.IsInternal
 	operatorDB.UpdateUser = newOperatorDB.CreateUser
 	operatorDB.UpdateTime = time.Now().UnixNano()
 	operatorDB.MetadataType = newOperatorDB.MetadataType
@@ -341,7 +380,6 @@ func (m *operatorManager) importCheck(ctx context.Context, item *interfaces.Oper
 	if err != nil {
 		return
 	}
-	item.IsInternal = false
 	if item.OperatorInfo == nil {
 		item.OperatorInfo = &interfaces.OperatorInfo{}
 		err = defaults.Set(item.OperatorInfo)
@@ -450,7 +488,7 @@ func (m *operatorManager) importCheck(ctx context.Context, item *interfaces.Oper
 		UpdateUser:      userID,
 		UpdateTime:      time.Now().UnixNano(),
 		IsDataSource:    isDataSource,
-		IsInternal:      false,
+		IsInternal:      item.IsInternal,
 	}
 	metadataDB.SetCreateInfo(userID)
 	metadataDB.SetUpdateInfo(userID)

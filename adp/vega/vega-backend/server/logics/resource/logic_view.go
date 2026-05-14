@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/dlclark/regexp2"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/mitchellh/mapstructure"
 	"go.opentelemetry.io/otel/codes"
@@ -26,7 +26,7 @@ import (
 
 // 创建和更新视图的一些通用操作
 func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *interfaces.ResourceRequest) (string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "logic layer: Common operation for creating and updating views")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "logic layer: Common operation for creating and updating views")
 	defer span.End()
 
 	// 自定义视图

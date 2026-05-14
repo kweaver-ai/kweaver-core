@@ -1,0 +1,50 @@
+---
+type: metric
+id: pod_running_count
+name: Running 状态 Pod 数量
+tags: [Kubernetes, Pod, 可用性] 
+---
+
+## Metric: Running 状态 Pod 数量
+
+在选定时间窗口内统计状态为 Running 的 Pod 数量，用于衡量工作负载在线规模与排障时的基线对比。
+
+### Metric attributes
+
+| Metric Type | Unit Type | Unit |
+|-------------|-----------|------|
+| atomic | count | 个 |
+
+### Scope
+
+| Scope Type | Scope Ref |
+|------------|-----------|
+| object_type | pod |
+
+### Calculation Formula
+
+```yaml
+kind: atomic
+
+atomic:
+  condition:
+    field: pod_status
+    operation: ==
+    value: "Running"
+  aggregation:
+    property: id
+    aggr: count
+```
+
+### Time Dimension
+
+| Property | Default Range Policy |
+|----------|----------------------|
+| pod_created_at | last_24h |
+
+### Analysis Dimensions
+
+| Name | Display Name |
+|------|--------------|
+| pod_namespace | 命名空间 |
+| pod_node_name | 所在节点 |

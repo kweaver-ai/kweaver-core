@@ -12,13 +12,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"ontology-query/common/visitor"
 	oerrors "ontology-query/errors"
@@ -44,8 +43,7 @@ func (r *restHandler) GetObjectsSubgraphByIn(c *gin.Context) {
 // 基于起点、方向和路径长度获取对象子图（外部）
 func (r *restHandler) GetObjectsSubgraphByEx(c *gin.Context) {
 	logger.Debug("Handler GetObjectsSubgraphByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "基于起点、方向和路径长度获取对象子图API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 
 	defer span.End()
 
@@ -71,7 +69,7 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 	logger.Debug("Handler GetObjectsSubgraph Start")
 	startTime := time.Now()
 
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "获取对象子图API", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -82,10 +80,10 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("对象子图查询请求参数: [%s,%v]", c.Request.RequestURI, c.Request.Body))
+	otellog.LogInfo(ctx, fmt.Sprintf("对象子图查询请求参数: [%s,%v]", c.Request.RequestURI, c.Request.Body))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -106,10 +104,10 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -120,9 +118,9 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -136,9 +134,9 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_KnowledgeNetwork_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Binding Paramter Failed:%s", err.Error()))
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -156,9 +154,9 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -170,9 +168,9 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -180,7 +178,7 @@ func (r *restHandler) GetObjectsSubgraph(c *gin.Context, visitor hydra.Visitor) 
 	}
 
 	// 设置 trace 的成功信息的 attributes
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 
 	result.OverallMs = time.Now().UnixMilli() - startTime.UnixMilli()
 	rest.ReplyOK(c, http.StatusOK, result)
@@ -191,7 +189,7 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 	logger.Debug("Handler GetObjectsSubgraphByTypePath Start")
 	// startTime := time.Now()
 
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "基于路径获取对象子图API", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -202,10 +200,10 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("对象子图查询请求参数: [%s,%v]", c.Request.RequestURI, c.Request.Body))
+	otellog.LogInfo(ctx, fmt.Sprintf("对象子图查询请求参数: [%s,%v]", c.Request.RequestURI, c.Request.Body))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -226,10 +224,10 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -240,9 +238,9 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -256,9 +254,9 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_KnowledgeNetwork_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Binding Paramter Failed:%s", err.Error()))
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -275,9 +273,9 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -289,9 +287,9 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -299,7 +297,7 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 	}
 
 	// 设置 trace 的成功信息的 attributes
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 
 	// result.OverallMs = time.Now().UnixMilli() - startTime.UnixMilli()
 	rest.ReplyOK(c, http.StatusOK, result)
@@ -308,8 +306,7 @@ func (r *restHandler) GetObjectsSubgraphByTypePath(c *gin.Context, visitor hydra
 // 基于一组对象实例组织关系子图（外部）
 func (r *restHandler) GetObjectsSubgraphByObjectsByEx(c *gin.Context) {
 	logger.Debug("Handler GetObjectsSubgraphByObjectsByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "基于一组对象实例组织关系子图API",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 
 	defer span.End()
 
@@ -334,7 +331,7 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 	logger.Debug("Handler GetObjectsSubgraphByObjects Start")
 	startTime := time.Now()
 
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "基于一组对象实例组织关系子图API", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -345,10 +342,10 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("基于一组对象实例组织关系子图查询请求参数: [%s,%v]", c.Request.RequestURI, c.Request.Body))
+	otellog.LogInfo(ctx, fmt.Sprintf("基于一组对象实例组织关系子图查询请求参数: [%s,%v]", c.Request.RequestURI, c.Request.Body))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -371,10 +368,10 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -388,9 +385,9 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_KnowledgeNetwork_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Binding Paramter Failed:%s", err.Error()))
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -405,9 +402,9 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -419,9 +416,9 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), httpErr)
 
 		rest.ReplyError(c, httpErr)
 
@@ -429,7 +426,7 @@ func (r *restHandler) GetObjectsSubgraphByObjects(c *gin.Context, visitor hydra.
 	}
 
 	// 设置 trace 的成功信息的 attributes
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 
 	result.OverallMs = time.Now().UnixMilli() - startTime.UnixMilli()
 	rest.ReplyOK(c, http.StatusOK, result)

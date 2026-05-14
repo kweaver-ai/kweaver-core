@@ -960,7 +960,7 @@ func Test_ActionTypeAccess_DeleteActionTypesByIDs(t *testing.T) {
 
 			tx, _ := ata.db.Begin()
 			_, err := ata.DeleteActionTypesByIDs(testCtx, tx, knID, branch, atIDs)
-			So(err, ShouldBeNil)
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)

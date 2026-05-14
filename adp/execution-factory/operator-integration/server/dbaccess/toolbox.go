@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common/ormhelper"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/config"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/db"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces/model"
 	"github.com/kweaver-ai/proton-rds-sdk-go/sqlx"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -101,6 +101,7 @@ func (b *toolboxDB) UpdateToolBox(ctx context.Context, tx *sql.Tx, toolbox *mode
 		"f_description":  toolbox.Description,
 		"f_svc_url":      toolbox.ServerURL,
 		"f_category":     toolbox.Category,
+		"f_is_internal":  toolbox.IsInternal,
 		"f_update_user":  toolbox.UpdateUser,
 		"f_update_time":  toolbox.UpdateTime,
 		"f_release_user": toolbox.ReleaseUser,

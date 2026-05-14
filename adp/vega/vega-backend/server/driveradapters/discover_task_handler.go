@@ -13,14 +13,14 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/trace"
 
+	"vega-backend/common/visitor"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 )
@@ -29,8 +29,7 @@ import (
 
 // ListDiscoverTasksByEx handles GET /api/vega-backend/v1/discover-tasks (External)
 func (r *restHandler) ListDiscoverTasksByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListDiscoverTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -42,24 +41,23 @@ func (r *restHandler) ListDiscoverTasksByEx(c *gin.Context) {
 
 // ListDiscoverTasksByIn handles GET /api/vega-backend/in/v1/discover-tasks (Internal)
 func (r *restHandler) ListDiscoverTasksByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListDiscoverTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.listDiscoverTasks(c, ctx, span, visitor)
 }
 
 func (r *restHandler) listDiscoverTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	var params interfaces.DiscoverTaskQueryParams
 	if err := c.ShouldBindQuery(&params); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -70,7 +68,7 @@ func (r *restHandler) listDiscoverTasks(c *gin.Context, ctx context.Context, spa
 	if params.Status != "" && !isValidDiscoverTaskStatus(params.Status) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_DiscoverTask_InvalidStatus).
 			WithErrorDetails(fmt.Sprintf("invalid status: %s", params.Status))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -79,13 +77,13 @@ func (r *restHandler) listDiscoverTasks(c *gin.Context, ctx context.Context, spa
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverTask_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	logger.Debug("Handler ListDiscoverTasksByEx Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, gin.H{
 		"entries":     tasks,
 		"total_count": total,
@@ -96,8 +94,7 @@ func (r *restHandler) listDiscoverTasks(c *gin.Context, ctx context.Context, spa
 
 // GetDiscoverTaskByEx handles GET /api/vega-backend/v1/discover-tasks/:id (External)
 func (r *restHandler) GetDiscoverTaskByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetDiscoverTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -109,18 +106,17 @@ func (r *restHandler) GetDiscoverTaskByEx(c *gin.Context) {
 
 // GetDiscoverTaskByIn handles GET /api/vega-backend/in/v1/discover-tasks/:id (Internal)
 func (r *restHandler) GetDiscoverTaskByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetDiscoverTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getDiscoverTask(c, ctx, span, visitor)
 }
 
 func (r *restHandler) getDiscoverTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	taskID := c.Param("id")
 
@@ -128,18 +124,18 @@ func (r *restHandler) getDiscoverTask(c *gin.Context, ctx context.Context, span 
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverTask_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if task == nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_DiscoverTask_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, task)
 }
 
@@ -148,8 +144,7 @@ func (r *restHandler) getDiscoverTask(c *gin.Context, ctx context.Context, span 
 // DeleteDiscoverTasksByEx handles DELETE /api/vega-backend/v1/discover-tasks/:ids (External).
 // `ids` is comma-separated. Optional query: ?ignore_missing=true
 func (r *restHandler) DeleteDiscoverTasksByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteDiscoverTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -161,18 +156,17 @@ func (r *restHandler) DeleteDiscoverTasksByEx(c *gin.Context) {
 
 // DeleteDiscoverTasksByIn handles DELETE /api/vega-backend/in/v1/discover-tasks/:ids (Internal)
 func (r *restHandler) DeleteDiscoverTasksByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteDiscoverTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.deleteDiscoverTasks(c, ctx, span, visitor)
 }
 
 func (r *restHandler) deleteDiscoverTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	idsStr := c.Param("ids")
 	ids := make([]string, 0)
@@ -185,7 +179,7 @@ func (r *restHandler) deleteDiscoverTasks(c *gin.Context, ctx context.Context, s
 	if len(ids) == 0 {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
 			WithErrorDetails("ids path parameter is required")
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -194,7 +188,7 @@ func (r *restHandler) deleteDiscoverTasks(c *gin.Context, ctx context.Context, s
 
 	if err := r.dts.Delete(ctx, ids, ignoreMissing); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -205,7 +199,7 @@ func (r *restHandler) deleteDiscoverTasks(c *gin.Context, ctx context.Context, s
 	}
 
 	logger.Debug("Handler DeleteDiscoverTasksByEx Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 

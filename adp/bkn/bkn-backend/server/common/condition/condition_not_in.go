@@ -20,21 +20,21 @@ type NotInCond struct {
 }
 
 func NewNotInCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField) (Condition, error) {
-	if cfg.ValueOptCfg.ValueFrom != ValueFrom_Const {
+	if cfg.ValueFrom != ValueFrom_Const {
 		return nil, fmt.Errorf("condition [not_in] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
-	if !IsSlice(cfg.ValueOptCfg.Value) {
+	if !IsSlice(cfg.Value) {
 		return nil, fmt.Errorf("condition [not_in] right value should be an array")
 	}
 
-	if !IsSameType(cfg.ValueOptCfg.Value.([]any)) {
+	if !IsSameType(cfg.Value.([]any)) {
 		return nil, fmt.Errorf("condition [not_in] right value should be an array composed of elements of same type")
 	}
 
 	return &NotInCond{
 		mCfg:             cfg,
-		mValue:           cfg.ValueOptCfg.Value.([]any),
+		mValue:           cfg.Value.([]any),
 		mFilterFieldName: getFilterFieldName(cfg.Field, fieldsMap, false),
 	}, nil
 }

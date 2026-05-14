@@ -14,12 +14,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"ontology-query/common"
 	cond "ontology-query/common/condition"
@@ -81,7 +80,7 @@ func NewActionSchedulerService(appSetting *common.AppSetting) interfaces.ActionS
 
 // ExecuteAction starts async action execution and returns execution_id immediately
 func (s *actionSchedulerService) ExecuteAction(ctx context.Context, req *interfaces.ActionExecutionRequest) (*interfaces.ActionExecutionResponse, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ExecuteAction", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ExecuteAction")
 	defer span.End()
 
 	span.SetAttributes(
@@ -213,7 +212,7 @@ func (s *actionSchedulerService) ExecuteAction(ctx context.Context, req *interfa
 
 // GetExecution retrieves execution status and results
 func (s *actionSchedulerService) GetExecution(ctx context.Context, knID, executionID string) (*interfaces.ActionExecution, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetExecution", trace.WithSpanKind(trace.SpanKindInternal))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetExecution")
 	defer span.End()
 
 	span.SetAttributes(

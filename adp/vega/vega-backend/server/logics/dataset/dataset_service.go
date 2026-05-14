@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
-	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/codes"
 
@@ -71,15 +70,13 @@ func NewDatasetService(appSetting *common.AppSetting) interfaces.DatasetService 
 
 // Create a new Dataset.
 func (ds *datasetService) Create(ctx context.Context, res *interfaces.Resource) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create dataset")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create dataset")
 	defer span.End()
 
 	// 调用 dataset access 创建 dataset 索引，索引名称为 <res.source_identifier>-<catalog_id>
 	err := ds.c.Create(ctx, res.ID, res.SchemaDefinition)
 	if err != nil {
-		logger.Errorf("Create dataset index failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Create dataset index failed: %v", err))
-		span.SetStatus(codes.Error, "Create dataset index failed")
+		otellog.LogError(ctx, "Create dataset index failed", err)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_CreateFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -90,7 +87,7 @@ func (ds *datasetService) Create(ctx context.Context, res *interfaces.Resource) 
 
 // Update a Dataset.
 func (ds *datasetService) Update(ctx context.Context, res *interfaces.Resource) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update dataset")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update dataset")
 	defer span.End()
 
 	// 调用 dataset access 更新 dataset 索引，索引名称为 <res.source_identifier>-<id>
@@ -106,7 +103,7 @@ func (ds *datasetService) Update(ctx context.Context, res *interfaces.Resource) 
 
 // Delete a Dataset.
 func (ds *datasetService) Delete(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete dataset")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete dataset")
 	defer span.End()
 
 	// Check dataset exist first
@@ -131,7 +128,7 @@ func (ds *datasetService) Delete(ctx context.Context, id string) error {
 
 // CheckExist checks if a dataset exists.
 func (ds *datasetService) CheckExist(ctx context.Context, id string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Check dataset exist")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Check dataset exist")
 	defer span.End()
 
 	exist, err := ds.c.CheckExist(ctx, id)
@@ -147,7 +144,7 @@ func (ds *datasetService) CheckExist(ctx context.Context, id string) (bool, erro
 
 // ListDocuments 列出 dataset 中的文档
 func (ds *datasetService) ListDocuments(ctx context.Context, indexName string, res *interfaces.Resource, params *interfaces.ResourceDataQueryParams) ([]map[string]any, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List dataset documents")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "List dataset documents")
 	defer span.End()
 
 	// 调用 dataset access 列出文档
@@ -164,7 +161,7 @@ func (ds *datasetService) ListDocuments(ctx context.Context, indexName string, r
 
 // CreateDocuments 批量创建 dataset 文档
 func (ds *datasetService) CreateDocuments(ctx context.Context, id string, documents []map[string]any) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create dataset documents")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create dataset documents")
 	defer span.End()
 
 	// 调用 dataset access 批量创建文档
@@ -181,7 +178,7 @@ func (ds *datasetService) CreateDocuments(ctx context.Context, id string, docume
 
 // GetDocument 获取 dataset 文档
 func (ds *datasetService) GetDocument(ctx context.Context, id string, docID string) (map[string]any, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get dataset document")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get dataset document")
 	defer span.End()
 
 	// 调用 dataset access 获取文档
@@ -198,7 +195,7 @@ func (ds *datasetService) GetDocument(ctx context.Context, id string, docID stri
 
 // DeleteDocument 删除 dataset 文档
 func (ds *datasetService) DeleteDocument(ctx context.Context, id string, docID string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete dataset document")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete dataset document")
 	defer span.End()
 
 	// 调用 dataset access 删除文档
@@ -214,7 +211,7 @@ func (ds *datasetService) DeleteDocument(ctx context.Context, id string, docID s
 
 // UpsertDocuments 批量更新 dataset 文档
 func (ds *datasetService) UpsertDocuments(ctx context.Context, id string, updateRequests []map[string]any) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update dataset documents")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update dataset documents")
 	defer span.End()
 
 	// 调用 dataset access 批量更新文档
@@ -230,7 +227,7 @@ func (ds *datasetService) UpsertDocuments(ctx context.Context, id string, update
 
 // DeleteDocuments 批量删除 dataset 文档
 func (ds *datasetService) DeleteDocuments(ctx context.Context, id string, docIDs string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete dataset documents")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete dataset documents")
 	defer span.End()
 
 	// 调用 dataset access 批量删除文档
@@ -246,7 +243,7 @@ func (ds *datasetService) DeleteDocuments(ctx context.Context, id string, docIDs
 
 // DeleteDocumentsByQuery 批量删除 dataset 文档
 func (ds *datasetService) DeleteDocumentsByQuery(ctx context.Context, indexName string, res *interfaces.Resource, params *interfaces.ResourceDataQueryParams) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete dataset documents by query")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete dataset documents by query")
 	defer span.End()
 
 	fieldMap := map[string]*interfaces.Property{}

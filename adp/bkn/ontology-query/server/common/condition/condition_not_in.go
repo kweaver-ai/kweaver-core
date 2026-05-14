@@ -21,17 +21,17 @@ type NotInCond struct {
 
 func NewNotInCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*DataProperty) (Condition, error) {
 
-	if !IsSlice(cfg.ValueOptCfg.Value) {
+	if !IsSlice(cfg.Value) {
 		return nil, fmt.Errorf("condition [not_in] right value should be an array")
 	}
 
-	if !IsSameType(cfg.ValueOptCfg.Value.([]any)) {
+	if !IsSameType(cfg.Value.([]any)) {
 		return nil, fmt.Errorf("condition [not_in] right value should be an array composed of elements of same type")
 	}
 
 	return &NotInCond{
 		mCfg:             cfg,
-		mValue:           cfg.ValueOptCfg.Value.([]any),
+		mValue:           cfg.Value.([]any),
 		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
 	}, nil
 }

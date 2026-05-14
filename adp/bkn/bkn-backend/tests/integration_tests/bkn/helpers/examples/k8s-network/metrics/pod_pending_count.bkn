@@ -1,0 +1,50 @@
+---
+type: metric
+id: pod_pending_count
+name: Pending 状态 Pod 数量
+tags: [Kubernetes, Pod, 调度]
+---
+
+## Metric: Pending 状态 Pod 数量
+
+统计 Pending 状态的 Pod 数量，用于与 Running 指标对照观察调度/资源瓶颈（镜像拉取、资源不足等）。
+
+### Metric attributes
+
+| Metric Type | Unit Type | Unit |
+|-------------|-----------|------|
+| atomic | count | 个 |
+
+### Scope
+
+| Scope Type | Scope Ref |
+|------------|-----------|
+| object_type | pod |
+
+### Calculation Formula
+
+```yaml
+kind: atomic
+
+atomic:
+  condition:
+    field: pod_status
+    operation: ==
+    value: "Pending"
+  aggregation:
+    property: id
+    aggr: count
+```
+
+### Time Dimension
+
+| Property | Default Range Policy |
+|----------|----------------------|
+| pod_created_at | last_24h |
+
+### Analysis Dimensions
+
+| Name | Display Name |
+|------|--------------|
+| pod_namespace | 命名空间 |
+| pod_node_name | 所在节点 |

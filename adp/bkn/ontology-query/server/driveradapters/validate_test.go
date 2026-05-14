@@ -323,7 +323,7 @@ func Test_validateSubgraphSearchRequest(t *testing.T) {
 			// 注意：这个测试会失败，因为Limit=0时会在验证中返回错误
 			// 但根据代码逻辑，Limit=0会被设置为默认值
 			// 需要先通过其他验证
-			query.PageQuery.Limit = 0
+			query.Limit = 0
 			_ = validateSubgraphSearchRequest(ctx, query)
 			// 由于Limit=0会先触发错误，所以这里会失败
 			// 但代码中确实有设置默认值的逻辑

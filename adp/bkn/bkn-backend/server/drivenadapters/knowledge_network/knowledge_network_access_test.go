@@ -539,7 +539,7 @@ func Test_knowledgeNetworkAccess_UpdateKN(t *testing.T) {
 
 			tx, _ := kna.db.Begin()
 			err := kna.UpdateKN(testCtx, tx, kn)
-			So(err, ShouldBeNil)
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -598,7 +598,7 @@ func Test_knowledgeNetworkAccess_UpdateKNDetail(t *testing.T) {
 			smock.ExpectExec(sqlStr).WithArgs(detail, knID, branch).WillReturnResult(sqlmock.NewErrorResult(expectedErr))
 
 			err := kna.UpdateKNDetail(testCtx, knID, branch, detail)
-			So(err, ShouldBeNil)
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)

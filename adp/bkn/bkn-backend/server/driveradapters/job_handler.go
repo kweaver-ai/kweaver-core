@@ -11,14 +11,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/common/visitor"
@@ -29,12 +28,8 @@ import (
 // CreateJobByEx 创建 job
 func (r *restHandler) CreateJobByEx(c *gin.Context) {
 	logger.Debug("Handler CreateJobByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"创建job(Ex)", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -44,9 +39,6 @@ func (r *restHandler) CreateJobByEx(c *gin.Context) {
 // CreateJobByIn 创建 job
 func (r *restHandler) CreateJobByIn(c *gin.Context) {
 	logger.Debug("Handler CreateJobByIn Start")
-	_, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"创建job(In)", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
 
 	// 内部接口 account_id从header中取，跳过用户有效认证，后面在权限校验时就会校验这个用户是否有权限，无效用户无权限
 	// 自行构建一个visitor
@@ -57,8 +49,7 @@ func (r *restHandler) CreateJobByIn(c *gin.Context) {
 // CreateJobByEx 创建 job
 func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler CreateJob Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"创建job", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -69,7 +60,7 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -84,14 +75,14 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -104,10 +95,10 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 			WithErrorDetails("Binding Paramter Failed:" + err.Error())
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -115,7 +106,7 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 	reqBody.Branch = branch
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("创建行动类请求参数: [%s,%v]", c.Request.RequestURI, reqBody))
+	otellog.LogInfo(ctx, fmt.Sprintf("创建行动类请求参数: [%s,%v]", c.Request.RequestURI, reqBody))
 
 	// 1. 校验 创建任务必要参数的合法性, 非空、长度、是枚举值
 	err = ValidateJob(ctx, &reqBody)
@@ -123,12 +114,12 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Validate job[%s] failed: %s. %v", reqBody.Name,
-			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("Validate job[%s] failed: %s. %v", reqBody.Name,
+			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
 		span.SetAttributes(attr.Key("job_name").String(reqBody.Name))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -138,7 +129,7 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -150,19 +141,15 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 	result := map[string]any{"id": jobID}
 
 	logger.Debug("Handler CreateJob Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, result)
 }
 
 // DeleteJobsByEx 批量删除 job
 func (r *restHandler) DeleteJobsByEx(c *gin.Context) {
 	logger.Debug("Handler DeleteJobsByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"批量删除job(Ex)", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -172,9 +159,6 @@ func (r *restHandler) DeleteJobsByEx(c *gin.Context) {
 // DeleteJobsByIn 批量删除 job
 func (r *restHandler) DeleteJobsByIn(c *gin.Context) {
 	logger.Debug("Handler DeleteJobsByIn Start")
-	_, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"批量删除job(In)", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
 
 	// 内部接口 account_id从header中取，跳过用户有效认证，后面在权限校验时就会校验这个用户是否有权限，无效用户无权限
 	// 自行构建一个visitor
@@ -185,8 +169,7 @@ func (r *restHandler) DeleteJobsByIn(c *gin.Context) {
 // DeleteJobs 批量删除 job
 func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler DeleteJobs Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"批量删除job", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -197,10 +180,10 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("批量删除job请求参数: [%s]", c.Request.RequestURI))
+	otellog.LogInfo(ctx, fmt.Sprintf("批量删除job请求参数: [%s]", c.Request.RequestURI))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -215,14 +198,14 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -239,7 +222,7 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -249,7 +232,7 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 			if _, exist := jobs[jobID]; !exist {
 				httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_Job_JobNotFound)
 				// 设置 trace 的错误信息的 attributes
-				o11y.AddHttpAttrs4HttpError(span, httpErr)
+				oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 				rest.ReplyError(c, httpErr)
 				return
 			}
@@ -260,7 +243,7 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 		if job.KNID != knID || job.Branch != branch {
 			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_Job_JobNotFound)
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -268,7 +251,7 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest,
 				berrors.BknBackend_Job_JobRunning)
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -279,7 +262,7 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -291,19 +274,15 @@ func (r *restHandler) DeleteJobs(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	logger.Debug("Handler DeleteJobs Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
 // ListJobsByEx 列出所有 job
 func (r *restHandler) ListJobsByEx(c *gin.Context) {
 	logger.Debug("Handler ListJobsByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"列出所有job(Ex)", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -313,9 +292,6 @@ func (r *restHandler) ListJobsByEx(c *gin.Context) {
 // ListJobsByIn 列出所有 job
 func (r *restHandler) ListJobsByIn(c *gin.Context) {
 	logger.Debug("Handler ListJobsByIn Start")
-	_, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"列出所有job(In)", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
 
 	// 内部接口 account_id从header中取，跳过用户有效认证，后面在权限校验时就会校验这个用户是否有权限，无效用户无权限
 	// 自行构建一个visitor
@@ -326,8 +302,7 @@ func (r *restHandler) ListJobsByIn(c *gin.Context) {
 // ListJobs 列出所有 job
 func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler ListJobs Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"列出所有job", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -338,10 +313,10 @@ func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("列出所有job请求参数: [%s]", c.Request.RequestURI))
+	otellog.LogInfo(ctx, fmt.Sprintf("列出所有job请求参数: [%s]", c.Request.RequestURI))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -356,14 +331,14 @@ func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -384,11 +359,11 @@ func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -399,7 +374,7 @@ func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -412,7 +387,7 @@ func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -436,7 +411,7 @@ func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -446,19 +421,15 @@ func (r *restHandler) ListJobs(c *gin.Context, visitor hydra.Visitor) {
 		"total_count": total,
 	}
 	logger.Debug("Handler ListJobs Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }
 
 // ListTasksByEx 列出指定 job 的子任务
 func (r *restHandler) ListTasksByEx(c *gin.Context) {
 	logger.Debug("Handler ListTasksByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"列出指定job的子任务(Ex)", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -468,9 +439,6 @@ func (r *restHandler) ListTasksByEx(c *gin.Context) {
 // ListTasksByIn 列出指定 job 的子任务
 func (r *restHandler) ListTasksByIn(c *gin.Context) {
 	logger.Debug("Handler ListTasksByIn Start")
-	_, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"列出指定job的子任务(In)", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
 
 	// 内部接口 account_id从header中取，跳过用户有效认证，后面在权限校验时就会校验这个用户是否有权限，无效用户无权限
 	// 自行构建一个visitor
@@ -481,8 +449,7 @@ func (r *restHandler) ListTasksByIn(c *gin.Context) {
 // ListTasks 列出指定 job 的子任务
 func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler ListTasks Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"列出指定job的子任务", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -505,14 +472,14 @@ func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -524,14 +491,14 @@ func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if job == nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_Job_JobNotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -552,11 +519,11 @@ func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -566,7 +533,7 @@ func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -578,7 +545,7 @@ func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -603,7 +570,7 @@ func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -613,6 +580,6 @@ func (r *restHandler) ListTasks(c *gin.Context, visitor hydra.Visitor) {
 		"total_count": total,
 	}
 	logger.Debug("Handler ListTasks Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }

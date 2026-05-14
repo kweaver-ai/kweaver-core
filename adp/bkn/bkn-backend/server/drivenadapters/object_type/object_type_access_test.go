@@ -1247,12 +1247,12 @@ func Test_objectTypeAccess_UpdateObjectType(t *testing.T) {
 
 		Convey("UpdateObjectType RowsAffected error\n", func() {
 			smock.ExpectBegin()
-			result := sqlmock.NewErrorResult(errors.New("RowsAffected error"))
-			smock.ExpectExec(sqlStr).WithArgs().WillReturnResult(result)
+			expectedErr := errors.New("Get RowsAffected error")
+			smock.ExpectExec(sqlStr).WithArgs().WillReturnResult(sqlmock.NewErrorResult(expectedErr))
 
 			tx, _ := ota.db.Begin()
 			err := ota.UpdateObjectType(testCtx, tx, objectType)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -1378,8 +1378,8 @@ func Test_objectTypeAccess_UpdateDataProperties(t *testing.T) {
 		})
 
 		Convey("UpdateDataProperties RowsAffected error \n", func() {
-			expectedErr := errors.New("Get RowsAffected error")
 			smock.ExpectBegin()
+			expectedErr := errors.New("Get RowsAffected error")
 			smock.ExpectExec(sqlStr).WithArgs().WillReturnResult(sqlmock.NewErrorResult(expectedErr))
 
 			tx, _ := ota.db.Begin()
@@ -1465,9 +1465,8 @@ func Test_objectTypeAccess_DeleteObjectTypesByIDs(t *testing.T) {
 			smock.ExpectExec(sqlStr).WithArgs(knID, branch, "ot1", "ot2").WillReturnResult(sqlmock.NewErrorResult(expectedErr))
 
 			tx, _ := ota.db.Begin()
-			rowsAffected, err := ota.DeleteObjectTypesByIDs(testCtx, tx, knID, branch, otIDs)
-			So(err, ShouldBeNil)
-			So(rowsAffected, ShouldEqual, 0)
+			_, err := ota.DeleteObjectTypesByIDs(testCtx, tx, knID, branch, otIDs)
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -1548,9 +1547,8 @@ func Test_objectTypeAccess_DeleteObjectTypeStatusByIDs(t *testing.T) {
 			smock.ExpectExec(sqlStr).WithArgs(knID, branch, "ot1", "ot2").WillReturnResult(sqlmock.NewErrorResult(expectedErr))
 
 			tx, _ := ota.db.Begin()
-			rowsAffected, err := ota.DeleteObjectTypeStatusByIDs(testCtx, tx, knID, branch, otIDs)
-			So(err, ShouldBeNil)
-			So(rowsAffected, ShouldEqual, 0)
+			_, err := ota.DeleteObjectTypeStatusByIDs(testCtx, tx, knID, branch, otIDs)
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)

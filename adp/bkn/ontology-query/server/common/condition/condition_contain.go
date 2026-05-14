@@ -21,8 +21,8 @@ type ContainCond struct {
 
 // 包含 contain，左侧属性值为数组，右侧值为单个值或数组，如果为数组，意味着数组内的值都应在属性值内
 func NewContainCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*DataProperty) (Condition, error) {
-	if cfg.ValueOptCfg.ValueFrom != ValueFrom_Const {
-		return nil, fmt.Errorf("condition [contain] does not support value_from type '%s'", cfg.ValueOptCfg.ValueFrom)
+	if cfg.ValueFrom != ValueFrom_Const {
+		return nil, fmt.Errorf("condition [contain] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
 	containCond := &ContainCond{
@@ -30,8 +30,8 @@ func NewContainCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*Dat
 		mFilterFieldName: getFilterFieldName(cfg.Name, fieldsMap, false),
 	}
 
-	if IsSlice(cfg.ValueOptCfg.Value) {
-		val, ok := cfg.ValueOptCfg.Value.([]any)
+	if IsSlice(cfg.Value) {
+		val, ok := cfg.Value.([]any)
 		if !ok {
 			return nil, fmt.Errorf("condition [contain] right value is not a valid array")
 		}
@@ -44,7 +44,7 @@ func NewContainCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*Dat
 
 	} else {
 		containCond.IsSliceValue = false
-		containCond.mValue = cfg.ValueOptCfg.Value
+		containCond.mValue = cfg.Value
 	}
 
 	return containCond, nil

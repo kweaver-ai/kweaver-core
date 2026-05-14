@@ -219,7 +219,7 @@ func (w *ScheduleWorker) executeSchedule(ctx context.Context, schedule *interfac
 	if err != nil {
 		return "", fmt.Errorf("failed to execute request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)

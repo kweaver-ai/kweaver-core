@@ -24,13 +24,13 @@ func NewPrefixCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*Data
 		return nil, fmt.Errorf("condition [prefix] left field is not a string field: %s:%s", cfg.NameField.Name, cfg.NameField.Type)
 	}
 
-	if cfg.ValueOptCfg.ValueFrom != ValueFrom_Const {
-		return nil, fmt.Errorf("condition [prefix] does not support value_from type '%s'", cfg.ValueOptCfg.ValueFrom)
+	if cfg.ValueFrom != ValueFrom_Const {
+		return nil, fmt.Errorf("condition [prefix] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 
-	val, ok := cfg.ValueOptCfg.Value.(string)
+	val, ok := cfg.Value.(string)
 	if !ok {
-		return nil, fmt.Errorf("condition [prefix] right value is not a string value: %v", cfg.ValueOptCfg.Value)
+		return nil, fmt.Errorf("condition [prefix] right value is not a string value: %v", cfg.Value)
 	}
 
 	return &PrefixCond{

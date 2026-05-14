@@ -67,6 +67,36 @@ func TestCollectKNFromPayload_duplicateObjectTypeConflict(t *testing.T) {
 	}
 }
 
+func TestCollectKNFromPayload_metricsAndDuplicates(t *testing.T) {
+	kn := &interfaces.KN{
+		KNID:   "kn1",
+		Branch: interfaces.MAIN_BRANCH,
+		Metrics: []*interfaces.MetricDefinition{
+			{ID: "m1", Name: "a"},
+			{ID: "m2", Name: "b"},
+		},
+	}
+	idx, err := CollectKNFromPayload(kn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(idx.Metrics) != 2 {
+		t.Fatalf("metrics map size=%d", len(idx.Metrics))
+	}
+
+	dupKn := &interfaces.KN{
+		KNID:   "kn1",
+		Branch: interfaces.MAIN_BRANCH,
+		Metrics: []*interfaces.MetricDefinition{
+			{ID: "same", Name: "a"},
+			{ID: "same", Name: "b"},
+		},
+	}
+	if _, err := CollectKNFromPayload(dupKn); err == nil {
+		t.Fatal("expected conflicting metric definitions error")
+	}
+}
+
 func TestEnsureObjectTypePropertyMap(t *testing.T) {
 	ot := &interfaces.ObjectType{
 		ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{

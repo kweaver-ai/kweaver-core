@@ -11,14 +11,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/common/visitor"
@@ -36,10 +35,7 @@ func (r *restHandler) CreateActionScheduleByIn(c *gin.Context) {
 // CreateActionScheduleByEx creates a new action schedule (external)
 func (r *restHandler) CreateActionScheduleByEx(c *gin.Context) {
 	logger.Debug("Handler CreateActionScheduleByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "创建行动计划", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -48,7 +44,7 @@ func (r *restHandler) CreateActionScheduleByEx(c *gin.Context) {
 
 // CreateActionSchedule creates a new action schedule (shared logic)
 func (r *restHandler) CreateActionSchedule(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "创建行动计划", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -57,7 +53,7 @@ func (r *restHandler) CreateActionSchedule(c *gin.Context, visitor hydra.Visitor
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -70,13 +66,13 @@ func (r *restHandler) CreateActionSchedule(c *gin.Context, visitor hydra.Visitor
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -86,17 +82,17 @@ func (r *restHandler) CreateActionSchedule(c *gin.Context, visitor hydra.Visitor
 	if err := c.ShouldBindJSON(&reqBody); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionSchedule_InvalidParameter).
 			WithErrorDetails("Binding Parameter Failed: " + err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Create action schedule request: [%s,%v]", c.Request.RequestURI, reqBody))
+	otellog.LogInfo(ctx, fmt.Sprintf("Create action schedule request: [%s,%v]", c.Request.RequestURI, reqBody))
 
 	// Validate request
 	if err := ValidateActionScheduleCreate(ctx, &reqBody); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -118,7 +114,7 @@ func (r *restHandler) CreateActionSchedule(c *gin.Context, visitor hydra.Visitor
 	scheduleID, err := r.ass.CreateSchedule(ctx, schedule)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -128,7 +124,7 @@ func (r *restHandler) CreateActionSchedule(c *gin.Context, visitor hydra.Visitor
 
 	result := map[string]any{"id": scheduleID}
 	logger.Debug("Handler CreateActionSchedule Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusCreated)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusCreated)
 	rest.ReplyOK(c, http.StatusCreated, result)
 }
 
@@ -142,10 +138,7 @@ func (r *restHandler) UpdateActionScheduleByIn(c *gin.Context) {
 // UpdateActionScheduleByEx updates an existing action schedule (external)
 func (r *restHandler) UpdateActionScheduleByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateActionScheduleByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "更新行动计划", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -154,7 +147,7 @@ func (r *restHandler) UpdateActionScheduleByEx(c *gin.Context) {
 
 // UpdateActionSchedule updates an existing action schedule (shared logic)
 func (r *restHandler) UpdateActionSchedule(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "更新行动计划", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -163,7 +156,7 @@ func (r *restHandler) UpdateActionSchedule(c *gin.Context, visitor hydra.Visitor
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -178,13 +171,13 @@ func (r *restHandler) UpdateActionSchedule(c *gin.Context, visitor hydra.Visitor
 	schedule, err := r.ass.GetSchedule(ctx, scheduleID)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if schedule.KNID != knID || schedule.Branch != branch {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ActionSchedule_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -194,24 +187,24 @@ func (r *restHandler) UpdateActionSchedule(c *gin.Context, visitor hydra.Visitor
 	if err := c.ShouldBindJSON(&reqBody); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionSchedule_InvalidParameter).
 			WithErrorDetails("Binding Parameter Failed: " + err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Update action schedule request: [%s,%v]", c.Request.RequestURI, reqBody))
+	otellog.LogInfo(ctx, fmt.Sprintf("Update action schedule request: [%s,%v]", c.Request.RequestURI, reqBody))
 
 	// Validate request
 	if err := ValidateActionScheduleUpdate(ctx, &reqBody); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	if err := r.ass.UpdateSchedule(ctx, scheduleID, &reqBody); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -220,7 +213,7 @@ func (r *restHandler) UpdateActionSchedule(c *gin.Context, visitor hydra.Visitor
 		interfaces.GenerateScheduleAuditObject(scheduleID, schedule.Name), "")
 
 	logger.Debug("Handler UpdateActionSchedule Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, nil)
 }
 
@@ -234,10 +227,7 @@ func (r *restHandler) UpdateActionScheduleStatusByIn(c *gin.Context) {
 // UpdateActionScheduleStatusByEx updates the status of an action schedule (external)
 func (r *restHandler) UpdateActionScheduleStatusByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateActionScheduleStatusByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "更新行动计划状态", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -246,7 +236,7 @@ func (r *restHandler) UpdateActionScheduleStatusByEx(c *gin.Context) {
 
 // UpdateActionScheduleStatus updates the status of an action schedule (shared logic)
 func (r *restHandler) UpdateActionScheduleStatus(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "更新行动计划状态", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -255,7 +245,7 @@ func (r *restHandler) UpdateActionScheduleStatus(c *gin.Context, visitor hydra.V
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -270,13 +260,13 @@ func (r *restHandler) UpdateActionScheduleStatus(c *gin.Context, visitor hydra.V
 	schedule, err := r.ass.GetSchedule(ctx, scheduleID)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if schedule.KNID != knID || schedule.Branch != branch {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ActionSchedule_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -286,14 +276,14 @@ func (r *restHandler) UpdateActionScheduleStatus(c *gin.Context, visitor hydra.V
 	if err := c.ShouldBindJSON(&reqBody); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionSchedule_InvalidParameter).
 			WithErrorDetails("Binding Parameter Failed: " + err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	if err := r.ass.UpdateScheduleStatus(ctx, scheduleID, reqBody.Status); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -302,7 +292,7 @@ func (r *restHandler) UpdateActionScheduleStatus(c *gin.Context, visitor hydra.V
 		interfaces.GenerateScheduleAuditObject(scheduleID, schedule.Name), fmt.Sprintf("status: %s", reqBody.Status))
 
 	logger.Debug("Handler UpdateActionScheduleStatus Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, nil)
 }
 
@@ -316,10 +306,7 @@ func (r *restHandler) DeleteActionSchedulesByIn(c *gin.Context) {
 // DeleteActionSchedulesByEx deletes action schedules (external)
 func (r *restHandler) DeleteActionSchedulesByEx(c *gin.Context) {
 	logger.Debug("Handler DeleteActionSchedulesByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "删除行动计划", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -328,7 +315,7 @@ func (r *restHandler) DeleteActionSchedulesByEx(c *gin.Context) {
 
 // DeleteActionSchedules deletes action schedules (shared logic)
 func (r *restHandler) DeleteActionSchedules(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "删除行动计划", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -337,7 +324,7 @@ func (r *restHandler) DeleteActionSchedules(c *gin.Context, visitor hydra.Visito
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -354,14 +341,14 @@ func (r *restHandler) DeleteActionSchedules(c *gin.Context, visitor hydra.Visito
 	schedules, err := r.ass.GetSchedules(ctx, scheduleIDs)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	if err := r.ass.DeleteSchedules(ctx, knID, branch, scheduleIDs); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -372,7 +359,7 @@ func (r *restHandler) DeleteActionSchedules(c *gin.Context, visitor hydra.Visito
 	}
 
 	logger.Debug("Handler DeleteActionSchedules Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -386,10 +373,7 @@ func (r *restHandler) ListActionSchedulesByIn(c *gin.Context) {
 // ListActionSchedulesByEx lists action schedules (external)
 func (r *restHandler) ListActionSchedulesByEx(c *gin.Context) {
 	logger.Debug("Handler ListActionSchedulesByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "列出行动计划", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -398,7 +382,7 @@ func (r *restHandler) ListActionSchedulesByEx(c *gin.Context) {
 
 // ListActionSchedules lists action schedules (shared logic)
 func (r *restHandler) ListActionSchedules(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "列出行动计划", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -407,7 +391,7 @@ func (r *restHandler) ListActionSchedules(c *gin.Context, visitor hydra.Visitor)
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -420,13 +404,13 @@ func (r *restHandler) ListActionSchedules(c *gin.Context, visitor hydra.Visitor)
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -443,7 +427,7 @@ func (r *restHandler) ListActionSchedules(c *gin.Context, visitor hydra.Visitor)
 	pageParam, err := validatePaginationQueryParameters(ctx, offset, limit, sort, direction, interfaces.ACTION_SCHEDULE_SORT)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -452,7 +436,7 @@ func (r *restHandler) ListActionSchedules(c *gin.Context, visitor hydra.Visitor)
 	if status != "" && status != interfaces.ScheduleStatusActive && status != interfaces.ScheduleStatusInactive {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionSchedule_InvalidStatus).
 			WithErrorDetails(fmt.Sprintf("Invalid status: %s", status))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -472,7 +456,7 @@ func (r *restHandler) ListActionSchedules(c *gin.Context, visitor hydra.Visitor)
 	schedules, total, err := r.ass.ListSchedules(ctx, queryParams)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -483,7 +467,7 @@ func (r *restHandler) ListActionSchedules(c *gin.Context, visitor hydra.Visitor)
 	}
 
 	logger.Debug("Handler ListActionSchedules Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }
 
@@ -497,10 +481,7 @@ func (r *restHandler) GetActionScheduleByIn(c *gin.Context) {
 // GetActionScheduleByEx gets a single action schedule (external)
 func (r *restHandler) GetActionScheduleByEx(c *gin.Context) {
 	logger.Debug("Handler GetActionScheduleByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "获取行动计划", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
@@ -509,7 +490,7 @@ func (r *restHandler) GetActionScheduleByEx(c *gin.Context) {
 
 // GetActionSchedule gets a single action schedule (shared logic)
 func (r *restHandler) GetActionSchedule(c *gin.Context, visitor hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "获取行动计划", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -518,7 +499,7 @@ func (r *restHandler) GetActionSchedule(c *gin.Context, visitor hydra.Visitor) {
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -532,19 +513,19 @@ func (r *restHandler) GetActionSchedule(c *gin.Context, visitor hydra.Visitor) {
 	schedule, err := r.ass.GetSchedule(ctx, scheduleID)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	if schedule.KNID != knID || schedule.Branch != branch {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ActionSchedule_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	logger.Debug("Handler GetActionSchedule Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, schedule)
 }

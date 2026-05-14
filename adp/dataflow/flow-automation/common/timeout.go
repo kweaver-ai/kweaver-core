@@ -25,6 +25,7 @@ func getDefaultOperationTimeouts() map[string]int {
 		OpCognitiveAssistantDocSummarize:  30 * 60,      // 大模型文档总结，30分钟
 		OpCognitiveAssistantMeetSummarize: 30 * 60,      // 大模型会议总结，30分钟
 		OpOpenSearchBulkUpsert:            30 * 60,      // OpenSearch批量插入，30分钟
+		OpDatasetWriteDocs:                30 * 60,      // Dataset文档写入，30分钟
 		OpLLMChatCompletion:               2 * 60 * 60,  // LLM聊天，2小时
 		InternalToolPy3Opt:                24 * 60 * 60, // Python节点，24小时
 		OpContentEntity:                   24 * 60 * 60, // 内容实体，24小时

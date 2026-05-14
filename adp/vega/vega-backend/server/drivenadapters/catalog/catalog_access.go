@@ -14,14 +14,13 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	attr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
 	"vega-backend/drivenadapters/entityextension"
@@ -55,8 +54,7 @@ func NewCatalogAccess(appSetting *common.AppSetting) interfaces.CatalogAccess {
 
 // Create creates ca new Catalog.
 func (ca *catalogAccess) Create(ctx context.Context, catalog *interfaces.Catalog) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Insert into catalog",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Insert into catalog")
 	defer span.End()
 
 	span.SetAttributes(
@@ -69,17 +67,13 @@ func (ca *catalogAccess) Create(ctx context.Context, catalog *interfaces.Catalog
 	// Serialize connector config
 	connectorConfigStr, err := sonic.MarshalString(catalog.ConnectorCfg)
 	if err != nil {
-		logger.Errorf("Failed to marshal connector config: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to marshal connector config: %v", err))
-		span.SetStatus(codes.Error, "Marshal connector failed")
+		otellog.LogError(ctx, "Failed to marshal connector config", err)
 		return err
 	}
 
 	metadataStr, err := sonic.MarshalString(catalog.Metadata)
 	if err != nil {
-		logger.Errorf("Failed to marshal metadata: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to marshal metadata: %v", err))
-		span.SetStatus(codes.Error, "Marshal metadata failed")
+		otellog.LogError(ctx, "Failed to marshal metadata", err)
 		return err
 	}
 
@@ -125,19 +119,15 @@ func (ca *catalogAccess) Create(ctx context.Context, catalog *interfaces.Catalog
 			catalog.UpdateTime,
 		).ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build insert catalog sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build insert catalog sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build insert catalog sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Insert catalog SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Insert catalog SQL: %s", sqlStr))
 
 	_, err = ca.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Insert catalog failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Insert catalog failed: %v", err))
-		span.SetStatus(codes.Error, "Insert failed")
+		otellog.LogError(ctx, "Insert catalog failed", err)
 		return err
 	}
 
@@ -147,8 +137,7 @@ func (ca *catalogAccess) Create(ctx context.Context, catalog *interfaces.Catalog
 
 // GetByID retrieves ca Catalog by ID.
 func (ca *catalogAccess) GetByID(ctx context.Context, id string) (*interfaces.Catalog, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query catalog by ID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query catalog by ID")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_id").String(id))
@@ -250,8 +239,7 @@ func (ca *catalogAccess) GetByID(ctx context.Context, id string) (*interfaces.Ca
 
 // GetByIDs retrieves ca Catalog by IDs.
 func (ca *catalogAccess) GetByIDs(ctx context.Context, ids []string) ([]*interfaces.Catalog, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query catalog by IDs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query catalog by IDs")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_ids").StringSlice(ids))
@@ -365,8 +353,7 @@ func (ca *catalogAccess) AttachListExtensions(ctx context.Context, params interf
 
 // GetByName retrieves ca Catalog by name.
 func (ca *catalogAccess) GetByName(ctx context.Context, name string) (*interfaces.Catalog, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query catalog by Name",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query catalog by Name")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_name").String(name))
@@ -468,8 +455,7 @@ func (ca *catalogAccess) GetByName(ctx context.Context, name string) (*interface
 
 // ListIDs lists Catalog IDs with filters.
 func (ca *catalogAccess) ListIDs(ctx context.Context, params interfaces.CatalogsQueryParams) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List catalog IDs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "List catalog IDs")
 	defer span.End()
 
 	builder := sq.Select(catalogExtCol(params, "f_id")).From(CATALOG_TABLE_NAME)
@@ -528,8 +514,7 @@ func (ca *catalogAccess) ListIDs(ctx context.Context, params interfaces.Catalogs
 
 // List lists Catalogs with filters.
 func (ca *catalogAccess) List(ctx context.Context, params interfaces.CatalogsQueryParams) ([]*interfaces.Catalog, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List catalogs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "List catalogs")
 	defer span.End()
 
 	builder := sq.Select(
@@ -675,8 +660,7 @@ func (ca *catalogAccess) List(ctx context.Context, params interfaces.CatalogsQue
 
 // ListCatalogSrcsIDs lists Catalog Source IDs with filters.
 func (ca *catalogAccess) ListCatalogSrcsIDs(ctx context.Context, params interfaces.ListCatalogsQueryParams) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListCatalogSrcsIDs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListCatalogSrcsIDs")
 	defer span.End()
 
 	builder := sq.Select("f_id").From(CATALOG_TABLE_NAME)
@@ -726,8 +710,7 @@ func (ca *catalogAccess) ListCatalogSrcsIDs(ctx context.Context, params interfac
 
 // ListCatalogSrcsByIDs lists Catalog Sources by IDs.
 func (ca *catalogAccess) ListCatalogSrcsByIDs(ctx context.Context, ids []string) ([]*interfaces.ListCatalogEntry, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListCatalogSrcsByIDs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListCatalogSrcsByIDs")
 	defer span.End()
 
 	if len(ids) == 0 {
@@ -775,8 +758,7 @@ func (ca *catalogAccess) ListCatalogSrcsByIDs(ctx context.Context, ids []string)
 
 // ListCatalogSrcs lists Catalog Sources with filters.
 func (ca *catalogAccess) ListCatalogSrcs(ctx context.Context, params interfaces.ListCatalogsQueryParams) ([]*interfaces.ListCatalogEntry, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListCatalogSrcs catalogs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListCatalogSrcs catalogs")
 	defer span.End()
 
 	builder := sq.Select(
@@ -849,8 +831,7 @@ func (ca *catalogAccess) ListCatalogSrcs(ctx context.Context, params interfaces.
 
 // Update updates ca Catalog.
 func (ca *catalogAccess) Update(ctx context.Context, catalog *interfaces.Catalog) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update catalog",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update catalog")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_id").String(catalog.ID))
@@ -902,8 +883,7 @@ func (ca *catalogAccess) Update(ctx context.Context, catalog *interfaces.Catalog
 
 // DeleteByIDs deletes Catalogs by IDs.
 func (ca *catalogAccess) DeleteByIDs(ctx context.Context, ids []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete catalogs",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Delete catalogs")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("catalog_ids").StringSlice(ids))
@@ -933,8 +913,7 @@ func (ca *catalogAccess) DeleteByIDs(ctx context.Context, ids []string) error {
 
 // UpdateStatus updates Catalog status.
 func (ca *catalogAccess) UpdateHealthCheckStatus(ctx context.Context, id string, status interfaces.CatalogHealthCheckStatus) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update catalog status",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update catalog status")
 	defer span.End()
 
 	sqlStr, vals, _ := sq.Update(CATALOG_TABLE_NAME).
@@ -955,8 +934,7 @@ func (ca *catalogAccess) UpdateHealthCheckStatus(ctx context.Context, id string,
 }
 
 func (ca *catalogAccess) UpdateMetadata(ctx context.Context, id string, metadata map[string]any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update catalog metadata",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update catalog metadata")
 	defer span.End()
 
 	metadataBytes, _ := sonic.Marshal(metadata)

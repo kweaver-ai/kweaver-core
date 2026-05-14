@@ -16,9 +16,9 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/hibiken/asynq"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -62,7 +62,7 @@ func NewBuildTaskService(appSetting *common.AppSetting) interfaces.BuildTaskServ
 
 // CreateBuildTask creates a new build task. resource_id is taken from req.
 func (bts *buildTaskService) CreateBuildTask(ctx context.Context, req *interfaces.CreateBuildTaskRequest) (string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create build task")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create build task")
 	defer span.End()
 
 	resourceID := req.ResourceID
@@ -96,9 +96,7 @@ func (bts *buildTaskService) CreateBuildTask(ctx context.Context, req *interface
 
 	existing, err := bts.bta.GetByResourceID(ctx, resourceID)
 	if err != nil {
-		logger.Errorf("Check existing build task failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Check existing build task failed: %v", err))
-		span.SetStatus(codes.Error, "Check existing build task failed")
+		otellog.LogError(ctx, "Check existing build task failed", err)
 		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -158,9 +156,7 @@ func (bts *buildTaskService) CreateBuildTask(ctx context.Context, req *interface
 	}
 
 	if err := bts.bta.Create(ctx, buildTask); err != nil {
-		logger.Errorf("Create build task failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Create build task failed: %v", err))
-		span.SetStatus(codes.Error, "Create build task failed")
+		otellog.LogError(ctx, "Create build task failed", err)
 		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_CreateFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -171,7 +167,7 @@ func (bts *buildTaskService) CreateBuildTask(ctx context.Context, req *interface
 
 // GetBuildTaskByID retrieves a build task by ID.
 func (bts *buildTaskService) GetBuildTaskByID(ctx context.Context, id string) (*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get build task")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get build task")
 	defer span.End()
 
 	buildTask, err := bts.bta.GetByID(ctx, id)
@@ -191,7 +187,7 @@ func (bts *buildTaskService) GetBuildTaskByID(ctx context.Context, id string) (*
 
 // GetBuildTaskByResourceID retrieves a build task by resource ID.
 func (bts *buildTaskService) GetBuildTaskByResourceID(ctx context.Context, resourceID string) (*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get build task by resource ID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get build task by resource ID")
 	defer span.End()
 
 	buildTask, err := bts.bta.GetByResourceID(ctx, resourceID)
@@ -207,7 +203,7 @@ func (bts *buildTaskService) GetBuildTaskByResourceID(ctx context.Context, resou
 
 // ListBuildTasks retrieves build tasks with filters and pagination.
 func (bts *buildTaskService) ListBuildTasks(ctx context.Context, params interfaces.BuildTasksQueryParams) ([]*interfaces.BuildTask, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List build tasks")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "List build tasks")
 	defer span.End()
 
 	buildTasks, total, err := bts.bta.List(ctx, params)
@@ -223,7 +219,7 @@ func (bts *buildTaskService) ListBuildTasks(ctx context.Context, params interfac
 // StartBuildTask transitions a task from {init/stopped/completed, failed task auto retry} to running.
 // Note: persisted status remains init/stopped/completed until the worker picks it up — clients should poll.
 func (bts *buildTaskService) StartBuildTask(ctx context.Context, taskID string, executeType string) (*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Start build task")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Start build task")
 	defer span.End()
 
 	if executeType == "" {
@@ -257,8 +253,7 @@ func (bts *buildTaskService) StartBuildTask(ctx context.Context, taskID string, 
 		ExecuteType: executeType,
 	})
 	if err != nil {
-		logger.Errorf("Marshal build task message failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Marshal build task message failed: %v", err))
+		otellog.LogError(ctx, "Marshal build task message failed", err)
 	} else {
 		typename := interfaces.BuildTaskTypeBatch
 		if buildTask.Mode == interfaces.BuildTaskModeStreaming {
@@ -272,8 +267,7 @@ func (bts *buildTaskService) StartBuildTask(ctx context.Context, taskID string, 
 			asynq.Timeout(math.MaxInt64),
 			asynq.Deadline(time.Unix(math.MaxInt64/1000000000, math.MaxInt64%1000000000)),
 		); err != nil {
-			logger.Errorf("Enqueue build task failed: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Enqueue build task failed: %v", err))
+			otellog.LogError(ctx, "Enqueue build task failed", err)
 		} else {
 			logger.Infof("Build task %s enqueued for execution", taskID)
 		}
@@ -286,7 +280,7 @@ func (bts *buildTaskService) StartBuildTask(ctx context.Context, taskID string, 
 // StopBuildTask transitions a task from running to stopping.
 // Note: persisted status remains running until the worker advances it — clients should poll.
 func (bts *buildTaskService) StopBuildTask(ctx context.Context, taskID string) (*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Stop build task")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Stop build task")
 	defer span.End()
 
 	buildTask, err := bts.bta.GetByID(ctx, taskID)
@@ -309,9 +303,7 @@ func (bts *buildTaskService) StopBuildTask(ctx context.Context, taskID string) (
 		"status": interfaces.BuildTaskStatusStopping,
 	}
 	if err := bts.bta.UpdateStatus(ctx, taskID, updates); err != nil {
-		logger.Errorf("Update build task status failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Update build task status failed: %v", err))
-		span.SetStatus(codes.Error, "Update build task status failed")
+		otellog.LogError(ctx, "Update build task status failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_UpdateFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -329,7 +321,7 @@ func (bts *buildTaskService) StopBuildTask(ctx context.Context, taskID string) (
 //     This check cannot be bypassed.
 //   - Deletes pass-through tasks one-by-one. Mid-loop errors return 500 (rare, bounded by pre-validation).
 func (bts *buildTaskService) DeleteBuildTasks(ctx context.Context, ids []string, ignoreMissing bool) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete build tasks")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete build tasks")
 	defer span.End()
 
 	toDelete := make([]string, 0, len(ids))
@@ -367,9 +359,7 @@ func (bts *buildTaskService) DeleteBuildTasks(ctx context.Context, ids []string,
 
 	for _, id := range toDelete {
 		if err := bts.bta.Delete(ctx, id); err != nil {
-			logger.Errorf("Delete build task %s failed: %v", id, err)
-			o11y.Error(ctx, fmt.Sprintf("Delete build task %s failed: %v", id, err))
-			span.SetStatus(codes.Error, "Delete build task failed")
+			otellog.LogError(ctx, fmt.Sprintf("Delete build task %s failed", id), err)
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_DeleteFailed).
 				WithErrorDetails(err.Error())
 		}

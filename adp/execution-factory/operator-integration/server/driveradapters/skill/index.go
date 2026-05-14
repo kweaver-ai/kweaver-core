@@ -31,6 +31,10 @@ type SkillHandler interface {
 	GetSkillReleaseHistory(c *gin.Context)
 	ReadSkillFile(c *gin.Context)
 	ExecuteSkill(c *gin.Context)
+	// 管理态读接口
+	GetManagementContent(c *gin.Context)
+	ReadManagementFile(c *gin.Context)
+	DownloadManagementSkill(c *gin.Context)
 }
 
 type skillHandler struct {
@@ -38,6 +42,7 @@ type skillHandler struct {
 	Registry          interfaces.SkillRegistry
 	Market            interfaces.SkillMarket
 	Reader            interfaces.SkillReader
+	MgmtReader        interfaces.SkillManagementReader
 	IndexBuildService interfaces.SkillIndexBuildService
 }
 
@@ -56,6 +61,7 @@ func NewSkillHandler() SkillHandler {
 			Registry:          registry,
 			Market:            market,
 			Reader:            logicsskill.NewSkillReader(),
+			MgmtReader:        logicsskill.NewSkillManagementReader(),
 			IndexBuildService: logicsskill.NewSkillIndexBuildService(),
 		}
 	})

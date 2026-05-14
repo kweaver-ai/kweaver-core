@@ -7,6 +7,7 @@ package knowledge_network
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -680,6 +681,7 @@ func Test_knowledgeNetworkService_GetKNByID(t *testing.T) {
 			ots := bmock.NewMockObjectTypeService(mockCtrl)
 			rts := bmock.NewMockRelationTypeService(mockCtrl)
 			ats := bmock.NewMockActionTypeService(mockCtrl)
+			ms := bmock.NewMockMetricService(mockCtrl)
 
 			service := &knowledgeNetworkService{
 				appSetting: appSetting,
@@ -690,6 +692,7 @@ func Test_knowledgeNetworkService_GetKNByID(t *testing.T) {
 				ots:        ots,
 				rts:        rts,
 				ats:        ats,
+				ms:         ms,
 			}
 
 			kna.EXPECT().GetKNByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(kn, nil)
@@ -704,6 +707,9 @@ func Test_knowledgeNetworkService_GetKNByID(t *testing.T) {
 			ots.EXPECT().ListObjectTypes(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*interfaces.ObjectType{}, 0, nil)
 			rts.EXPECT().ListRelationTypes(gomock.Any(), gomock.Any()).Return([]*interfaces.RelationType{}, 0, nil)
 			ats.EXPECT().ListActionTypes(gomock.Any(), gomock.Any()).Return([]*interfaces.ActionType{}, 0, nil)
+			ms.EXPECT().ListMetrics(gomock.Any(), gomock.Any()).Return(&interfaces.MetricsList{
+				Entries: []*interfaces.MetricDefinition{},
+			}, nil)
 
 			result, err := service.GetKNByID(ctx, knID, branch, mode)
 			So(err, ShouldBeNil)
@@ -1835,7 +1841,7 @@ func Test_knowledgeNetworkService_CreateKN(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			// 模拟Begin失败
 			db2, _, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-			db2.Close() // 关闭数据库连接以模拟Begin失败
+			_ = db2.Close() // 关闭数据库连接以模拟Begin失败
 			service2 := &knowledgeNetworkService{
 				appSetting: appSetting,
 				kna:        kna,
@@ -2189,6 +2195,53 @@ func Test_knowledgeNetworkService_ValidateKN_strictMode_propagation(t *testing.T
 		ats.EXPECT().ValidateActionTypes(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, kn.ActionTypes, false, gomock.Any(), gomock.Any()).Return(nil)
 
 		err := service.ValidateKN(ctx, kn, false, interfaces.ImportMode_Normal)
+		So(err, ShouldBeNil)
+	})
+}
+
+func Test_knowledgeNetworkService_ValidateKN_metricsBatchPreflight(t *testing.T) {
+	Convey("ValidateKN passes BatchIDIndex into ValidateMetrics for payload OT lookup\n", t, func() {
+		ctx := context.Background()
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		appSetting := &common.AppSetting{}
+		kna := bmock.NewMockKNAccess(mockCtrl)
+		ots := bmock.NewMockObjectTypeService(mockCtrl)
+		ms := bmock.NewMockMetricService(mockCtrl)
+
+		kna.EXPECT().CheckKNExistByID(gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
+		kna.EXPECT().CheckKNExistByName(gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
+
+		service := &knowledgeNetworkService{
+			appSetting: appSetting,
+			kna:        kna,
+			ots:        ots,
+			ms:         ms,
+		}
+
+		kn := &interfaces.KN{
+			KNID:   "kn1",
+			Branch: interfaces.MAIN_BRANCH,
+			ObjectTypes: []*interfaces.ObjectType{
+				{ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTID: "pod", OTName: "Pod"}},
+			},
+			Metrics: []*interfaces.MetricDefinition{
+				{ID: "m1", ScopeRef: "pod"},
+			},
+		}
+
+		ots.EXPECT().ValidateObjectTypes(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, kn.ObjectTypes, true, gomock.Any(), gomock.Any()).Return(nil)
+
+		ms.EXPECT().ValidateMetrics(gomock.Any(), kn.Metrics, true, gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, entries []*interfaces.MetricDefinition, sm bool, mode string, batch *interfaces.BatchIDIndex) error {
+				if batch == nil || batch.ObjectTypes["pod"] == nil {
+					return fmt.Errorf("expected batch to declare pod object type")
+				}
+				return nil
+			})
+
+		err := service.ValidateKN(ctx, kn, true, interfaces.ImportMode_Normal)
 		So(err, ShouldBeNil)
 	})
 }

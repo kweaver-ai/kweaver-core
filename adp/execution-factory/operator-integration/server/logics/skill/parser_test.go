@@ -36,8 +36,11 @@ Use this skill carefully.`),
 		_, parseErr := uuid.Parse(skill.Version)
 		So(parseErr, ShouldBeNil)
 		So(skill.SkillContent, ShouldEqual, "Use this skill carefully.")
-		So(len(files), ShouldEqual, 0)
-		So(len(assets), ShouldEqual, 0)
+		// FR-5: content 注册也返回 SKILL.md 的 file 和 asset
+		So(len(files), ShouldEqual, 1)
+		So(files[0].RelPath, ShouldEqual, SkillMD)
+		So(len(assets), ShouldEqual, 1)
+		So(assets[0].RelPath, ShouldEqual, SkillMD)
 	})
 }
 

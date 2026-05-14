@@ -17,6 +17,7 @@ import (
 type MockMetricService struct {
 	ctrl     *gomock.Controller
 	recorder *MockMetricServiceMockRecorder
+	isgomock struct{}
 }
 
 // MockMetricServiceMockRecorder is the mock recorder for MockMetricService.
@@ -200,15 +201,15 @@ func (mr *MockMetricServiceMockRecorder) UpdateMetric(ctx, tx, req, strictMode i
 }
 
 // ValidateMetrics mocks base method.
-func (m *MockMetricService) ValidateMetrics(ctx context.Context, entries []*interfaces.MetricDefinition, strictMode bool, importMode string) error {
+func (m *MockMetricService) ValidateMetrics(ctx context.Context, entries []*interfaces.MetricDefinition, strictMode bool, importMode string, batch *interfaces.BatchIDIndex) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateMetrics", ctx, entries, strictMode, importMode)
+	ret := m.ctrl.Call(m, "ValidateMetrics", ctx, entries, strictMode, importMode, batch)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ValidateMetrics indicates an expected call of ValidateMetrics.
-func (mr *MockMetricServiceMockRecorder) ValidateMetrics(ctx, entries, strictMode, importMode interface{}) *gomock.Call {
+func (mr *MockMetricServiceMockRecorder) ValidateMetrics(ctx, entries, strictMode, importMode, batch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateMetrics", reflect.TypeOf((*MockMetricService)(nil).ValidateMetrics), ctx, entries, strictMode, importMode)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateMetrics", reflect.TypeOf((*MockMetricService)(nil).ValidateMetrics), ctx, entries, strictMode, importMode, batch)
 }
