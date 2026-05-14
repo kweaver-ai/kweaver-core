@@ -1,0 +1,129 @@
+feature: 存储管理
+story: 创建存储配置
+switch: y
+cases:
+- name: 创建存储配置成功--OBS开启默认存储
+  url: 创建存储配置
+  prev_case: 删除存储配置成功
+  body_params: "{
+  \"storage_name\": \"${obs_storage_name}_${ts_uuid}\",
+  \"vendor_type\": \"OBS\",
+  \"endpoint\": \"${obs_endpoint}\",
+  \"bucket_name\": \"${obs_bucket_name}\",
+  \"access_key_id\": \"${obs_access_key_id}\",
+  \"access_key_secret\": \"${obs_access_key_secret}\",
+  \"region\": \"${obs_region}\",
+  \"is_default\": true,
+  \"internal_endpoint\": \"\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.id\": \"exists\",\n  \"$.data.status\": \"ok\"\n}"
+  resp_values: "{\"storage_id\": \"$.data.id\"}"
+  description: 测试创建OBS类型存储配置功能
+
+- name: 创建存储配置成功--OSS关闭默认存储
+  url: 创建存储配置
+  prev_case: 删除存储配置成功
+  body_params: "{
+  \"storage_name\": \"${oss_storage_name}_${ts_uuid}\",
+  \"vendor_type\": \"OSS\",
+  \"endpoint\": \"${oss_endpoint}\",
+  \"bucket_name\": \"${oss_bucket_name}\",
+  \"access_key_id\": \"${oss_access_key_id}\",
+  \"access_key_secret\": \"${oss_access_key_secret}\",
+  \"region\": \"${oss_region}\",
+  \"is_default\": false,
+  \"internal_endpoint\": \"\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.id\": \"exists\",\n  \"$.data.status\": \"ok\"\n}"
+  resp_values: "{\"storage_id\": \"$.data.id\"}"
+  description: 测试创建OSS类型存储配置功能
+
+- name: 创建存储配置失败--存储名称为空
+  url: 创建存储配置
+  body_params: "{
+  \"storage_name\": \"\",
+  \"vendor_type\": \"OSS\",
+  \"endpoint\": \"${oss_endpoint}\",
+  \"bucket_name\": \"${oss_bucket_name}\",
+  \"access_key_id\": \"${oss_access_key_id}\",
+  \"access_key_secret\": \"${oss_access_key_secret}\",
+  \"region\": \"${oss_region}\"
+}"
+  code_check: '400'
+  resp_check: "{\"$.description\": \"Key: 'CreateStorageRequest.StorageName' Error:Field validation for 'StorageName' failed on the 'required' tag\"}"
+  description: 测试存储名称为空的情况
+
+- name: 创建存储配置失败--vendor_type无效
+  url: 创建存储配置
+  body_params: "{
+  \"storage_name\": \"${oss_storage_name}_${ts_uuid}\",
+  \"vendor_type\": \"INVALID\",
+  \"endpoint\": \"${oss_endpoint}\",
+  \"bucket_name\": \"${oss_bucket_name}\",
+  \"access_key_id\": \"${oss_access_key_id}\",
+  \"access_key_secret\": \"${oss_access_key_secret}\",
+  \"region\": \"${oss_region}\"
+}"
+  code_check: '400'
+  resp_check: "{\"$.description\": \"Invalid vendor type: INVALID\"}"
+  description: 测试vendor_type传无效值的情况
+
+- name: 创建存储配置失败--endpoint格式错误
+  url: 创建存储配置
+  body_params: "{
+  \"storage_name\": \"${oss_storage_name}_${ts_uuid}\",
+  \"vendor_type\": \"OSS\",
+  \"endpoint\": \"invalid-endpoint\",
+  \"bucket_name\": \"${oss_bucket_name}\",
+  \"access_key_id\": \"${oss_access_key_id}\",
+  \"access_key_secret\": \"${oss_access_key_secret}\",
+  \"region\": \"${oss_region}\"
+}"
+  code_check: '500'
+  resp_check: "{\"$.description\": \"endpoint must start with http:// or https://\"}"
+  description: 测试endpoint格式错误的情况
+
+- name: 创建存储配置失败--bucket_name为空
+  url: 创建存储配置
+  body_params: "{
+  \"storage_name\": \"${oss_storage_name}_${ts_uuid}\",
+  \"vendor_type\": \"OSS\",
+  \"endpoint\": \"${oss_endpoint}\",
+  \"bucket_name\": \"\",
+  \"access_key_id\": \"${oss_access_key_id}\",
+  \"access_key_secret\": \"${oss_access_key_secret}\",
+  \"region\": \"${oss_region}\"
+}"
+  code_check: '400'
+  resp_check: "{\"$.description\": \"Key: 'CreateStorageRequest.BucketName' Error:Field validation for 'BucketName' failed on the 'required' tag\"}"
+  description: 测试bucket_name为空的情况
+
+- name: 创建存储配置失败--OSS类型缺少必填字段region
+  url: 创建存储配置
+  body_params: "{
+  \"storage_name\": \"${oss_storage_name}_${ts_uuid}\",
+  \"vendor_type\": \"OSS\",
+  \"endpoint\": \"${oss_endpoint}\",
+  \"bucket_name\": \"${oss_bucket_name}\",
+  \"access_key_id\": \"${oss_access_key_id}\",
+  \"access_key_secret\": \"${oss_access_key_secret}\"
+}"
+  code_check: '500'
+  resp_check: "{\"$.description\": \"region is required for vendor type OSS\"}"
+  description: 测试OSS类型缺少必填字段region的情况
+
+- name: 创建存储配置失败--OBS类型缺少必填字段region
+  url: 创建存储配置
+  body_params: "{
+  \"storage_name\": \"${obs_storage_name}_${ts_uuid}\",
+  \"vendor_type\": \"OBS\",
+  \"endpoint\": \"${obs_endpoint}\",
+  \"bucket_name\": \"${oss_bucket_name}\",
+  \"access_key_id\": \"${obs_access_key_id}\",
+  \"access_key_secret\": \"${obs_access_key_secret}\"
+}"
+  code_check: '500'
+  resp_check: "{\"$.description\": \"region is required for vendor type OBS\"}"
+  description: 测试OSS类型缺少必填字段region的情况

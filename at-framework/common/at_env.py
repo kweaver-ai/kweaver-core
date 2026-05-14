@@ -130,10 +130,16 @@ def _host_has_port(host: str) -> bool:
 
 
 def request_scheme(ini_config: Dict[str, Dict[str, str]]) -> str:
-    """AT_REQUEST_SCHEME > REQUEST_SCHEME；默认 https。"""
+    """AT_REQUEST_SCHEME > REQUEST_SCHEME > base_url 协议；默认 https。"""
     v = _strip(os.environ.get("AT_REQUEST_SCHEME") or os.environ.get("REQUEST_SCHEME"))
     if v:
         return v.lower()
+    # 从 base_url 中解析协议
+    base_url = _strip(ini_config.get("server", {}).get("base_url", ""))
+    if base_url:
+        parsed = urlparse(base_url)
+        if parsed.scheme:
+            return parsed.scheme
     return "https"
 
 

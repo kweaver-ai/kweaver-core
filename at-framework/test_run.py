@@ -28,7 +28,7 @@ from common.model_registry import (
     ensure_llm_model_and_get_id,
     register_embedding_model,
     register_rerank_model,
-    register_oss_storage,
+    ensure_oss_storage_and_get_id,
 )
 from conftest import config, compute_case_list
 from request.http_client import HTTPClient
@@ -159,7 +159,12 @@ def _run_prepare_models_for_case(case_info):
             if reranker_name:
                 resp_values["reranker_config_name"] = reranker_name
         elif kind == "oss":
-            register_oss_storage(config)
+            storage_id = ensure_oss_storage_and_get_id(config)
+            if storage_id:
+                resp_values["storage_config_id"] = str(storage_id)
+            storage_name = ((config.get("oss_info") or {}).get("storage_name") or "").strip()
+            if storage_name:
+                resp_values["storage_config_name"] = storage_name
         elif kind == "llm":
             llm_id = ensure_llm_model_and_get_id(config)
             if llm_id:
@@ -626,7 +631,12 @@ def test_case(feature, story, case_name, case_info):
 
     with allure.step("发送请求"):
         _scheme, _host = at_env.resolve_request_target(config)
-        client = HTTPClient(url="%s://%s%s" % (_scheme, _host, url),
+        # 如果 url 已经是完整的 URL（包含协议），则直接使用，否则拼接基础 URL
+        if url.lower().startswith("http://") or url.lower().startswith("https://"):
+            full_url = url
+        else:
+            full_url = "%s://%s%s" % (_scheme, _host, url)
+        client = HTTPClient(url=full_url,
                             method=case_info.get("method", ""), headers=case_header_params)
         send_kw = dict(params=case_query_params, json=case_body_params, data=case_form_params)
         if case_cookie_params:

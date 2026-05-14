@@ -1,0 +1,38 @@
+# =============================================================================
+# 配置模板：复制为 global.yaml 后按环境填写（不要将含密钥的 global.yaml 提交到仓库）
+# =============================================================================
+
+# 模型通用配置，包括llm、rlm、vu
+llm_model_series: <LLM_MODEL_SERIES>
+llm_api_url: <LLM_API_URL>
+llm_api_key: <LLM_API_KEY>
+
+# 新增大模型配置
+llm_model: <LLM_MODEL>
+llm_max_model_len: <LLM_MAX_MODEL_LEN>
+
+# 备用大模型配置，删除大模型用例使用
+backup_model: <BACKUP_MODEL>
+backup_model_max_model_len: <BACKUP_MODEL_MAX_MODEL_LEN>
+
+# 多模态模型配置
+vu_model_name: <VU_MODEL_NAME>
+vu_model_series: <VU_MODEL_SERIES>
+vu_api_url: <VU_API_URL>
+vu_model: <VU_MODEL>
+vu_api_key: <VU_API_KEY>
+vu_model_type: <VU_MODEL_TYPE>
+vu_max_model_len: <VU_MAX_MODEL_LEN>
+
+# embedding相关配置
+embedding_url: <EMBEDDING_URL>
+embedding_model: <EMBEDDING_MODEL>
+embedding_dim: <EMBEDDING_DIM>
+embedding_batch_size: <EMBEDDING_BATCH_SIZE>
+embedding_max_tokens: <EMBEDDING_MAX_TOKENS>
+
+# reranker相关配置
+reranker_url: <RERANKER_URL>
+reranker_model: <RERANKER_MODEL>
+reranker_batch_size: <RERANKER_BATCH_SIZE>
+reranker_max_tokens: <RERANKER_MAX_TOKENS>

@@ -1,0 +1,30 @@
+# 路径作用域映射
+
+# 路径作用域映射
+path_scope_mapping:
+  - path: /storages
+    scope: storage
+  
+  - path: /head
+    scope: object
+  
+  - path: /upload
+    scope: object
+  
+  - path: /initmultiupload
+    scope: object
+  
+  - path: /uploadpart
+    scope: object
+  
+  - path: /completeupload
+    scope: object
+  
+  - path: /download
+    scope: object
+  
+  - path: /delete
+    scope: object
+  
+  - path: /health
+    scope: health

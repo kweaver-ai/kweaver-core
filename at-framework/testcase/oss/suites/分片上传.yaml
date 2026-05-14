@@ -1,0 +1,165 @@
+feature: 文件上传
+story: 初始化分片上传
+switch: y
+cases:
+- name: 初始化分片上传成功
+  url: 初始化分片上传
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  query_params: "{
+  \"size\": 18048116
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.upload_id\": \"exists\",\n  \"$.data.part_size\": \"exists\",\n  \"$.data.key\": \"exists\"\n}"
+  resp_values: "{\"upload_id\": \"$.data.upload_id\"}"
+  description: 测试初始化分片上传功能
+
+- name: 初始化分片上传失败--size参数缺失
+  url: 初始化分片上传
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  query_params: "{}"
+  code_check: '400'
+  resp_check: "{\n  \"$.message\": \"Invalid parameter\",\n  \"$.description\": \"Invalid parameter: size is required\"\n}"
+  description: 测试缺少size参数的情况
+
+- name: 初始化分片上传失败--storage_id不存在
+  url: 初始化分片上传
+  path_params: "{
+  \"storage_id\": \"99999999999999999999\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  query_params: "{
+  \"size\": 18048116
+}"
+  code_check: '500'
+  resp_check: "{\n  \"$.message\": \"Internal server error\",\n  \"$.description\": \"storage not found\"\n}"
+  description: 测试storage_id不存在的情况
+
+- name: 初始化分片上传失败--key为空
+  url: 初始化分片上传
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"\"
+}"
+  query_params: "{
+  \"size\": 18048116
+}"
+  code_check: '500'
+  resp_check: "{\n  \"$.message\": \"Internal server error\",\n  \"$.description\": \"object_key cannot be empty\"\n}"
+  description: 测试key为空的情况
+
+- name: 初始化分片上传失败--size为负数
+  url: 初始化分片上传
+  prepare_models: oss
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  query_params: "{
+  \"size\": -1
+}"
+  code_check: '500'
+  resp_check: "{\n  \"$.message\": \"Internal server error\",\n  \"$.description\": \"file size must be greater than 0\"\n}"
+  description: 测试size为负数的情况
+
+
+- name: 获取分片上传URL成功
+  url: 获取分片上传 URL
+  prev_case: 初始化分片上传成功
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  body_params: "{
+  \"upload_id\": \"${upload_id}\",
+  \"part_id\": [1, 2, 3, 4],
+  \"internal_request\": false
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.authrequest\": \"exists\"\n}"
+  resp_values: "{\"uploadpart_authrequest\": \"$.data.authrequest\"}"
+  description: 测试获取分片上传URL功能
+
+- name: 获取分片上传URL失败--upload_id缺失
+  url: 获取分片上传 URL
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  body_params: "{
+  \"part_id\": [1, 2, 3,4]
+}"
+  code_check: '400'
+  resp_check: "{\n  \"$.message\": \"Bad request\", \"$.description\": \"Key: 'UploadID' Error:Field validation for 'UploadID' failed on the 'required' tag\"\n}"
+  description: 测试缺少upload_id的情况
+
+- name: 获取分片上传URL失败--part_id为空数组
+  url: 获取分片上传 URL
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  body_params: "{
+  \"upload_id\": \"${upload_id}\",
+  \"part_id\": []
+}"
+  code_check: '500'
+  resp_check: "{\n  \"$.message\": \"Internal server error\", \"$.description\": \"part_id cannot be empty\"\n}"
+  description: 测试part_id为空数组的情况
+
+- name: 完成分片上传成功
+  url: 完成分片上传
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  query_params: "{
+  \"upload_id\": \"${upload_id}\"
+}"
+  body_params: "{
+  \"1\": \"\\\"5eb63bbbe01eeed093cb22bb8f5acdc3\\\"\",
+  \"2\": \"\\\"5eb63bbbe01eeed093cb22bb8f5acdc4\\\"\",
+  \"3\": \"\\\"5eb63bbbe01eeed093cb22bb8f5acdc5\\\"\",
+  \"4\": \"\\\"5eb63bbbe01eeed093cb22bb8f5acdc6\\\"\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.method\": \"exists\",\n  \"$.data.url\": \"exists\",\n  \"$.data.request_body\": \"exists\"\n}"
+  description: 测试完成分片上传功能
+
+- name: 完成分片上传失败--upload_id缺失
+  url: 完成分片上传
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  query_params: "{}"
+  body_params: "{
+  \"1\": \"\\\"5eb63bbbe01eeed093cb22bb8f5acdc3\\\"\"
+}"
+  code_check: '400'
+  resp_check: "{\n  \"$.message\": \"Invalid parameter\",\n  \"$.description\": \"Invalid parameter: upload_id is required\"\n}"
+  description: 测试缺少upload_id的情况
+
+- name: 完成分片上传失败--storage_id不存在
+  url: 完成分片上传
+  path_params: "{
+  \"storage_id\": \"99999999999999999999\",
+  \"key\": \"test-at/multipartUpload.pdf\"
+}"
+  query_params: "{
+  \"upload_id\": \"${upload_id}\"
+}"
+  body_params: "{
+  \"1\": \"\\\"5eb63bbbe01eeed093cb22bb8f5acdc3\\\"\"
+}"
+  code_check: '500'
+  resp_check: "{\n  \"$.message\": \"Internal server error\",\n  \"$.description\": \"storage not found\"\n}"
+  description: 测试storage_id不存在的情况

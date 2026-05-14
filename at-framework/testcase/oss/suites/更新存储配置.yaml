@@ -1,0 +1,93 @@
+feature: 存储管理
+story: 更新存储配置
+switch: y
+cases:
+- name: 更新存储配置成功--修改名称
+  url: 更新存储配置
+  prepare_models: oss
+  next_case: 删除存储配置成功
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\"
+}"
+  body_params: "{
+  \"storage_name\": \"update_${storage_config_name}_${ts_uuid}\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.id\": \"exists\",\n  \"$.data.status\": \"ok\"\n}"
+  resp_values: "{\"storage_id\": \"$.data.id\"}"
+  description: 测试更新存储名称功能
+
+- name: 更新存储配置成功--修改启用状态
+  url: 更新存储配置
+  prepare_models: oss
+  next_case: 删除存储配置成功
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\"
+}"
+  body_params: "{
+  \"is_enabled\": false
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.id\": \"exists\",\n  \"$.data.status\": \"ok\"\n}"
+  resp_values: "{\"storage_id\": \"$.data.id\"}"
+  description: 测试修改存储启用状态功能
+
+- name: 前置用例--创建存储配置成功
+  url: 创建存储配置
+  body_params: "{
+  \"storage_name\": \"${oss_storage_name}_${ts_uuid}\",
+  \"vendor_type\": \"OSS\",
+  \"endpoint\": \"${oss_endpoint}\",
+  \"bucket_name\": \"${oss_bucket_name}\",
+  \"access_key_id\": \"${oss_access_key_id}\",
+  \"access_key_secret\": \"${oss_access_key_secret}\",
+  \"region\": \"${oss_region}\",
+  \"is_default\": false,
+  \"internal_endpoint\": \"\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.id\": \"exists\",\n  \"$.data.status\": \"ok\"\n}"
+  resp_values: "{\"storage_id\": \"$.data.id\"}"
+  description: 测试创建OSS类型存储配置功能
+
+- name: 更新存储配置成功--设置默认存储
+  url: 更新存储配置
+  prev_case: 前置用例--创建存储配置成功
+  next_case: 删除存储配置成功
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\"
+}"
+  body_params: "{
+  \"is_default\": true
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.id\": \"${storage_config_id}\",\n  \"$.data.status\": \"ok\"\n}"
+  resp_values: "{\"storage_id\": \"$.data.id\"}"
+  description: 测试设置默认存储功能
+
+- name: 更新存储配置失败--设置为默认但已存在默认存储
+  url: 更新存储配置
+  prepare_models: oss
+  prev_case: 前置用例--创建存储配置成功
+  next_case: 删除存储配置成功
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\"
+}"
+  body_params: "{
+  \"is_default\": true
+}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"400031112\"\n}"
+  description: 测试已存在默认存储时设置新默认存储失败的情况
+
+- name: 更新存储配置失败--storage_id不存在
+  url: 更新存储配置
+  path_params: "{
+  \"storage_id\": \"9999999999999999999\"
+}"
+  body_params: "{
+  \"storage_name\": \"新名称\"
+}"
+  code_check: '500'
+  resp_check: "{\"message\": \"Internal server error\",\"$.description\": \"storage not found\"}"
+  description: 测试storage_id不存在的情况

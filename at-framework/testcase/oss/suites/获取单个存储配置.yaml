@@ -1,0 +1,24 @@
+feature: 存储管理
+story: 获取单个存储配置
+switch: y
+cases:
+- name: 获取单个存储配置成功
+  url: 获取单个存储配置
+  prepare_models: oss
+  next_case: 删除存储配置成功
+  path_params: "{
+  \"storage_id\": \"${storage_config_id}\"
+}"
+  code_check: '200'
+  resp_check: "{\n  \"$.data.storage_id\": \"exists\",\n  \"$.data.storage_name\": \"${storage_config_name}\"\n}"
+  description: 测试获取单个存储配置功能
+
+- name: 获取单个存储配置失败--storage_id不存在
+  url: 获取单个存储配置
+  path_params: "{
+  \"storage_id\": \"99999999999999999999\"
+}"
+  code_check: '404'
+  resp_check: "{\n  \"$.message\": \"Storage not found\",\n  \"$.description\": \"The specified storage does not exist\"\n}"
+  description: 测试storage_id不存在的情况
+
