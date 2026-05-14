@@ -233,3 +233,33 @@ ErrorLink = "暂无"
 Description = "执行查询失败"
 Solution = "请联系管理员"
 ErrorLink = "暂无"
+
+[VegaBackend.Extensions.InvalidFormat]
+Description = "extensions 格式不合法"
+Solution = "请检查 key/value 长度与是否为空"
+ErrorLink = "暂无"
+
+[VegaBackend.Extensions.QuotaExceeded]
+Description = "根级 extensions 条数超过上限"
+Solution = "请减少 extensions 条目"
+ErrorLink = "暂无"
+
+[VegaBackend.Extensions.PropertyQuotaExceeded]
+Description = "字段 extensions 条数超过上限"
+Solution = "请减少该字段的 extensions 条目"
+ErrorLink = "暂无"
+
+[VegaBackend.Extensions.ReservedKey]
+Description = "extensions 的 key 使用了保留前缀"
+Solution = "请勿使用 vega_ 前缀的 key"
+ErrorLink = "暂无"
+
+[VegaBackend.Extensions.MismatchedQueryPairs]
+Description = "extension_key 与 extension_value 查询参数不合法"
+Solution = "请成对传入且数量一致、非空"
+ErrorLink = "暂无"
+
+[VegaBackend.Extensions.TooManyFilterPairs]
+Description = "扩展筛选条件组数超过上限"
+Solution = "请减少筛选组数"
+ErrorLink = "暂无"

@@ -27,6 +27,7 @@ import (
 
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
+	"vega-backend/logics/extensions"
 )
 
 // Helper function to validate strategies array
@@ -100,11 +101,28 @@ func (r *restHandler) listCatalogs(c *gin.Context, ctx context.Context, span tra
 		return
 	}
 
+	extKeys := c.QueryArray("extension_key")
+	extVals := c.QueryArray("extension_value")
+	if err := extensions.ValidateExtensionQueryPairs(ctx, extKeys, extVals); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	includeExt := strings.EqualFold(strings.TrimSpace(c.Query("include_extensions")), "true")
+	includeExtKeys := strings.TrimSpace(c.Query("include_extension_keys"))
+
 	params := interfaces.CatalogsQueryParams{
 		PaginationQueryParams: pageParam,
 		Tag:                   tag,
 		Type:                  typ,
 		HealthCheckStatus:     healthCheckStatus,
+		ExtensionKeys:         extKeys,
+		ExtensionValues:       extVals,
+		IncludeExtensions:     includeExt,
+		IncludeExtensionKeys:  includeExtKeys,
 	}
 
 	entries, total, err := r.cs.List(ctx, params)

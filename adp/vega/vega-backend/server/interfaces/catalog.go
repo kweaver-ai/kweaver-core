@@ -38,6 +38,9 @@ type Catalog struct {
 	ConnectorCfg  ConnectorConfig `json:"connector_config"`
 	Metadata      map[string]any  `json:"metadata"`
 
+	// Extensions 业务域外扁平 KV（t_entity_extension）；列表默认省略，详情或非省略时返回
+	Extensions map[string]string `json:"extensions,omitempty"`
+
 	HealthCheckEnabled bool `json:"health_check_enabled"`
 	CatalogHealthCheckStatus
 
@@ -63,6 +66,11 @@ type CatalogsQueryParams struct {
 	Tag               string
 	Type              string
 	HealthCheckStatus string
+	// ExtensionKeys / ExtensionValues 成对等长，多对 AND（列表筛选）
+	ExtensionKeys   []string
+	ExtensionValues []string
+	IncludeExtensions    bool
+	IncludeExtensionKeys string
 }
 
 // CatalogCreateRequest represents create catalog request.
@@ -73,6 +81,9 @@ type CatalogRequest struct {
 	Description   string          `json:"description"`
 	ConnectorType string          `json:"connector_type"`
 	ConnectorCfg  ConnectorConfig `json:"connector_config"`
+
+	// Extensions 根对象出现该键（含 null 需客户端避免）时整包替换；指针为 nil 表示请求体未携带该字段
+	Extensions *map[string]string `json:"extensions,omitempty"`
 
 	IfNameModify  bool     `json:"-"`
 	OriginCatalog *Catalog `json:"-"`

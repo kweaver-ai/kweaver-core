@@ -233,3 +233,33 @@ ErrorLink = "None"
 Description = "Query execution failed"
 Solution = "Please contact the administrator"
 ErrorLink = "None"
+
+[VegaBackend.Extensions.InvalidFormat]
+Description = "Invalid extensions format"
+Solution = "Check key/value length and non-empty keys"
+ErrorLink = "None"
+
+[VegaBackend.Extensions.QuotaExceeded]
+Description = "Root extensions count exceeds limit"
+Solution = "Reduce the number of extension entries"
+ErrorLink = "None"
+
+[VegaBackend.Extensions.PropertyQuotaExceeded]
+Description = "Property extensions count exceeds limit"
+Solution = "Reduce extensions on that field"
+ErrorLink = "None"
+
+[VegaBackend.Extensions.ReservedKey]
+Description = "Extensions key uses reserved prefix"
+Solution = "Do not use keys with the vega_ prefix"
+ErrorLink = "None"
+
+[VegaBackend.Extensions.MismatchedQueryPairs]
+Description = "extension_key and extension_value query params are invalid"
+Solution = "Pass paired, equal-length, non-empty values"
+ErrorLink = "None"
+
+[VegaBackend.Extensions.TooManyFilterPairs]
+Description = "Too many extension filter pairs"
+Solution = "Reduce the number of filter pairs"
+ErrorLink = "None"

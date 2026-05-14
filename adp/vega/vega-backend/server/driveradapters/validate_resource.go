@@ -15,6 +15,7 @@ import (
 
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
+	"vega-backend/logics/extensions"
 )
 
 func ValidateResourceRequest(ctx context.Context, req *interfaces.ResourceRequest) error {
@@ -32,10 +33,19 @@ func ValidateResourceRequest(ctx context.Context, req *interfaces.ResourceReques
 		return err
 	}
 
+	if req.Extensions != nil {
+		if err := extensions.ValidateEntityExtensionsMap(ctx, *req.Extensions); err != nil {
+			return err
+		}
+	}
+
 	switch req.Category {
 	case interfaces.ResourceCategoryLogicView:
 		return validateLogicViewRequest(ctx, req)
 	default:
+		if err := extensions.ValidateSchemaPropertiesExtensions(ctx, req.SchemaDefinition); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -147,6 +157,12 @@ func validateViewFields(ctx context.Context, viewFields []*interfaces.ViewProper
 		err := validateFeatures(ctx, fieldsMap, field.Features)
 		if err != nil {
 			return err
+		}
+
+		if len(field.Extensions) > 0 {
+			if err := extensions.ValidatePropertyExtensionsMap(ctx, field.Extensions); err != nil {
+				return err
+			}
 		}
 	}
 

@@ -175,6 +175,20 @@ func loadSetting(vp *viper.Viper) {
 		logger.Fatalf("err:%s\n", err)
 	}
 
+	// 联调/CI：允许用环境变量覆盖监听端口，避免与本地已占用端口冲突
+	if hp := strings.TrimSpace(os.Getenv("VEGA_HTTP_PORT")); hp != "" {
+		if v, err := strconv.Atoi(hp); err == nil && v > 0 && v < 65536 {
+			appSetting.ServerSetting.HttpPort = v
+			logger.Infof("HttpPort overridden by VEGA_HTTP_PORT=%d", v)
+		}
+	}
+
+	// 联调脚本（如 issue382）：无挂载密钥时关闭 crypto，避免读取 /opt/... 失败
+	if v := strings.TrimSpace(os.Getenv("VEGA_CRYPTO_DISABLED")); strings.EqualFold(v, "1") || strings.EqualFold(v, "true") {
+		appSetting.CryptoSetting.Enabled = false
+		logger.Info("Crypto disabled via VEGA_CRYPTO_DISABLED env")
+	}
+
 	// 加载时区
 	loc, err := time.LoadLocation(os.Getenv("TZ"))
 	if err != nil {
@@ -190,6 +204,7 @@ func loadSetting(vp *viper.Viper) {
 	SetLogSetting(appSetting.LogSetting)
 
 	SetDBSetting()
+	overrideDBSettingFromEnv()
 
 	SetMQSetting()
 
@@ -230,6 +245,32 @@ func SetDBSetting() {
 		Username: setting["user"].(string),
 		Password: setting["password"].(string),
 		DBName:   DATA_BASE_NAME,
+	}
+}
+
+// overrideDBSettingFromEnv 联调/脚本用：覆盖 depServices 解析出的 DB 连接（如本地 127.0.0.1:3306）
+func overrideDBSettingFromEnv() {
+	if h := strings.TrimSpace(os.Getenv("VEGA_DB_HOST")); h != "" {
+		appSetting.DBSetting.Host = h
+		logger.Infof("DB Host overridden by VEGA_DB_HOST=%s", h)
+	}
+	if p := strings.TrimSpace(os.Getenv("VEGA_DB_PORT")); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 && v < 65536 {
+			appSetting.DBSetting.Port = v
+			logger.Infof("DB Port overridden by VEGA_DB_PORT=%d", v)
+		}
+	}
+	if u := strings.TrimSpace(os.Getenv("VEGA_DB_USER")); u != "" {
+		appSetting.DBSetting.Username = u
+		logger.Infof("DB Username overridden by VEGA_DB_USER")
+	}
+	if pw, ok := os.LookupEnv("VEGA_DB_PASSWORD"); ok {
+		appSetting.DBSetting.Password = pw
+		logger.Info("DB Password overridden by VEGA_DB_PASSWORD")
+	}
+	if db := strings.TrimSpace(os.Getenv("VEGA_DB_NAME")); db != "" {
+		appSetting.DBSetting.DBName = db
+		logger.Infof("DB Name overridden by VEGA_DB_NAME=%s", db)
 	}
 }
 

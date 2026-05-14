@@ -22,11 +22,13 @@ import (
 
 	"vega-backend/common"
 	taskAccess "vega-backend/drivenadapters/build_task"
+	"vega-backend/drivenadapters/entityextension"
 	resourceAccess "vega-backend/drivenadapters/resource"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 	"vega-backend/logics/catalog"
 	dataset "vega-backend/logics/dataset"
+	"vega-backend/logics/extensions"
 	"vega-backend/logics/permission"
 	"vega-backend/logics/user_mgmt"
 )
@@ -115,6 +117,15 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 		req.SourceIdentifier = fmt.Sprintf("%s.%s", req.CatalogID, id)
 	}
 
+	if err := extensions.ValidateSchemaPropertiesExtensions(ctx, req.SchemaDefinition); err != nil {
+		return nil, err
+	}
+	if req.Extensions != nil {
+		if err := extensions.ValidateEntityExtensionsMap(ctx, *req.Extensions); err != nil {
+			return nil, err
+		}
+	}
+
 	resource := &interfaces.Resource{
 		ID:               id,
 		CatalogID:        req.CatalogID,
@@ -140,6 +151,16 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 		otellog.LogError(ctx, "Create resource failed", err)
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_CreateFailed).
 			WithErrorDetails(err.Error())
+	}
+
+	if req.Extensions != nil {
+		if err := entityextension.NewStore(rs.appSetting).Replace(ctx, resource.ID, *req.Extensions); err != nil {
+			_ = rs.ra.DeleteByIDs(ctx, []string{resource.ID})
+			logger.Errorf("Replace resource extensions failed: %v", err)
+			span.SetStatus(codes.Error, "Replace resource extensions failed")
+			return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_CreateFailed).
+				WithErrorDetails(err.Error())
+		}
 	}
 
 	switch resource.Category {
@@ -226,6 +247,12 @@ func (rs *resourceService) GetByIDs(ctx context.Context, ids []string) ([]*inter
 	resources, err := rs.ra.GetByIDs(ctx, ids)
 	if err != nil {
 		span.SetStatus(codes.Error, "Get resources failed")
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+
+	if err := rs.ra.AttachListExtensions(ctx, interfaces.ResourcesQueryParams{IncludeExtensions: true}, resources); err != nil {
+		span.SetStatus(codes.Error, "Load resource extensions failed")
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -397,6 +424,12 @@ func (rs *resourceService) List(ctx context.Context, params interfaces.Resources
 		resources = append(resources, batchResources...)
 	}
 
+	if err := rs.ra.AttachListExtensions(ctx, params, resources); err != nil {
+		span.SetStatus(codes.Error, "Attach resource extensions failed")
+		return []*interfaces.Resource{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+
 	// 设置资源操作权限
 	for _, c := range resources {
 		if resrc, exist := matchResourceOpsMap[c.ID]; exist {
@@ -456,6 +489,15 @@ func (rs *resourceService) Update(ctx context.Context, id string, req *interface
 		resource.LogicDefinition = req.LogicDefinition
 	}
 
+	if err := extensions.ValidateSchemaPropertiesExtensions(ctx, resource.SchemaDefinition); err != nil {
+		return err
+	}
+	if req.Extensions != nil {
+		if err := extensions.ValidateEntityExtensionsMap(ctx, *req.Extensions); err != nil {
+			return err
+		}
+	}
+
 	// 检查catalog是否存在
 	exists, err := rs.cs.CheckExistByID(ctx, req.CatalogID)
 	if err != nil {
@@ -484,6 +526,14 @@ func (rs *resourceService) Update(ctx context.Context, id string, req *interface
 		span.SetStatus(codes.Error, "Update resource failed")
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_UpdateFailed).
 			WithErrorDetails(err.Error())
+	}
+
+	if req.Extensions != nil {
+		if err := entityextension.NewStore(rs.appSetting).Replace(ctx, resource.ID, *req.Extensions); err != nil {
+			span.SetStatus(codes.Error, "Replace resource extensions failed")
+			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_UpdateFailed).
+				WithErrorDetails(err.Error())
+		}
 	}
 
 	// 请求更新资源名称的接口，更新资源的名称
