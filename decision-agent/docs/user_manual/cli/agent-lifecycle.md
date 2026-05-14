@@ -235,7 +235,7 @@ curl -X POST "$KWEAVER_BASE_URL/api/agent-factory/v3/agent" \
   -d '{"name":"...","profile":"...","product_key":"dip","config":{"mode":"default","llms":[{"is_default":true,"llm_config":{"id":"...","name":"..."}}]}}'
 ```
 
-对应示例：`make -C docs/user_manual/examples/cli flow`。
+对应示例：`make -C docs/user_manual/examples/cli create`。
 
 ## `kweaver agent update`
 
@@ -274,6 +274,12 @@ curl -X PUT "$KWEAVER_BASE_URL/api/agent-factory/v3/agent/$AGENT_ID" \
 AGENT_ID=<agent-id> KN_ID=<knowledge-network-id> make -C docs/user_manual/examples/cli update-knowledge-network
 ```
 
+基础信息更新示例：
+
+```bash
+make -C docs/user_manual/examples/cli update
+```
+
 ## `kweaver agent publish`
 
 用途：发布 Agent。再次发布会生成新版本；只调整发布元信息请使用 API 的更新发布信息能力。
@@ -299,7 +305,7 @@ curl -X POST "$KWEAVER_BASE_URL/api/agent-factory/v3/agent/$AGENT_ID/publish" \
   -d '{"category_ids":[],"description":"","publish_to_where":["square"],"publish_to_bes":["skill_agent"],"pms_control":null}'
 ```
 
-对应示例：`make -C docs/user_manual/examples/cli flow`。
+对应示例：`make -C docs/user_manual/examples/cli publish`。
 
 ## `kweaver agent unpublish`
 
@@ -321,7 +327,7 @@ kweaver agent unpublish "$AGENT_ID"
 curl -X PUT "$KWEAVER_BASE_URL/api/agent-factory/v3/agent/$AGENT_ID/unpublish"
 ```
 
-对应示例：`make -C docs/user_manual/examples/cli flow`。
+对应示例：`make -C docs/user_manual/examples/cli unpublish`。
 
 ## `kweaver agent delete`
 
@@ -344,7 +350,7 @@ kweaver agent delete "$AGENT_ID" -y
 curl -X DELETE "$KWEAVER_BASE_URL/api/agent-factory/v3/agent/$AGENT_ID"
 ```
 
-对应示例：`make -C docs/user_manual/examples/cli flow`。
+对应示例：`make -C docs/user_manual/examples/cli delete`。
 
 ## `kweaver agent skill`
 

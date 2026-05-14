@@ -111,7 +111,7 @@ kweaver config show
 | 目标 | 含义 |
 | --- | --- |
 | `make quick-check` | 快速检查，不创建或删除数据，通常只运行 help 和列表类查询。 |
-| `make flow` | 完整流程，会创建、发布、取消发布并删除临时 Agent。 |
+| `make flow` | 完整流程，会创建、查询、更新、发布、取消发布并删除临时 Agent。 |
 | `make smoke` | `quick-check` 的兼容别名。 |
 
 ## 准备 Agent config

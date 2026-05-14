@@ -1,5 +1,7 @@
+.env
+.env.local
+cli/agents/agent-config.json
 **/node_modules/
 **/package-lock.json
 **/.tmp/
 **/dist/
-

@@ -47,6 +47,8 @@ export CONVERSATION_ID="$(jq -r '.. | objects | .conversation_id? // empty' /tmp
 echo "$CONVERSATION_ID"
 ```
 
+响应字段说明见 [对话响应](./chat-response.md)。
+
 ## 普通流式对话
 
 普通流式对话返回 SSE。每个 `data:` 片段都是当前完整响应快照，适合希望实时展示但不想维护增量合并逻辑的客户端：

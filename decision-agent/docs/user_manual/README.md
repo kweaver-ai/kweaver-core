@@ -8,6 +8,7 @@
 | API | 需要查看底层 REST 协议、排障或做自定义集成的开发者 | [api/README.md](./api/README.md) |
 | CLI | 通过 `kweaver agent ...` 操作 Agent 的实施、测试、开发人员 | [cli/README.md](./cli/README.md) |
 | SDK (TypeScript) | 在 TypeScript 应用或脚本中集成 Agent 能力的开发者 | [sdk/typescript/README.md](./sdk/typescript/README.md) |
+| Cookbook | 想按实际业务场景串起概念、API、CLI、SDK 的用户 | [../cookbook/README.md](../cookbook/README.md) |
 
 本文档只覆盖后端能力，不包含前端页面操作。
 
@@ -20,6 +21,8 @@
 - [TypeScript SDK 示例](./examples/sdk/typescript/README.md)：TypeScript + npm 包入口。
 
 每个示例目录都有独立 Makefile。默认 `make quick-check` 只执行健康检查、入口 import/help 和列表查询；`make smoke` 作为兼容别名保留。创建、发布、删除 Agent 的完整流程需要显式运行 `make flow`。
+
+如果想按“合同摘要”“合同审查 + Sub-Agent”“人工干预与终止”等完整业务流程阅读，可以从 [Decision Agent Cookbook](../cookbook/README.md) 开始，再按场景跳转到 API、CLI 或 SDK 示例。
 
 ## 本地示例约定
 
@@ -52,6 +55,7 @@ export KWEAVER_BUSINESS_DOMAIN="$AF_BD"
 2. 集成 TypeScript：读 [SDK Client 初始化](./sdk/typescript/client-setup.md)、[Agents 使用](./sdk/typescript/agents.md)、[对话与流式输出](./sdk/typescript/chat-streaming.md)。
 3. 命令行验证：读 [CLI 快速开始](./cli/quick-start.md)，用一条本地流程跑通创建、发布和对话。
 4. REST 参考：读 [API 生命周期](./api/agent-lifecycle.md)、[Agent 配置](./api/agent-config.md)、[对话与会话](./api/chat-and-conversation.md)。
+5. 场景化接入：读 [Cookbook](../cookbook/README.md)，按业务目标选择 API、CLI 或 SDK recipe。
 
 ## 核心概念
 

@@ -10,6 +10,8 @@ Decision Agent is part of the KWeaver ecosystem. If you like it, please also sta
 
 - 🐛 [Report Bug](https://github.com/kweaver-ai/kweaver-core/issues) - Report a bug or issue
 - 💡 [Request Feature](https://github.com/kweaver-ai/kweaver-core/issues) - Suggest a new feature
+- 📘 [User Manual](docs/user_manual/README.md) - Concepts, REST API, CLI, SDK, and runnable examples
+- 🍳 [Cookbook](docs/cookbook/README.md) - Scenario-based recipes for Decision Agent integration
 
 ## Decision Agent Definition
 
@@ -180,9 +182,9 @@ cd agent-backend/agent-memory && make lint
 cd agent-backend/agent-factory && make lint
 ```
 
-## Agent Factory API Docs
+## Developer API Docs
 
-If you want to quickly generate or inspect the Agent Factory API documents, run:
+If you want to quickly generate or inspect the generated REST API documents, run:
 
 ```bash
 cd agent-backend/agent-factory
@@ -195,9 +197,9 @@ Related docs:
 - [Public API docs guide](agent-backend/agent-factory/docs/api/README.md)
 - [Agent Factory README](agent-backend/agent-factory/README.md)
 
-## Agent Factory API Chat Integration Guide
+## Legacy API Chat Integration Guide
 
-For the complete API Chat integration guide, use the docs in the Agent Factory `docs/` root:
+The preferred entry is now the [Decision Agent User Manual](docs/user_manual/README.md). Older API Chat integration notes remain here for reference:
 
 - English: [agent-backend/agent-factory/docs/api-chat-integration.md](agent-backend/agent-factory/docs/api-chat-integration.md)
 - 中文: [agent-backend/agent-factory/docs/api-chat-integration.zh.md](agent-backend/agent-factory/docs/api-chat-integration.zh.md)
