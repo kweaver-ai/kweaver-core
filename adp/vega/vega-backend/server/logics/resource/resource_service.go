@@ -154,7 +154,7 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 	}
 
 	if req.Extensions != nil {
-		if err := entityextension.NewStore(rs.appSetting).Replace(ctx, resource.ID, *req.Extensions); err != nil {
+		if err := entityextension.NewStore(rs.appSetting).Replace(ctx, entityextension.KindResource, resource.ID, *req.Extensions); err != nil {
 			_ = rs.ra.DeleteByIDs(ctx, []string{resource.ID})
 			logger.Errorf("Replace resource extensions failed: %v", err)
 			span.SetStatus(codes.Error, "Replace resource extensions failed")
@@ -529,7 +529,7 @@ func (rs *resourceService) Update(ctx context.Context, id string, req *interface
 	}
 
 	if req.Extensions != nil {
-		if err := entityextension.NewStore(rs.appSetting).Replace(ctx, resource.ID, *req.Extensions); err != nil {
+		if err := entityextension.NewStore(rs.appSetting).Replace(ctx, entityextension.KindResource, resource.ID, *req.Extensions); err != nil {
 			span.SetStatus(codes.Error, "Replace resource extensions failed")
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_UpdateFailed).
 				WithErrorDetails(err.Error())

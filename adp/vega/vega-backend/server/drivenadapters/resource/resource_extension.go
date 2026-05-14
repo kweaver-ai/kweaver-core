@@ -57,7 +57,7 @@ func attachResourceExtensions(ctx context.Context, app *common.AppSetting, param
 		ids = append(ids, r.ID)
 	}
 	st := entityextension.NewStore(app)
-	m, err := st.GetByEntityIDs(ctx, ids)
+	m, err := st.GetByEntityIDs(ctx, entityextension.KindResource, ids)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func attachSingleResourceExtensions(ctx context.Context, app *common.AppSetting,
 		return nil
 	}
 	st := entityextension.NewStore(app)
-	kv, err := st.GetByEntityID(ctx, r.ID)
+	kv, err := st.GetByEntityID(ctx, entityextension.KindResource, r.ID)
 	if err != nil {
 		return err
 	}

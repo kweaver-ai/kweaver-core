@@ -938,7 +938,7 @@ func (ra *resourceAccess) DeleteByIDs(ctx context.Context, ids []string) error {
 		return nil
 	}
 
-	if err := entityextension.NewStore(ra.appSetting).DeleteByEntityIDs(ctx, ids); err != nil {
+	if err := entityextension.NewStore(ra.appSetting).DeleteByEntityIDs(ctx, entityextension.KindResource, ids); err != nil {
 		span.SetStatus(codes.Error, "Delete entity extensions failed")
 		return err
 	}
@@ -1189,7 +1189,7 @@ func (ra *resourceAccess) DeleteByCatalogIDs(ctx context.Context, catalogIDs []s
 		span.SetStatus(codes.Error, "Iterate rows failed")
 		return err
 	}
-	if err := entityextension.NewStore(ra.appSetting).DeleteByEntityIDs(ctx, resIDs); err != nil {
+	if err := entityextension.NewStore(ra.appSetting).DeleteByEntityIDs(ctx, entityextension.KindResource, resIDs); err != nil {
 		span.SetStatus(codes.Error, "Delete entity extensions failed")
 		return err
 	}

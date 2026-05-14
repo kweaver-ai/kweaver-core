@@ -892,7 +892,7 @@ func (ca *catalogAccess) DeleteByIDs(ctx context.Context, ids []string) error {
 		return nil
 	}
 
-	if err := entityextension.NewStore(ca.appSetting).DeleteByEntityIDs(ctx, ids); err != nil {
+	if err := entityextension.NewStore(ca.appSetting).DeleteByEntityIDs(ctx, entityextension.KindCatalog, ids); err != nil {
 		span.SetStatus(codes.Error, "Delete entity extensions failed")
 		return err
 	}

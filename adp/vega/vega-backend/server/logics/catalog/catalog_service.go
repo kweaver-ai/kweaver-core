@@ -164,7 +164,7 @@ func (cs *catalogService) Create(ctx context.Context, req *interfaces.CatalogReq
 			_ = cs.ca.DeleteByIDs(ctx, []string{catalog.ID})
 			return "", err
 		}
-		if err := entityextension.NewStore(cs.appSetting).Replace(ctx, catalog.ID, *req.Extensions); err != nil {
+		if err := entityextension.NewStore(cs.appSetting).Replace(ctx, entityextension.KindCatalog, catalog.ID, *req.Extensions); err != nil {
 			_ = cs.ca.DeleteByIDs(ctx, []string{catalog.ID})
 			logger.Errorf("Replace catalog extensions failed: %v", err)
 			span.SetStatus(codes.Error, "Replace catalog extensions failed")
@@ -522,7 +522,7 @@ func (cs *catalogService) Update(ctx context.Context, id string, req *interfaces
 		if err := extensions.ValidateEntityExtensionsMap(ctx, *req.Extensions); err != nil {
 			return err
 		}
-		if err := entityextension.NewStore(cs.appSetting).Replace(ctx, catalog.ID, *req.Extensions); err != nil {
+		if err := entityextension.NewStore(cs.appSetting).Replace(ctx, entityextension.KindCatalog, catalog.ID, *req.Extensions); err != nil {
 			span.SetStatus(codes.Error, "Replace catalog extensions failed")
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_UpdateFailed).
 				WithErrorDetails(err.Error())
