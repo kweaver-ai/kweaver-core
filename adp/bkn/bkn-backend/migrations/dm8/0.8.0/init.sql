@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS t_object_type (
   f_primary_keys VARCHAR(8192 CHAR) DEFAULT NULL,
   f_display_key VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_incremental_key VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_condition TEXT DEFAULT NULL,
   f_creator VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_creator_type VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_create_time BIGINT NOT NULL DEFAULT 0,
@@ -260,7 +261,7 @@ CREATE TABLE IF NOT EXISTS t_risk_type (
 CREATE UNIQUE INDEX IF NOT EXISTS uk_risk_type_name ON t_risk_type(f_kn_id, f_branch, f_name);
 
 
--- BKN 指标定义（0.7.0 相对 0.6.0 新增；与 01-metric_definition.sql 一致）
+-- BKN 指标定义
 CREATE TABLE IF NOT EXISTS t_metric_definition (
   f_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_name VARCHAR(128 CHAR) NOT NULL DEFAULT '',

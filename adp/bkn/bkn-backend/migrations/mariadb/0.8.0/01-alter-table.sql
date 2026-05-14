@@ -40,4 +40,4 @@ ALTER TABLE t_action_type
 
 -- t_object_type 新增 f_condition 字段
 ALTER TABLE t_object_type
-  ADD COLUMN IF NOT EXISTS f_condition MEDIUMTEXT DEFAULT NULL COMMENT '对象类过滤条件' AFTER f_incremental_key;
+  ADD COLUMN IF NOT EXISTS f_condition TEXT DEFAULT NULL COMMENT '对象类过滤条件' AFTER f_incremental_key;

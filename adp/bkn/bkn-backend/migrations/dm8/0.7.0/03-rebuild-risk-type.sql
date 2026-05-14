@@ -22,6 +22,7 @@ CREATE TABLE t_risk_type_new (
   f_tags            VARCHAR(255 CHAR) DEFAULT NULL,
   f_icon            VARCHAR(255 CHAR) NOT NULL DEFAULT '',
   f_color           VARCHAR(40 CHAR)  NOT NULL DEFAULT '',
+  f_bkn_raw_content TEXT              NOT NULL,
   f_kn_id           VARCHAR(40 CHAR)  NOT NULL DEFAULT '',
   f_branch          VARCHAR(40 CHAR)  NOT NULL DEFAULT '',
   f_creator         VARCHAR(40 CHAR)  NOT NULL DEFAULT '',
@@ -30,7 +31,6 @@ CREATE TABLE t_risk_type_new (
   f_updater         VARCHAR(40 CHAR)  NOT NULL DEFAULT '',
   f_updater_type    VARCHAR(20 CHAR)  NOT NULL DEFAULT '',
   f_update_time     BIGINT            NOT NULL DEFAULT 0,
-  f_bkn_raw_content TEXT              NOT NULL,
   CLUSTER PRIMARY KEY (f_kn_id, f_branch, f_id)
 );
 
