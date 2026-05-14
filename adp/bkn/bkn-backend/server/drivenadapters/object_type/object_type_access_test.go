@@ -195,8 +195,8 @@ func Test_objectTypeAccess_CreateObjectType(t *testing.T) {
 
 		sqlStr := fmt.Sprintf("INSERT INTO %s (f_id,f_name,f_tags,f_comment,f_icon,f_color,f_bkn_raw_content,"+
 			"f_kn_id,f_branch,f_data_source,f_data_properties,f_logic_properties,f_primary_keys,"+
-			"f_display_key,f_incremental_key,f_creator,f_creator_type,f_create_time,f_updater,f_updater_type,f_update_time) "+
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", OT_TABLE_NAME)
+			"f_display_key,f_incremental_key,f_condition,f_creator,f_creator_type,f_create_time,f_updater,f_updater_type,f_update_time) "+
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", OT_TABLE_NAME)
 
 		Convey("CreateObjectType Success \n", func() {
 			smock.ExpectBegin()
@@ -811,7 +811,7 @@ func Test_objectTypeAccess_GetObjectTypeByID(t *testing.T) {
 
 		sqlStr := fmt.Sprintf("SELECT ot.f_id, ot.f_name, ot.f_tags, ot.f_comment, ot.f_icon, ot.f_color, ot.f_bkn_raw_content, "+
 			"ot.f_kn_id, ot.f_branch, ot.f_data_source, ot.f_data_properties, ot.f_logic_properties, ot.f_primary_keys, "+
-			"ot.f_display_key, ot.f_incremental_key, ot.f_creator, ot.f_creator_type, ot.f_create_time, "+
+			"ot.f_display_key, ot.f_incremental_key, ot.f_condition, ot.f_creator, ot.f_creator_type, ot.f_create_time, "+
 			"ot.f_updater, ot.f_updater_type, ot.f_update_time, "+
 			"ots.f_incremental_key, ots.f_incremental_value, ots.f_index, ots.f_index_available, "+
 			"ots.f_doc_count, ots.f_storage_size, ots.f_update_time "+
@@ -831,14 +831,14 @@ func Test_objectTypeAccess_GetObjectTypeByID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, dataPropertiesBytes, logicPropertiesBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -873,14 +873,14 @@ func Test_objectTypeAccess_GetObjectTypeByID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", invalidBytes, dataPropertiesBytes, logicPropertiesBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -901,14 +901,14 @@ func Test_objectTypeAccess_GetObjectTypeByID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, invalidBytes, logicPropertiesBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -929,14 +929,14 @@ func Test_objectTypeAccess_GetObjectTypeByID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, dataPropertiesBytes, invalidBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -957,14 +957,14 @@ func Test_objectTypeAccess_GetObjectTypeByID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, dataPropertiesBytes, logicPropertiesBytes, invalidBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -989,7 +989,7 @@ func Test_objectTypeAccess_GetObjectTypesByIDs(t *testing.T) {
 
 		sqlStr := fmt.Sprintf("SELECT ot.f_id, ot.f_name, ot.f_tags, ot.f_comment, ot.f_icon, ot.f_color, ot.f_bkn_raw_content, "+
 			"ot.f_kn_id, ot.f_branch, ot.f_data_source, ot.f_data_properties, ot.f_logic_properties, ot.f_primary_keys, "+
-			"ot.f_display_key, ot.f_incremental_key, ot.f_creator, ot.f_creator_type, ot.f_create_time, "+
+			"ot.f_display_key, ot.f_incremental_key, ot.f_condition, ot.f_creator, ot.f_creator_type, ot.f_create_time, "+
 			"ot.f_updater, ot.f_updater_type, ot.f_update_time, "+
 			"ots.f_incremental_key, ots.f_incremental_value, ots.f_index, ots.f_index_available, "+
 			"ots.f_doc_count, ots.f_storage_size, ots.f_update_time "+
@@ -1009,14 +1009,14 @@ func Test_objectTypeAccess_GetObjectTypesByIDs(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, dataPropertiesBytes, logicPropertiesBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -1062,14 +1062,14 @@ func Test_objectTypeAccess_GetObjectTypesByIDs(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", invalidBytes, dataPropertiesBytes, logicPropertiesBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -1088,14 +1088,14 @@ func Test_objectTypeAccess_GetObjectTypesByIDs(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, invalidBytes, logicPropertiesBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -1114,14 +1114,14 @@ func Test_objectTypeAccess_GetObjectTypesByIDs(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, dataPropertiesBytes, invalidBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -1140,14 +1140,14 @@ func Test_objectTypeAccess_GetObjectTypesByIDs(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"ot.f_id", "ot.f_name", "ot.f_tags", "ot.f_comment", "ot.f_icon", "ot.f_color", "ot.f_bkn_raw_content",
 				"ot.f_kn_id", "ot.f_branch", "ot.f_data_source", "ot.f_data_properties", "ot.f_logic_properties",
-				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_creator", "ot.f_creator_type",
+				"ot.f_primary_keys", "ot.f_display_key", "ot.f_incremental_key", "ot.f_condition", "ot.f_creator", "ot.f_creator_type",
 				"ot.f_create_time", "ot.f_updater", "ot.f_updater_type", "ot.f_update_time",
 				"ots.f_incremental_key", "ots.f_incremental_value", "ots.f_index", "ots.f_index_available",
 				"ots.f_doc_count", "ots.f_storage_size", "ots.f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, dataPropertiesBytes, logicPropertiesBytes, invalidBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 				"update_time", "0", "index1", true, int64(100), int64(1024), testUpdateTime,
 			)
@@ -1168,7 +1168,7 @@ func Test_objectTypeAccess_UpdateObjectType(t *testing.T) {
 		appSetting := &common.AppSetting{}
 		ota, smock := MockNewObjectTypeAccess(appSetting)
 
-		sqlStr := fmt.Sprintf("UPDATE %s SET f_bkn_raw_content = ?, f_color = ?, f_comment = ?, f_data_properties = ?, "+
+		sqlStr := fmt.Sprintf("UPDATE %s SET f_bkn_raw_content = ?, f_color = ?, f_comment = ?, f_condition = ?, f_data_properties = ?, "+
 			"f_data_source = ?, f_display_key = ?, f_icon = ?, f_incremental_key = ?, f_logic_properties = ?, "+
 			"f_name = ?, f_primary_keys = ?, f_tags = ?, f_update_time = ?, f_updater = ?, f_updater_type = ? "+
 			"WHERE f_id = ? AND f_kn_id = ?", OT_TABLE_NAME)
@@ -1685,7 +1685,7 @@ func Test_objectTypeAccess_GetAllObjectTypesByKnID(t *testing.T) {
 
 		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
 			"f_kn_id, f_branch, f_data_source, f_data_properties, f_logic_properties, f_primary_keys, "+
-			"f_display_key, f_incremental_key, f_creator, f_creator_type, f_create_time, "+
+			"f_display_key, f_incremental_key, f_condition, f_creator, f_creator_type, f_create_time, "+
 			"f_updater, f_updater_type, f_update_time "+
 			"FROM %s WHERE f_kn_id = ? AND f_branch = ?", OT_TABLE_NAME)
 
@@ -1697,17 +1697,17 @@ func Test_objectTypeAccess_GetAllObjectTypesByKnID(t *testing.T) {
 		rows := sqlmock.NewRows([]string{
 			"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
 			"f_kn_id", "f_branch", "f_data_source", "f_data_properties", "f_logic_properties", "f_primary_keys",
-			"f_display_key", "f_incremental_key", "f_creator", "f_creator_type", "f_create_time",
+			"f_display_key", "f_incremental_key", "f_condition", "f_creator", "f_creator_type", "f_create_time",
 			"f_updater", "f_updater_type", "f_update_time",
 		}).AddRow(
 			"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 			"kn1", "main", dataSourceBytes, dataPropertiesBytes, logicPropertiesBytes, primaryKeysBytes,
-			"name", "update_time", "admin", "admin", testUpdateTime,
+			"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
 		).AddRow(
 			"ot2", "Object Type 2", `"tag2"`, "comment2", "icon2", "color2", "detail2",
 			"kn1", "main", dataSourceBytes, dataPropertiesBytes, logicPropertiesBytes, primaryKeysBytes,
-			"name2", "update_time2", "admin", "admin", testUpdateTime,
+			"name2", "update_time2", []byte("null"), "admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
 		)
 
@@ -1745,12 +1745,12 @@ func Test_objectTypeAccess_GetAllObjectTypesByKnID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
 				"f_kn_id", "f_branch", "f_data_source", "f_data_properties", "f_logic_properties", "f_primary_keys",
-				"f_display_key", "f_incremental_key", "f_creator", "f_creator_type", "f_create_time",
+				"f_display_key", "f_incremental_key", "f_condition", "f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time", "f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, dataPropertiesBytes, logicPropertiesBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime, "f_update_time",
 			)
 
@@ -1770,12 +1770,12 @@ func Test_objectTypeAccess_GetAllObjectTypesByKnID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
 				"f_kn_id", "f_branch", "f_data_source", "f_data_properties", "f_logic_properties", "f_primary_keys",
-				"f_display_key", "f_incremental_key", "f_creator", "f_creator_type", "f_create_time",
+				"f_display_key", "f_incremental_key", "f_condition", "f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", invalidBytes, dataPropertiesBytes, logicPropertiesBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 			)
 
@@ -1795,12 +1795,12 @@ func Test_objectTypeAccess_GetAllObjectTypesByKnID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
 				"f_kn_id", "f_branch", "f_data_source", "f_data_properties", "f_logic_properties", "f_primary_keys",
-				"f_display_key", "f_incremental_key", "f_creator", "f_creator_type", "f_create_time",
+				"f_display_key", "f_incremental_key", "f_condition", "f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, invalidBytes, logicPropertiesBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 			)
 
@@ -1820,12 +1820,12 @@ func Test_objectTypeAccess_GetAllObjectTypesByKnID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
 				"f_kn_id", "f_branch", "f_data_source", "f_data_properties", "f_logic_properties", "f_primary_keys",
-				"f_display_key", "f_incremental_key", "f_creator", "f_creator_type", "f_create_time",
+				"f_display_key", "f_incremental_key", "f_condition", "f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, dataPropertiesBytes, invalidBytes, primaryKeysBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 			)
 
@@ -1845,12 +1845,12 @@ func Test_objectTypeAccess_GetAllObjectTypesByKnID(t *testing.T) {
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
 				"f_kn_id", "f_branch", "f_data_source", "f_data_properties", "f_logic_properties", "f_primary_keys",
-				"f_display_key", "f_incremental_key", "f_creator", "f_creator_type", "f_create_time",
+				"f_display_key", "f_incremental_key", "f_condition", "f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"ot1", "Object Type 1", `"tag1"`, "comment", "icon", "color", "detail",
 				"kn1", "main", dataSourceBytes, dataPropertiesBytes, logicPropertiesBytes, invalidBytes,
-				"name", "update_time", "admin", "admin", testUpdateTime,
+				"name", "update_time", []byte("null"), "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 			)
 
