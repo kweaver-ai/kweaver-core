@@ -3553,8 +3553,8 @@ components:
                     example: frame_abc123
                     type: string
                 interrupt_type:
-                    description: 中断类型（tool_confirmation）
-                    example: tool_confirmation
+                    description: 中断类型（恢复句柄使用 tool_interrupt；Dolphin 外层工具确认事件可能显示为 tool_confirmation）
+                    example: tool_interrupt
                     type: string
                 restart_block:
                     description: 是否重启代码块

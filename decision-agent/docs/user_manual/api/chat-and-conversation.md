@@ -74,7 +74,7 @@ af_curl -N -X POST "$AF_BASE_URL/api/agent-factory/v1/app/$AGENT_KEY/chat/comple
   -d @/tmp/chat-stream-request.json
 ```
 
-增量流式对话请阅读 [增量流式](./incremental-streaming.md)。
+增量流式对话请阅读 [增量流式](./incremental-streaming.md)。如果流式执行中断开连接但服务端 run 仍在继续，可以通过 [人工干预与终止](./intervention-termination.md) 中的断线续连说明继续读取。
 
 ## 继续对话
 
@@ -127,4 +127,4 @@ af_curl -X PUT "$AF_BASE_URL/api/agent-factory/v1/app/$AGENT_KEY/conversation/$C
   -d '{"latest_read_index": 2}' | jq .
 ```
 
-Debug 对话、运行期会话和缓存说明请阅读 [Debug 对话](./debug-chat.md) 与 [对话、会话与执行](./conversation-session-run.md)。
+Debug 对话、人工干预、终止执行、运行期会话和缓存说明请阅读 [Debug 对话](./debug-chat.md)、[人工干预与终止](./intervention-termination.md) 与 [对话、会话与执行](./conversation-session-run.md)。

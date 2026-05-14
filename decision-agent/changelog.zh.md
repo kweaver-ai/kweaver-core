@@ -2,6 +2,12 @@
 
 ## 0.7.1
 
+### 功能与改进
+
+- 新增带校验的 Agent `Config` 值对象，完善 Dolphin 模式配置校验
+  - 为 Agent 配置和 Dolphin 模式补充 `Config` 结构与测试覆盖
+  - 同步 Agent Mode 文档和仓库 Agent 指引中的配置结构说明
+
 ### Bug 修复
 
 - 修复内置工具名称以符合 DeepSeek tool naming 规范
@@ -11,11 +17,29 @@
 - 在工具注册时增加名称合法性校验，提前发现不合规名称
   - 校验工具名称仅包含 `a-z`、`A-Z`、`0-9`、`_`、`-`，且长度不超过 64 字符
   - 对不合规的工具名称记录警告日志，避免在 DeepSeek 模型下运行失败
+- 升级 `kweaver-dolphin` 依赖到 v0.7.6，修复 DeepSeek v4 兼容性问题
+  - 包含 v0.7.5 过渡升级和 v0.7.6 兼容性修复
 
 ### 重构与清理
 
 - 优化内置工具箱描述文案，提升可读性
   - 改进搜索工具、记忆管理、Agent配置、联网搜索、沙箱代码执行等工具的描述
+- 重构 Skill 内置工具注入机制和服务边界
+  - 将 Skill contract tools 移入 agent core logic 层，通用工具装配与平台内置工具注入解耦
+  - 将 Skill API 能力切换为 Agent Operator integration service，修复错误的下游服务依赖
+  - 新增 Skill HTTP 端点、请求/响应模型和 OpenAPI 工具定义
+- 重组用户手册 examples，并补充共享状态管理
+  - 按能力目录拆分 API、CLI、TypeScript SDK 示例和 Makefile target
+  - 新增共享环境与状态处理，便于示例流程复用
+
+### 文档
+
+- 新增完整的 Decision Agent 用户手册体系
+  - 补充 API、CLI、概念、TypeScript SDK 指南及聚合版文档
+  - 新增可运行的 API、CLI、SDK 示例，并更新 help 文档和 OpenAPI 产物
+  - 新增 Agent 临时区（Sandbox Workspace）技术说明
+- 新增 Decision Agent 集成 cookbook 场景文档
+  - 覆盖合同摘要、Sub-Agent 合同审查、人工干预/终止等 API、CLI、SDK 和场景指南
 
 ## 0.7.0
 

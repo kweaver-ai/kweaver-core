@@ -1,6 +1,12 @@
 # Changelog
 ## 0.7.1
 
+### Features & Improvements
+
+- Add validated Agent `Config` value object for Dolphin mode configuration
+  - Introduce `Config` structure and test coverage for agent configuration and Dolphin mode validation
+  - Sync Agent Mode documentation and repository agent instructions with the new config structure
+
 ### Bug Fixes
 
 - Fix built-in tool names to comply with DeepSeek tool naming rules
@@ -10,11 +16,29 @@
 - Add tool name validation in tool registration to detect non-compliant names early
   - Validate tool names only contain `a-z`, `A-Z`, `0-9`, `_`, `-` with max 64 chars
   - Log warnings for non-compliant tool names that may fail with DeepSeek models
+- Update `kweaver-dolphin` dependency to v0.7.6 to resolve DeepSeek v4 compatibility issues
+  - Includes the intermediate v0.7.5 upgrade and the final v0.7.6 compatibility fix
 
 ### Refactoring & Cleanup
 
 - Optimize built-in tool box descriptions for better clarity
   - Improve description text for search, memory, agent config, online search, and sandbox tools
+- Refactor Skill built-in tool injection and service boundaries
+  - Move Skill contract tools into the agent core logic layer and decouple platform built-in injection from common tool assembly
+  - Replace the Agent Factory service dependency with the Agent Operator integration service for Skill APIs
+  - Add dedicated Skill HTTP endpoints, request/response models, and OpenAPI tool definitions
+- Reorganize user manual examples and shared state handling
+  - Split API, CLI, and TypeScript SDK examples into capability-focused folders with Makefile targets
+  - Add shared environment and state helpers for reusable example flows
+
+### Documentation
+
+- Add comprehensive Decision Agent user manual documentation
+  - Add API, CLI, concepts, and TypeScript SDK guides with generated aggregate documents
+  - Add runnable API, CLI, and SDK examples and update help docs and OpenAPI artifacts
+  - Add Agent temporary area (Sandbox Workspace) technical guide
+- Add cookbook scenarios for Decision Agent integration
+  - Cover contract summary, sub-agent contract review, and intervention/termination flows across API, CLI, SDK, and scenario guides
 
 ## 0.7.0
 

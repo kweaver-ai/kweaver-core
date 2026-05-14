@@ -42,19 +42,40 @@ AGENT_ID=<main-agent-id> AGENT_KEY=<main-agent-key> \
 
 ### 3.3 人工确认后恢复
 
-人工干预恢复通过再次调用对话接口，并传入服务端返回的 `resume_interrupt_info`：
+人工干预恢复通过再次调用对话接口，并把服务端返回的 `interrupt_info.handle` 原样放入 `resume_interrupt_info.resume_handle`：
 
 ```jsonc
 {
-  "query": "继续执行",
   "conversation_id": "<conversation-id>",
+  "agent_run_id": "<agent-run-id>",
+  "interrupted_assistant_message_id": "<assistant-message-id>",
   "resume_interrupt_info": {
-    "action": "continue"
+    "resume_handle": {
+      "frame_id": "<frame-id>",
+      "snapshot_id": "<snapshot-id>",
+      "resume_token": "<resume-token>",
+      "interrupt_type": "tool_interrupt",
+      "current_block": 0,
+      "restart_block": false
+    },
+    "action": "confirm",
+    "modified_args": [],
+    "data": {
+      "tool_name": "<tool-name>",
+      "tool_description": "",
+      "tool_args": [],
+      "interrupt_config": {
+        "requires_confirmation": true,
+        "confirmation_message": "即将调用合同风险抽取 Agent，请确认是否继续。"
+      }
+    }
   },
   "stream": true,
   "inc_stream": true
 }
 ```
+
+恢复请求通常不需要新的 `query`；如果用户选择跳过当前工具或 Sub-Agent，把 `action` 改为 `skip`。
 
 ### 3.4 终止执行或恢复流式读取
 
@@ -73,8 +94,20 @@ AGENT_KEY=<main-agent-key> CONVERSATION_ID=<conversation-id> \
 
 ```jsonc
 {
-  "interrupted": true,
-  "confirmation_message": "即将调用合同风险抽取 Agent，请确认是否继续。"
+  "message": {
+    "ext": {
+      "interrupt_info": {
+        "handle": {
+          "interrupt_type": "tool_interrupt"
+        },
+        "data": {
+          "interrupt_config": {
+            "confirmation_message": "即将调用合同风险抽取 Agent，请确认是否继续。"
+          }
+        }
+      }
+    }
+  }
 }
 ```
 
@@ -91,4 +124,3 @@ AGENT_KEY=<main-agent-key> CONVERSATION_ID=<conversation-id> \
 - 场景说明：[人工干预和终止恢复流程](../scenario/03-contract-review-intervention-termination.md)
 - 用户手册：[Debug 对话](../../user_manual/api/debug-chat.md)
 - 用户手册：[对话、会话与执行](../../user_manual/api/conversation-session-run.md)
-

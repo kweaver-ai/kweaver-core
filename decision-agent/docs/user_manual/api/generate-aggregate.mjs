@@ -15,6 +15,7 @@ const sourceFiles = [
   'chat-and-conversation.md',
   'chat-response.md',
   'incremental-streaming.md',
+  'intervention-termination.md',
   'debug-chat.md',
   'conversation-session-run.md',
   'import-export-and-auxiliary.md',
@@ -81,7 +82,7 @@ const sources = sourceFiles.map((file) => {
 const anchors = new Map(sources.map((source) => [source.file, source.anchor]));
 const output = [
   '<!-- 请勿直接编辑：本文件由 docs/user_manual/api 下的 `make aggregate` 生成。 -->',
-  '<!-- 来源文件：index.md, agent-lifecycle.md, agent-config.md, agent-config-examples.md, publish-and-market.md, chat-and-conversation.md, chat-response.md, incremental-streaming.md, debug-chat.md, conversation-session-run.md, import-export-and-auxiliary.md。 -->',
+  '<!-- 来源文件：index.md, agent-lifecycle.md, agent-config.md, agent-config-examples.md, publish-and-market.md, chat-and-conversation.md, chat-response.md, incremental-streaming.md, intervention-termination.md, debug-chat.md, conversation-session-run.md, import-export-and-auxiliary.md。 -->',
   '',
   '# Decision Agent REST 接入指南（聚合版）',
   '',

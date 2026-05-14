@@ -97,3 +97,4 @@ af_curl -N -X POST "$AF_BASE_URL/api/agent-factory/v1/app/$AGENT_KEY/debug/compl
 - Debug 接口主要面向配置验证和排障，不建议作为线上用户对话入口。
 - Debug 请求体的对话输入放在 `input` 内；普通对话请求体则直接使用顶层 `query`。
 - Debug 执行会跳过 dependency cache。需要验证缓存效果时，请使用普通对话并配置 `chat_option.enable_dependency_cache`。
+- Debug 对话也支持人工干预恢复，请把 `resume_interrupt_info`、`agent_run_id`、`interrupted_assistant_message_id` 放在请求体顶层；具体示例见 [人工干预与终止](./intervention-termination.md)。

@@ -21,7 +21,7 @@ make -C docs/user_manual/concepts aggregate
 
 - [index.md](./index.md)
 - 适合按主题阅读和维护。
-- 子章节包括基础概念、发布逻辑、Agent 模式、产品术语与表达。
+- 子章节包括基础概念、发布逻辑、Agent 模式、运行控制、产品术语与表达。
 
 ## Dolphin 语法参考
 

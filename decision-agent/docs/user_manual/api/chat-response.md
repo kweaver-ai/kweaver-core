@@ -120,22 +120,34 @@ message.content.final_answer.answer.text
   "agent_run_id": "01K...",
   "assistant_message_id": "01K...",
   "interrupt_info": {
-    "resume_handle": {
+    "handle": {
       "frame_id": "frame-id",
       "snapshot_id": "snapshot-id",
       "resume_token": "resume-token",
-      "interrupt_type": "tool_interrupt"
+      "interrupt_type": "tool_interrupt",
+      "current_block": 0,
+      "restart_block": false
     },
     "data": {
-      "tool_name": "获取agent详情"
-    },
-    "action": "confirm",
-    "modified_args": []
+      "tool_name": "获取agent详情",
+      "tool_description": "",
+      "tool_args": [
+        {
+          "key": "key",
+          "value": "DocQA_Agent",
+          "type": "str"
+        }
+      ],
+      "interrupt_config": {
+        "requires_confirmation": true,
+        "confirmation_message": "是否确认参数并继续执行?"
+      }
+    }
   }
 }
 ```
 
-恢复执行时，把 `resume_interrupt_info`、`agent_run_id`、`interrupted_assistant_message_id` 放回请求体。具体流程可参考 Cookbook 中的人工干预场景。
+Dolphin 对外层中断事件可能使用 `tool_confirmation` 表示“工具确认事件”，但恢复句柄里的 `interrupt_info.handle.interrupt_type` 是 `tool_interrupt`。恢复执行时，不要手写这个字段；应把响应中的 `interrupt_info.handle` 原样放入请求体的 `resume_interrupt_info.resume_handle`，并把 `interrupt_info.data` 放入 `resume_interrupt_info.data`。同时传回 `agent_run_id` 和 `interrupted_assistant_message_id`。完整流程见 [人工干预与终止](./intervention-termination.md)。
 
 ## 流式响应
 
@@ -159,4 +171,3 @@ data: {"conversation_id":"01K...","agent_run_id":"01K...","message":{...},"error
 ```
 
 增量事件的合并方式见 [增量流式](./incremental-streaming.md)。
-

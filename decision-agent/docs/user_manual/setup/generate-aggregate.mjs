@@ -8,11 +8,7 @@ const outputFile = 'aggregate.md';
 
 const sourceFiles = [
   'index.md',
-  'agent-basics.md',
-  'publishing.md',
-  'agent-modes.md',
-  'runtime-control.md',
-  'product-terminology.md',
+  'install-local-sdk-package.md',
 ];
 
 function readMarkdown(file) {
@@ -75,14 +71,12 @@ const sources = sourceFiles.map((file) => {
 
 const anchors = new Map(sources.map((source) => [source.file, source.anchor]));
 const output = [
-  '<!-- 请勿直接编辑：本文件由 docs/user_manual/concepts 下的 `make aggregate` 生成。 -->',
-  '<!-- 来源文件：index.md, agent-basics.md, publishing.md, agent-modes.md, runtime-control.md, product-terminology.md。dolphin-syntax.md 作为外部引用链接，不会拼接进聚合文档。 -->',
+  '<!-- 请勿直接编辑：本文件由 docs/user_manual/setup 下的 `make aggregate` 生成。 -->',
+  '<!-- 来源文件：index.md, install-local-sdk-package.md。 -->',
   '',
-  '# Agent 概念指南（聚合版）',
+  '# 安装与部署准备（聚合版）',
   '',
-  '> 本文件由脚本生成，请不要直接修改本文件；如需调整内容，请修改分文件文档后运行 `make -C docs/user_manual/concepts aggregate`。',
-  '',
-  '> Dolphin 语法文档为独立引用文档，不会被拼接进本聚合文件。请通过 <a href="./dolphin-syntax.md" target="_blank">Dolphin 语法文档</a> 单独查看。',
+  '> 本文件由脚本生成，请不要直接修改本文件；如需调整内容，请修改分文件文档后运行 `make -C docs/user_manual/setup aggregate`。',
   '',
   '## 目录',
   '',
@@ -102,3 +96,4 @@ const output = [
 
 fs.writeFileSync(path.join(currentDir, outputFile), `${output.trimEnd()}\n`);
 console.log(`Generated ${path.relative(process.cwd(), path.join(currentDir, outputFile))}`);
+
