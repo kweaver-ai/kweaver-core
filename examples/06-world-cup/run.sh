@@ -72,7 +72,9 @@ Env (see env.sample):
   VEGA_MYSQL_*                    Override DB_* for connector when Vega's network
                                   view differs (HOST/PORT/USER/PASS/DATABASES).
   BKN_PUSH_BRANCH=main            Branch for `kweaver bkn push`.
-  DO_BKN_BUILD=1                  Run `bkn build` after push (default). Set =0 to skip.
+  DO_INDEX=1                      Build vega resource indexes after push (default). Set =0 to skip.
+  EMBEDDING_MODEL_NAME=text-embedding-v4-cn   Model_name registered via mf-model-manager
+                                  (resolved to model_id at runtime). Unset / not found → keyword only.
   DO_TOOLBOX=1                    Step 6: set 0 to skip toolbox import + publish.
   FORCE_TOOLBOX_REIMPORT=0        Step 6: set 1 to delete the existing same-name toolbox
                                   and re-import (use after editing the .adp template).
@@ -496,6 +498,8 @@ step_5_push_bkn() {
     if [ "$DRY_RUN" = 1 ]; then
         echo "  plan: kweaver bkn validate $RENDERED_DIR" >&2
         echo "  plan: kweaver bkn push $RENDERED_DIR --branch ${BKN_PUSH_BRANCH:-main}" >&2
+        echo "  plan: create vega resource build-tasks for 27 wc_* resources" >&2
+        echo "  plan:   7 entity tables additionally get embedding_fields (vector)" >&2
         return 0
     fi
 
@@ -521,21 +525,145 @@ step_5_push_bkn() {
         "${KWEAV[@]}" bkn push "$RENDERED_DIR" --branch "${BKN_PUSH_BRANCH:-main}"
     fi
 
-    if [ "${DO_BKN_BUILD:-1}" = 1 ]; then
-        local timeout="${BKN_PUSH_TIMEOUT_BUILD:-900}"
-        echo "  build --wait --timeout $timeout" >&2
-        local rc=0 log
-        log="$("${KWEAV[@]}" bkn build "$kn_id" --wait --timeout "$timeout" 2>&1)" || rc=$?
-        printf '%s\n' "$log"
-        if [ "$rc" -ne 0 ]; then
-            case "$log" in *NoneConceptType*|*"no indexable object types"*|*resource-backed*)
-                echo "  Note: resource-backed KN has no offline index — push is enough." >&2
-                ;;
-                *) exit "$rc" ;;
-            esac
-        fi
+    # Build vega resource-level indexes (OpenSearch datasets) for all wc_* resources.
+    # Why: ontology-query injects `_score` into the SELECT clause for resource-backed
+    # OTs. MySQL has no `_score` → Error 1054. Vega-backend transparently routes
+    # QueryResourceData to the OpenSearch dataset when one exists (OpenSearch
+    # natively has `_score`), bypassing the bug.
+    # The 7 high-value entity tables also get vector embeddings for fuzzy search.
+    if [ "${DO_INDEX:-1}" = 1 ]; then
+        _build_vega_indexes
     fi
     echo "  KN=$kn_id" >&2
+}
+
+# Lookup embedding model_id by name (registered via mf-model-manager / onboard.sh)
+_lookup_embedding_model_id() {
+    local model_name="${1:-text-embedding-v4-cn}"
+    "${KWEAV[@]}" model small list 2>/dev/null | _extract_cli_json | \
+        jq -r --arg n "$model_name" '
+            (.data // .entries // [])[] |
+            select(.model_name == $n and .model_type == "embedding") |
+            .model_id' 2>/dev/null | head -1
+}
+
+# Tables that benefit from vector embedding (LLM gets fuzzy/cross-language name match).
+# Format: "table_name:embedding_fields_csv"
+_vector_index_tables() {
+    cat <<'EOF'
+awards:award_name
+tournaments:tournament_name,host_country
+teams:team_name
+stadiums:stadium_name,city_name
+managers:family_name,given_name
+referees:family_name,given_name,country_name
+players:family_name,given_name
+EOF
+}
+
+_build_vega_indexes() {
+    [ -f "$MAPPING_TMP" ] || { echo "  warn: $MAPPING_TMP missing — step 4 must run first; skipping indexes." >&2; return 0; }
+
+    local emodel
+    emodel="$(_lookup_embedding_model_id "${EMBEDDING_MODEL_NAME:-text-embedding-v4-cn}")"
+    if [ -z "$emodel" ]; then
+        echo "  warn: embedding model '${EMBEDDING_MODEL_NAME:-text-embedding-v4-cn}' not registered;" >&2
+        echo "        vector tables will be built keyword-only (no embedding)." >&2
+    else
+        echo "  embedding model_id=$emodel" >&2
+    fi
+
+    # Build a temp tsv: table\tresource_id\tembedding_fields(or blank)
+    local plan; plan="$(mktemp -t wc_index_plan.XXXXXX.tsv)"
+    EMODEL="$emodel" MAPPING="$MAPPING_TMP" python3 - >"$plan" <<'PY'
+import json, os
+with open(os.environ["MAPPING"]) as f:
+    mapping = json.load(f)
+# mapping looks like {"TOURNAMENTS_RES_ID": "d831...", ...}; convert key → table name
+table_to_rid = {}
+SUFFIX = "_res_id"
+for placeholder, rid in mapping.items():
+    tbl = placeholder.lower()
+    if tbl.endswith(SUFFIX):
+        tbl = tbl[:-len(SUFFIX)]
+    table_to_rid[tbl] = rid
+vec = {
+    "awards": "award_name",
+    "tournaments": "tournament_name,host_country",
+    "teams": "team_name",
+    "stadiums": "stadium_name,city_name",
+    "managers": "family_name,given_name",
+    "referees": "family_name,given_name,country_name",
+    "players": "family_name,given_name",
+}
+# 0.7.0 vega-backend has a cursor-advance bug in batch sync: tables with rows > 2*batch_size
+# loop forever inserting the same batch. List them so we can warn but still attempt.
+runaway_risk = {
+    "bookings", "goals", "substitutions", "player_appearances",
+    "players", "squads", "manager_appearances", "team_appearances",
+}
+for tbl, rid in sorted(table_to_rid.items()):
+    ef = vec.get(tbl, "")
+    flag = "RISK" if tbl in runaway_risk else "OK"
+    print(f"{tbl}\t{rid}\t{ef}\t{flag}")
+PY
+
+    # Pre-fetch ALL build tasks once (0.7.0's list endpoint ignores ?resource_id=)
+    local all_tasks_json
+    all_tasks_json="$("${KWEAV[@]}" call "/api/vega-backend/v1/resources/buildtask?limit=500" 2>/dev/null | _extract_cli_json 2>/dev/null || echo '{"entries":[]}')"
+    [ -z "$all_tasks_json" ] && all_tasks_json='{"entries":[]}'
+
+    # For each resource, check if a build task already exists; if not, create + start one.
+    # Tolerate failures (warn-not-fail), since the 0.7.0 batch-sync cursor bug can stall
+    # large tables. Agent can still answer via vega_sql_execute (step 7's tool).
+    local created=0 reused=0 skipped=0
+    while IFS=$'\t' read -r tbl rid ef risk; do
+        [ -z "$rid" ] && continue
+        local existing
+        existing="$(printf '%s' "$all_tasks_json" | jq -r --arg r "$rid" \
+            '(.entries // [])[] | select(.resource_id == $r) | "\(.id)\t\(.status)"' 2>/dev/null | head -1 || true)"
+        if [ -n "$existing" ]; then
+            local existing_status="${existing#*$'\t'}"
+            case "$existing_status" in
+                completed|running)
+                    printf "  %-25s reuse (status=%s)\n" "$tbl" "$existing_status" >&2
+                    reused=$((reused+1))
+                    continue ;;
+            esac
+        fi
+
+        # Build body
+        local body
+        if [ -n "$ef" ] && [ -n "$emodel" ]; then
+            body="$(jq -cn --arg ef "$ef" --arg em "$emodel" \
+                '{mode:"batch",build_key_fields:"key_id",embedding_fields:$ef,embedding_model:$em,model_dimensions:1024}')"
+        else
+            body='{"mode":"batch","build_key_fields":"key_id"}'
+        fi
+
+        local tid="" create_raw
+        create_raw="$("${KWEAV[@]}" call "/api/vega-backend/v1/resources/buildtask/$rid" -X POST -d "$body" 2>/dev/null || true)"
+        if [ -n "$create_raw" ]; then
+            tid="$(printf '%s' "$create_raw" | _extract_cli_json 2>/dev/null | jq -r '.task_id // empty' 2>/dev/null | head -1 || true)"
+        fi
+        if [ -z "$tid" ]; then
+            # Likely "构建任务已存在" (existing stopped/failed task) — keep moving.
+            printf "  %-25s ⊘ create_skipped (existing or API error)\n" "$tbl" >&2
+            skipped=$((skipped+1))
+            continue
+        fi
+
+        # Start the task
+        "${KWEAV[@]}" call "/api/vega-backend/v1/resources/buildtask/$rid/$tid/status" \
+            -X PUT -d '{"status":"running","execute_type":"full"}' >/dev/null 2>&1 || true
+        local kind="keyword"; [ -n "$ef" ] && [ -n "$emodel" ] && kind="vector"
+        local warn=""; [ "$risk" = "RISK" ] && warn="  (⚠ may loop on 0.7.0 — agent fallback to SQL)"
+        printf "  %-25s create+start (%s)%s\n" "$tbl" "$kind" "$warn" >&2
+        created=$((created+1))
+    done <"$plan"
+    rm -f "$plan"
+
+    echo "  indexes: $created created, $reused reused, $skipped skipped (DO_INDEX=0 to disable; FORCE_INDEX=1 to recreate)" >&2
 }
 
 # ─── Step 6: Upload toolbox (OpenAPI) ──────────────────────────────────────
