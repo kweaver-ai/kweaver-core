@@ -22,40 +22,35 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
-	"vega-backend/logics/extensions"
 )
 
 // ========== ListResources ==========
 
 // ListResourcesByEx handles GET /api/vega-backend/v1/resources (External)
 func (r *restHandler) ListResourcesByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 外网接口：校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.listResources(c, ctx, span, visitor)
+	r.listResources(c, visitor)
 }
 
 // ListResourcesByIn handles GET /api/vega-backend/in/v1/resources (Internal)
 func (r *restHandler) ListResourcesByIn(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 内网接口：user_id从header中取
 	visitor := visitor.GenerateVisitor(c)
-	r.listResources(c, ctx, span, visitor)
+	r.listResources(c, visitor)
 }
 
 // listResources is the shared implementation
-func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) listResources(c *gin.Context, visitor hydra.Visitor) {
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -87,14 +82,6 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 
 	extKeys := c.QueryArray("extension_key")
 	extVals := c.QueryArray("extension_value")
-	if err := extensions.ValidateExtensionQueryPairs(ctx, extKeys, extVals); err != nil {
-		httpErr := err.(*rest.HTTPError)
-		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails), nil)
-		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
 	includeExt := strings.EqualFold(strings.TrimSpace(c.Query("include_extensions")), "true")
 	includeExtKeys := strings.TrimSpace(c.Query("include_extension_keys"))
 
@@ -108,6 +95,15 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 		ExtensionValues:       extVals,
 		IncludeExtensions:     includeExt,
 		IncludeExtensionKeys:  includeExtKeys,
+	}
+
+	if err := ValidateResourceListQueryParams(ctx, params); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
 	}
 
 	entries, total, err := r.rs.List(ctx, params)
@@ -132,29 +128,26 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 
 // CreateResourceByEx handles POST /api/vega-backend/v1/resources (External)
 func (r *restHandler) CreateResourceByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 外网接口：校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.createResource(c, ctx, span, visitor)
+	r.createResource(c, visitor)
 }
 
 // CreateResourceByIn handles POST /api/vega-backend/in/v1/resources (Internal)
 func (r *restHandler) CreateResourceByIn(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 内网接口：user_id从header中取
 	visitor := visitor.GenerateVisitor(c)
-	r.createResource(c, ctx, span, visitor)
+	r.createResource(c, visitor)
 }
 
 // createResource is the shared implementation
-func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) createResource(c *gin.Context, visitor hydra.Visitor) {
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -254,29 +247,26 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 
 // GetResourcesByEx handles GET /api/vega-backend/v1/resources/:ids (External)
 func (r *restHandler) GetResourcesByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 外网接口：校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.getResources(c, ctx, span, visitor)
+	r.getResources(c, visitor)
 }
 
 // GetResourcesByIn handles GET /api/vega-backend/in/v1/resources/:ids (Internal)
 func (r *restHandler) GetResourcesByIn(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 内网接口：user_id从header中取
 	visitor := visitor.GenerateVisitor(c)
-	r.getResources(c, ctx, span, visitor)
+	r.getResources(c, visitor)
 }
 
 // getResources is the shared implementation
-func (r *restHandler) getResources(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) getResources(c *gin.Context, visitor hydra.Visitor) {
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -325,29 +315,26 @@ func (r *restHandler) getResources(c *gin.Context, ctx context.Context, span tra
 
 // UpdateResourceByEx handles PUT /api/vega-backend/v1/resources/:id (External)
 func (r *restHandler) UpdateResourceByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 外网接口：校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.updateResource(c, ctx, span, visitor)
+	r.updateResource(c, visitor)
 }
 
 // UpdateResourceByIn handles PUT /api/vega-backend/in/v1/resources/:id (Internal)
 func (r *restHandler) UpdateResourceByIn(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 内网接口：user_id从header中取
 	visitor := visitor.GenerateVisitor(c)
-	r.updateResource(c, ctx, span, visitor)
+	r.updateResource(c, visitor)
 }
 
 // updateResource is the shared implementation
-func (r *restHandler) updateResource(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) updateResource(c *gin.Context, visitor hydra.Visitor) {
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -422,29 +409,26 @@ func (r *restHandler) updateResource(c *gin.Context, ctx context.Context, span t
 
 // DeleteResourcesByEx handles DELETE /api/vega-backend/v1/resources/:ids (External)
 func (r *restHandler) DeleteResourcesByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 外网接口：校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.deleteResources(c, ctx, span, visitor)
+	r.deleteResources(c, visitor)
 }
 
 // DeleteResourcesByIn handles DELETE /api/vega-backend/in/v1/resources/:ids (Internal)
 func (r *restHandler) DeleteResourcesByIn(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 内网接口：user_id从header中取
 	visitor := visitor.GenerateVisitor(c)
-	r.deleteResources(c, ctx, span, visitor)
+	r.deleteResources(c, visitor)
 }
 
 // deleteResources is the shared implementation
-func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) deleteResources(c *gin.Context, visitor hydra.Visitor) {
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -506,19 +490,19 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 
 // ListResourceSrcsByEx resource source list (External)
 func (r *restHandler) ListResourceSrcsByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 外网接口：校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.listResourceSrcs(c, ctx, span, visitor)
+	r.listResourceSrcs(c, visitor)
 }
 
 // listResourceSrcs is the shared implementation
-func (r *restHandler) listResourceSrcs(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) listResourceSrcs(c *gin.Context, visitor hydra.Visitor) {
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
