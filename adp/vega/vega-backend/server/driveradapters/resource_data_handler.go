@@ -34,28 +34,25 @@ import (
 //	POST   → batch create documents (dataset category only)
 //	DELETE → delete documents by filter (dataset category only)
 func (r *restHandler) PostResourceDataByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.postResourceData(c, ctx, span, visitor)
+	r.postResourceData(c, visitor)
 }
 
 // PostResourceDataByIn handles POST /api/vega-backend/in/v1/resources/:id/data (Internal).
 func (r *restHandler) PostResourceDataByIn(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	visitor := visitor.GenerateVisitor(c)
-	r.postResourceData(c, ctx, span, visitor)
+	r.postResourceData(c, visitor)
 }
 
 // postResourceData dispatches POST /resources/:id/data to the right branch based on
 // X-HTTP-Method-Override header.
-func (r *restHandler) postResourceData(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) postResourceData(c *gin.Context, visitor hydra.Visitor) {
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -226,26 +223,23 @@ func (r *restHandler) deleteResourceDataByQuery(c *gin.Context, ctx context.Cont
 // PutResourceDataByEx handles PUT /api/vega-backend/v1/resources/:id/data (External).
 // Batch upsert documents; dataset category only. Each document must carry an `id` field.
 func (r *restHandler) PutResourceDataByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.putResourceData(c, ctx, span, visitor)
+	r.putResourceData(c, visitor)
 }
 
 // PutResourceDataByIn handles PUT /api/vega-backend/in/v1/resources/:id/data (Internal).
 func (r *restHandler) PutResourceDataByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.putResourceData(c, visitor)
+}
+
+func (r *restHandler) putResourceData(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.putResourceData(c, ctx, span, visitor)
-}
-
-func (r *restHandler) putResourceData(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -306,26 +300,23 @@ func (r *restHandler) putResourceData(c *gin.Context, ctx context.Context, span 
 
 // GetResourceDataDocByEx handles GET /api/vega-backend/v1/resources/:id/data/:doc_id (External).
 func (r *restHandler) GetResourceDataDocByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.getResourceDataDoc(c, ctx, span, visitor)
+	r.getResourceDataDoc(c, visitor)
 }
 
 // GetResourceDataDocByIn handles GET /api/vega-backend/in/v1/resources/:id/data/:doc_id (Internal).
 func (r *restHandler) GetResourceDataDocByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.getResourceDataDoc(c, visitor)
+}
+
+func (r *restHandler) getResourceDataDoc(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.getResourceDataDoc(c, ctx, span, visitor)
-}
-
-func (r *restHandler) getResourceDataDoc(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -360,26 +351,23 @@ func (r *restHandler) getResourceDataDoc(c *gin.Context, ctx context.Context, sp
 // PutResourceDataDocByEx handles PUT /api/vega-backend/v1/resources/:id/data/:doc_id (External).
 // Single-document update; doc_id from path takes precedence over any `id` field in body.
 func (r *restHandler) PutResourceDataDocByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.putResourceDataDoc(c, ctx, span, visitor)
+	r.putResourceDataDoc(c, visitor)
 }
 
 // PutResourceDataDocByIn handles PUT /api/vega-backend/in/v1/resources/:id/data/:doc_id (Internal).
 func (r *restHandler) PutResourceDataDocByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.putResourceDataDoc(c, visitor)
+}
+
+func (r *restHandler) putResourceDataDoc(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.putResourceDataDoc(c, ctx, span, visitor)
-}
-
-func (r *restHandler) putResourceDataDoc(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -426,26 +414,23 @@ func (r *restHandler) putResourceDataDoc(c *gin.Context, ctx context.Context, sp
 // DeleteResourceDataByEx handles DELETE /api/vega-backend/v1/resources/:id/data/:doc_ids (External).
 // Best-effort batch delete by IDs; missing IDs are silently skipped.
 func (r *restHandler) DeleteResourceDataByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.deleteResourceData(c, ctx, span, visitor)
+	r.deleteResourceData(c, visitor)
 }
 
 // DeleteResourceDataByIn handles DELETE /api/vega-backend/in/v1/resources/:id/data/:doc_ids (Internal).
 func (r *restHandler) DeleteResourceDataByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.deleteResourceData(c, visitor)
+}
+
+func (r *restHandler) deleteResourceData(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.deleteResourceData(c, ctx, span, visitor)
-}
-
-func (r *restHandler) deleteResourceData(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))

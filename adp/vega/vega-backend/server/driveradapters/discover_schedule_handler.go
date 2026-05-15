@@ -29,26 +29,23 @@ import (
 
 // CreateDiscoverScheduleByEx handles POST /api/vega-backend/v1/discover-schedules (External).
 func (r *restHandler) CreateDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.createDiscoverSchedule(c, ctx, span, visitor)
+	r.createDiscoverSchedule(c, visitor)
 }
 
 // CreateDiscoverScheduleByIn handles POST /api/vega-backend/in/v1/discover-schedules (Internal).
 func (r *restHandler) CreateDiscoverScheduleByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.createDiscoverSchedule(c, visitor)
+}
+
+func (r *restHandler) createDiscoverSchedule(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.createDiscoverSchedule(c, ctx, span, visitor)
-}
-
-func (r *restHandler) createDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -115,26 +112,23 @@ func (r *restHandler) createDiscoverSchedule(c *gin.Context, ctx context.Context
 
 // ListDiscoverSchedulesByEx handles GET /api/vega-backend/v1/discover-schedules (External).
 func (r *restHandler) ListDiscoverSchedulesByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.listDiscoverSchedules(c, ctx, span, visitor)
+	r.listDiscoverSchedules(c, visitor)
 }
 
 // ListDiscoverSchedulesByIn handles GET /api/vega-backend/in/v1/discover-schedules (Internal).
 func (r *restHandler) ListDiscoverSchedulesByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.listDiscoverSchedules(c, visitor)
+}
+
+func (r *restHandler) listDiscoverSchedules(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.listDiscoverSchedules(c, ctx, span, visitor)
-}
-
-func (r *restHandler) listDiscoverSchedules(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -171,26 +165,23 @@ func (r *restHandler) listDiscoverSchedules(c *gin.Context, ctx context.Context,
 
 // GetDiscoverScheduleByEx handles GET /api/vega-backend/v1/discover-schedules/:id (External).
 func (r *restHandler) GetDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.getDiscoverSchedule(c, ctx, span, visitor)
+	r.getDiscoverSchedule(c, visitor)
 }
 
 // GetDiscoverScheduleByIn handles GET /api/vega-backend/in/v1/discover-schedules/:id (Internal).
 func (r *restHandler) GetDiscoverScheduleByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.getDiscoverSchedule(c, visitor)
+}
+
+func (r *restHandler) getDiscoverSchedule(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.getDiscoverSchedule(c, ctx, span, visitor)
-}
-
-func (r *restHandler) getDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -219,26 +210,23 @@ func (r *restHandler) getDiscoverSchedule(c *gin.Context, ctx context.Context, s
 
 // UpdateDiscoverScheduleByEx handles PUT /api/vega-backend/v1/discover-schedules/:id (External).
 func (r *restHandler) UpdateDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.updateDiscoverSchedule(c, ctx, span, visitor)
+	r.updateDiscoverSchedule(c, visitor)
 }
 
 // UpdateDiscoverScheduleByIn handles PUT /api/vega-backend/in/v1/discover-schedules/:id (Internal).
 func (r *restHandler) UpdateDiscoverScheduleByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.updateDiscoverSchedule(c, visitor)
+}
+
+func (r *restHandler) updateDiscoverSchedule(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.updateDiscoverSchedule(c, ctx, span, visitor)
-}
-
-func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -327,26 +315,23 @@ func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context
 
 // DeleteDiscoverScheduleByEx handles DELETE /api/vega-backend/v1/discover-schedules/:id (External).
 func (r *restHandler) DeleteDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.deleteDiscoverSchedule(c, ctx, span, visitor)
+	r.deleteDiscoverSchedule(c, visitor)
 }
 
 // DeleteDiscoverScheduleByIn handles DELETE /api/vega-backend/in/v1/discover-schedules/:id (Internal).
 func (r *restHandler) DeleteDiscoverScheduleByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.deleteDiscoverSchedule(c, visitor)
+}
+
+func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.deleteDiscoverSchedule(c, ctx, span, visitor)
-}
-
-func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -390,49 +375,40 @@ func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, ctx context.Context
 
 // EnableDiscoverScheduleByEx handles POST /api/vega-backend/v1/discover-schedules/:id/enable (External).
 func (r *restHandler) EnableDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.toggleDiscoverSchedule(c, ctx, span, visitor, true)
+	r.toggleDiscoverSchedule(c, visitor, true)
 }
 
 // EnableDiscoverScheduleByIn handles POST /api/vega-backend/in/v1/discover-schedules/:id/enable (Internal).
 func (r *restHandler) EnableDiscoverScheduleByIn(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	visitor := visitor.GenerateVisitor(c)
-	r.toggleDiscoverSchedule(c, ctx, span, visitor, true)
+	r.toggleDiscoverSchedule(c, visitor, true)
 }
 
 // DisableDiscoverScheduleByEx handles POST /api/vega-backend/v1/discover-schedules/:id/disable (External).
 func (r *restHandler) DisableDiscoverScheduleByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.toggleDiscoverSchedule(c, ctx, span, visitor, false)
+	r.toggleDiscoverSchedule(c, visitor, false)
 }
 
 // DisableDiscoverScheduleByIn handles POST /api/vega-backend/in/v1/discover-schedules/:id/disable (Internal).
 func (r *restHandler) DisableDiscoverScheduleByIn(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	visitor := visitor.GenerateVisitor(c)
-	r.toggleDiscoverSchedule(c, ctx, span, visitor, false)
+	r.toggleDiscoverSchedule(c, visitor, false)
 }
 
 // toggleDiscoverSchedule shared logic for enable / disable.
 // Idempotent: re-enable an enabled schedule (or re-disable a disabled one) returns 204 without error.
-func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor, enable bool) {
+func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, visitor hydra.Visitor, enable bool) {
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))

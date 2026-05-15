@@ -18,7 +18,6 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common/visitor"
 	verrors "vega-backend/errors"
@@ -29,26 +28,23 @@ import (
 
 // ListDiscoverTasksByEx handles GET /api/vega-backend/v1/discover-tasks (External)
 func (r *restHandler) ListDiscoverTasksByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.listDiscoverTasks(c, ctx, span, visitor)
+	r.listDiscoverTasks(c, visitor)
 }
 
 // ListDiscoverTasksByIn handles GET /api/vega-backend/in/v1/discover-tasks (Internal)
 func (r *restHandler) ListDiscoverTasksByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.listDiscoverTasks(c, visitor)
+}
+
+func (r *restHandler) listDiscoverTasks(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.listDiscoverTasks(c, ctx, span, visitor)
-}
-
-func (r *restHandler) listDiscoverTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -94,26 +90,23 @@ func (r *restHandler) listDiscoverTasks(c *gin.Context, ctx context.Context, spa
 
 // GetDiscoverTaskByEx handles GET /api/vega-backend/v1/discover-tasks/:id (External)
 func (r *restHandler) GetDiscoverTaskByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.getDiscoverTask(c, ctx, span, visitor)
+	r.getDiscoverTask(c, visitor)
 }
 
 // GetDiscoverTaskByIn handles GET /api/vega-backend/in/v1/discover-tasks/:id (Internal)
 func (r *restHandler) GetDiscoverTaskByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.getDiscoverTask(c, visitor)
+}
+
+func (r *restHandler) getDiscoverTask(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.getDiscoverTask(c, ctx, span, visitor)
-}
-
-func (r *restHandler) getDiscoverTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
@@ -144,26 +137,23 @@ func (r *restHandler) getDiscoverTask(c *gin.Context, ctx context.Context, span 
 // DeleteDiscoverTasksByEx handles DELETE /api/vega-backend/v1/discover-tasks/:ids (External).
 // `ids` is comma-separated. Optional query: ?ignore_missing=true
 func (r *restHandler) DeleteDiscoverTasksByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.deleteDiscoverTasks(c, ctx, span, visitor)
+	r.deleteDiscoverTasks(c, visitor)
 }
 
 // DeleteDiscoverTasksByIn handles DELETE /api/vega-backend/in/v1/discover-tasks/:ids (Internal)
 func (r *restHandler) DeleteDiscoverTasksByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.deleteDiscoverTasks(c, visitor)
+}
+
+func (r *restHandler) deleteDiscoverTasks(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.deleteDiscoverTasks(c, ctx, span, visitor)
-}
-
-func (r *restHandler) deleteDiscoverTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))

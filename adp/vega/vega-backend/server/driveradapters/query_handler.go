@@ -15,7 +15,6 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
 	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common/visitor"
 	"vega-backend/errors"
@@ -25,29 +24,26 @@ import (
 
 // RawQueryByEx handles POST /api/vega-backend/v1/resources/query (External)
 func (r *restHandler) RawQueryByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 外网接口：校验token
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.rawQuery(c, ctx, span, visitor)
+	r.rawQuery(c, visitor)
 }
 
 // RawQueryByIn handles POST /api/vega-backend/in/v1/resources/query (Internal)
 func (r *restHandler) RawQueryByIn(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
 	// 内网接口：user_id从header中取
 	visitor := visitor.GenerateVisitor(c)
-	r.rawQuery(c, ctx, span, visitor)
+	r.rawQuery(c, visitor)
 }
 
 // sqlQuery is the shared implementation for SQL query
-func (r *restHandler) rawQuery(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) rawQuery(c *gin.Context, visitor hydra.Visitor) {
+	ctx, span := oteltrace.StartServerSpan(c)
+	defer span.End()
+
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),

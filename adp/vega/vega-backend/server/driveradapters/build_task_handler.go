@@ -17,7 +17,6 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common/visitor"
 	verrors "vega-backend/errors"
@@ -37,26 +36,23 @@ type buildTaskListQuery struct {
 
 // CreateBuildTaskByEx handles POST /api/vega-backend/v1/build-tasks (External).
 func (r *restHandler) CreateBuildTaskByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.createBuildTask(c, ctx, span, visitor)
+	r.createBuildTask(c, visitor)
 }
 
 // CreateBuildTaskByIn handles POST /api/vega-backend/in/v1/build-tasks (Internal).
 func (r *restHandler) CreateBuildTaskByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.createBuildTask(c, visitor)
+}
+
+func (r *restHandler) createBuildTask(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.createBuildTask(c, ctx, span, visitor)
-}
-
-func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -141,25 +137,22 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 // =========================== GET /build-tasks/:id ===========================
 
 func (r *restHandler) GetBuildTaskByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.getBuildTask(c, ctx, span, visitor)
+	r.getBuildTask(c, visitor)
 }
 
 func (r *restHandler) GetBuildTaskByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.getBuildTask(c, visitor)
+}
+
+func (r *restHandler) getBuildTask(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.getBuildTask(c, ctx, span, visitor)
-}
-
-func (r *restHandler) getBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -183,25 +176,22 @@ func (r *restHandler) getBuildTask(c *gin.Context, ctx context.Context, span tra
 // =========================== GET /build-tasks ===========================
 
 func (r *restHandler) ListBuildTasksByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.listBuildTasks(c, ctx, span, visitor)
+	r.listBuildTasks(c, visitor)
 }
 
 func (r *restHandler) ListBuildTasksByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.listBuildTasks(c, visitor)
+}
+
+func (r *restHandler) listBuildTasks(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.listBuildTasks(c, ctx, span, visitor)
-}
-
-func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -268,25 +258,22 @@ func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span t
 // DeleteBuildTasksByEx handles DELETE /build-tasks/:ids (External).
 // `ids` is a comma-separated list. Optional query: ?ignore_missing=true
 func (r *restHandler) DeleteBuildTasksByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.deleteBuildTasks(c, ctx, span, visitor)
+	r.deleteBuildTasks(c, visitor)
 }
 
 func (r *restHandler) DeleteBuildTasksByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.deleteBuildTasks(c, visitor)
+}
+
+func (r *restHandler) deleteBuildTasks(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.deleteBuildTasks(c, ctx, span, visitor)
-}
-
-func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -331,25 +318,22 @@ func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span
 // =========================== POST /build-tasks/:id/start ===========================
 
 func (r *restHandler) StartBuildTaskByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.startBuildTask(c, ctx, span, visitor)
+	r.startBuildTask(c, visitor)
 }
 
 func (r *restHandler) StartBuildTaskByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.startBuildTask(c, visitor)
+}
+
+func (r *restHandler) startBuildTask(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.startBuildTask(c, ctx, span, visitor)
-}
-
-func (r *restHandler) startBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
@@ -380,25 +364,22 @@ func (r *restHandler) startBuildTask(c *gin.Context, ctx context.Context, span t
 // =========================== POST /build-tasks/:id/stop ===========================
 
 func (r *restHandler) StopBuildTaskByEx(c *gin.Context) {
-	ctx, span := oteltrace.StartServerSpan(c)
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
+	visitor, err := r.verifyOAuth(rest.GetLanguageCtx(c), c)
 	if err != nil {
 		return
 	}
-	r.stopBuildTask(c, ctx, span, visitor)
+	r.stopBuildTask(c, visitor)
 }
 
 func (r *restHandler) StopBuildTaskByIn(c *gin.Context) {
+	visitor := visitor.GenerateVisitor(c)
+	r.stopBuildTask(c, visitor)
+}
+
+func (r *restHandler) stopBuildTask(c *gin.Context, visitor hydra.Visitor) {
 	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
-	visitor := visitor.GenerateVisitor(c)
-	r.stopBuildTask(c, ctx, span, visitor)
-}
-
-func (r *restHandler) stopBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{
 		ID:   visitor.ID,
 		Type: string(visitor.Type),
