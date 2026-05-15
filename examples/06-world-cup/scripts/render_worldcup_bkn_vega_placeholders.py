@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Replace {{*_RES_ID}} placeholders in worldcup-bkn-vega with Vega resource UUIDs.
+Replace {{*_RES_ID}} placeholders in worldcup-bkn with Vega resource UUIDs.
 
 Input: JSON object mapping placeholder name → uuid, e.g.:
   {"MATCHES_RES_ID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", ...}
@@ -11,7 +11,7 @@ Example:
   kweaver vega catalog resources <cid> --category table --limit 500 > /tmp/res.json
   # Build mapping by hand from names wc_* → MATCHES_RES_ID style keys, or use jq.
   python3 scripts/render_worldcup_bkn_vega_placeholders.py --mapping mappings.json \\
-    --src worldcup-bkn-vega --dst .rendered-bkn-vega
+    --src worldcup-bkn --dst .rendered-bkn-vega
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def main() -> None:
     ap.add_argument(
         "--src",
         type=Path,
-        default=Path("worldcup-bkn-vega"),
+        default=Path("worldcup-bkn"),
         help="Source BKN tree (with {{*_RES_ID}})",
     )
     ap.add_argument(

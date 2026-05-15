@@ -4,7 +4,7 @@
 Reads Vega `vega catalog resources … --category table` JSON from stdin.
 
 Each table resource yields worldcup.wc_<stem> in source_identifier; maps to key
-<STEM_UPPER_WITH_UNDERSCORES>_RES_ID (matches worldcup-bkn-vega object_types).
+<STEM_UPPER_WITH_UNDERSCORES>_RES_ID (matches worldcup-bkn object_types).
 """
 from __future__ import annotations
 

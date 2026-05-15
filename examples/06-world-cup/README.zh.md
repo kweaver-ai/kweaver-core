@@ -1,54 +1,74 @@
-# 06 · 世界杯数据 → 知识网络 → Agent 问答
+# 06 · 世界杯数据 → Vega Catalog → BKN → Agent 问答
 
-> 将公开的 [Fjelstul World Cup Database](https://github.com/jfjelstul/worldcup) 导入为可查询的 KWeaver 知识网络，再用 Agent 跨越比赛、进球与球员等表做数据分析类提问。
+> 将公开的 [Fjelstul World Cup Database](https://github.com/jfjelstul/worldcup) 落成 MySQL **`wc_*` 表**，由单脚本 **`./run.sh`** 串起 **Vega 扫描 → BKN 渲染/推送 → Agent 创建**，得到一个可直接对话的世界杯分析 Agent。
 
 [English](./README.md)
 
-## 要解决什么问题
-
-历届世界杯信息分散在大量相关表里：赛事、比赛、阵容、进球、奖项等。想回答「哪位球员累计进球最多？」「东道主最好成绩如何？」通常要反复做表连接或手工透视。
-
-本示例一次性把 **27 份 CSV** 建成一个知识网络（`kweaver bkn create-from-csv`），抽样查询 `matches` / `players` / `goals` 三类对象，可选地用 Context Loader 做 **schema 语义检索**，最后用 **Agent 对话**（把 schema 摘要 + 抽样行放进提示词）。
-
-仓库中的 **`worldcup-bkn-vega/`** 为 **Vega `resource`** 占位符版离线 BKN（约 **29** 条语义化 `rel_*` 关系）。填齐 Resource UUID 后 **`kweaver bkn validate ./worldcup-bkn-vega`** / **`push`**；个别环境须可写 **`TMPDIR`**（见该目录 **`README.zh.md`**）。CSV 入库走 **`./run.sh`**（`create-from-csv`）或自行 **`ds import-csv`**。
-
-## 示例在做什么
+## 主路径
 
 ```
-本地下载的 CSV（download.sh）
-       │
-       ▼
-MySQL 中间库  ◀── kweaver ds connect
-       │
-       ▼
-知识网络     ◀── kweaver bkn create-from-csv（27 张表 → OT + 索引构建）
-       │
-       ├── object-type 抽样查询
-       ├── context-loader kn-search（仅 schema，可选）
-       └── agent chat（带 schema + 数据片段）
+                       ┌─ 1) 下载 CSV     从 jfjelstul/worldcup 下载 27 个 CSV（已有则跳过）
+                       │
+                       ├─ 2) 导入 MySQL   kweaver ds connect + ds import-csv → wc_* 表
+                       │
+                       ├─ 3) Vega 扫描    vega catalog create + discover --wait
+                       │
+   ./run.sh  ─────────►├─ 4) 渲染 BKN    map Resources → render worldcup-bkn
+                       │
+                       ├─ 5) Push BKN    bkn validate + push
+                       │
+                       ├─ 6) 上传工具箱  kweaver toolbox import + publish（按 box_name 幂等）
+                       │
+                       └─ 7) 创建 Agent  agent create --config + bind KN + publish
 ```
 
-0. **下载** upstream 的 27 个 CSV（不入库，`data/` 被 gitignore）。
-1. **连接** 平台可访问的 MySQL。
-2. **导入并构建** 单个 KN（`--table-prefix wc_`）。
-3. **列出** OT，对 `matches`、`players`、`goals` **各查 5 条**示例。
-4. 若部署支持，用 Context Loader 做 **schema 检索**。
-5. 使用已有 Agent（或 `kweaver agent list` 里的第一个）做一次 **对话**。
+仓库内 checked-in 资产：
+- **`worldcup-bkn.tar`** — 离线 BKN 模板（27 个对象类、29 条 `rel_*` 关系）打包成 tar；每个 OT 末行带 **`resource | {{*_RES_ID}}`** 占位；`network.bkn` 的 `id` 为 **`worldcup_vega_catalog_bkn`**。`run.sh` 渲染前会解包到 `.tmp/worldcup-bkn/`。
+- **`agent-worldcup.config.json`** — Agent 配置模板（Context Loader 工具箱 + system prompt）；`run.sh` 运行时把 `data_source.knowledge_network[0].knowledge_network_id` 替换为实际 KN id。
+- **`bkn_schema_and_query_toolbox.adp`** — 工具箱 ADP（Schema 读 + ontology 实例查询/Action 执行）；已对齐 43.131.23.35 k8s 部署，集群内直连 ClusterIP 服务 `bkn-backend-svc:13014` / `ontology-query-svc:13018`，路径走 `/in/v1` 内部链路；其它集群按 `server_url` / 路径 / 账号头适配。
 
-### 数据来源与许可
+## 数据来源与许可
 
 CSV 来自 Joshua C. Fjelstul 的 **The Fjelstul World Cup Database**（[仓库](https://github.com/jfjelstul/worldcup)）。
-
 - **© 2023 Joshua C. Fjelstul, Ph.D.**
 - 许可：**CC-BY-SA 4.0** — [许可全文](https://creativecommons.org/licenses/by-sa/4.0/legalcode)
 
-再分发衍生数据或教程时需保留署名并保持同许可；本 README 已对脚本与教程用途做必要署名说明。
+再分发衍生数据或教程时需保留署名并保持同许可。
 
-**锁定数据版本：**在 `.env` 中设置 `WORLDCUP_REF`（见 `env.sample`）为分支名、tag 或 commit SHA，用于 Raw 下载 URL。默认 `master` 会随上游变更而变。
+**锁定版本：**`.env` 中设置 `WORLDCUP_REF`（默认 `master`，会随上游变更）。
 
-### 27 个数据集（分组）
+## 前置条件
 
-与上游文档一致：
+```bash
+npm install -g @kweaver-ai/kweaver-sdk
+kweaver auth login https://<你的平台地址>
+# CLI：用 Node SDK 的 `kweaver`，避免 `which kweaver` 落到无效的 /usr/local/bin/kweaver
+# MySQL：平台 DS 与 Vega 连接器均需能访问
+# curl + jq + python3
+```
+
+## 快速开始
+
+```bash
+cd examples/06-world-cup
+cp env.sample .env
+vim .env   # 至少填 DB_*、VEGA_CATALOG_NAME
+
+# 一键跑七步（默认 DO_TOOLBOX=1；如已有同名工具箱会自动复用并跳过 publish）
+./run.sh
+```
+
+`./run.sh --help` 列出全部 flags。常用：
+
+| 命令 | 作用 |
+|------|------|
+| `./run.sh` | 完整跑 1→7 |
+| `./run.sh --dry-run` | 只打印计划，不调 API |
+| `./run.sh --from 3` | 从 Vega 扫描起重跑（CSV 已在 MySQL） |
+| `./run.sh --only 7` | 只执行 Agent 创建 |
+| `./run.sh --no-publish` | Agent 留在私人空间，不发布 |
+
+## 27 个数据集（分组）
 
 1. **基础实体** — `tournaments`、`confederations`、`teams`、`players`、`managers`、`referees`、`stadiums`、`matches`、`awards`
 2. **赛事级映射** — `qualified_teams`、`squads`、`manager_appointments`、`referee_appointments`
@@ -56,77 +76,26 @@ CSV 来自 Joshua C. Fjelstul 的 **The Fjelstul World Cup Database**（[仓库]
 4. **场内事件** — `goals`、`penalty_kicks`、`bookings`、`substitutions`
 5. **积分榜与奖项结果** — `host_countries`、`tournament_stages`、`groups`、`group_standings`、`tournament_standings`、`award_winners`
 
-## 前置条件
+## 故障排查
 
-```bash
-npm install -g @kweaver-ai/kweaver-sdk
-kweaver auth login https://<你的平台地址>
-# MySQL：平台能连上即可，空库亦可，导入会建表
-# curl：用于 download.sh
-```
-
-### Vega Catalog · 离线 BKN（不经 Dataview）
-
-若 **`wc_*` 已在 MySQL** 且希望 **在 Vega 注册物理 Catalog → discover 表 Resource**，先在 `.env` 配 **`VEGA_CATALOG_NAME`**（按需 **`VEGA_MYSQL_*`**），执行 **`./run-branch-vega.sh`**（只做 catalog create + **`discover --wait`**）；再按文档为每张 **`wc_*`** 填 **`worldcup-bkn-vega/`** Resource 占位符或用 **`kweaver bkn object-type create … --dataview-id <resource-uuid>`**（CLI 参数名仍为 `--dataview-id`，填入 **Vega Resource**，不是 mdl Dataview）。
-
-- **CLI**：使用 Node SDK 的 **`kweaver`**，避免 **`which kweaver`** 落到无效的 **`/usr/local/bin/kweaver`**。
-- **`./run-branch-vega.sh --dry-run`**：只打印计划。
-
-详见 **[WORKFLOW-BRANCH-VEGA.zh.md](./WORKFLOW-BRANCH-VEGA.zh.md)**。
-
-## 快速开始
-
-```bash
-cd examples/06-world-cup
-./download.sh
-cp env.sample .env
-vim .env   # 填写 DB_HOST / DB_NAME / DB_USER / DB_PASS，可选 AGENT_ID、WORLDCUP_REF
-./run.sh
-```
-
-> **MySQL：**`create-from-csv` / `import-csv` 会令宽表易触发 Error 1118；`run.sh` 默认在灌库前瘦身 `matches` / `team_appearances`（见 `.env` 中 `SLIM_WIDE_CSV_FOR_MYSQL` 与本 README 「故障排查」）。
-
-### Agent 准备
-
-脚本**不会**自动创建 Agent。可以：
-
-- 在 `.env` 里设置 `AGENT_ID`，或  
-- 依赖 `kweaver agent list` 取第一个；
-
-或在 Studio 导入类似 [`help/zh/examples/sample-agent.import.json`](../../help/zh/examples/sample-agent.import.json)，配置模型并绑定 KN 后，把 `AGENT_ID` 写入 `.env` 再跑 `./run.sh`。
-
-## 关键命令
-
-| 命令 | 作用 |
+| 现象 | 处理 |
 |------|------|
-| `./download.sh` | 从 `jfjelstul/worldcup` 拉取 `data-csv/*.csv` |
-| `kweaver ds connect mysql …` | 注册中间数据源 |
-| `kweaver bkn create-from-csv … --files 'data/*.csv' --table-prefix wc_ --build` | 一次导入全部 CSV 并建 KN |
-| `kweaver bkn object-type list \| query` | 浏览 OT 与实例 |
-| `kweaver context-loader kn-search '…' --kn-id … --only-schema` | 可选的 schema 语义检索 |
-| `kweaver agent chat <id> -m '…'` | Agent 对话（脚本会把 schema / 抽样行塞进提示词） |
+| `download.sh` 失败 | 检查网络，确认 `WORLDCUP_REF` 指向含 `data-csv/` 的版本 |
+| `kweaver auth` 401 | `kweaver auth login` 再来一次；`kweaver config show` 核对业务域 |
+| `import-csv` 触发 MySQL **Error 1118** | step 2 已用 `mysql` CLI 预建 `wc_matches` / `wc_team_appearances`（VARCHAR(255)），未装 mysql client 时需手动建表或放宽列类型 |
+| `discover` 失败 | 见 [`report/troubleshooting.md`](./report/troubleshooting.md)；可设 `VEGA_CATALOG_ID` 后 `./run.sh --from 2` |
+| Resource 少于 27 张表 | connector `databases` 或 discover 不全；调整 `VEGA_MYSQL_DATABASES` 后重跑 step 1 |
+| `bkn build` 报 `NoneConceptType` | 全 `resource` KN 常见；保持 `DO_BKN_BUILD=0`，由 Vega/工具查询 |
+| `agent create` 报 LLM 不存在 | 在 `.env` 设 `AGENT_LLM_ID=<model_id>`（`kweaver model llm list` 查一下） |
 
 ## 与示例 02 的差异
 
 | | 02-csv-to-kn | 06-world-cup |
 |---|--------------|--------------|
 | 数据 | 仓库内置 3 个小 CSV | upstream 27 份 CSV（CC-BY-SA，运行时下载） |
-| 表前缀 | 默认 | `wc_` 避免与已有表冲突 |
-| 流程 | 含子图遍历、导出 | 聚焦 list/query、可选 CL、Agent |
-| 构建超时 | 300s | 600s（表多、数据量大） |
-
-## 故障排查
-
-| 现象 | 处理 |
-|------|------|
-| `download.sh` 中 `curl` 失败 | 检查网络；确认 `WORLDCUP_REF` 对应分支/tag 上存在 `data-csv/`。 |
-| `401` / OAuth | 重新 `kweaver auth login`；检查业务域 `kweaver config show`。 |
-| `create-from-csv` 失败或超时 | 临时加大 `run.sh` 里 `--timeout`；或改两步：`ds import-csv` + `bkn create-from-ds --build`。 |
-| 导入后 OT 数量不足 27 | 看平台侧错误；可先 `--no-build` 再修复表后 `kweaver bkn build`。 |
-| `object-type query` 的 `total = 0` | 等待构建；`kweaver bkn stats` / `kweaver bkn build --wait`。 |
-| Context Loader 步骤被跳过 | 当前部署可能未启用；脚本会继续。 |
-| 无可用 Agent | 导入或创建 Agent，设置 `AGENT_ID`。 |
+| 建网方式 | `create-from-csv` | **MySQL + Vega Resource** + **`worldcup-bkn` push** |
+| 入口 | 多脚本 | 单脚本 `./run.sh`（七步可拆） |
 
 ## 清理
 
-`run.sh` 在退出时通过 `trap` **删除本次创建的 KN 与数据源**；**不会**删除 Agent。
+`./run.sh` 不会自动删除数据源、MySQL 表、Vega catalog、KN 或 Agent；不用时在 Studio / CLI 自行清理。
