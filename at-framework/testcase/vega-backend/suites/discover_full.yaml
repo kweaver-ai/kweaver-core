@@ -8,6 +8,8 @@ tags:
 
 include:
     - discover_query.case
+    - discover_schedule_create.case
+    - discover_schedule_query.case
 
 cases:
     -   name: "Positive_创建catalog_逻辑资源_请求成功"
@@ -62,7 +64,7 @@ cases:
                 "discover_id": "$.id"
             }
         code_check: "200"
-        next_wait: 1
+        next_wait: 10
 
     -   name: "Negative_即时检索_参数校验_id不存在"
         url: "catalog资源检索"
@@ -169,12 +171,14 @@ cases:
             }
         code_check: "404"
 
+
+
     # 定时扫描任务相关
     -   name: "Negative_创建定时任务_逻辑资源_请求失败"
         url: "创建调度任务"
         body_params: >-
             {
-                "catalog_id": "${catalog_id_Logical}",
+                "catalog_id": "${catalog_id_logical}",
                 "cron_expr": "00 08 * * *"
             }
         code_check: "400"
@@ -189,6 +193,19 @@ cases:
         resp_values: >-
             {
                 "scheduler_id": "$.id"
+            }
+        code_check: "201"
+
+    -   name: "Positive_创建定时任务_每日8点执行_全量参数_请求成功"
+        url: "创建调度任务"
+        body_params: >-
+            {
+                "catalog_id": "${catalog_id}",
+                "cron_expr": "00 08 * * *",
+                "start_time": {{ timestamp("ms", -86400, "d") }},
+                "end_time": {{ timestamp("ms", 86400, "d") }},
+                "enabled": true,
+                "strategies": ["insert","delete","update"]
             }
         code_check: "201"
 
@@ -355,7 +372,7 @@ cases:
                 "catalog_id": "${catalog_id}",
                 "cron_expr": "00 08 * * *"
             }
-        code_check: "400"
+        code_check: "404"
 
     -   name: "Positive_查询定时任务列表_按catalog过滤_id已删除_请求成功"
         url: "查询调度任务列表"

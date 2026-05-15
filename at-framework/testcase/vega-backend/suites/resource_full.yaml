@@ -1,5 +1,5 @@
 feature: vega-backend
-story: discover
+story: resource
 switch: y
 tags:
     - vega-backend
@@ -10,18 +10,6 @@ include:
     - resource_query.case
 
 cases:
-    -   name: "Positive_创建catalog_逻辑资源_请求成功"
-        url: "创建catalog"
-        body_params: >-
-            {
-                "name": "{{ '新增catalog_Logical-%s' | format(random_string(6, 8)) }}"
-            }
-        resp_values: >-
-            {
-                "catalog_id_logical": "$.id"
-            }
-        code_check: "201"
-
     -   name: "Positive_创建catalog_数据源_请求成功"
         url: "创建catalog"
         body_params: >-
@@ -53,7 +41,7 @@ cases:
                 "discover_id": "$.id"
             }
         code_check: "200"
-        next_wait: 1
+        next_wait: 10
 
     -   name: "Positive_查询资源列表_按catalog过滤_请求成功"
         url: "查询resource列表"
@@ -63,7 +51,8 @@ cases:
             }
         resp_values: >-
             {
-                "resource_id": "$.entries[0].id"
+                "resource_id_1": "$.entries[0].id",
+                "resource_id_2": "$.entries[1].id"
             }
         code_check: "200"
         resp_check: >-
@@ -75,7 +64,7 @@ cases:
         url: "查询resource列表"
         query_params: >-
             {
-                "catalog_id": "${resource_id}"
+                "catalog_id": "${resource_id_1}"
             }
         code_check: "200"
         resp_check: >-
@@ -111,20 +100,32 @@ cases:
         url: "查看resource详情"
         path_params: >-
             {
-                "ids": "${resource_id}"
+                "ids": "${resource_id_1}"
             }
         code_check: "200"
+
+    -   name: "Positive_查看资源详情_多个资源_请求成功"
+        url: "查看resource详情"
+        path_params: >-
+            {
+                "ids": "${resource_id_1},${resource_id_2}"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.entries": "len(2)"
+            }
 
     -   name: "Positive_查看资源详情_多个资源_id重复_请求成功"
         url: "查看resource详情"
         path_params: >-
             {
-                "ids": "${resource_id},${resource_id}"
+                "ids": "${resource_id_1},${resource_id_1}"
             }
         code_check: "200"
         resp_check: >-
             {
-                "$.entries.length()": 1
+                "$.entries": "len(1)"
             }
 
     -   name: "Negative_查看资源详情_资源不存在_请求失败"
@@ -139,6 +140,69 @@ cases:
         url: "查看resource详情"
         path_params: >-
             {
-                "ids": "${resource_id},${catalog_id}"
+                "ids": "${resource_id_1},${catalog_id}"
             }
         code_check: "404"
+
+    -   name: "Positive_删除资源_单个资源_请求成功"
+        url: "删除resource"
+        path_params: >-
+            {
+                "ids": "${resource_id_1}"
+            }
+        code_check: "204"
+
+    -   name: "Negative_删除资源_id不存在_请求失败"
+        url: "删除resource"
+        path_params: >-
+            {
+                "ids": "${catalog_id}"
+            }
+        code_check: "404"
+
+    -   name: "Negative_删除资源_id不存在_请求失败"
+        url: "删除resource"
+        path_params: >-
+            {
+                "ids": "${catalog_id},${resource_id_2}"
+            }
+        code_check: "404"
+
+    -   name: "Negative_删除资源_id已删除_请求失败"
+        url: "删除resource"
+        path_params: >-
+            {
+                "ids": "${resource_id_1},${resource_id_2}"
+            }
+        code_check: "404"
+
+    -   name: "Positive_删除资源_放宽参数检查_请求成功"
+        url: "删除resource"
+        path_params: >-
+            {
+                "ids": "${resource_id_1},${resource_id_2},${catalog_id}"
+            }
+        query_params: >-
+            {
+                "ignore_missing": true
+            }
+        code_check: "204"
+
+    -   name: "Positive_删除资源_多个资源_id重复_请求成功"
+        url: "删除resource"
+        prev_case: "Positive_查询资源列表_按catalog过滤_请求成功"
+        path_params: >-
+            {
+                "ids": "${resource_id_1},${resource_id_1}"
+            }
+        code_check: "204"
+
+    -   name: "Positive_删除资源_多个资源_请求成功"
+        url: "删除resource"
+        prev_case: "Positive_查询资源列表_按catalog过滤_请求成功"
+        path_params: >-
+            {
+                "ids": "${resource_id_1},${resource_id_2}"
+            }
+        code_check: "204"
+

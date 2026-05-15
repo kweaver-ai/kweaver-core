@@ -15,19 +15,7 @@ include:
     - catalog_update.case
 
 cases:
-    -   name: "Positive_创建catalog_逻辑资源_请求成功"
-        url: "创建catalog"
-        body_params: >-
-            {
-                "name": "{{ '新增catalog_Logical-%s' | format(random_string(6, 8)) }}"
-            }
-        resp_values: >-
-            {
-                "catalog_id_logical": "$.id"
-            }
-        code_check: "201"
-
-    -   name: "Positive_创建catalog_数据源_请求成功"
+    -   name: "Positive_创建catalog_仅必需参数_请求成功"
         url: "创建catalog"
         body_params: >-
             {
@@ -37,39 +25,81 @@ cases:
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
-                    "password": "${mysql_password}",
-                    "databases": ["${mysql_db_1}"]
+                    "password": "${mysql_password}"
                 }
             }
         resp_values: >-
             {
-                "catalog_id": "$.id"
+                "catalog_id_required": "$.id"
             }
         code_check: "201"
 
-    -   name: "Positive_查看catalog详情_逻辑资源_请求成功"
-        url: "查看catalog详情"
-        path_params: >-
+    -   name: "Positive_创建catalog_全量参数_请求成功"
+        url: "创建catalog"
+        body_params: >-
             {
-                "ids": "${catalog_id_logical}"
+                "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+                "connector_type": "mysql",
+                "description": "自动化测试用例",
+                "tags": ["AT"],
+                "connector_config": {
+                    "host": "${mysql_host}",
+                    "port": ${mysql_port},
+                    "username": "${mysql_user}",
+                    "password": "${mysql_password}",
+                    "databases": ["${mysql_db_1}"],
+                    "options": {
+                        "timeout": "300s"
+                    }
+                },
+                "extensions": {
+                    "k1": "v1",
+                    "k2": "v2",
+                    "k3": "v3"
+                }
             }
         resp_values: >-
             {
-                "catalog_name_logical": "$.entries[0].name"
+                "catalog_id_full": "$.id"
+            }
+        code_check: "201"
+
+    -   name: "Positive_查看catalog详情_请求成功"
+        url: "查看catalog详情"
+        prev_case: "Positive_创建catalog_仅必需参数_请求成功"
+        path_params: >-
+            {
+                "ids": "${catalog_id_required}"
+            }
+        resp_values: >-
+            {
+                "catalog_name_required": "$.entries[0].name"
             }
         code_check: "200"
 
-    -   name: "Positive_查看catalog详情_数据源_请求成功"
+    -   name: "Positive_查看catalog详情_查看多个资源_请求成功"
         url: "查看catalog详情"
         path_params: >-
             {
-                "ids": "${catalog_id}"
-            }
-        resp_values: >-
-            {
-                "catalog_name": "$.entries[0].name"
+                "ids": "${catalog_id_required},${catalog_id_full}"
             }
         code_check: "200"
+        resp_check: >-
+            {
+                "$.entries": "len(2)"
+            }
+
+    -   name: "Positive_查看catalog详情_查看多个资源_id重复_请求成功"
+        url: "查看catalog详情"
+        path_params: >-
+            {
+                "ids": "${catalog_id_required},${catalog_id_required}"
+            }
+        code_check: "200"
+        resp_check: >-
+            {
+                "$.entries": "len(1)"
+            }
 
     -   name: "Negative_查看catalog详情_id不存在_请求失败"
         url: "查看catalog详情"
@@ -79,37 +109,21 @@ cases:
             }
         code_check: "404"
 
-    -   name: "Positive_查看catalog详情_查看多个资源_请求成功"
+    -   name: "Negative_查看catalog详情_id不存在_请求失败"
         url: "查看catalog详情"
         path_params: >-
             {
-                "ids": "${catalog_id_logical},${catalog_id}"
-            }
-        code_check: "200"
-        resp_check: >-
-            {
-                "$.entries.length()": 2
-            }
-
-    -   name: "Positive_查看catalog详情_查看多个资源_id重复_请求成功"
-        url: "查看catalog详情"
-        path_params: >-
-            {
-                "ids": "${catalog_id},${catalog_id}"
-            }
-        code_check: "200"
-        resp_check: >-
-            {
-                "$.entries.length()": 1
-            }
-
-    -   name: "Negative_查看catalog详情_查看多个资源_部分id不存在_请求失败"
-        url: "查看catalog详情"
-        path_params: >-
-            {
-             "ids": "${catalog_id},00000000000000000000"
+             "ids": "${catalog_id_required},00000000000000000000"
             }
         code_check: "404"
+
+    -   name: "Positive_检查catalog状态_请求成功"
+        url: "检查catalog状态"
+        path_params: >-
+            {
+                "id": "${catalog_id_required}"
+            }
+        code_check: "200"
 
     -   name: "Negative_查看catalog状态_id不存在_请求失败"
         url: "检查catalog状态"
@@ -119,6 +133,14 @@ cases:
             }
         code_check: "404"
 
+    -   name: "Positive_catalog连接测试_请求成功"
+        url: "测试目录连接"
+        path_params: >-
+            {
+                "id": "${catalog_id_required}"
+            }
+        code_check: "200"
+
     -   name: "Negative_catalog连接测试_id不存在_请求失败"
         url: "测试目录连接"
         path_params: >-
@@ -127,29 +149,16 @@ cases:
             }
         code_check: "404"
 
-    -   name: "Positive_编辑catalog_信息无更新_逻辑资源_请求成功"
+    -   name: "Positive_编辑catalog_信息无更新_请求成功"
         url: "编辑catalog"
         path_params: >-
             {
-                "id": "${catalog_id_logical}"
+                "id": "${catalog_id_required}"
             }
         body_params: >-
             {
-                "id": "${catalog_id_logical}",
-                "name": "${catalog_name_logical}"
-            }
-        code_check: "204"
-
-    -   name: "Positive_编辑catalog_信息无更新_数据源_请求成功"
-        url: "编辑catalog"
-        path_params: >-
-            {
-                "id": "${catalog_id}"
-            }
-        body_params: >-
-            {
-                "id": "${catalog_id}",
-                "name": "${catalog_name}",
+                "id": "${catalog_id_required}",
+                "name": "${catalog_name_required}",
                 "connector_type": "mysql",
                 "connector_config": {
                     "host": "${mysql_host}",
@@ -161,37 +170,33 @@ cases:
             }
         code_check: "204"
 
-    -   name: "Positive_编辑catalog_更新逻辑资源名称_请求成功"
-        url: "编辑catalog"
-        prev_case: "Positive_创建catalog_逻辑资源_请求成功"
-        path_params: >-
-            {
-                "id": "${catalog_id_logical}"
-            }
-        body_params: >-
-            {
-                "id": "${catalog_id_logical}",
-                "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}"
-            }
-        code_check: "204"
-
     -   name: "Negative_编辑catalog_name名称重复_请求失败"
         url: "编辑catalog"
         path_params: >-
             {
-                "id": "${catalog_id}"
+                "id": "${catalog_id_full}"
             }
         body_params: >-
             {
-                "id": "${catalog_id}",
-                "name": "${catalog_name_logical}",
+                "id": "${catalog_id_full}",
+                "name": "${catalog_name_required}",
                 "connector_type": "mysql",
+                "description": "自动化测试用例",
+                "tags": ["AT"],
                 "connector_config": {
                     "host": "${mysql_host}",
                     "port": ${mysql_port},
                     "username": "${mysql_user}",
                     "password": "${mysql_password}",
-                    "databases": ["${mysql_db_1}"]
+                    "databases": ["${mysql_db_1}"],
+                    "options": {
+                        "timeout": "300s"
+                    }
+                },
+                "extensions": {
+                    "k1": "v1",
+                    "k2": "v2",
+                    "k3": "v3"
                 }
             }
         code_check: "409"
@@ -204,11 +209,11 @@ cases:
             }
         code_check: "404"
 
-    -   name: "Negative_删除catalog_删除多个资源_部分id不存在_请求失败"
+    -   name: "Negative_删除catalog_id不存在_请求失败"
         url: "删除catalog"
         path_params: >-
             {
-             "ids": "${catalog_id},00000000000000000000"
+             "ids": "${catalog_id_required},00000000000000000000"
             }
         code_check: "404"
 
@@ -216,25 +221,24 @@ cases:
         url: "删除catalog"
         path_params: >-
             {
-                "ids": "${catalog_id_logical},${catalog_id}"
+                "ids": "${catalog_id_required},${catalog_id_full}"
             }
         code_check: "204"
 
-    -   name: "Positive_删除catalog_逻辑资源_请求成功"
+    -   name: "Negative_删除catalog_id已删除_请求失败"
         url: "删除catalog"
-        prev_case: "Positive_创建catalog_逻辑资源_请求成功"
         path_params: >-
             {
-                "ids": "${catalog_id_logical}"
+              "ids": "${catalog_id_required}"
             }
-        code_check: "204"
+        code_check: "404"
 
-    -   name: "Positive_删除catalog_数据源_请求成功"
+    -   name: "Positive_删除catalog_请求成功"
         url: "删除catalog"
-        prev_case: "Positive_创建catalog_数据源_请求成功"
+        prev_case: "Positive_创建catalog_仅必需参数_请求成功"
         path_params: >-
             {
-                "ids": "${catalog_id}"
+                "ids": "${catalog_id_required}"
             }
         code_check: "204"
 
@@ -242,7 +246,7 @@ cases:
         url: "查看catalog详情"
         path_params: >-
             {
-              "ids": "${catalog_id}"
+              "ids": "${catalog_id_required}"
             }
         code_check: "404"
 
@@ -250,7 +254,7 @@ cases:
         url: "检查catalog状态"
         path_params: >-
             {
-              "id": "${catalog_id}"
+              "id": "${catalog_id_required}"
             }
         code_check: "404"
 
@@ -258,7 +262,7 @@ cases:
         url: "测试目录连接"
         path_params: >-
             {
-                "id": "${catalog_id}"
+                "id": "${catalog_id_required}"
             }
         code_check: "404"
 
@@ -266,11 +270,11 @@ cases:
         url: "编辑catalog"
         path_params: >-
             {
-                "id": "${catalog_id}"
+                "id": "${catalog_id_required}"
             }
         body_params: >-
             {
-                "id": "${catalog_id}",
+                "id": "${catalog_id_required}",
                 "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
                 "connector_type": "mysql",
                 "connector_config": {
@@ -280,13 +284,5 @@ cases:
                     "password": "${mysql_password}",
                     "databases": ["${mysql_db_1}"]
                 }
-            }
-        code_check: "404"
-
-    -   name: "Negative_删除catalog_id已删除_请求失败"
-        url: "删除catalog"
-        path_params: >-
-            {
-              "ids": "${catalog_id}"
             }
         code_check: "404"

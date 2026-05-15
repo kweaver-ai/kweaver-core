@@ -1,34 +1,117 @@
 -   name: "Positive_编辑catalog_更新数据源名称_请求成功"
     url: "编辑catalog"
-    prev_case: "Positive_创建catalog_数据源_请求成功"
+    prev_case: "Positive_创建catalog_仅必需参数_请求成功"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "204"
 
 -   name: "Positive_编辑catalog_更新数据源名称_全量参数_请求成功"
     url: "编辑catalog"
+    prev_case: "Positive_创建catalog_全量参数_请求成功"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
+            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}",
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "300s"
+                },
+                "extensions": {
+                    "k1": "v1",
+                    "k2": "v2",
+                    "k3": "v3"
+                }
+            }
+        }
+    code_check: "204"
+
+-   name: "Negative_编辑catalog_更新id_请求失败"
+    url: "编辑catalog"
+    prev_case: "Positive_查看catalog详情_请求成功"
+    path_params: >-
+        {
+            "id": "${catalog_id_required}"
+        }
+    body_params: >-
+        {
+            "id": "{{ '%s' | format(random_string(20, 10)) }}",
+            "name": "${catalog_name_required}",
+            "connector_type": "mysql",
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}"
+            }
+        }
+    code_check: "409"
+
+-   name: "Positive_编辑catalog_更新非必须字段_请求成功"
+    url: "编辑catalog"
+    path_params: >-
+        {
+            "id": "${catalog_id_full}"
+        }
+    body_params: >-
+        {
+            "id": "${catalog_id_full}",
+            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "description": "自动化测试用例更新",
+            "tags": ["AT", "update"],
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}",
+                "databases": ["${mysql_db_1}"],
+                "options": {
+                    "timeout": "600s",
+                    "charset": "utf8"
+                },
+                "extensions": {
+                    "k1": "v1",
+                    "k2": "v22"
+                }
+            }
+        }
+    code_check: "204"
+
+-   name: "Positive_编辑catalog_追加字段_请求成功"
+    url: "编辑catalog"
+    path_params: >-
+        {
+            "id": "${catalog_id_required}"
+        }
+    body_params: >-
+        {
+            "id": "${catalog_id_required}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "description": "自动化测试用例",
@@ -42,36 +125,40 @@
                 "options": {
                     "timeout": "300s"
                 }
+             },
+            "extensions": {
+                    "k1": "v1",
+                    "k2": "v2",
+                    "k3": "v3"
             }
         }
     code_check: "204"
 
--   name: "Negative_编辑catalog_更新id_请求失败"
+-   name: "Positive_编辑catalog_精简字段_请求成功"
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "{{ '%s' | format(random_string(20, 10)) }}",
-            "name": "${catalog_name}",
+            "id": "${catalog_id_full}",
+            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"],
-            }
+                "password": "${mysql_password}"
+             }
         }
-    code_check: "409"
+    code_check: "204"
 
 -   name: "Negative_编辑catalog_参数校验_id缺省_请求失败"
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
@@ -82,8 +169,7 @@
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -93,7 +179,7 @@
     prev_case: "查看catalog详情_逻辑资源"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
@@ -103,8 +189,7 @@
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -113,19 +198,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": ["${catalog_id}"],
+            "id": ["${catalog_id_required}"],
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -134,7 +218,7 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
@@ -145,8 +229,7 @@
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -155,7 +238,7 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
@@ -166,8 +249,7 @@
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -176,19 +258,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id_logical}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "409"
@@ -208,8 +289,7 @@
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "404"
@@ -218,19 +298,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -239,18 +318,17 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -259,19 +337,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": ["{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}"],
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -280,19 +357,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": 0,
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -301,19 +377,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": true,
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -322,19 +397,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "{{ '%s' | format(random_string(1, 14)) }}",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "204"
@@ -343,19 +417,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(236, 127)) }}",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "204"
@@ -364,19 +437,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(237, 127)) }}",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -385,19 +457,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "{{ '   更新catalog_AutoCase-%s   ' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "204"
@@ -406,19 +477,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "undefined",
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -427,19 +497,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": ["mysql"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -448,19 +517,18 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": 0,
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
@@ -469,35 +537,44 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_required}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_required}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": true,
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
+                "password": "${mysql_password}"
             }
         }
     code_check: "400"
+
+
+
+
+
+
+
+
+
 
 -   name: "Positive_编辑catalog_参数校验_description为空字符串_请求成功"
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+             "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "description": "",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -512,14 +589,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+             "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "description": "{{ '自动化测试用例_AutoCase-%s' | format(random_string(983, 127)) }}",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -534,14 +612,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+             "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "description": "{{ '自动化测试用例_AutoCase-%s' | format(random_string(984, 127)) }}",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -556,14 +635,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -578,36 +658,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [""],
-             "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"]
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_tag非array_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "tags": "AT",
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -622,14 +681,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -644,14 +704,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6"],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -666,14 +727,38 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
+            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "tags": "AT",
+            "description": "自动化测试用例",
+             "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}",
+                "databases": ["${mysql_db_1}"]
+            }
+        }
+    code_check: "400"
+
+-   name: "Negative_编辑catalog_参数校验_tag非array_请求失败"
+    url: "编辑catalog"
+    path_params: >-
+        {
+            "id": "${catalog_id_full}"
+        }
+    body_params: >-
+        {
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": 0,
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -688,14 +773,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": true,
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -710,14 +796,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [0],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -732,14 +819,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [true],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -754,14 +842,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [["AT"]],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -776,14 +865,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "tags": [{}],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -798,16 +888,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
-            "tags": [
-                "AT", 0, true, ["catalog"], {}
-            ],
+            "tags": ["AT", 0, true, ["catalog"], {}],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -822,15 +911,16 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
             "description": "自动化测试用例",
             "tags": ["AT", "AT"],
+            "description": "自动化测试用例",
              "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -845,13 +935,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {}
         }
     code_check: "400"
@@ -860,13 +952,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql"
+            "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"]
         }
     code_check: "400"
 
@@ -874,13 +968,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": [
                 {
                     "host": "${mysql_host}",
@@ -897,13 +993,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": ""
         }
     code_check: "400"
@@ -912,13 +1010,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],        
             "connector_config": 0
         }
     code_check: "400"
@@ -927,13 +1027,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": true
         }
     code_check: "400"
@@ -942,13 +1044,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "",
                 "port": ${mysql_port},
@@ -963,13 +1067,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
@@ -983,13 +1089,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": ["${mysql_host}"],
                 "port": ${mysql_port},
@@ -1004,13 +1112,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": 0,
                 "port": ${mysql_port},
@@ -1025,13 +1135,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": true,
                 "port": ${mysql_port},
@@ -1046,17 +1158,20 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "username": "${mysql_user}",
-                "password": "${mysql_password}"
+                "password": "${mysql_password}",
+                "databases": ["${mysql_db_1}"]
             }
         }
     code_check: "400"
@@ -1065,13 +1180,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": "${mysql_port}",
@@ -1086,13 +1203,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": 1.2,
@@ -1107,13 +1226,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": true,
@@ -1128,13 +1249,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": [${mysql_port}],
@@ -1149,13 +1272,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1170,13 +1295,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1190,13 +1317,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1211,13 +1340,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1232,13 +1363,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1253,13 +1386,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1274,13 +1409,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1294,13 +1431,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1315,13 +1454,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1336,13 +1477,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1353,252 +1496,19 @@
         }
     code_check: "400"
 
--   name: "Positive_编辑catalog_参数校验_database为空数组_请求成功"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": []
-            }
-        }
-    code_check: "204"
-
--   name: "Negative_编辑catalog_参数校验_database为空字符串_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": [""]
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_database非array_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": "${mysql_db_1}"
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_database非array_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": 0
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_database非array_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": true
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_database含非string项_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": [0]
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_database含非string项_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": [true]
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_database含非string项_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": [{}]
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_database含非string项_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": [
-                    ["${mysql_db_1}"]
-                ]
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_database含非string项_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": [
-                    "${mysql_db_1}", 0, true, ["${mysql_db_2}"], {}
-                ]
-            }
-        }
-    code_check: "400"
-
--   name: "Negative_编辑catalog_参数校验_database重复_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}", "${mysql_db_1}"]
-            }
-        }
-    code_check: "400"
-
 -   name: "Positive_编辑catalog_参数校验_options缺省_请求成功"
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1614,13 +1524,15 @@
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
@@ -1635,51 +1547,55 @@
         }
     code_check: "204"
 
--   name: "Negative_编辑catalog_参数校验_options为未知配置项_请求失败"
+-   name: "Positive_编辑catalog_参数校验_extensions缺省_请求成功"
     url: "编辑catalog"
     path_params: >-
         {
-            "id": "${catalog_id}"
+            "id": "${catalog_id_full}"
         }
     body_params: >-
         {
-            "id": "${catalog_id}",
+            "id": "${catalog_id_full}",
             "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
             "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
             "connector_config": {
                 "host": "${mysql_host}",
                 "port": ${mysql_port},
                 "username": "${mysql_user}",
                 "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"],
-                "options": {
-                    "undefined": 0
-                }
+                "databases": ["${mysql_db_1}"]
+            },
+            "extensions": {}
+        }
+    code_check: "204"
+
+-   name: "Negative_编辑catalog_参数校验_extensions非string配置项_请求失败"
+    url: "编辑catalog"
+    path_params: >-
+        {
+            "id": "${catalog_id_full}"
+        }
+    body_params: >-
+        {
+            "id": "${catalog_id_full}",
+            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+            "connector_type": "mysql",
+            "description": "自动化测试用例",
+            "tags": ["AT"],
+            "connector_config": {
+                "host": "${mysql_host}",
+                "port": ${mysql_port},
+                "username": "${mysql_user}",
+                "password": "${mysql_password}",
+                "databases": ["${mysql_db_1}"]
+            },
+            "extensions": {
+                "str_key": "str",
+                "num_key": 0,
+                "bool_key": true
             }
         }
     code_check: "400"
 
--   name: "Negative_编辑catalog_参数校验_options为未知配置项_请求失败"
-    url: "编辑catalog"
-    path_params: >-
-        {
-            "id": "${catalog_id}"
-        }
-    body_params: >-
-        {
-            "id": "${catalog_id}",
-            "name": "{{ '更新catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
-            "connector_type": "mysql",
-            "connector_config": {
-                "host": "${mysql_host}",
-                "port": ${mysql_port},
-                "username": "${mysql_user}",
-                "password": "${mysql_password}",
-                "databases": ["${mysql_db_1}"],
-                "options": {
-                    "connectTimeout": 300,
-                    "undefined": 0
-                }
-            }
-        }
-    code_check: "400"

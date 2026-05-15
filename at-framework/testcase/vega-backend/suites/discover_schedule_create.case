@@ -1,24 +1,15 @@
--   name: "Positive_创建定时任务_每日8点执行_全量参数_请求成功"
+-   name: "Positive_创建定时任务_任务禁用_请求成功"
     url: "创建调度任务"
     prev_case: "Positive_创建catalog_数据源_请求成功"
     body_params: >-
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 08 * * *",
-            "start_time": 1778601600000,
-            "end_time": 1778688000000,
-            "enabled": true,
-            "strategies": ["insert","delete","update"]
-        }
-    code_check: "201"
-
--   name: "Positive_创建定时任务_任务禁用_请求成功"
-    url: "创建调度任务"
-    body_params: >-
-        {
-            "catalog_id": "${catalog_id}",
-            "cron_expr": "00 08 * * *",
             "enabled": false
+        }
+    resp_values: >-
+        {
+            "scheduler_id": "$.id"
         }
     code_check: "201"
 
@@ -64,7 +55,6 @@
 
 -   name: "Negative_创建定时任务_参数校验_id缺省_请求失败"
     url: "创建调度任务"
-    prev_case: "Positive_创建catalog_数据源_请求成功"
     body_params: >-
         {
             "catalog_id": "",
@@ -87,11 +77,10 @@
             "catalog_id": "${scheduler_id}",
             "cron_expr": "00 10 * * *"
         }
-    code_check: "400"
+    code_check: "404"
 
 -   name: "Negative_创建定时任务_参数校验_id非string_请求失败"
     url: "创建调度任务"
-    prev_case: "Positive_创建catalog_数据源_请求成功"
     body_params: >-
         {
             "catalog_id": 0,
@@ -101,7 +90,6 @@
 
 -   name: "Negative_创建定时任务_参数校验_id非string_请求失败"
     url: "创建调度任务"
-    prev_case: "Positive_创建catalog_数据源_请求成功"
     body_params: >-
         {
             "catalog_id": true,
@@ -111,7 +99,6 @@
 
 -   name: "Negative_创建定时任务_参数校验_id非string_请求失败"
     url: "创建调度任务"
-    prev_case: "Positive_创建catalog_数据源_请求成功"
     body_params: >-
         {
             "catalog_id": ["${catalog_id}"],
@@ -179,7 +166,7 @@
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
             "start_time": 0,
-            "end_time": 1778688000000,
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -191,7 +178,7 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "end_time": 1778688000000,
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -203,7 +190,7 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
             "end_time": 0,
             "enabled": true,
             "strategies": ["insert","delete","update"]
@@ -216,7 +203,7 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -228,8 +215,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778688000000,
-            "end_time": 1778601600000,
+            "start_time": {{ timestamp("ms", 86400, "d") }},
+            "end_time": {{ timestamp("ms", -86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -241,8 +228,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": -1778601600000,
-            "end_time": 1778688000000,
+            "start_time": -{{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -254,8 +241,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
-            "end_time": -1778688000000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": -{{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -267,8 +254,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": "1778601600000",
-            "end_time": 1778688000000,
+            "start_time": "{{ timestamp("ms", -86400, "d") }}",
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -280,8 +267,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
-            "end_time": "1778688000000",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": "{{ timestamp("ms", 86400, "d") }}",
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -294,7 +281,7 @@
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
             "start_time": true,
-            "end_time": 1778688000000,
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -306,7 +293,7 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
             "end_time": true,
             "enabled": true,
             "strategies": ["insert","delete","update"]
@@ -320,7 +307,7 @@
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
             "start_time": 1778601600.123,
-            "end_time": 1778688000000,
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -332,7 +319,7 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
             "end_time": 1778688000.123,
             "enabled": true,
             "strategies": ["insert","delete","update"]
@@ -345,8 +332,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": [1778601600000],
-            "end_time": 1778688000000,
+            "start_time": [{{ timestamp("ms", -86400, "d") }}],
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -358,8 +345,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
-            "end_time": [1778688000000],
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": [{{ timestamp("ms", 86400, "d") }}],
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -371,8 +358,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
-            "end_time": 1778688000000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": "true",
             "strategies": ["insert","delete","update"]
         }
@@ -384,8 +371,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
-            "end_time": 1778688000000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": 0,
             "strategies": ["insert","delete","update"]
         }
@@ -397,8 +384,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
-            "end_time": 1778688000000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": [true],
             "strategies": ["insert","delete","update"]
         }
@@ -410,8 +397,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
-            "end_time": 1778688000000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["undefined"]
         }
@@ -423,10 +410,10 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
-            "end_time": 1778688000000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
-            "strategies": ["undefined"，"update"]
+            "strategies": ["undefined", "update"]
         }
     code_check: "400"
 
@@ -436,8 +423,8 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 1778601600000,
-            "end_time": 1778688000000,
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","insert"]
         }

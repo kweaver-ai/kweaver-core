@@ -22,8 +22,8 @@ import urllib3
 from jinja2 import Environment
 from jsonschema.validators import validate
 
-from common.func import replace_params, replace_placeholders, genson, _COMMON_HANZI
 from common import at_env
+from common.func import replace_params, replace_placeholders, genson
 from common.model_registry import (
     ensure_llm_model_and_get_id,
     register_embedding_model,
@@ -185,6 +185,7 @@ def _parse_check_expression(expected_value, actual_value, jsonpath_key=""):
     - exists: "exists" - 检查字段是否存在（非空）
     - regex: "regex('^abc.*')" - 正则匹配
     - type: "type('array')" - 类型检查
+    - size: "size(n)" - 长度检查
 
     返回: (是否通过, 错误消息)
     """
@@ -215,7 +216,8 @@ def _parse_check_expression(expected_value, actual_value, jsonpath_key=""):
 
         if isinstance(actual_value, (list, tuple)):
             # 数组包含检查
-            found = any(str(item) == target or (isinstance(item, dict) and item.get("stage") == target) for item in actual_value)
+            found = any(str(item) == target or (isinstance(item, dict) and item.get("stage") == target) for item in
+                        actual_value)
             # 特殊处理：检查数组元素的字段值
             if not found and actual_value and isinstance(actual_value[0], dict):
                 # 尝试检查每个元素的特定字段
@@ -277,11 +279,13 @@ def _parse_check_expression(expected_value, actual_value, jsonpath_key=""):
                     repr(actual_value)
                 )
         except TypeError as e:
-            return False, "comparison error: %s (actual=%s, compare=%s)" % (str(e), repr(actual_value), repr(compare_value))
+            return False, "comparison error: %s (actual=%s, compare=%s)" % (str(e), repr(actual_value),
+                                                                            repr(compare_value))
 
     # 3. exists 检查
     if expr == "exists":
-        return actual_value is not None and actual_value != "", "expect exists (not None/empty), got %s" % repr(actual_value)
+        return actual_value is not None and actual_value != "", "expect exists (not None/empty), got %s" % repr(
+            actual_value)
 
     # 4. not_exists 检查
     if expr == "not_exists" or expr == "null":
@@ -332,6 +336,12 @@ def _parse_check_expression(expected_value, actual_value, jsonpath_key=""):
 
         result = isinstance(actual_value, expected_type_class)
         return result, "expect type '%s', got '%s'" % (expected_type, type(actual_value).__name__)
+
+    # size 长度检查
+    len_match = re.match(r"^len\((.+)\)$", expr)
+    if len_match:
+        len_num = int(len_match.group(1).strip().lower())
+        return len(actual_value) == len_num, "expect size '%d', got '%d'" % (len_num, len(actual_value))
 
     # 7. 精确匹配（默认行为）
     # 处理字符串形式的特殊值
@@ -387,14 +397,72 @@ def _jinja_random_string(length=8, model=8):
         chars += _str.octdigits
     if (model >> 6) & 1:
         chars += _str.punctuation + r"·！￥……（）【】、：；“‘《》，。？、"
-    if (model >> 7) & 1:
-        chars += _COMMON_HANZI
 
     return json.dumps(''.join(random.choices(chars, k=length))).strip('"')
 
 
+def _jinja_timestamp(scale="s", delta=0, precision=0):
+    """
+    Jinja2 全局函数 ``timestamp`` 的实现：返回 Unix 时间戳（本地日历语义下的整秒时刻 + 差值，
+    可选按粒度对齐后，再按秒或毫秒输出）。
+
+    计算顺序：
+    1. 取 ``int(datetime.now().timestamp())``（当前本地时间的整秒）作为基准；
+    2. 加上由 ``delta`` 换算得到的偏移秒数 ``offset_sec``；
+    3. 若 ``precision`` 为下表中的取值之一，则将该时刻对齐到对应粒度的区间起点（本地时区），
+       否则不对齐；
+    4. 将对齐后的时刻取 ``int`` 再乘以倍率：秒模式 ×1，毫秒模式 ×1000。
+
+    :param scale: 输出倍率。仅当取值为 ``ms`` 或 ``1000`` 时为毫秒时间戳（返回值 ×1000），
+        其余任意值（含默认 ``s``）均为秒级时间戳（×1）。
+    :param delta: 时间偏移。
+        - ``datetime.timedelta``：使用 ``total_seconds()``，单位为秒，**不再**除以倍率；
+        - ``int`` / ``float``：先除以当前 ``scale`` 对应倍率（秒模式 ÷1，毫秒模式 ÷1000），
+          即秒模式下该数值表示「秒」，毫秒模式下该数值表示「毫秒」再换成秒参与运算；
+        - 其他类型：视为 0。
+    :param precision: 对齐粒度（须与下列取值**完全一致**，大小写敏感；未命中则不对齐）：
+        - 分钟起点：``M``、``minute``、``minutes``、``分``（注意分钟为**大写** ``M``，与月份 ``m`` 区分）；
+        - 小时起点：``H``、``hour``、``hours``、``时``；
+        - 日起点（当天 0 点）：``d``、``day``、``days``、``天``；
+        - 月起始（当月 1 日 0 点）：``m``、``month``、``months``、``月``；
+        - 年起始（当年 1 月 1 日 0 点）：``y``、``year``、``years``、``年``；
+        - 默认 ``0`` 及其他取值：不做日历对齐，仅使用步骤 2 得到的整秒时刻。
+
+    模板示例：``{{ timestamp('ms', 0, 'day') }}``、``{{ timestamp('s', 3600, 'd') }}``。
+    """
+    factor = 1000 if scale in ("ms", "1000") else 1
+
+    if isinstance(delta, timedelta):
+        offset_sec = delta.total_seconds()
+    elif isinstance(delta, int) or isinstance(delta, float):
+        offset_sec = delta / factor
+    else:
+        offset_sec = 0
+
+    # 单次采样，避免取值漂移
+    t = int(datetime.now().timestamp()) + offset_sec
+
+    # 颗粒度对齐
+    dt = datetime.fromtimestamp(t)
+    if precision in ("M", "minute", "minutes", "分"):
+        floored = dt.replace(second=0, microsecond=0).timestamp()
+    elif precision in ("H", "hour", "hours", "时"):
+        floored = dt.replace(minute=0, second=0, microsecond=0).timestamp()
+    elif precision in ("d", "day", "days", "天"):
+        floored = dt.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+    elif precision in ("m", "month", "months", "月"):
+        floored = dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0).timestamp()
+    elif precision in ("y", "year", "years", "年"):
+        floored = dt.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0).timestamp()
+    else:
+        floored = dt.timestamp()
+
+    return int(floored) * factor
+
+
 _jinja_env = Environment()
 _jinja_env.globals["random_string"] = _jinja_random_string
+_jinja_env.globals["timestamp"] = _jinja_timestamp
 _jinja_env.globals["now"] = datetime.now
 _jinja_env.globals["timedelta"] = timedelta
 
@@ -531,7 +599,8 @@ def _teardown_delete_operators_by_names(names):
                 if del_resp.status_code == 200:
                     print("[teardown] [OK] deleted operator by name: %s (%s)" % (name, op_id))
                 else:
-                    print("[teardown] [FAIL] delete operator failed: %s (%s) - %s" % (name, op_id, del_resp.status_code))
+                    print(
+                        "[teardown] [FAIL] delete operator failed: %s (%s) - %s" % (name, op_id, del_resp.status_code))
             except Exception as e:
                 print("[teardown] [FAIL] delete operator error: %s (%s) - %s" % (name, op_id, e))
 
@@ -557,7 +626,7 @@ def test_case(feature, story, case_name, case_info):
 
     if case_info.get("prev_case", "") != '':
         with allure.step("执行前置用例执行"):
-             for x in compute_case_list():
+            for x in compute_case_list():
                 if x["name"] == case_info["prev_case"]:
                     try:
                         test_case(x["feature"], x["story"], x["name"], x)
@@ -607,11 +676,11 @@ def test_case(feature, story, case_name, case_info):
         url = case_info.get("url", "")
         unresolved_fields = []
         for _name, _val in (
-            ("query_params", case_query_params),
-            ("body_params", case_body_params),
-            ("form_params", case_form_params),
-            ("file_params", case_file_params),
-            ("url", url),
+                ("query_params", case_query_params),
+                ("body_params", case_body_params),
+                ("form_params", case_form_params),
+                ("file_params", case_file_params),
+                ("url", url),
         ):
             if _contains_unresolved_placeholder(_val):
                 unresolved_fields.append(_name)
@@ -679,15 +748,11 @@ def test_case(feature, story, case_name, case_info):
         for jsonpath_key, expected_value in json.loads(case_info["resp_check"]).items():
             # 获取实际值
             actual_values = jsonpath.jsonpath(resp_body, jsonpath_key)
-            # jsonpath.jsonpath() 返回 False 或 None 表示未找到匹配项
-            if actual_values is False or actual_values is None or (isinstance(actual_values, list) and len(actual_values) == 0):
-                # jsonpath 未找到匹配项
+            if not actual_values:
                 assert False, "jsonpath '%s' not found in response" % jsonpath_key
 
-            actual_value = actual_values[0]
-
             # 使用扩展的表达式解析函数进行验证
-            passed, error_msg = _parse_check_expression(expected_value, actual_value, jsonpath_key)
+            passed, error_msg = _parse_check_expression(expected_value, actual_values[0], jsonpath_key)
             assert passed, "resp_check failed for '%s': %s" % (jsonpath_key, error_msg)
 
     if "resp_schema" in case_info:
