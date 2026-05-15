@@ -17,7 +17,7 @@ type EqCond struct {
 	mFilterFieldName string
 }
 
-func NewEqCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField) (Condition, error) {
+func NewEqCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*FieldCfg) (Condition, error) {
 	if cfg.ValueFrom != ValueFrom_Const {
 		return nil, fmt.Errorf("condition [eq] does not support value_from type '%s'", cfg.ValueFrom)
 	}

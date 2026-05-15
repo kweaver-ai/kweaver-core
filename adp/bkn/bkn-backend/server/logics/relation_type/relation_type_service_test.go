@@ -24,6 +24,50 @@ import (
 	"bkn-backend/logics/batchindex"
 )
 
+func Test_normalizeScopeBindingRelationType(t *testing.T) {
+	Convey("Test normalizeScopeBindingRelationType\n", t, func() {
+		Convey("Normalizes top-level source object type id and clears target object type id for scope_binding\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					Type:               interfaces.RELATION_TYPE_SCOPE_BINDING,
+					SourceObjectTypeID: "input_source",
+					TargetObjectTypeID: "input_target",
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source: &interfaces.ScopeBindingSource{ObjectTypeID: "skill"},
+						TargetRules: []*interfaces.TargetRule{
+							{Scope: interfaces.SCOPE_BINDING_SCOPE_OBJECT_TYPE, ID: "contract"},
+						},
+					},
+				},
+			}
+
+			normalizeScopeBindingRelationType(relationType)
+
+			So(relationType.SourceObjectTypeID, ShouldEqual, "skill")
+			So(relationType.TargetObjectTypeID, ShouldEqual, "")
+		})
+
+		Convey("Keeps top-level object type ids for non scope_binding\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					Type:               interfaces.RELATION_TYPE_DIRECT,
+					SourceObjectTypeID: "source_ot",
+					TargetObjectTypeID: "target_ot",
+				},
+			}
+
+			normalizeScopeBindingRelationType(relationType)
+
+			So(relationType.SourceObjectTypeID, ShouldEqual, "source_ot")
+			So(relationType.TargetObjectTypeID, ShouldEqual, "target_ot")
+		})
+
+		Convey("Ignores nil relation type\n", func() {
+			normalizeScopeBindingRelationType(nil)
+		})
+	})
+}
+
 func Test_relationTypeService_CheckRelationTypeExistByID(t *testing.T) {
 	Convey("Test CheckRelationTypeExistByID\n", t, func() {
 		ctx := context.Background()
@@ -1753,6 +1797,10 @@ func Test_relationTypeService_validateDependency(t *testing.T) {
 		appSetting := &common.AppSetting{}
 		ots := bmock.NewMockObjectTypeService(mockCtrl)
 		dva := bmock.NewMockDataViewAccess(mockCtrl)
+		rta := bmock.NewMockRelationTypeAccess(mockCtrl)
+		cga := bmock.NewMockConceptGroupAccess(mockCtrl)
+		ata := bmock.NewMockActionTypeAccess(mockCtrl)
+		riskTypeA := bmock.NewMockRiskTypeAccess(mockCtrl)
 		db, smock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 
 		service := &relationTypeService{
@@ -1760,6 +1808,10 @@ func Test_relationTypeService_validateDependency(t *testing.T) {
 			db:         db,
 			ots:        ots,
 			dva:        dva,
+			rta:        rta,
+			cga:        cga,
+			ata:        ata,
+			riskTypeA:  riskTypeA,
 		}
 
 		Convey("Failed when source object type not found\n", func() {
@@ -1883,6 +1935,340 @@ func Test_relationTypeService_validateDependency(t *testing.T) {
 
 			err := service.validateDependency(ctx, nil, relationType, true, nil)
 			So(err, ShouldBeNil)
+		})
+
+		Convey("Success with scope_binding source filter and explicit rid_property\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID: "rt-sb",
+					Type: interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source: &interfaces.ScopeBindingSource{
+							ObjectTypeID: "contract",
+							Condition: &cond.CondCfg{
+								Field:     "contract_type",
+								Operation: cond.OperationEq,
+								ValueOptCfg: cond.ValueOptCfg{
+									Value: "audit",
+								},
+							},
+							RidProperty: "preferredSkill",
+						},
+						TargetRules: []*interfaces.TargetRule{{Scope: "kn"}},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			sourceOT := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "contract",
+					OTName: "contract",
+					DataProperties: []*interfaces.DataProperty{
+						{Name: "contract_type", DisplayName: "Contract Type", Type: "string"},
+						{Name: "skill_id", DisplayName: "Skill ID", Type: "string"},
+					},
+					LogicProperties: []*interfaces.LogicProperty{
+						{Name: "preferredSkill", DisplayName: "Preferred Skill", Type: interfaces.LOGIC_PROPERTY_TYPE_RID, Kind: "skill", Field: "skill_id"},
+						{Name: "backupSkill", DisplayName: "Backup Skill", Type: interfaces.LOGIC_PROPERTY_TYPE_RID, Kind: "skill", Field: "skill_id"},
+					},
+				},
+			}
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "contract").Return(sourceOT, nil)
+
+			err := service.validateDependency(ctx, nil, relationType, true, nil)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Failed with scope_binding source filter field not found\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID: "rt-sb-filter",
+					Type: interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source: &interfaces.ScopeBindingSource{
+							ObjectTypeID: "contract",
+							Condition: &cond.CondCfg{
+								Field:     "missing_field",
+								Operation: cond.OperationEq,
+								ValueOptCfg: cond.ValueOptCfg{
+									Value: "audit",
+								},
+							},
+						},
+						TargetRules: []*interfaces.TargetRule{{Scope: "kn"}},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			sourceOT := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "contract",
+					OTName: "contract",
+					DataProperties: []*interfaces.DataProperty{
+						{Name: "contract_type", DisplayName: "Contract Type", Type: "string"},
+					},
+				},
+			}
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "contract").Return(sourceOT, nil)
+
+			err := service.validateDependency(ctx, nil, relationType, true, nil)
+			So(err, ShouldNotBeNil)
+			httpErr := err.(*rest.HTTPError)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_RelationType_InvalidParameter)
+		})
+
+		Convey("Failed with scope_binding multiple rid properties and empty rid_property\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID: "rt-sb-rid-empty",
+					Type: interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source:      &interfaces.ScopeBindingSource{ObjectTypeID: "contract"},
+						TargetRules: []*interfaces.TargetRule{{Scope: "kn"}},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			sourceOT := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "contract",
+					OTName: "contract",
+					DataProperties: []*interfaces.DataProperty{
+						{Name: "skill_id", DisplayName: "Skill ID", Type: "string"},
+					},
+					LogicProperties: []*interfaces.LogicProperty{
+						{Name: "preferredSkill", DisplayName: "Preferred Skill", Type: interfaces.LOGIC_PROPERTY_TYPE_RID, Kind: "skill", Field: "skill_id"},
+						{Name: "backupSkill", DisplayName: "Backup Skill", Type: interfaces.LOGIC_PROPERTY_TYPE_RID, Kind: "skill", Field: "skill_id"},
+					},
+				},
+			}
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "contract").Return(sourceOT, nil)
+
+			err := service.validateDependency(ctx, nil, relationType, true, nil)
+			So(err, ShouldNotBeNil)
+			httpErr := err.(*rest.HTTPError)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_RelationType_InvalidParameter)
+		})
+
+		Convey("Failed with scope_binding rid_property not found or not rid\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID: "rt-sb-rid-missing",
+					Type: interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source: &interfaces.ScopeBindingSource{
+							ObjectTypeID: "contract",
+							RidProperty:  "metricProp",
+						},
+						TargetRules: []*interfaces.TargetRule{{Scope: "kn"}},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			sourceOT := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "contract",
+					OTName: "contract",
+					DataProperties: []*interfaces.DataProperty{
+						{Name: "skill_id", DisplayName: "Skill ID", Type: "string"},
+					},
+					LogicProperties: []*interfaces.LogicProperty{
+						{Name: "metricProp", DisplayName: "Metric Prop", Type: interfaces.LOGIC_PROPERTY_TYPE_METRIC},
+					},
+				},
+			}
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "contract").Return(sourceOT, nil)
+
+			err := service.validateDependency(ctx, nil, relationType, true, nil)
+			So(err, ShouldNotBeNil)
+			httpErr := err.(*rest.HTTPError)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_RelationType_InvalidParameter)
+		})
+
+		Convey("Success with scope_binding object_type target condition field found\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID: "rt-sb-target-condition",
+					Type: interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source: &interfaces.ScopeBindingSource{ObjectTypeID: "skill"},
+						TargetRules: []*interfaces.TargetRule{
+							{
+								Scope: "object_type",
+								ID:    "contract",
+								Condition: &cond.CondCfg{
+									Field:     "contract_type",
+									Operation: cond.OperationEq,
+									ValueOptCfg: cond.ValueOptCfg{
+										Value: "audit",
+									},
+								},
+							},
+						},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			sourceOT := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "skill",
+					OTName: "skill",
+				},
+			}
+			targetOT := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "contract",
+					OTName: "contract",
+					DataProperties: []*interfaces.DataProperty{
+						{Name: "contract_type", DisplayName: "Contract Type", Type: "string"},
+					},
+				},
+			}
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "skill").Return(sourceOT, nil)
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "contract").Return(targetOT, nil)
+
+			err := service.validateDependency(ctx, nil, relationType, true, nil)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Failed with scope_binding object_type target condition field not found\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID: "rt-sb-target-condition-missing",
+					Type: interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source: &interfaces.ScopeBindingSource{ObjectTypeID: "skill"},
+						TargetRules: []*interfaces.TargetRule{
+							{
+								Scope: "object_type",
+								ID:    "contract",
+								Condition: &cond.CondCfg{
+									Field:     "missing_field",
+									Operation: cond.OperationEq,
+									ValueOptCfg: cond.ValueOptCfg{
+										Value: "audit",
+									},
+								},
+							},
+						},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			sourceOT := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "skill",
+					OTName: "skill",
+				},
+			}
+			targetOT := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "contract",
+					OTName: "contract",
+					DataProperties: []*interfaces.DataProperty{
+						{Name: "contract_type", DisplayName: "Contract Type", Type: "string"},
+					},
+				},
+			}
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "skill").Return(sourceOT, nil)
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "contract").Return(targetOT, nil)
+
+			err := service.validateDependency(ctx, nil, relationType, true, nil)
+			So(err, ShouldNotBeNil)
+			httpErr := err.(*rest.HTTPError)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_RelationType_InvalidParameter)
+		})
+
+		Convey("Failed with scope_binding object_type target id not found without condition\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID: "rt-sb-target-object-missing",
+					Type: interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source: &interfaces.ScopeBindingSource{ObjectTypeID: "skill"},
+						TargetRules: []*interfaces.TargetRule{
+							{Scope: interfaces.SCOPE_BINDING_SCOPE_OBJECT_TYPE, ID: "missing_contract"},
+						},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			sourceOT := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "skill",
+					OTName: "skill",
+				},
+			}
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "skill").Return(sourceOT, nil)
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "missing_contract").Return(nil, nil)
+
+			err := service.validateDependency(ctx, nil, relationType, true, nil)
+			So(err, ShouldNotBeNil)
+			httpErr := err.(*rest.HTTPError)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_RelationType_InvalidParameter)
+		})
+
+		Convey("Success with scope_binding target dependencies for every scope\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID: "rt-sb-target-all",
+					Type: interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source: &interfaces.ScopeBindingSource{ObjectTypeID: "skill"},
+						TargetRules: []*interfaces.TargetRule{
+							{Scope: interfaces.SCOPE_BINDING_SCOPE_KN},
+							{Scope: interfaces.SCOPE_BINDING_SCOPE_OBJECT_TYPE, ID: "contract"},
+							{Scope: interfaces.SCOPE_BINDING_SCOPE_RELATION_TYPE, ID: "contract_relation"},
+							{Scope: interfaces.SCOPE_BINDING_SCOPE_RISK_TYPE, ID: "contract_risk"},
+							{Scope: interfaces.SCOPE_BINDING_SCOPE_CONCEPT_GROUP, ID: "contract_group"},
+							{Scope: interfaces.SCOPE_BINDING_SCOPE_ACTION_TYPE, ID: "contract_action"},
+						},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			sourceOT := &interfaces.ObjectType{ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTID: "skill", OTName: "skill"}}
+			targetOT := &interfaces.ObjectType{ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTID: "contract", OTName: "contract"}}
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "skill").Return(sourceOT, nil)
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "contract").Return(targetOT, nil)
+			rta.EXPECT().CheckRelationTypeExistByID(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, "contract_relation").Return("contract_relation", true, nil)
+			riskTypeA.EXPECT().CheckRiskTypeExistByID(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, "contract_risk").Return("contract_risk", true, nil)
+			cga.EXPECT().CheckConceptGroupExistByID(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, "contract_group").Return("contract_group", true, nil)
+			ata.EXPECT().CheckActionTypeExistByID(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, "contract_action").Return("contract_action", true, nil)
+
+			err := service.validateDependency(ctx, nil, relationType, true, nil)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Failed with scope_binding relation_type target id not found\n", func() {
+			relationType := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID: "rt-sb-target-relation-missing",
+					Type: interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: &interfaces.ScopeBindingMapping{
+						Source:      &interfaces.ScopeBindingSource{ObjectTypeID: "skill"},
+						TargetRules: []*interfaces.TargetRule{{Scope: interfaces.SCOPE_BINDING_SCOPE_RELATION_TYPE, ID: "missing_relation"}},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			sourceOT := &interfaces.ObjectType{ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTID: "skill", OTName: "skill"}}
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "skill").Return(sourceOT, nil)
+			rta.EXPECT().CheckRelationTypeExistByID(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, "missing_relation").Return("", false, nil)
+
+			err := service.validateDependency(ctx, nil, relationType, true, nil)
+			So(err, ShouldNotBeNil)
+			httpErr := err.(*rest.HTTPError)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_RelationType_InvalidParameter)
 		})
 
 		Convey("Failed when target property not found in DIRECT type\n", func() {

@@ -33,6 +33,9 @@ func TestCollectKNFromPayload_nestedConceptGroup(t *testing.T) {
 		ObjectTypes: []*interfaces.ObjectType{
 			{ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTID: "ot_top"}},
 		},
+		RiskTypes: []*interfaces.RiskType{
+			{RTID: "risk1"},
+		},
 	}
 	idx, err := CollectKNFromPayload(kn)
 	if err != nil {
@@ -46,6 +49,9 @@ func TestCollectKNFromPayload_nestedConceptGroup(t *testing.T) {
 	}
 	if _, ok := idx.ActionTypeIDs["at1"]; !ok {
 		t.Fatal("expected at1 in index")
+	}
+	if !HasRiskTypeID("risk1", idx) {
+		t.Fatal("expected risk1 in index")
 	}
 	if !HasConceptGroupID("cg1", idx) {
 		t.Fatal("expected cg1 in index")

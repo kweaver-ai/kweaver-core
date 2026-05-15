@@ -17,7 +17,7 @@ import (
 func TestNewKnnCond(t *testing.T) {
 	Convey("Test NewKnnCond", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_VECTOR,
@@ -145,7 +145,7 @@ func TestNewKnnCond(t *testing.T) {
 func TestKnnCond_Convert(t *testing.T) {
 	Convey("Test KnnCond.Convert", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_VECTOR,
@@ -321,7 +321,7 @@ func TestKnnCond_Convert(t *testing.T) {
 func TestKnnCond_Convert2SQL(t *testing.T) {
 	Convey("Test KnnCond.Convert2SQL", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_VECTOR,

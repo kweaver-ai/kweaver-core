@@ -19,7 +19,7 @@ type MultiMatchCond struct {
 	mFilterFieldNames []string
 }
 
-func NewMultiMatchCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*ViewField) (Condition, error) {
+func NewMultiMatchCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*FieldCfg) (Condition, error) {
 
 	// 从cfg的 ReaminCfg 中获取 fields，这是属于 multi_match的fields字段，是个字符串数组，
 	// 如果想要全部字段匹配，可不填或者填 ["*"], 不支持填字符串 *， 需要一个数组
@@ -126,7 +126,7 @@ func (cond *MultiMatchCond) Convert2SQL(ctx context.Context) (string, error) {
 }
 
 // convertMultiMatchCondToDatasetFilterCondition converts MultiMatchCond to dataset filter condition format
-func convertMultiMatchCondToDatasetFilterCondition(cfg *CondCfg, fieldsMap map[string]*ViewField) (map[string]any, error) {
+func convertMultiMatchCondToDatasetFilterCondition(cfg *CondCfg, fieldsMap map[string]*FieldCfg) (map[string]any, error) {
 	// 获取 fields 列表
 	var fields []string
 	cfgFields, exist := cfg.RemainCfg["fields"]

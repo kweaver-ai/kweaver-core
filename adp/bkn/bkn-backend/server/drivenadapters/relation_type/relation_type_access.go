@@ -291,6 +291,15 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 			}
 			relationType.MappingRules = &fcj
 		}
+		if relationType.Type == interfaces.RELATION_TYPE_SCOPE_BINDING {
+			var sb interfaces.ScopeBindingMapping
+			err = sonic.Unmarshal(mappingRulesBytes, &sb)
+			if err != nil {
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type", err)
+				return []*interfaces.RelationType{}, err
+			}
+			relationType.MappingRules = &sb
+		}
 
 		relationTypes = append(relationTypes, &relationType)
 	}
@@ -437,6 +446,15 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		}
 		relationType.MappingRules = &fcj
 	}
+	if relationType.Type == interfaces.RELATION_TYPE_SCOPE_BINDING {
+		var sb interfaces.ScopeBindingMapping
+		err = sonic.Unmarshal(mappingRulesBytes, &sb)
+		if err != nil {
+			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type", err)
+			return nil, err
+		}
+		relationType.MappingRules = &sb
+	}
 
 	span.SetStatus(codes.Ok, "")
 	return &relationType, nil
@@ -556,6 +574,15 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 				return []*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &fcj
+		}
+		if relationType.Type == interfaces.RELATION_TYPE_SCOPE_BINDING {
+			var sb interfaces.ScopeBindingMapping
+			err = sonic.Unmarshal(mappingRulesBytes, &sb)
+			if err != nil {
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type", err)
+				return []*interfaces.RelationType{}, err
+			}
+			relationType.MappingRules = &sb
 		}
 
 		relationTypes = append(relationTypes, &relationType)
@@ -926,6 +953,15 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 				return map[string]*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &fcj
+		}
+		if relationType.Type == interfaces.RELATION_TYPE_SCOPE_BINDING {
+			var sb interfaces.ScopeBindingMapping
+			err = sonic.Unmarshal(mappingRulesBytes, &sb)
+			if err != nil {
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type", err)
+				return map[string]*interfaces.RelationType{}, err
+			}
+			relationType.MappingRules = &sb
 		}
 
 		relationTypes[relationType.RTID] = &relationType

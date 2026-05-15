@@ -15,7 +15,7 @@ type AndCond struct {
 	mSubConds []Condition
 }
 
-func newAndCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*ViewField) (Condition, error) {
+func newAndCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*FieldCfg) (Condition, error) {
 	subConds := []Condition{}
 
 	if len(cfg.SubConds) == 0 {
@@ -114,7 +114,7 @@ func (cond *AndCond) Convert2SQL(ctx context.Context) (string, error) {
 
 // convertAndCondToDatasetFilterCondition converts AndCond to dataset filter condition format
 // Reference: ontology-query's rewriteAndCondition pattern - recursively process sub-conditions
-func convertAndCondToDatasetFilterCondition(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*ViewField,
+func convertAndCondToDatasetFilterCondition(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*FieldCfg,
 	vectorizer func(ctx context.Context, word string) ([]*VectorResp, error)) (map[string]any, error) {
 	if len(cfg.SubConds) == 0 {
 		return nil, fmt.Errorf("sub condition size is 0")

@@ -15,6 +15,7 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/mitchellh/mapstructure"
 
+	cond "bkn-backend/common/condition"
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
 )
@@ -82,25 +83,31 @@ func ValidateRelationType(ctx context.Context, relationType *interfaces.Relation
 
 	// 校验type字段
 	if relationType.Type != "" {
-		if relationType.Type != interfaces.RELATION_TYPE_DIRECT && relationType.Type != interfaces.RELATION_TYPE_DATA_VIEW &&
-			relationType.Type != interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN {
+		if relationType.Type != interfaces.RELATION_TYPE_DIRECT &&
+			relationType.Type != interfaces.RELATION_TYPE_DATA_VIEW &&
+			relationType.Type != interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN &&
+			relationType.Type != interfaces.RELATION_TYPE_SCOPE_BINDING {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("关系类类型只支持 %s、%s 和 %s，当前类型为: %s",
-					interfaces.RELATION_TYPE_DIRECT, interfaces.RELATION_TYPE_DATA_VIEW,
-					interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN, relationType.Type))
+				WithErrorDetails(fmt.Sprintf("关系类类型只支持 %s、%s、%s 和 %s，当前类型为: %s",
+					interfaces.RELATION_TYPE_DIRECT,
+					interfaces.RELATION_TYPE_DATA_VIEW,
+					interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN,
+					interfaces.RELATION_TYPE_SCOPE_BINDING, relationType.Type))
 		}
 	}
 
-	if relationType.SourceObjectTypeID == "" {
-		if strictMode {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
-				WithErrorDetails("关系类的 source_object_type_id 不能为空")
+	if relationType.Type != interfaces.RELATION_TYPE_SCOPE_BINDING {
+		if relationType.SourceObjectTypeID == "" {
+			if strictMode {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+					WithErrorDetails("关系类的 source_object_type_id 不能为空")
+			}
 		}
-	}
-	if relationType.TargetObjectTypeID == "" {
-		if strictMode {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
-				WithErrorDetails("关系类的 target_object_type_id 不能为空")
+		if relationType.TargetObjectTypeID == "" {
+			if strictMode {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+					WithErrorDetails("关系类的 target_object_type_id 不能为空")
+			}
 		}
 	}
 
@@ -124,8 +131,23 @@ func ValidateRelationType(ctx context.Context, relationType *interfaces.Relation
 		return err
 	}
 	relationType.MappingRules = rules
+	normalizeScopeBindingRelationTypeFields(relationType)
 
 	return nil
+}
+
+func normalizeScopeBindingRelationTypeFields(relationType *interfaces.RelationType) {
+	if relationType == nil || relationType.Type != interfaces.RELATION_TYPE_SCOPE_BINDING {
+		return
+	}
+	rules, ok := relationType.MappingRules.(*interfaces.ScopeBindingMapping)
+	if !ok || rules == nil {
+		return
+	}
+	if rules.Source != nil {
+		relationType.SourceObjectTypeID = rules.Source.ObjectTypeID
+	}
+	relationType.TargetObjectTypeID = ""
 }
 
 // 校验mapping_rules的有效性
@@ -137,6 +159,8 @@ func validateMappingRules(ctx context.Context, relationType string, mappingRules
 		return validateInDirectMappingRules(ctx, mappingRules, strictMode)
 	case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
 		return validateFilteredCrossJoinMappingRules(ctx, mappingRules, strictMode)
+	case interfaces.RELATION_TYPE_SCOPE_BINDING:
+		return validateScopeBindingMappingRules(ctx, mappingRules, strictMode)
 	default:
 		// 如果type不是direct或data_view，返回错误
 		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
@@ -289,6 +313,173 @@ func validateFilteredCrossJoinMappingRules(ctx context.Context, mappingRules any
 		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
 			WithErrorDetails("分侧过滤全连接 mapping_rules 解码失败: " + err.Error())
 	}
-	// source_condition / target_condition 均可省略：nil 表示该侧无额外过滤（与查询引擎语义一致）。
+
+	// 校验 source_condition
+	if mapping.SourceCondition != nil {
+		if err := validateRelationTypeCondition(ctx, mapping.SourceCondition, "source_condition"); err != nil {
+			return nil, err
+		}
+	}
+
+	// 校验 target_condition
+	if mapping.TargetCondition != nil {
+		if err := validateRelationTypeCondition(ctx, mapping.TargetCondition, "target_condition"); err != nil {
+			return nil, err
+		}
+	}
+
 	return &mapping, nil
+}
+
+// validateRelationTypeCondition 校验关系类过滤条件的合法性
+func validateRelationTypeCondition(ctx context.Context, cfg *cond.CondCfg, prefix string) error {
+	if cfg == nil {
+		return nil
+	}
+
+	// 校验 operation 不能为空
+	if cfg.Operation == "" {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的 operation 不能为空", prefix))
+	}
+
+	// 校验 operation 是否有效
+	if _, ok := cond.OperationMap[cfg.Operation]; !ok {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的 operation[%s] 无效", prefix, cfg.Operation))
+	}
+
+	// and/or 操作需要校验子条件
+	if cfg.Operation == cond.OperationAnd || cfg.Operation == cond.OperationOr {
+		if len(cfg.SubConds) == 0 {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的子条件(sub_conditions)不能为空", prefix))
+		}
+
+		// 校验子条件数量限制
+		if len(cfg.SubConds) > cond.MaxSubCondition {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的子条件数量[%d]超过最大限制[%d]", prefix, len(cfg.SubConds), cond.MaxSubCondition))
+		}
+
+		// 递归校验每个子条件
+		for i, subCond := range cfg.SubConds {
+			subPrefix := fmt.Sprintf("%s.sub_conditions[%d]", prefix, i)
+			if err := validateRelationTypeCondition(ctx, subCond, subPrefix); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// 非 and/or 操作需要校验 field
+	if cfg.Field == "" {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的 field 不能为空", prefix))
+	}
+
+	// 校验 value：非特殊操作需要 value
+	if _, ok := cond.NotRequiredValueOperationMap[cfg.Operation]; !ok {
+		if cfg.Value == nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("分侧过滤全连接 %s 的值(value)不能为空", prefix))
+		}
+	}
+
+	return nil
+}
+
+// validateScopeBindingMappingRules 校验 scope_binding 类型的 mapping_rules
+func validateScopeBindingMappingRules(ctx context.Context, mappingRules any, strictMode bool) (*interfaces.ScopeBindingMapping, error) {
+	var mapping interfaces.ScopeBindingMapping
+	if err := mapstructure.Decode(mappingRules, &mapping); err != nil {
+		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails("scope_binding 的 mapping_rules 解码失败: " + err.Error())
+	}
+
+	// 校验 source 不能为空
+	if mapping.Source == nil {
+		if strictMode {
+			return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails("scope_binding 的 source 不能为空")
+		}
+	} else {
+		// 校验 source.object_type_id 不能为空
+		if mapping.Source.ObjectTypeID == "" {
+			if strictMode {
+				return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+					WithErrorDetails("scope_binding 的 source.object_type_id 不能为空")
+			}
+		}
+
+		// 校验 source.filter（如果存在）
+		if mapping.Source.Condition != nil {
+			if err := validateRelationTypeCondition(ctx, mapping.Source.Condition, "source.filter"); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// 校验 target_rules 不能为空
+	if len(mapping.TargetRules) == 0 {
+		if strictMode {
+			return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails("scope_binding 的 target_rules 不能为空")
+		}
+	} else {
+		// 校验每个 target_rule
+		for i, targetRule := range mapping.TargetRules {
+			if err := validateScopeBindingTargetRule(ctx, targetRule, i); err != nil {
+				return nil, err
+			}
+
+			// 校验 condition（如果存在）
+			if targetRule.Condition != nil {
+				if targetRule.Scope != interfaces.SCOPE_BINDING_SCOPE_OBJECT_TYPE {
+					return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+						WithErrorDetails(fmt.Sprintf("scope_binding 的 target_rules[%d].condition 仅支持 scope 为 object_type", i))
+				}
+				if err := validateRelationTypeCondition(ctx, targetRule.Condition, fmt.Sprintf("target_rules[%d].condition", i)); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	return &mapping, nil
+}
+
+// validateScopeBindingTargetRule 校验 scope_binding target_rule 的 scope/id 组合。
+func validateScopeBindingTargetRule(ctx context.Context, targetRule *interfaces.TargetRule, index int) error {
+	if targetRule == nil {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("scope_binding 的 target_rules[%d] 不能为空", index))
+	}
+
+	if targetRule.Scope == "" {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("scope_binding 的 target_rules[%d].scope 不能为空", index))
+	}
+
+	switch targetRule.Scope {
+	case interfaces.SCOPE_BINDING_SCOPE_KN:
+		if targetRule.ID != "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("scope_binding 的 target_rules[%d].scope 为 kn 时 id 必须为空", index))
+		}
+	case interfaces.SCOPE_BINDING_SCOPE_OBJECT_TYPE,
+		interfaces.SCOPE_BINDING_SCOPE_RELATION_TYPE,
+		interfaces.SCOPE_BINDING_SCOPE_RISK_TYPE,
+		interfaces.SCOPE_BINDING_SCOPE_CONCEPT_GROUP,
+		interfaces.SCOPE_BINDING_SCOPE_ACTION_TYPE:
+		if targetRule.ID == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("scope_binding 的 target_rules[%d].scope 为 %s 时 id 不能为空", index, targetRule.Scope))
+		}
+	default:
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("scope_binding 的 target_rules[%d].scope[%s] 无效，只支持 kn、object_type、relation_type、risk_type、concept_group、action_type", index, targetRule.Scope))
+	}
+
+	return nil
 }

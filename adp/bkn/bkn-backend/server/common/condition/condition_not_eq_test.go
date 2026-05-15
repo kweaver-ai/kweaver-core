@@ -17,7 +17,7 @@ import (
 func TestNewNotEqCond(t *testing.T) {
 	Convey("Test NewNotEqCond", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -76,7 +76,7 @@ func TestNewNotEqCond(t *testing.T) {
 func TestNotEqCond_Convert(t *testing.T) {
 	Convey("Test NotEqCond.Convert", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -138,7 +138,7 @@ func TestNotEqCond_Convert(t *testing.T) {
 func TestNotEqCond_Convert2SQL(t *testing.T) {
 	Convey("Test NotEqCond.Convert2SQL", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,

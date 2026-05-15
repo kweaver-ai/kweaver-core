@@ -17,7 +17,7 @@ type MatchCond struct {
 	mFilterFieldNames []string
 }
 
-func NewMatchCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*ViewField) (Condition, error) {
+func NewMatchCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsMap map[string]*FieldCfg) (Condition, error) {
 	if cfg.ValueFrom != ValueFrom_Const {
 		return nil, fmt.Errorf("condition [match] does not support value_from type '%s'", cfg.ValueFrom)
 	}
@@ -81,7 +81,7 @@ func (cond *MatchCond) Convert2SQL(ctx context.Context) (string, error) {
 }
 
 // convertMatchCondToDatasetFilterCondition converts MatchCond to dataset filter condition format
-func convertMatchCondToDatasetFilterCondition(cfg *CondCfg, fieldsMap map[string]*ViewField) (map[string]any, error) {
+func convertMatchCondToDatasetFilterCondition(cfg *CondCfg, fieldsMap map[string]*FieldCfg) (map[string]any, error) {
 	name := getFilterFieldName(cfg.Field, fieldsMap, true)
 	var fields []string
 	// 如果指定*查询，并且视图的字段范围为部分字段，那么将查询的字段替换成视图的字段列表

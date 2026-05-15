@@ -17,7 +17,7 @@ import (
 func TestNewInCond(t *testing.T) {
 	Convey("Test NewInCond", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -105,7 +105,7 @@ func TestNewInCond(t *testing.T) {
 func TestInCond_Convert(t *testing.T) {
 	Convey("Test InCond.Convert", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,
@@ -164,7 +164,7 @@ func TestInCond_Convert(t *testing.T) {
 func TestInCond_Convert2SQL(t *testing.T) {
 	Convey("Test InCond.Convert2SQL", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_STRING,

@@ -17,7 +17,7 @@ import (
 func TestNewMatchCond(t *testing.T) {
 	Convey("Test NewMatchCond", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,
@@ -80,7 +80,7 @@ func TestNewMatchCond(t *testing.T) {
 func TestMatchCond_Convert(t *testing.T) {
 	Convey("Test MatchCond.Convert", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,
@@ -162,7 +162,7 @@ func TestMatchCond_Convert(t *testing.T) {
 func TestMatchCond_Convert2SQL(t *testing.T) {
 	Convey("Test MatchCond.Convert2SQL", t, func() {
 		ctx := context.Background()
-		fieldsMap := map[string]*ViewField{
+		fieldsMap := map[string]*FieldCfg{
 			"field1": {
 				Name: "field1",
 				Type: dtype.DATATYPE_TEXT,

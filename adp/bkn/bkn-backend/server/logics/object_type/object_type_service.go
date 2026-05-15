@@ -1428,6 +1428,17 @@ func (ots *objectTypeService) InsertDatasetData(ctx context.Context, objectTypes
 			}
 		}
 
+		// Serialize condition to JSON string
+		if cond, exists := doc["condition"]; exists && cond != nil {
+			condBytes, err := sonic.Marshal(cond)
+			if err != nil {
+				logger.Errorf("Failed to marshal action_type condition: %s", err.Error())
+				span.SetStatus(codes.Error, "序列化对象类条件失败")
+				return err
+			}
+			doc["condition"] = string(condBytes)
+		}
+
 		// Set document ID
 		doc["_id"] = docid
 		documents = append(documents, doc)

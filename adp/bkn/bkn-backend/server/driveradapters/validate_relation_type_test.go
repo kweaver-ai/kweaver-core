@@ -552,6 +552,164 @@ func Test_ValidateRelationType(t *testing.T) {
 			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldBeNil)
 		})
+
+		Convey("Success with scope_binding target rules\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:   "rt-sb",
+					RTName: "scope_binding",
+					Type:   interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: map[string]any{
+						"source": map[string]any{
+							"object_type_id": "skill",
+						},
+						"target_rules": []map[string]any{
+							{"scope": "kn"},
+							{"scope": "object_type", "id": "contract"},
+							{"scope": "relation_type", "id": "contract_relation"},
+							{"scope": "risk_type", "id": "contract_risk"},
+							{"scope": "concept_group", "id": "contract_group"},
+							{"scope": "action_type", "id": "contract_action"},
+						},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldBeNil)
+			_, ok := rt.MappingRules.(*interfaces.ScopeBindingMapping)
+			So(ok, ShouldBeTrue)
+		})
+
+		Convey("Success with scope_binding normalizing top-level source object type id and clearing target object type id\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:               "rt-sb-top-level",
+					RTName:             "scope_binding_top_level",
+					SourceObjectTypeID: "input_source",
+					TargetObjectTypeID: "input_target",
+					Type:               interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: map[string]any{
+						"source": map[string]any{
+							"object_type_id": "skill",
+						},
+						"target_rules": []map[string]any{
+							{"scope": "object_type", "id": "contract"},
+						},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldBeNil)
+			So(rt.SourceObjectTypeID, ShouldEqual, "skill")
+			So(rt.TargetObjectTypeID, ShouldEqual, "")
+		})
+
+		Convey("Failed with scope_binding kn target rule carrying id\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:   "rt-sb-kn-id",
+					RTName: "scope_binding_kn_id",
+					Type:   interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: map[string]any{
+						"source": map[string]any{
+							"object_type_id": "skill",
+						},
+						"target_rules": []map[string]any{
+							{"scope": "kn", "id": "kn1"},
+						},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Failed with scope_binding object_type target rule missing id\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:   "rt-sb-object-no-id",
+					RTName: "scope_binding_object_no_id",
+					Type:   interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: map[string]any{
+						"source": map[string]any{
+							"object_type_id": "skill",
+						},
+						"target_rules": []map[string]any{
+							{"scope": "object_type"},
+						},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Failed with scope_binding slash-style target rule scope\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:   "rt-sb-slash",
+					RTName: "scope_binding_slash",
+					Type:   interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: map[string]any{
+						"source": map[string]any{
+							"object_type_id": "skill",
+						},
+						"target_rules": []map[string]any{
+							{"scope": "object_type/contract"},
+						},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Failed with scope_binding non object_type target rule carrying condition\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:   "rt-sb-kn-condition",
+					RTName: "scope_binding_kn_condition",
+					Type:   interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: map[string]any{
+						"source": map[string]any{
+							"object_type_id": "skill",
+						},
+						"target_rules": []map[string]any{
+							{
+								"scope":     "kn",
+								"condition": map[string]any{"field": "contract_type", "operation": "==", "value": "audit"},
+							},
+						},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Success with scope_binding object_type target rule carrying condition\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:   "rt-sb-object-condition",
+					RTName: "scope_binding_object_condition",
+					Type:   interfaces.RELATION_TYPE_SCOPE_BINDING,
+					MappingRules: map[string]any{
+						"source": map[string]any{
+							"object_type_id": "skill",
+						},
+						"target_rules": []map[string]any{
+							{
+								"scope":     "object_type",
+								"id":        "contract",
+								"condition": map[string]any{"field": "contract_type", "operation": "==", "value": "audit"},
+							},
+						},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldBeNil)
+		})
 	})
 }
 

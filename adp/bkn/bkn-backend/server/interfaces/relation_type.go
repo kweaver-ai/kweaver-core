@@ -11,6 +11,16 @@ const (
 	RELATION_TYPE_DIRECT              = "direct"
 	RELATION_TYPE_DATA_VIEW           = "data_view"
 	RELATION_TYPE_FILTERED_CROSS_JOIN = "filtered_cross_join"
+	RELATION_TYPE_SCOPE_BINDING       = "scope_binding"
+)
+
+const (
+	SCOPE_BINDING_SCOPE_KN            = "kn"
+	SCOPE_BINDING_SCOPE_OBJECT_TYPE   = "object_type"
+	SCOPE_BINDING_SCOPE_RELATION_TYPE = "relation_type"
+	SCOPE_BINDING_SCOPE_RISK_TYPE     = "risk_type"
+	SCOPE_BINDING_SCOPE_CONCEPT_GROUP = "concept_group"
+	SCOPE_BINDING_SCOPE_ACTION_TYPE   = "action_type"
 )
 
 var (
@@ -70,6 +80,26 @@ type InDirectMapping struct {
 type FilteredCrossJoinMapping struct {
 	SourceCondition *cond.CondCfg `json:"source_condition" mapstructure:"source_condition"`
 	TargetCondition *cond.CondCfg `json:"target_condition" mapstructure:"target_condition"`
+}
+
+// ScopeBindingSource defines the source configuration for scope_binding
+type ScopeBindingSource struct {
+	ObjectTypeID string        `json:"object_type_id" mapstructure:"object_type_id"`
+	Condition    *cond.CondCfg `json:"filter,omitempty" mapstructure:"filter"`
+	RidProperty  string        `json:"rid_property,omitempty" mapstructure:"rid_property"`
+}
+
+// TargetRule defines a target rule for scope_binding
+type TargetRule struct {
+	Scope     string        `json:"scope" mapstructure:"scope"`
+	ID        string        `json:"id,omitempty" mapstructure:"id"`
+	Condition *cond.CondCfg `json:"condition,omitempty" mapstructure:"condition"`
+}
+
+// ScopeBindingMapping rules for relation type scope_binding
+type ScopeBindingMapping struct {
+	Source      *ScopeBindingSource `json:"source" mapstructure:"source"`
+	TargetRules []*TargetRule       `json:"target_rules" mapstructure:"target_rules"`
 }
 
 // 对象类的分页查询
