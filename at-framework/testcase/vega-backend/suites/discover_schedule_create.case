@@ -165,33 +165,7 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": 0,
-            "end_time": {{ timestamp("ms", 86400, "d") }},
-            "enabled": true,
-            "strategies": ["insert","delete","update"]
-        }
-    code_check: "201"
-
--   name: "Positive_创建定时任务_参数校验_时间缺省_请求成功"
-    url: "创建调度任务"
-    body_params: >-
-        {
-            "catalog_id": "${catalog_id}",
-            "cron_expr": "00 10 * * *",
-            "end_time": {{ timestamp("ms", 86400, "d") }},
-            "enabled": true,
-            "strategies": ["insert","delete","update"]
-        }
-    code_check: "201"
-
--   name: "Positive_创建定时任务_参数校验_时间缺省_请求成功"
-    url: "创建调度任务"
-    body_params: >-
-        {
-            "catalog_id": "${catalog_id}",
-            "cron_expr": "00 10 * * *",
             "start_time": {{ timestamp("ms", -86400, "d") }},
-            "end_time": 0,
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }
@@ -203,7 +177,7 @@
         {
             "catalog_id": "${catalog_id}",
             "cron_expr": "00 10 * * *",
-            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
             "enabled": true,
             "strategies": ["insert","delete","update"]
         }

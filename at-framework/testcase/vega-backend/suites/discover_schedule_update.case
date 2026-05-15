@@ -1,0 +1,639 @@
+-   name: "Positive_更新定时任务_仅必需参数_请求成功"
+    url: "编辑调度任务"
+    prev_case: "Positive_更新定时任务_每日8点执行_仅必需参数_请求成功"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "201"
+
+-   name: "Positive_更新定时任务_追加执行条件_请求成功"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "201"
+
+-   name: "Negative_更新定时任务_修改任务id_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "{{ '%s' | format(random_string(20, 10)) }}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_修改catalog_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "{{ '%s' | format(random_string(20, 10)) }}",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_修改任务状态_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "{{ '%s' | format(random_string(20, 10)) }}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "enabled": true
+        }
+    code_check: "400"
+
+-   name: "Positive_更新定时任务_修改执行策略_请求成功"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "strategies": ["insert"]
+        }
+    code_check: "204"
+
+-   name: "Positive_更新定时任务_修改执行策略_请求成功"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "strategies": ["update"]
+        }
+    code_check: "204"
+
+-   name: "Positive_更新定时任务_修改执行策略_请求成功"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "strategies": ["delete"]
+        }
+    code_check: "204"
+
+-   name: "Negative_更新定时任务_参数校验_任务id缺省_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_任务id缺省_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_任务id不存在_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${catalog_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "404"
+
+-   name: "Negative_更新定时任务_参数校验_任务id不匹配_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${catalog_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_catalog缺省_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_catalog缺省_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_catalog不存在_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${scheduler_id}",
+            "cron_expr": "00 18 * * *"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_cron缺省_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": ""
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_cron缺省_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_cron不符合规范_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "anything"
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_cron非string_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": 0
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_cron非string_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": true
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_cron非string_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": ["00 18 * * *"]
+        }
+    code_check: "400"
+
+-   name: "Positive_更新定时任务_参数校验_时间缺省_请求成功"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "201"
+
+-   name: "Positive_更新定时任务_参数校验_时间缺省_请求成功"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "201"
+
+-   name: "Negative_更新定时任务_参数校验_起始时间大于结束时间_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+             "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", 86400, "d") }},
+            "end_time": {{ timestamp("ms", -86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间值错误_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": -{{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间值错误_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": -{{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间非integer_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": "{{ timestamp("ms", -86400, "d") }}",
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间非integer_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": "{{ timestamp("ms", 86400, "d") }}",
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间非integer_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": true,
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间非integer_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": true,
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间非integer_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": 1778601600.123,
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间非integer_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": 1778688000.123,
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间非integer_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": [{{ timestamp("ms", -86400, "d") }}],
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_时间非integer_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": [{{ timestamp("ms", 86400, "d") }}],
+            "enabled": false,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_enable格式错误_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": "true",
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_enable格式错误_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": 0,
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_enable格式错误_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": [true],
+            "strategies": ["insert","delete","update"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_strategies未定义_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["undefined"]
+        }
+    code_check: "400"
+
+-   name: "Negative_更新定时任务_参数校验_strategies未定义_请求失败"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["undefined", "update"]
+        }
+    code_check: "400"
+
+-   name: "Positive_更新定时任务_参数校验_strategies重复_请求成功"
+    url: "编辑调度任务"
+    path_params: >-
+        {
+            "id": "${scheduler_id}"
+        }
+    body_params: >-
+        {
+            "id": "${scheduler_id}",
+            "catalog_id": "${catalog_id}",
+            "cron_expr": "00 18 * * *",
+            "start_time": {{ timestamp("ms", -86400, "d") }},
+            "end_time": {{ timestamp("ms", 86400, "d") }},
+            "enabled": false,
+            "strategies": ["insert","insert"]
+        }
+    code_check: "201"

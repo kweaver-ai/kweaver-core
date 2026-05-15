@@ -10,6 +10,7 @@ include:
     - discover_query.case
     - discover_schedule_create.case
     - discover_schedule_query.case
+    - discover_schedule_update.case
 
 cases:
     -   name: "Positive_创建catalog_逻辑资源_请求成功"
@@ -176,6 +177,7 @@ cases:
     # 定时扫描任务相关
     -   name: "Negative_创建定时任务_逻辑资源_请求失败"
         url: "创建调度任务"
+        prev_case: "Positive_创建catalog_逻辑资源_请求成功"
         body_params: >-
             {
                 "catalog_id": "${catalog_id_logical}",
@@ -185,6 +187,7 @@ cases:
 
     -   name: "Positive_创建定时任务_每日8点执行_仅必需参数_请求成功"
         url: "创建调度任务"
+        prev_case: "Positive_创建catalog_数据源_请求成功"
         body_params: >-
             {
                 "catalog_id": "${catalog_id}",
@@ -314,7 +317,7 @@ cases:
         code_check: "404"
 
     -   name: "Negative_查看定时任务详情_参数校验_id已删除"
-        url: "查看检索任务详情"
+        url: "查看调度任务详情"
         path_params: >-
             {
                 "id": "${scheduler_id}"
@@ -337,6 +340,21 @@ cases:
             }
         code_check: "404"
 
+    -   name: "Negative_更新定时任务_参数校验_id已删除_请求失败"
+        url: "编辑调度任务"
+        prev_case: "Positive_更新定时任务_每日8点执行_仅必需参数_请求成功"
+        path_params: >-
+            {
+                "id": "${scheduler_id}"
+            }
+        body_params: >-
+            {
+                "id": "${scheduler_id}",
+                "catalog_id": "${catalog_id}",
+                "cron_expr": "00 18 * * *"
+            }
+        code_check: "404"
+
     -   name: "Positive_删除catalog_请求成功"
         url: "删除catalog"
         path_params: >-
@@ -353,6 +371,23 @@ cases:
             }
         code_check: "404"
 
+    -   name: "Negative_创建定时任务_参数校验_catalog已删除_请求失败"
+        url: "创建调度任务"
+        body_params: >-
+            {
+                "catalog_id": "${catalog_id}",
+                "cron_expr": "00 08 * * *"
+            }
+        code_check: "404"
+
+    -   name: "Positive_查询定时任务列表_参数校验_catalog已删除_请求成功"
+        url: "查询调度任务列表"
+        query_params: >-
+            {
+                "catalog_id": "${catalog_id}"
+            }
+        code_check: "200"
+
     -   name: "Positive_查询检索任务列表_参数校验_catalog已删除_请求成功"
         url: "查询检索任务列表"
         query_params: >-
@@ -365,19 +400,17 @@ cases:
                 "$.total_count": 0
             }
 
-    -   name: "Negative_创建定时任务_参数校验_catalog已删除_请求失败"
-        url: "创建调度任务"
+    -   name: "Negative_更新定时任务_参数校验_catalog已删除_请求失败"
+        url: "编辑调度任务"
+        prev_case: "Positive_更新定时任务_每日8点执行_仅必需参数_请求成功"
+        path_params: >-
+            {
+                "id": "${scheduler_id}"
+            }
         body_params: >-
             {
+                "id": "${scheduler_id}",
                 "catalog_id": "${catalog_id}",
-                "cron_expr": "00 08 * * *"
+                "cron_expr": "00 18 * * *"
             }
-        code_check: "404"
-
-    -   name: "Positive_查询定时任务列表_按catalog过滤_id已删除_请求成功"
-        url: "查询调度任务列表"
-        query_params: >-
-            {
-                "catalog_id": "${catalog_id}"
-            }
-        code_check: "200"
+        code_check: "400"
