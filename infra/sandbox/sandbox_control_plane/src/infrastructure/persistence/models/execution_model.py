@@ -4,6 +4,7 @@
 SQLAlchemy 模型定义，用于数据库持久化。
 按照数据表命名规范: t_{module}_{entity}, f_{field_name}
 """
+
 from datetime import datetime
 
 from sqlalchemy import Column, String, Integer, BigInteger, Text, Index
@@ -20,6 +21,7 @@ class ExecutionModel(Base):
     这是基础设施层的实现细节，映射到数据库表。
     按照数据表命名规范实现。
     """
+
     __tablename__ = "t_sandbox_execution"
 
     # Primary fields
@@ -98,6 +100,7 @@ class ExecutionModel(Base):
     def from_entity(cls, execution):
         """从领域实体创建 ORM 模型"""
         import json
+
         now_ms = int(datetime.now().timestamp() * 1000)
 
         return cls(
@@ -108,17 +111,29 @@ class ExecutionModel(Base):
             f_language=execution.language,
             f_timeout_sec=execution.timeout,
             f_entrypoint="",
-            f_event_data=json.dumps(execution.event_data, ensure_ascii=False) if execution.event_data else "",
-            f_return_value=json.dumps(execution.return_value, ensure_ascii=False) if execution.return_value else "",
+            f_event_data=(
+                json.dumps(execution.event_data, ensure_ascii=False) if execution.event_data else ""
+            ),
+            f_return_value=(
+                json.dumps(execution.return_value, ensure_ascii=False)
+                if execution.return_value
+                else ""
+            ),
             f_stdout=execution.stdout,
             f_stderr=execution.stderr,
             f_exit_code=execution.state.exit_code or 0,
-            f_metrics=json.dumps(execution.metrics, ensure_ascii=False) if execution.metrics else "",
+            f_metrics=(
+                json.dumps(execution.metrics, ensure_ascii=False) if execution.metrics else ""
+            ),
             f_error_message=execution.state.error_message or "",
             f_started_at=0,
-            f_completed_at=int(execution.completed_at.timestamp() * 1000) if execution.completed_at else 0,
+            f_completed_at=(
+                int(execution.completed_at.timestamp() * 1000) if execution.completed_at else 0
+            ),
             # 审计字段
-            f_created_at=int(execution.created_at.timestamp() * 1000) if execution.created_at else now_ms,
+            f_created_at=(
+                int(execution.created_at.timestamp() * 1000) if execution.created_at else now_ms
+            ),
             f_created_by="",
             f_updated_at=now_ms,
             f_updated_by="",
@@ -132,6 +147,7 @@ class ExecutionModel(Base):
             return None
         try:
             import json
+
             return json.loads(value)
         except (json.JSONDecodeError, ValueError):
             return None

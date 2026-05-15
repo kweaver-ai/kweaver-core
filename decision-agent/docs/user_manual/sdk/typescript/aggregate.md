@@ -1,0 +1,737 @@
+<!-- 请勿直接编辑：本文件由 docs/user_manual/sdk/typescript 下的 `make aggregate` 生成。 -->
+<!-- 来源文件：index.md, install-and-run.md, client-setup.md, agents.md, chat-streaming.md, conversations.md。 -->
+
+# TypeScript SDK 用户指南（聚合版）
+
+> 本文件由脚本生成，请不要直接修改本文件；如需调整内容，请修改分文件文档后运行 `make -C docs/user_manual/sdk/typescript aggregate`。
+
+## 目录
+
+- [TypeScript SDK 用户指南](#typescript-sdk-用户指南)
+- [SDK 安装和运行](#sdk-安装和运行)
+- [SDK Client 初始化](#sdk-client-初始化)
+- [Agents 使用](#agents-使用)
+- [SDK 对话与流式输出](#sdk-对话与流式输出)
+- [对话](#对话)
+
+
+<!-- 来源：index.md -->
+
+## TypeScript SDK 用户指南
+
+SDK 手册面向在 TypeScript 或 JavaScript 项目中集成 Decision Agent 能力的用户。文档假设用户通过 npm 安装 `@kweaver-ai/kweaver-sdk`，并通过统一入口引入 SDK：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+```
+
+如果需要先理解 Agent、个人空间、广场、发布和 Agent 模式，请阅读 [Agent 概念指南](../../concepts/README.md)。
+
+### 文档索引
+
+- [安装和运行](#sdk-安装和运行)
+- [Client 初始化](#sdk-client-初始化)
+- [Agents 使用](#agents-使用)
+- [对话与流式输出](#sdk-对话与流式输出)
+- [对话](#对话)
+
+### 阅读顺序
+
+先阅读 [安装和运行](#sdk-安装和运行)，完成 SDK 安装、运行方式和认证配置。随后根据使用场景阅读初始化、Agent、对话和会话章节。
+
+普通列表和对话场景优先使用 `kweaver.agents()`、`kweaver.chat()` 这类 simple API；创建、发布、删除、流式对话、会话查询等高级能力可以通过 `kweaver.getClient()` 获取底层 client 后调用。
+
+配套可运行示例见 [../../examples/sdk/typescript](../../examples/sdk/typescript/README.md)。示例会先安装本地 SDK 包，再通过 TypeScript 代码调用 npm 包入口；默认运行 `make quick-check`，完整流程运行 `make flow`。
+
+
+<!-- 来源：install-and-run.md -->
+
+## SDK 安装和运行
+
+本页统一说明 TypeScript SDK 的安装、运行、认证和本地调试方式。后续章节只展示可放入用户项目的 JS/TS 代码，不再重复命令行运行壳。
+
+### 环境要求
+
+- Node.js 22 或更高版本。
+- 推荐使用 ESM 项目，在 `package.json` 中设置 `"type": "module"`。
+- 如果项目不是 ESM，也可以把示例代码放在 `.mjs` 文件中运行。
+- TypeScript 项目可按项目已有方式运行，例如 `tsx`、`ts-node`、`vite-node` 或构建后执行。
+
+### 使用远程 npm 仓库安装
+
+在用户项目中安装 SDK：
+
+```bash
+npm install @kweaver-ai/kweaver-sdk
+```
+
+最小 `package.json` 示例：
+
+```json
+{
+  "type": "module",
+  "dependencies": {
+    "@kweaver-ai/kweaver-sdk": "^0.7.3"
+  }
+}
+```
+
+如果已经有项目，只需要保留现有配置并安装依赖即可。
+
+### 使用本地下载的 SDK 项目安装
+
+如果 SDK 项目已经下载到本地，可以从本地目录安装：
+
+```bash
+npm install /path/to/kweaver-sdk/packages/typescript
+```
+
+例如：
+
+```bash
+npm install <path-to-kweaver-sdk>/packages/typescript
+```
+
+这种方式适合在 SDK 尚未发布到远程 npm 仓库，或需要验证本地 SDK 修改时使用。用户项目中的 import 方式仍然保持不变：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+```
+
+### 认证和连接配置
+
+连接远程环境时，通常使用服务地址和访问令牌：
+
+```bash
+export KWEAVER_BASE_URL=https://your-kweaver.example.com
+export KWEAVER_TOKEN=your-access-token
+```
+
+连接本地 no-auth 环境时：
+
+```bash
+export KWEAVER_BASE_URL=http://127.0.0.1:13020
+export KWEAVER_NO_AUTH=1
+```
+
+在 JS 代码中可以显式配置：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+```
+
+本地 no-auth 模式可以写成：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  auth: false,
+});
+```
+
+如果已经通过 CLI 登录并保存配置，也可以让 SDK 读取本机配置：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({ config: true });
+```
+
+### 运行示例
+
+将示例代码保存为 `index.mjs` 后运行：
+
+```bash
+node index.mjs
+```
+
+也可以直接在命令行中做一次包入口快速检查：
+
+```bash
+export KWEAVER_BASE_URL=http://127.0.0.1:13020
+export KWEAVER_NO_AUTH=1
+node --input-type=module <<'EOF'
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+kweaver.configure({ baseUrl: process.env.KWEAVER_BASE_URL, auth: false });
+console.log(typeof kweaver.getClient);
+EOF
+```
+
+如果输出 `function`，说明包入口和基础配置可以正常工作。
+
+
+<!-- 来源：client-setup.md -->
+
+## SDK Client 初始化
+
+SDK 推荐使用默认导出的 `kweaver` 对象完成初始化。初始化完成后，可以直接调用 simple API，也可以通过 `kweaver.getClient()` 使用更完整的资源能力。
+
+### 使用已登录配置
+
+如果本机已经通过 CLI 登录并保存过平台配置，可以让 SDK 读取本机配置：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({ config: true });
+
+const agents = await kweaver.agents({ limit: 10 });
+console.log(agents);
+```
+
+也可以在初始化时设置默认 Agent，后续 `kweaver.chat()` 就不需要每次传 `agentId`：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  config: true,
+  agentId: 'agent-id',
+});
+
+const reply = await kweaver.chat('请用一句话介绍你自己');
+console.log(reply.text);
+```
+
+### 使用显式服务地址和 Token
+
+在服务端脚本、业务后端或 CI 环境中，通常显式传入服务地址和访问令牌：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+  businessDomain: process.env.KWEAVER_BUSINESS_DOMAIN ?? 'bd_public',
+});
+
+const agents = await kweaver.agents({ keyword: 'sales', limit: 10 });
+console.log(agents);
+```
+
+如果当前业务逻辑会频繁访问同一个 Agent，可以设置默认 `agentId`：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+  agentId: 'agent-id',
+});
+
+const first = await kweaver.chat('分析这个订单是否有风险');
+const second = await kweaver.chat('继续给出处理建议', {
+  conversationId: first.conversationId,
+});
+
+console.log(second.text);
+```
+
+### 使用本地 no-auth 环境
+
+本地 Decision Agent 服务如果以 no-auth 模式启动，可以关闭 SDK 的鉴权头：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: 'http://127.0.0.1:13020',
+  auth: false,
+  businessDomain: 'bd_public',
+});
+
+const client = kweaver.getClient();
+console.log(client.base());
+```
+
+也可以结合环境变量使用：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  auth: false,
+});
+```
+
+### 访问底层 Client
+
+Simple API 覆盖常用列表、搜索和对话场景。需要创建 Agent、发布 Agent、流式对话、查询会话时，可以获取底层 client：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+const detail = await client.agents.get('agent-id');
+
+console.log(detail);
+```
+
+
+<!-- 来源：agents.md -->
+
+## Agents 使用
+
+Agent 列表和普通对话优先使用 simple API。创建、详情、发布、取消发布和删除属于管理能力，通过 `kweaver.getClient().agents` 调用。
+
+### 列表
+
+`kweaver.agents()` 返回已发布 Agent 列表，适合在用户应用中展示可用 Agent。
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const agents = await kweaver.agents({
+  keyword: 'sales',
+  limit: 10,
+});
+
+console.log(agents);
+```
+
+本地 no-auth 环境：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: 'http://127.0.0.1:13020',
+  auth: false,
+});
+
+const agents = await kweaver.agents({ limit: 10 });
+console.log(agents);
+```
+
+### 创建
+
+创建 Agent 时，将 Agent 配置作为普通 JS object 传入。实际项目中也可以从用户项目自己的 JSON 文件读取配置，再传给 `client.agents.create()`。
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+
+const config = {
+  input: {
+    fields: [
+      {
+        name: 'query',
+        type: 'string',
+      },
+      {
+        name: 'history',
+        type: 'object',
+      },
+      {
+        name: 'header',
+        type: 'object',
+      },
+      {
+        name: 'self_config',
+        type: 'object',
+      },
+    ],
+    augment: {
+      enable: false,
+      data_source: {},
+    },
+    rewrite: {
+      enable: false,
+      llm_config: {
+        id: '',
+        name: 'test',
+        max_tokens: 1000,
+        retrieval_max_tokens: 1000,
+        model_type: 'llm',
+        temperature: 0.5,
+        top_p: 0.5,
+        top_k: 0,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+      },
+    },
+    temp_zone_config: null,
+  },
+  system_prompt: '',
+  is_dolphin_mode: 0,
+  dolphin: '',
+  pre_dolphin: [],
+  post_dolphin: [],
+  memory: {
+    is_enabled: false,
+  },
+  related_question: {
+    is_enabled: false,
+  },
+  plan_mode: {
+    is_enabled: false,
+  },
+  data_source: {
+    knowledge_network: [],
+  },
+  skills: {
+    tools: [],
+    agents: [],
+    mcps: [],
+  },
+  llms: [
+    {
+      is_default: true,
+      llm_config: {
+        model_type: 'llm',
+        temperature: 1,
+        top_p: 1,
+        top_k: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+        max_tokens: 1000,
+        retrieval_max_tokens: 32,
+        id: '1951511743712858112',
+        name: 'mini-gpt5',
+      },
+    },
+  ],
+  output: {
+    default_format: 'markdown',
+    variables: {
+      answer_var: 'answer',
+    },
+  },
+  preset_questions: [],
+};
+
+const created = await client.agents.create({
+  name: `doc_sdk_agent_${Date.now()}`,
+  profile: 'Decision Agent SDK user guide example',
+  product_key: 'DIP',
+  config,
+});
+
+console.log(created.id);
+```
+
+如果配置已经保存在业务项目自己的 JSON 文件中，可以这样读取：
+
+```js
+import fs from 'node:fs/promises';
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+const config = JSON.parse(await fs.readFile('./agent-config.json', 'utf8'));
+
+const created = await client.agents.create({
+  name: `doc_sdk_agent_${Date.now()}`,
+  profile: 'Decision Agent SDK user guide example',
+  product_key: 'DIP',
+  config,
+});
+
+console.log(created);
+```
+
+### 详情
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+const detail = await client.agents.get('agent-id');
+
+console.log(detail);
+```
+
+### 发布与取消发布
+
+发布时直接调用 `publish`。如需业务域相关能力，以服务端或 SDK 默认配置为准。
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+
+const result = await client.agents.publish('agent-id');
+
+console.log(result);
+```
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+await client.agents.unpublish('agent-id');
+```
+
+### 删除
+
+如果 Agent 已经发布，先取消发布，再删除。
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+
+await client.agents.unpublish('agent-id');
+await client.agents.delete('agent-id');
+```
+
+
+<!-- 来源：chat-streaming.md -->
+
+## SDK 对话与流式输出
+
+普通对话优先使用 `kweaver.chat()`。流式输出需要使用底层 client 的 `agents.stream()`。
+
+### 非流式对话
+
+可以在初始化时设置默认 `agentId`：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+  agentId: 'agent-id',
+});
+
+const reply = await kweaver.chat('请用一句话介绍你自己');
+
+console.log(reply.text);
+console.log(reply.conversationId);
+```
+
+也可以在每次调用时传入 `agentId`：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const reply = await kweaver.chat('请用一句话介绍你自己', {
+  agentId: 'agent-id',
+});
+
+console.log(reply.text);
+```
+
+### 继续对话
+
+将上一轮返回的 `conversationId` 传回 SDK，即可继续同一个对话。
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+  agentId: 'agent-id',
+});
+
+const first = await kweaver.chat('请用一句话介绍你自己');
+
+const second = await kweaver.chat('继续补充一个使用建议', {
+  conversationId: first.conversationId,
+});
+
+console.log(second.text);
+```
+
+### 流式对话
+
+流式对话通过底层 client 调用。`onTextDelta` 会收到当前累计文本，示例里通过 `prevLen` 只输出新增片段。
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+
+let prevLen = 0;
+const result = await client.agents.stream(
+  'agent-id',
+  '请分三点说明你的能力',
+  {
+    onTextDelta: (fullText) => {
+      process.stdout.write(fullText.slice(prevLen));
+      prevLen = fullText.length;
+    },
+    onProgress: (progress) => {
+      for (const item of progress) {
+        const name = item.skill_info?.name ?? item.agent_name ?? item.stage ?? 'step';
+        const status = item.status ?? '';
+        console.error('\n[progress]', name, status);
+      }
+    },
+  },
+  {
+    version: 'v0',
+  }
+);
+
+console.error('\nconversationId:', result.conversationId ?? '');
+```
+
+如果要在流式对话中继续已有对话，传入 `conversationId`：
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+
+const result = await client.agents.stream(
+  'agent-id',
+  '继续补充一个例子',
+  {
+    onTextDelta: (fullText) => {
+      process.stdout.write(fullText);
+    },
+  },
+  {
+    conversationId: 'conversation-id',
+    version: 'v0',
+  }
+);
+
+console.log(result);
+```
+
+
+<!-- 来源：conversations.md -->
+
+## 对话
+
+`kweaver.chat()` 返回的 `conversationId` 可以用于继续对话。需要查询对话列表或对话消息时，通过底层 client 的 `conversations` resource 完成。
+
+### 创建并继续对话
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+  agentId: 'agent-id',
+});
+
+const first = await kweaver.chat('请用一句话介绍你自己');
+
+const second = await kweaver.chat('继续补充一个使用建议', {
+  conversationId: first.conversationId,
+});
+
+console.log(first.conversationId);
+console.log(second.text);
+```
+
+### 对话列表
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+
+const conversations = await client.conversations.list('agent-id', {
+  version: 'v0',
+  limit: 10,
+});
+
+console.log(conversations);
+```
+
+### 对话消息
+
+```js
+import kweaver from '@kweaver-ai/kweaver-sdk/kweaver';
+
+kweaver.configure({
+  baseUrl: process.env.KWEAVER_BASE_URL,
+  accessToken: process.env.KWEAVER_TOKEN,
+});
+
+const client = kweaver.getClient();
+
+const messages = await client.conversations.listMessages(
+  'agent-id',
+  'conversation-id',
+  {
+    version: 'v0',
+  }
+);
+
+console.log(messages);
+```
+
+### 与 CLI 的对应关系
+
+| SDK | CLI |
+| --- | --- |
+| `client.conversations.list(agentId)` | `kweaver agent sessions <agent_id>` |
+| `client.conversations.listMessages(agentId, conversationId)` | `kweaver agent history <agent_id> <conversation_id>` |

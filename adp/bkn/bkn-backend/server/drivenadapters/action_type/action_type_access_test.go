@@ -193,9 +193,9 @@ func Test_ActionTypeAccess_CreateActionType(t *testing.T) {
 		ata, smock := MockNewActionTypeAccess(appSetting)
 
 		sqlStr := fmt.Sprintf("INSERT INTO %s (f_id,f_name,f_tags,f_comment,f_icon,f_color,f_bkn_raw_content,"+
-			"f_kn_id,f_branch,f_action_type,f_object_type_id,f_condition,f_affect,f_action_source,"+
+			"f_kn_id,f_branch,f_action_type,f_action_intent,f_impact_contracts,f_object_type_id,f_condition,f_affect,f_action_source,"+
 			"f_parameters,f_schedule,f_creator,f_creator_type,f_create_time,f_updater,f_updater_type,f_update_time) "+
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", AT_TABLE_NAME)
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", AT_TABLE_NAME)
 
 		Convey("CreateActionType Success \n", func() {
 			smock.ExpectBegin()
@@ -238,19 +238,19 @@ func Test_ActionTypeAccess_ListActionTypes(t *testing.T) {
 		scheduleBytes, _ := sonic.Marshal(interfaces.Schedule{})
 
 		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
-			"f_kn_id, f_branch, f_action_type, f_object_type_id, f_condition, f_affect, f_action_source, "+
+			"f_kn_id, f_branch, f_action_type, f_action_intent, f_impact_contracts, f_object_type_id, f_condition, f_affect, f_action_source, "+
 			"f_parameters, f_schedule, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 			"FROM %s WHERE f_kn_id = ? AND f_branch = ?", AT_TABLE_NAME)
 
 		rows := sqlmock.NewRows([]string{
 			"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-			"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+			"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 			"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 			"f_creator", "f_creator_type", "f_create_time",
 			"f_updater", "f_updater_type", "f_update_time",
 		}).AddRow(
 			"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 			conditionBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 			"admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
@@ -315,13 +315,13 @@ func Test_ActionTypeAccess_ListActionTypes(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				invalidBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -340,13 +340,13 @@ func Test_ActionTypeAccess_ListActionTypes(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, invalidBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -365,13 +365,13 @@ func Test_ActionTypeAccess_ListActionTypes(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, invalidBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -390,13 +390,13 @@ func Test_ActionTypeAccess_ListActionTypes(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, actionSourceBytes, invalidBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -415,14 +415,39 @@ func Test_ActionTypeAccess_ListActionTypes(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, actionSourceBytes, parametersBytes, invalidBytes,
+				"admin", "admin", testUpdateTime,
+				"admin", "admin", testUpdateTime,
+			)
+			smock.ExpectQuery(sqlStr).WithArgs().WillReturnRows(rows)
+
+			_, err := ata.ListActionTypes(testCtx, query)
+			So(err, ShouldNotBeNil)
+
+			if err := smock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
+		})
+
+		Convey("ListActionTypes unmarshal ImpactContracts error \n", func() {
+			invalidBytes := []byte("invalid json")
+			rows := sqlmock.NewRows([]string{
+				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
+				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
+				"f_creator", "f_creator_type", "f_create_time",
+				"f_updater", "f_updater_type", "f_update_time",
+			}).AddRow(
+				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", invalidBytes, "ot1",
+				conditionBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 			)
@@ -438,19 +463,19 @@ func Test_ActionTypeAccess_ListActionTypes(t *testing.T) {
 
 		Convey("ListActionTypes with Sort ASC\n", func() {
 			sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
-				"f_kn_id, f_branch, f_action_type, f_object_type_id, f_condition, f_affect, f_action_source, "+
+				"f_kn_id, f_branch, f_action_type, f_action_intent, f_impact_contracts, f_object_type_id, f_condition, f_affect, f_action_source, "+
 				"f_parameters, f_schedule, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 				"FROM %s WHERE f_kn_id = ? AND f_branch = ? ORDER BY f_name ASC", AT_TABLE_NAME)
 
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -478,19 +503,19 @@ func Test_ActionTypeAccess_ListActionTypes(t *testing.T) {
 
 		Convey("ListActionTypes with Sort DESC\n", func() {
 			sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
-				"f_kn_id, f_branch, f_action_type, f_object_type_id, f_condition, f_affect, f_action_source, "+
+				"f_kn_id, f_branch, f_action_type, f_action_intent, f_impact_contracts, f_object_type_id, f_condition, f_affect, f_action_source, "+
 				"f_parameters, f_schedule, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 				"FROM %s WHERE f_kn_id = ? AND f_branch = ? ORDER BY f_name DESC", AT_TABLE_NAME)
 
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -578,7 +603,7 @@ func Test_ActionTypeAccess_GetActionTypesByIDs(t *testing.T) {
 		ata, smock := MockNewActionTypeAccess(appSetting)
 
 		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
-			"f_kn_id, f_branch, f_action_type, f_object_type_id, f_condition, f_affect, f_action_source, "+
+			"f_kn_id, f_branch, f_action_type, f_action_intent, f_impact_contracts, f_object_type_id, f_condition, f_affect, f_action_source, "+
 			"f_parameters, f_schedule, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 			"FROM %s WHERE f_kn_id = ? AND f_branch = ? AND f_id IN (?,?)", AT_TABLE_NAME)
 
@@ -590,19 +615,19 @@ func Test_ActionTypeAccess_GetActionTypesByIDs(t *testing.T) {
 
 		rows := sqlmock.NewRows([]string{
 			"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-			"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+			"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 			"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 			"f_creator", "f_creator_type", "f_create_time",
 			"f_updater", "f_updater_type", "f_update_time",
 		}).AddRow(
 			"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 			conditionBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 			"admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
 		).AddRow(
 			"at2", "Action Type 2", `"tag2"`, "comment2", "icon2", "color2", "detail2",
-			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 			conditionBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 			"admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
@@ -665,13 +690,13 @@ func Test_ActionTypeAccess_GetActionTypesByIDs(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				invalidBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -690,13 +715,13 @@ func Test_ActionTypeAccess_GetActionTypesByIDs(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, invalidBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -715,13 +740,13 @@ func Test_ActionTypeAccess_GetActionTypesByIDs(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, invalidBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -740,13 +765,13 @@ func Test_ActionTypeAccess_GetActionTypesByIDs(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, actionSourceBytes, invalidBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -765,13 +790,13 @@ func Test_ActionTypeAccess_GetActionTypesByIDs(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, actionSourceBytes, parametersBytes, invalidBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -793,8 +818,8 @@ func Test_ActionTypeAccess_UpdateActionType(t *testing.T) {
 		appSetting := &common.AppSetting{}
 		ata, smock := MockNewActionTypeAccess(appSetting)
 
-		sqlStr := fmt.Sprintf("UPDATE %s SET f_action_source = ?, f_action_type = ?, f_affect = ?, f_bkn_raw_content = ?, "+
-			"f_color = ?, f_comment = ?, f_condition = ?, f_icon = ?, f_name = ?, f_object_type_id = ?, f_parameters = ?, "+
+		sqlStr := fmt.Sprintf("UPDATE %s SET f_action_intent = ?, f_action_source = ?, f_action_type = ?, f_affect = ?, f_bkn_raw_content = ?, "+
+			"f_color = ?, f_comment = ?, f_condition = ?, f_icon = ?, f_impact_contracts = ?, f_name = ?, f_object_type_id = ?, f_parameters = ?, "+
 			"f_schedule = ?, f_tags = ?, f_update_time = ?, f_updater = ?, f_updater_type = ? "+
 			"WHERE f_id = ? AND f_kn_id = ?", AT_TABLE_NAME)
 
@@ -960,7 +985,7 @@ func Test_ActionTypeAccess_DeleteActionTypesByIDs(t *testing.T) {
 
 			tx, _ := ata.db.Begin()
 			_, err := ata.DeleteActionTypesByIDs(testCtx, tx, knID, branch, atIDs)
-			So(err, ShouldBeNil)
+			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
@@ -1071,7 +1096,7 @@ func Test_ActionTypeAccess_GetAllActionTypesByKnID(t *testing.T) {
 		ata, smock := MockNewActionTypeAccess(appSetting)
 
 		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
-			"f_kn_id, f_branch, f_action_type, f_object_type_id, f_condition, f_affect, f_action_source, "+
+			"f_kn_id, f_branch, f_action_type, f_action_intent, f_impact_contracts, f_object_type_id, f_condition, f_affect, f_action_source, "+
 			"f_parameters, f_schedule, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 			"FROM %s WHERE f_kn_id = ? AND f_branch = ?", AT_TABLE_NAME)
 
@@ -1083,19 +1108,19 @@ func Test_ActionTypeAccess_GetAllActionTypesByKnID(t *testing.T) {
 
 		rows := sqlmock.NewRows([]string{
 			"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-			"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+			"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 			"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 			"f_creator", "f_creator_type", "f_create_time",
 			"f_updater", "f_updater_type", "f_update_time",
 		}).AddRow(
 			"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 			conditionBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 			"admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
 		).AddRow(
 			"at2", "Action Type 2", `"tag2"`, "comment2", "icon2", "color2", "detail2",
-			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+			"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 			conditionBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 			"admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
@@ -1147,13 +1172,13 @@ func Test_ActionTypeAccess_GetAllActionTypesByKnID(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				invalidBytes, affectBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -1172,13 +1197,13 @@ func Test_ActionTypeAccess_GetAllActionTypesByKnID(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, invalidBytes, actionSourceBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -1197,13 +1222,13 @@ func Test_ActionTypeAccess_GetAllActionTypesByKnID(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, invalidBytes, parametersBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -1222,13 +1247,13 @@ func Test_ActionTypeAccess_GetAllActionTypesByKnID(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, actionSourceBytes, invalidBytes, scheduleBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
@@ -1247,13 +1272,13 @@ func Test_ActionTypeAccess_GetAllActionTypesByKnID(t *testing.T) {
 			invalidBytes := []byte("invalid json")
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
-				"f_kn_id", "f_branch", "f_action_type", "f_object_type_id",
+				"f_kn_id", "f_branch", "f_action_type", "f_action_intent", "f_impact_contracts", "f_object_type_id",
 				"f_condition", "f_affect", "f_action_source", "f_parameters", "f_schedule",
 				"f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
 				"at1", "Action Type 1", `"tag1"`, "comment", "icon", "color", "detail",
-				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "ot1",
+				"kn1", "main", interfaces.ACTION_SOURCE_TYPE_TOOL, "", nil, "ot1",
 				conditionBytes, affectBytes, actionSourceBytes, parametersBytes, invalidBytes,
 				"admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,

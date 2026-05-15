@@ -311,6 +311,7 @@ func TestList_ReturnAll(t *testing.T) {
 			"c1": {ResourceID: "c1"}, "c2": {ResourceID: "c2"}, "c3": {ResourceID: "c3"},
 		}, nil)
 	mockCA.EXPECT().GetByIDs(gomock.Any(), gomock.Any()).Return(catalogs, nil)
+	mockCA.EXPECT().AttachListExtensions(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	mockUMS.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 	cs := &catalogService{ca: mockCA, ps: mockPS, ums: mockUMS}
@@ -342,6 +343,7 @@ func TestList_Pagination(t *testing.T) {
 		}, nil)
 	catalogs := []*interfaces.Catalog{{ID: "c2"}, {ID: "c3"}}
 	mockCA.EXPECT().GetByIDs(gomock.Any(), []string{"c2", "c3"}).Return(catalogs, nil)
+	mockCA.EXPECT().AttachListExtensions(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	mockUMS.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 	cs := &catalogService{ca: mockCA, ps: mockPS, ums: mockUMS}
@@ -404,6 +406,7 @@ func TestList_PermissionFiltersOut(t *testing.T) {
 			"c1": {ResourceID: "c1"}, "c3": {ResourceID: "c3"},
 		}, nil)
 	mockCA.EXPECT().GetByIDs(gomock.Any(), []string{"c1", "c3"}).Return(catalogs, nil)
+	mockCA.EXPECT().AttachListExtensions(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	mockUMS.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 	cs := &catalogService{ca: mockCA, ps: mockPS, ums: mockUMS}

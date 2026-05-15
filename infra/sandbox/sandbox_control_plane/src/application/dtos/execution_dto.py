@@ -3,6 +3,7 @@
 
 用于应用层与接口层之间的数据传输。
 """
+
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, List
@@ -13,6 +14,7 @@ from src.domain.value_objects.artifact import Artifact
 @dataclass
 class ArtifactDTO:
     """文件制品数据传输对象"""
+
     path: str
     size: int
     mime_type: str
@@ -36,6 +38,7 @@ class ArtifactDTO:
 @dataclass
 class ExecutionDTO:
     """执行数据传输对象"""
+
     id: str
     session_id: str
     code: str
@@ -78,10 +81,7 @@ class ExecutionDTO:
             execution_time=execution.execution_time,
             stdout=execution.stdout,
             stderr=execution.stderr,
-            artifacts=[
-                ArtifactDTO.from_entity(artifact)
-                for artifact in execution.artifacts
-            ],
+            artifacts=[ArtifactDTO.from_entity(artifact) for artifact in execution.artifacts],
             retry_count=execution.retry_count,
             created_at=execution.created_at,
             started_at=None,  # Not tracked in domain entity

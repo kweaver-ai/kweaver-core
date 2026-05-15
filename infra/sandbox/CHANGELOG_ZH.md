@@ -2,6 +2,67 @@
 
 本分支 (`feature/803264`) 中新增的所有功能和特性记录如下。
 
+## [0.4.0]
+
+### 🚀 新功能
+
+- **多语言沙箱模板**
+  - 新增内置 `multi-language` 模板，支持 Python、Go、Bash 复合执行环境
+  - 在 multi-language runtime base 中新增 Go `1.25.2`，并将 Go build/module 缓存配置到 `/workspace/.cache`
+  - 调整 executor shell 隔离环境，使 Bubblewrap 与 subprocess 执行路径中都可以直接使用 `go` 命令
+
+- **稳定 Runtime Base 镜像分层**
+  - 新增稳定 Python 与 multi-language runtime base 镜像，只包含系统依赖和语言运行时，不包含 executor 应用代码
+  - 新增基于稳定 base 构建的最终 executor/template 镜像，使最终模板镜像 tag 跟随项目 `VERSION`，重型 runtime 层保持稳定
+  - 新增共享 executor template Dockerfile，并移除旧的按模板拆分 Dockerfile 与旧的直接 executor Dockerfile
+
+- **Base 镜像构建与 SWR 推送流程**
+  - 扩展 `images/build.sh`，支持可选构建 base 镜像、配置 Python 与 multi-language base tag、镜像源、平台和基于 `VERSION` 的模板 tag
+  - 新增通过 Docker Buildx 导出 OCI archive 并使用 `skopeo copy --all` 推送多架构 base 镜像到 SWR 的能力
+  - 新增 SWR registry、namespace、repository、credentials、builder、OCI 输出目录和平台参数配置
+
+### 🐛 问题修复
+
+- **模板镜像版本解析**
+  - 将默认 seed 的模板镜像地址改为跟随 `VERSION`、`TEMPLATE_IMAGE_TAG` 或 `PROJECT_VERSION`，不再固定为 `v1.0.0` 或 `latest`
+  - 新增默认 multi-language 模板 seed 记录，并支持 create-session 请求未传 `template_id` 时使用 `DEFAULT_TEMPLATE_ID`
+
+- **文件上传与压缩包解压安全**
+  - 文件上传大小校验改为读取配置项，不再硬编码 100 MB 限制
+  - 为 ZIP 解压新增文件数量与总解压大小限制
+  - ZIP 解压时拒绝符号链接条目，降低不安全压缩包处理风险
+
+- **Session 依赖安装超时**
+  - 为手动增量安装 session 依赖请求新增 `install_timeout` 支持
+  - 将单次请求的依赖安装超时时间透传到 executor session-config sync 调用，避免长时间安装被 executor client 默认超时限制
+
+### 🔧 改进
+
+- 调整 control-plane Docker 构建上下文，使镜像内可包含仓库 `VERSION` 文件，用于默认模板 tag 解析
+- 新增 `image.defaultTemplates.pythonBasic` 与 `image.defaultTemplates.multiLanguage` Helm values，支持部署时分别覆盖两个内置模板镜像版本
+- 将自包含 Helm Chart 从 `sandbox_local` 重命名为 `sandbox_standalone`，更准确表达其独立部署范围
+- 新增 `.dockerignore`，覆盖常见缓存、本地数据库、构建输出和开发环境产物
+- 补充默认模板镜像解析、可选 session template、Go shell 执行路径、ZIP 解压防护和依赖安装超时透传相关单元测试
+- 改进集成测试运维能力，新增 `happy_path` 与 `slow` pytest marker，强化每个测试后的 session 清理，补充 internal API 与 health 冒烟覆盖，并让 workspace 测试复用统一 session fixture，避免将 session 创建失败误标记为 skip
+- 从常规集成测试集中移除较慢的非 happy path 依赖失败检查，使日常运行聚焦稳定成功路径，完整覆盖可通过显式 marker 选择运行
+
+### ⚠️ 破坏性变更
+
+- 默认模板镜像现在会使用项目 `VERSION` 作为 tag，除非通过环境变量显式覆盖
+- 镜像构建流程现在通过共享 executor Dockerfile 支持内置 `python-basic` 与 `multi-language` 模板
+- 直接构建 control-plane 镜像的运维流程需要使用仓库根目录作为 Docker build context，确保镜像内存在 `VERSION` 文件
+
+### 📚 文档
+
+- 更新 README、构建文档、项目结构文档、部署说明和多语言 Go 执行设计文档，说明新的镜像分层和 SWR 推送流程
+- 补充集成测试运行模式说明，包括 happy path 冒烟、完整运行、仅运行慢测试，以及排除慢测试的完整运行方式
+- 新增 `deploy/helm/README.md`，说明 Kweaver Core 组件 Chart 与 Sandbox 独立部署 Chart 的区别
+- 重写 Helm Chart README，使 `deploy/helm/sandbox` 明确说明 Core 组件部署方式，`deploy/helm/sandbox_standalone` 明确说明包含 Web、MariaDB、MinIO 的自包含部署方式
+
+---
+
+*发布于 2026-05-06*
+
 ## [0.3.3]
 
 ### 🚀 新功能
@@ -30,7 +91,7 @@
 ### 📚 文档
 
 - 新增 control-plane 与 executor 生命周期绑定在重启、升级场景下的 PRD 和设计文档
-- 新增 `sandbox_local` Helm Chart，补充本地部署模板、组件元数据、RBAC 配置与运维说明，便于本地打包和环境初始化
+- 新增 `sandbox_standalone` Helm Chart，补充独立部署模板、组件元数据、RBAC 配置与运维说明，便于独立打包和环境初始化
 
 ---
 

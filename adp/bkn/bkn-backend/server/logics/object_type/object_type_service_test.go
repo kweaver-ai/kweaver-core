@@ -328,7 +328,7 @@ func Test_objectTypeService_GetObjectTypesByIDs(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			// 模拟Begin失败
 			db2, _, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-			db2.Close() // 关闭数据库连接以模拟Begin失败
+			_ = db2.Close() // 关闭数据库连接以模拟Begin失败
 			service2 := &objectTypeService{
 				appSetting: appSetting,
 				db:         db2,

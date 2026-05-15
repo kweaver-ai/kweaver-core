@@ -52,6 +52,9 @@ type Resource struct {
 	SchemaDefinition []*Property    `json:"schema_definition,omitempty"` // Schema定义
 	LocalIndexName   string         `json:"index_name,omitempty"`        // 索引名称，由构建任务填充
 
+	// Extensions 根级可检索业务 KV（t_entity_extension）；列表默认省略
+	Extensions map[string]string `json:"extensions,omitempty"`
+
 	// 逻辑视图特有的字段
 	LogicType       string                 `json:"logic_type,omitempty"`       // 逻辑类型: derived(衍生), composite(复合)
 	LogicDefinition []*LogicDefinitionNode `json:"logic_definition,omitempty"` // 逻辑定义
@@ -73,6 +76,8 @@ type Property struct {
 	Description  string            `json:"description"`
 	Features     []PropertyFeature `json:"features"`
 	Attributes   map[string]any    `json:"attributes"`
+	// Extensions 字段级展示用（schema_definition JSON 内），不参与列表筛选
+	Extensions map[string]string `json:"extensions,omitempty"`
 }
 
 type PropertyFeature struct {
@@ -93,6 +98,10 @@ type ResourcesQueryParams struct {
 	Category  string
 	Status    string
 	Database  string
+	ExtensionKeys   []string
+	ExtensionValues []string
+	IncludeExtensions    bool
+	IncludeExtensionKeys string
 }
 
 // ResourceCreateRequest represents create resource request.
@@ -112,6 +121,8 @@ type ResourceRequest struct {
 	SourceMetadata   map[string]any         `json:"source_metadata,omitempty"`   // 源端配置（JSON）
 	SchemaDefinition []*Property            `json:"schema_definition,omitempty"` // Schema定义
 	LogicDefinition  []*LogicDefinitionNode `json:"logic_definition,omitempty"`  // 逻辑定义
+
+	Extensions *map[string]string `json:"extensions,omitempty"`
 
 	IfNameModify   bool      `json:"-"`
 	OriginResource *Resource `json:"-"`

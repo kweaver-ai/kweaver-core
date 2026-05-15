@@ -307,7 +307,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "获取指定应用的会话列表，支持分页",
+                "description": "获取指定应用的对话列表，支持分页",
                 "consumes": [
                     "application/json"
                 ],
@@ -4970,13 +4970,6 @@ const docTemplate = `{
                 "knowledge_network_id": {
                     "description": "业务知识网络ID",
                     "type": "string"
-                },
-                "object_types": {
-                    "description": "对象类型列表",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/datasourcevalobj.ObjectType"
-                    }
                 }
             }
         },
@@ -4988,18 +4981,6 @@ const docTemplate = `{
             "properties": {
                 "metric_model_id": {
                     "description": "指标模型ID",
-                    "type": "string"
-                }
-            }
-        },
-        "datasourcevalobj.ObjectType": {
-            "type": "object",
-            "required": [
-                "object_type_id"
-            ],
-            "properties": {
-                "object_type_id": {
-                    "description": "对象类型ID",
                     "type": "string"
                 }
             }

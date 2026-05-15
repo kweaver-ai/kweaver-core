@@ -41,3 +41,6 @@ __debug_bin*
 
 go.work
 go.work.sum
+
+# 本地/联调脚本不上传远端
+scripts/

@@ -105,8 +105,8 @@ helm rollback sandbox <revision> --namespace sandbox-system
 ### 1. 构建镜像
 
 ```bash
-# 在 sandbox_control_plane 目录下
-docker build -t sandbox-control-plane:latest .
+# 在 sandbox 根目录下，确保 VERSION 文件被包含进镜像
+docker build -f sandbox_control_plane/Dockerfile -t sandbox-control-plane:latest .
 ```
 
 ### 2. 加载镜像到本地 K8s（Minikube/K3s/Kind）

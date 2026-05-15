@@ -3,6 +3,7 @@
 
 定义执行代码的命令对象。
 """
+
 from dataclasses import dataclass
 import re
 from pathlib import PurePosixPath
@@ -12,6 +13,7 @@ from typing import Literal, Optional
 @dataclass
 class ExecuteCodeCommand:
     """执行代码命令"""
+
     session_id: str
     code: str
     language: Literal["python", "javascript", "shell"]
@@ -30,9 +32,7 @@ class ExecuteCodeCommand:
         if self.language not in {"python", "javascript", "shell"}:
             raise ValueError(f"Unsupported language: {self.language}")
         if self.working_directory is not None:
-            self.working_directory = self._normalize_working_directory(
-                self.working_directory
-            )
+            self.working_directory = self._normalize_working_directory(self.working_directory)
 
     @staticmethod
     def _normalize_working_directory(path: str) -> str:

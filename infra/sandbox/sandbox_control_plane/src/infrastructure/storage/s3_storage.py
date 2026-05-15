@@ -3,6 +3,7 @@ S3 存储实现
 
 使用 boto3 实现 S3 兼容的对象存储，支持 AWS S3 和 MinIO。
 """
+
 import asyncio
 import logging
 import os
@@ -43,7 +44,7 @@ class S3Storage(IStorageService):
 
         # 初始化 S3 客户端
         self._client = boto3.client(
-            's3',
+            "s3",
             endpoint_url=settings.s3_endpoint_url or None,  # AWS S3 不需要 endpoint_url
             aws_access_key_id=settings.s3_access_key_id,
             aws_secret_access_key=settings.s3_secret_access_key,
@@ -82,11 +83,11 @@ class S3Storage(IStorageService):
         if s3_path.startswith("s3://"):
             parsed = urlparse(s3_path)
             bucket = parsed.netloc
-            key = parsed.path.lstrip('/')
+            key = parsed.path.lstrip("/")
         else:
             # 相对路径，使用默认 bucket
             bucket = self._bucket
-            key = s3_path.lstrip('/')
+            key = s3_path.lstrip("/")
 
         return bucket, key
 
@@ -106,28 +107,22 @@ class S3Storage(IStorageService):
     async def _ensure_bucket_exists(self) -> None:
         """确保存储桶存在，不存在则创建"""
         try:
-            await asyncio.to_thread(
-                self._client.head_bucket,
-                Bucket=self._bucket
-            )
+            await asyncio.to_thread(self._client.head_bucket, Bucket=self._bucket)
         except ClientError as e:
-            error_code = e.response.get('Error', {}).get('Code')
-            if error_code == '404':
+            error_code = e.response.get("Error", {}).get("Code")
+            if error_code == "404":
                 # 存储桶不存在，创建它
                 try:
-                    if self._client.meta.region_name == 'us-east-1':
+                    if self._client.meta.region_name == "us-east-1":
                         # us-east-1 不需要 LocationConstraint
-                        await asyncio.to_thread(
-                            self._client.create_bucket,
-                            Bucket=self._bucket
-                        )
+                        await asyncio.to_thread(self._client.create_bucket, Bucket=self._bucket)
                     else:
                         await asyncio.to_thread(
                             self._client.create_bucket,
                             Bucket=self._bucket,
                             CreateBucketConfiguration={
-                                'LocationConstraint': self._client.meta.region_name
-                            }
+                                "LocationConstraint": self._client.meta.region_name
+                            },
                         )
                     logger.info(f"Created S3 bucket: {self._bucket}")
                 except ClientError as create_error:
@@ -138,10 +133,7 @@ class S3Storage(IStorageService):
                 raise
 
     async def upload_file(
-        self,
-        s3_path: str,
-        content: bytes,
-        content_type: str = "application/octet-stream"
+        self, s3_path: str, content: bytes, content_type: str = "application/octet-stream"
     ) -> None:
         """
         上传文件
@@ -163,22 +155,20 @@ class S3Storage(IStorageService):
 
             # 先写入临时文件
             import tempfile
+
             with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
                 tmp_file.write(content)
                 tmp_file_path = tmp_file.name
 
             try:
-                config = TransferConfig(
-                    multipart_threshold=5 * 1024 * 1024,
-                    max_concurrency=4
-                )
+                config = TransferConfig(multipart_threshold=5 * 1024 * 1024, max_concurrency=4)
                 await asyncio.to_thread(
                     self._client.upload_file,
                     Filename=tmp_file_path,
                     Bucket=bucket,
                     Key=key,
-                    ExtraArgs={'ContentType': content_type},
-                    Config=config
+                    ExtraArgs={"ContentType": content_type},
+                    Config=config,
                 )
             finally:
                 os.unlink(tmp_file_path)
@@ -189,30 +179,22 @@ class S3Storage(IStorageService):
                 Bucket=bucket,
                 Key=key,
                 Body=content,
-                ContentType=content_type
+                ContentType=content_type,
             )
 
         # 清理可能存在的目录标记 (s3fs 兼容性修复)
         # 当上传 test/test_data.csv 时，S3 可能会创建 test/ 目录标记
         # 这会导致 s3fs 将 test 显示为文件而非目录
-        if '/' in key:
-            dir_marker = key.rsplit('/', 1)[0] + '/'
+        if "/" in key:
+            dir_marker = key.rsplit("/", 1)[0] + "/"
             try:
-                await asyncio.to_thread(
-                    self._client.head_object,
-                    Bucket=bucket,
-                    Key=dir_marker
-                )
+                await asyncio.to_thread(self._client.head_object, Bucket=bucket, Key=dir_marker)
                 # 目录标记存在，删除它
-                await asyncio.to_thread(
-                    self._client.delete_object,
-                    Bucket=bucket,
-                    Key=dir_marker
-                )
+                await asyncio.to_thread(self._client.delete_object, Bucket=bucket, Key=dir_marker)
                 logger.debug(f"Removed S3 directory marker for s3fs compatibility: {dir_marker}")
             except ClientError as e:
-                error_code = e.response.get('Error', {}).get('Code')
-                if error_code == '404':
+                error_code = e.response.get("Error", {}).get("Code")
+                if error_code == "404":
                     # 目录标记不存在，无需处理
                     pass
 
@@ -230,13 +212,9 @@ class S3Storage(IStorageService):
         """
         bucket, key = self._parse_s3_path(s3_path)
 
-        response = await asyncio.to_thread(
-            self._client.get_object,
-            Bucket=bucket,
-            Key=key
-        )
+        response = await asyncio.to_thread(self._client.get_object, Bucket=bucket, Key=key)
 
-        content = response['Body'].read()
+        content = response["Body"].read()
         logger.debug(f"Downloaded file from {s3_path}, size={len(content)}")
 
         return content
@@ -254,15 +232,11 @@ class S3Storage(IStorageService):
         bucket, key = self._parse_s3_path(s3_path)
 
         try:
-            await asyncio.to_thread(
-                self._client.head_object,
-                Bucket=bucket,
-                Key=key
-            )
+            await asyncio.to_thread(self._client.head_object, Bucket=bucket, Key=key)
             return True
         except ClientError as e:
-            error_code = e.response.get('Error', {}).get('Code')
-            if error_code == '404':
+            error_code = e.response.get("Error", {}).get("Code")
+            if error_code == "404":
                 return False
             logger.error(f"Error checking file existence {s3_path}: {e}")
             raise
@@ -279,24 +253,16 @@ class S3Storage(IStorageService):
         """
         bucket, key = self._parse_s3_path(s3_path)
 
-        response = await asyncio.to_thread(
-            self._client.head_object,
-            Bucket=bucket,
-            Key=key
-        )
+        response = await asyncio.to_thread(self._client.head_object, Bucket=bucket, Key=key)
 
         return {
-            "size": response['ContentLength'],
-            "content_type": response.get('ContentType', 'application/octet-stream'),
-            "last_modified": response['LastModified'],
-            "etag": response['ETag'].strip('"')
+            "size": response["ContentLength"],
+            "content_type": response.get("ContentType", "application/octet-stream"),
+            "last_modified": response["LastModified"],
+            "etag": response["ETag"].strip('"'),
         }
 
-    async def generate_presigned_url(
-        self,
-        s3_path: str,
-        expiration_seconds: int = 3600
-    ) -> str:
+    async def generate_presigned_url(self, s3_path: str, expiration_seconds: int = 3600) -> str:
         """
         生成预签名 URL
 
@@ -311,9 +277,9 @@ class S3Storage(IStorageService):
 
         url = await asyncio.to_thread(
             self._client.generate_presigned_url,
-            'get_object',
-            Params={'Bucket': bucket, 'Key': key},
-            ExpiresIn=expiration_seconds
+            "get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=expiration_seconds,
         )
 
         logger.debug(f"Generated presigned URL for {s3_path}, expires in {expiration_seconds}s")
@@ -329,11 +295,7 @@ class S3Storage(IStorageService):
         """
         bucket, key = self._parse_s3_path(s3_path)
 
-        await asyncio.to_thread(
-            self._client.delete_object,
-            Bucket=bucket,
-            Key=key
-        )
+        await asyncio.to_thread(self._client.delete_object, Bucket=bucket, Key=key)
 
         logger.debug(f"Deleted file {s3_path}")
 
@@ -354,37 +316,33 @@ class S3Storage(IStorageService):
         if prefix.startswith("s3://"):
             parsed = urlparse(prefix)
             bucket = parsed.netloc
-            prefix = parsed.path.lstrip('/')
+            prefix = parsed.path.lstrip("/")
 
         # 使用 asyncio.to_thread 执行同步的列表和删除操作
         def _delete_all_files():
             """同步函数，执行批量删除"""
             count = 0
-            paginator = self._client.get_paginator('list_objects_v2')
+            paginator = self._client.get_paginator("list_objects_v2")
             delete_chunks = []
 
             try:
                 # 直接迭代 paginator（同步操作）
                 for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-                    if 'Contents' in page:
-                        for obj in page['Contents']:
-                            delete_chunks.append({'Key': obj['Key']})
+                    if "Contents" in page:
+                        for obj in page["Contents"]:
+                            delete_chunks.append({"Key": obj["Key"]})
 
                         # 当累积到 1000 个对象时删除
                         if len(delete_chunks) >= 1000:
                             self._client.delete_objects(
-                                Bucket=bucket,
-                                Delete={'Objects': delete_chunks}
+                                Bucket=bucket, Delete={"Objects": delete_chunks}
                             )
                             count += len(delete_chunks)
                             delete_chunks = []
 
                 # 删除剩余的对象
                 if delete_chunks:
-                    self._client.delete_objects(
-                        Bucket=bucket,
-                        Delete={'Objects': delete_chunks}
-                    )
+                    self._client.delete_objects(Bucket=bucket, Delete={"Objects": delete_chunks})
                     count += len(delete_chunks)
 
             except ClientError as e:
@@ -398,11 +356,7 @@ class S3Storage(IStorageService):
 
         return deleted_count
 
-    async def list_files(
-        self,
-        prefix: str,
-        limit: int = 1000
-    ) -> list:
+    async def list_files(self, prefix: str, limit: int = 1000) -> list:
         """
         列出文件
 
@@ -419,24 +373,26 @@ class S3Storage(IStorageService):
         if prefix.startswith("s3://"):
             parsed = urlparse(prefix)
             bucket = parsed.netloc
-            prefix = parsed.path.lstrip('/')
+            prefix = parsed.path.lstrip("/")
 
         def _list_all_files():
             """同步函数，执行列表操作"""
             files = []
-            paginator = self._client.get_paginator('list_objects_v2')
+            paginator = self._client.get_paginator("list_objects_v2")
 
             try:
                 # 直接迭代 paginator（同步操作）
                 for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-                    if 'Contents' in page:
-                        for obj in page['Contents']:
-                            files.append({
-                                'key': obj['Key'],
-                                'size': obj['Size'],
-                                'last_modified': obj['LastModified'],
-                                'etag': obj['ETag'].strip('"')
-                            })
+                    if "Contents" in page:
+                        for obj in page["Contents"]:
+                            files.append(
+                                {
+                                    "key": obj["Key"],
+                                    "size": obj["Size"],
+                                    "last_modified": obj["LastModified"],
+                                    "etag": obj["ETag"].strip('"'),
+                                }
+                            )
                             if limit and len(files) >= limit:
                                 break
                     if limit and len(files) >= limit:

@@ -13,22 +13,16 @@ log:
   maxAge: 100
   maxBackups: 20
   maxSize: 100
-observability:
-  logEnabled: false
-  traceEnabled: false
-  metricEnabled: false
-  logExporter: console
-  traceProvider: http
-  metricProvider: http
-  logLoadInternal: 1
-  logLoadMaxLog: 10
-  traceMaxQueueSize: 50000
-  metricIntervalSecond: 60
-  httpLogFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
-  httpTraceFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
-  httpMetricFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
-  grpcTraceFeedIngesterUrl: feed-ingester-service:30013
-  grpcTraceJobId: dip-o11y-trace-grpc
+otel:
+  service_name: "ontology-query"
+  environment: "production"
+  otlp_endpoint: "otelcol-contrib:4318"
+  trace:
+    enabled: false
+    sampling_rate: 1.0
+  log:
+    enabled: false
+    level: "info"
 
 depServices:
   class-443:

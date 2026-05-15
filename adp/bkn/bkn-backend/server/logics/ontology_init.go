@@ -19,7 +19,7 @@ import (
 func Init(ctx context.Context, appSetting *common.AppSetting) error {
 	logger.Info("Init BKN Dataset Start")
 
-	var vectorDim int = 768 // default dimension
+	var vectorDim = 768 // default dimension
 
 	// Check if small model is enabled
 	if appSetting.ServerSetting.DefaultSmallModelEnabled {

@@ -3,6 +3,7 @@
 
 编排会话相关的用例。
 """
+
 from typing import Callable, List, Optional
 from datetime import datetime, timedelta
 import uuid
@@ -84,6 +85,10 @@ class SessionService:
         6. 创建 Docker 容器
         7. 更新会话状态为 running
         """
+        if not command.template_id:
+            settings = get_settings()
+            command.template_id = settings.default_template_id
+
         logger.info(
             "Creating session",
             template_id=command.template_id,
@@ -164,12 +169,14 @@ class SessionService:
         logger.debug("Template validated", template_id=template.id, image=template.image)
         return template
 
-    async def _schedule_session(self, command: CreateSessionCommand, session_id: str) -> RuntimeNode:
+    async def _schedule_session(
+        self, command: CreateSessionCommand, session_id: str
+    ) -> RuntimeNode:
         """调度会话到运行时节点"""
         schedule_request = ScheduleRequest(
             template_id=command.template_id,
             resource_limit=command.resource_limit or ResourceLimit.default(),
-            session_id=session_id
+            session_id=session_id,
         )
         runtime_node = await self._scheduler.schedule(schedule_request)
 
@@ -228,7 +235,7 @@ class SessionService:
         dependencies: list[str] = []
 
         try:
-            if hasattr(self._scheduler, 'create_container_for_session'):
+            if hasattr(self._scheduler, "create_container_for_session"):
                 logger.info(
                     "Creating container for session",
                     session_id=session.id,
@@ -297,7 +304,7 @@ class SessionService:
         )
 
         # 清理已创建的容器
-        if container_id and hasattr(self._scheduler, 'destroy_container'):
+        if container_id and hasattr(self._scheduler, "destroy_container"):
             try:
                 logger.info("Attempting to clean up failed container", container_id=container_id)
                 await self._scheduler.destroy_container(container_id)
@@ -349,7 +356,11 @@ class SessionService:
             command.python_package_index_url,
             command.dependencies,
         )
-        return await self._sync_session_dependencies(session, sync_mode="merge")
+        return await self._sync_session_dependencies(
+            session,
+            sync_mode="merge",
+            executor_timeout=command.install_timeout,
+        )
 
     async def sync_session_dependencies_for_session(
         self,
@@ -367,7 +378,7 @@ class SessionService:
         status: Optional[str] = None,
         template_id: Optional[str] = None,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> dict:
         """
         列出会话用例
@@ -387,17 +398,11 @@ class SessionService:
 
         # 获取会话列表
         sessions = await self._session_repo.find_sessions(
-            status=status,
-            template_id=template_id,
-            limit=limit,
-            offset=offset
+            status=status, template_id=template_id, limit=limit, offset=offset
         )
 
         # 获取总数
-        total = await self._session_repo.count_sessions(
-            status=status,
-            template_id=template_id
-        )
+        total = await self._session_repo.count_sessions(status=status, template_id=template_id)
 
         # 转换为 DTO
         items = [SessionDTO.from_entity(s) for s in sessions]
@@ -410,7 +415,7 @@ class SessionService:
             "total": total,
             "limit": limit,
             "offset": offset,
-            "has_more": has_more
+            "has_more": has_more,
         }
 
     async def terminate_session(self, session_id: str) -> SessionDTO:
@@ -432,7 +437,9 @@ class SessionService:
             raise NotFoundError(f"Session not found: {session_id}")
 
         if session.is_terminated():
-            logger.info("Session already terminated", session_id=session_id, status=session.status.value)
+            logger.info(
+                "Session already terminated", session_id=session_id, status=session.status.value
+            )
             return SessionDTO.from_entity(session)
 
         logger.debug(
@@ -452,7 +459,11 @@ class SessionService:
         session.mark_as_terminated()
         await self._session_repo.save(session)
 
-        logger.info("Session terminated successfully", session_id=session_id, final_status=session.status.value)
+        logger.info(
+            "Session terminated successfully",
+            session_id=session_id,
+            final_status=session.status.value,
+        )
 
         return SessionDTO.from_entity(session)
 
@@ -492,13 +503,19 @@ class SessionService:
 
     async def _destroy_container(self, session: Session) -> None:
         """销毁会话的容器"""
-        if not session.container_id or not hasattr(self._scheduler, 'destroy_container'):
+        if not session.container_id or not hasattr(self._scheduler, "destroy_container"):
             return
 
         try:
-            logger.info("Destroying container", session_id=session.id, container_id=session.container_id)
+            logger.info(
+                "Destroying container", session_id=session.id, container_id=session.container_id
+            )
             await self._scheduler.destroy_container(container_id=session.container_id)
-            logger.info("Container destroyed successfully", session_id=session.id, container_id=session.container_id)
+            logger.info(
+                "Container destroyed successfully",
+                session_id=session.id,
+                container_id=session.container_id,
+            )
         except Exception as e:
             logger.warning(
                 "Failed to destroy container",
@@ -593,7 +610,7 @@ class SessionService:
             language=command.language,
             timeout=command.timeout,
             event_data=command.event_data or {},
-            state=ExecutionState(status=ExecutionStatus.PENDING)
+            state=ExecutionState(status=ExecutionStatus.PENDING),
         )
 
         # 4. 保存到仓储
@@ -658,23 +675,17 @@ class SessionService:
         return ExecutionDTO.from_entity(execution)
 
     async def list_executions(
-        self,
-        session_id: str,
-        limit: int = 50,
-        offset: int = 0
+        self, session_id: str, limit: int = 50, offset: int = 0
     ) -> List[ExecutionDTO]:
         """列出会话的所有执行用例"""
         executions = await self._execution_repo.find_by_session_id(
-            session_id=session_id,
-            limit=limit
+            session_id=session_id, limit=limit
         )
 
         return [ExecutionDTO.from_entity(e) for e in executions]
 
     async def cleanup_idle_sessions(
-        self,
-        idle_threshold_minutes: int = 30,
-        max_lifetime_hours: int = 6
+        self, idle_threshold_minutes: int = 30, max_lifetime_hours: int = 6
     ) -> int:
         """
         清理空闲会话用例
@@ -702,7 +713,7 @@ class SessionService:
             return False
 
         # 销毁容器
-        if session.container_id and hasattr(self._scheduler, 'destroy_container'):
+        if session.container_id and hasattr(self._scheduler, "destroy_container"):
             try:
                 await self._scheduler.destroy_container(container_id=session.container_id)
             except Exception as e:
@@ -721,6 +732,7 @@ class SessionService:
         self,
         session: Session,
         sync_mode: str,
+        executor_timeout: int | None = None,
     ) -> SessionDTO:
         """同步 session 依赖配置到 executor。"""
         if not session.is_active():
@@ -742,6 +754,7 @@ class SessionService:
                 python_package_index_url=session.python_package_index_url,
                 dependencies=session.requested_dependencies,
                 sync_mode=sync_mode,
+                executor_timeout=executor_timeout,
             )
         except (
             ExecutorConnectionError,

@@ -267,10 +267,11 @@ func Test_knowledgeNetworkService_SearchSubgraph(t *testing.T) {
 
 			// 第一次调用：获取起点对象（在 SearchSubgraph 中）
 			ots.EXPECT().GetObjectsByObjectTypeID(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, q *interfaces.ObjectQueryBaseOnObjectType) (interfaces.Objects, error) {
-				if q.ObjectTypeID == sourceObjectTypeID {
+				switch q.ObjectTypeID {
+				case sourceObjectTypeID:
 					// 获取起点对象
 					return startObjects, nil
-				} else if q.ObjectTypeID == "ot2" {
+				case "ot2":
 					// 在 buildObjectSubgraph -> getNextObjectsBatchByRelation 中获取下一层对象，返回错误
 					return interfaces.Objects{}, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_InternalError)
 				}

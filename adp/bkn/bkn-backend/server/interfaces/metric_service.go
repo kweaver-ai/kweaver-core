@@ -34,5 +34,6 @@ type MetricService interface {
 	InsertDatasetData(ctx context.Context, metrics []*MetricDefinition) error
 
 	// ValidateMetrics 在 strictMode 下校验 scope 与对象类字段等（与 CreateMetrics 中严格校验一致），不写库；请求体合法性由 handler 先通过 ValidateMetricRequests 校验。
-	ValidateMetrics(ctx context.Context, entries []*MetricDefinition, strictMode bool, importMode string) error
+	// batch 非 nil 且 strictMode=true 时，优先按 BatchIDIndex.ObjectTypes 解析 scope_ref（同一 KN / Upload tar 预持久化场景）；batch 为 nil 时仍查库（REST 批量校验路径）。
+	ValidateMetrics(ctx context.Context, entries []*MetricDefinition, strictMode bool, importMode string, batch *BatchIDIndex) error
 }

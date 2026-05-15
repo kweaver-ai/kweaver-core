@@ -28,5 +28,5 @@ type ChatReq = agentreq.ChatReq
 // ResumeReq 恢复对话请求
 type ResumeReq = agentreq.ResumeReq
 
-// ListReq 会话列表请求
+// ListReq 对话列表请求
 type ListReq = conversationreq.ListReq

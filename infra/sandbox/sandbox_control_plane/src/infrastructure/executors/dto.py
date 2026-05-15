@@ -3,6 +3,7 @@
 
 定义与执行器 HTTP API 通信时使用的请求和响应模型。
 """
+
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
@@ -38,7 +39,7 @@ class ExecutorExecuteRequest(BaseModel):
                     "event": {"name": "World"},
                     "timeout": 10,
                     "env_vars": {},
-                    "working_directory": "src"
+                    "working_directory": "src",
                 }
             ]
         }

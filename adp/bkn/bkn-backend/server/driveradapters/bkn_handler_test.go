@@ -72,7 +72,7 @@ func newMultipartRequestWithContentType(t *testing.T, url, filename, contentType
 		t.Fatalf("failed to create form part: %v", err)
 	}
 	_, _ = fw.Write(content)
-	mw.Close()
+	_ = mw.Close()
 
 	req := httptest.NewRequest(http.MethodPost, url, &body)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
@@ -88,7 +88,7 @@ func newMultipartRequest(t *testing.T, url, filename string, content []byte) *ht
 		t.Fatalf("failed to create form file: %v", err)
 	}
 	_, _ = fw.Write(content)
-	mw.Close()
+	_ = mw.Close()
 
 	req := httptest.NewRequest(http.MethodPost, url, &body)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
@@ -152,7 +152,7 @@ func Test_BKNRestHandler_UploadBKN(t *testing.T) {
 			mw := multipart.NewWriter(&body)
 			fw, _ := mw.CreateFormFile("file", "test.json")
 			_, _ = fw.Write([]byte(`{"invalid": "content"}`))
-			mw.Close()
+			_ = mw.Close()
 
 			req := httptest.NewRequest(http.MethodPost, url, &body)
 			req.Header.Set("Content-Type", mw.FormDataContentType())

@@ -17,8 +17,9 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
+	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -28,6 +29,7 @@ import (
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
 	"bkn-backend/logics"
+	"bkn-backend/logics/batchindex"
 	"bkn-backend/logics/object_type"
 	"bkn-backend/logics/permission"
 )
@@ -67,7 +69,7 @@ func NewMetricService(appSetting *common.AppSetting) interfaces.MetricService {
 }
 
 func (ms *metricService) InsertDatasetData(ctx context.Context, metrics []*interfaces.MetricDefinition) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "metric index write")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "metric index write")
 	defer span.End()
 
 	if len(metrics) == 0 {
@@ -138,7 +140,7 @@ func (ms *metricService) deleteDatasetDocs(ctx context.Context, knID string, bra
 }
 
 func (ms *metricService) CreateMetrics(ctx context.Context, tx *sql.Tx, entries []*interfaces.MetricDefinition, strictMode bool, importMode string) (ids []string, err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateMetrics")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "CreateMetrics")
 	defer span.End()
 
 	if len(entries) == 0 {
@@ -210,22 +212,31 @@ func (ms *metricService) CreateMetrics(ctx context.Context, tx *sql.Tx, entries 
 				return []string{}, err
 			}
 		}
-
-		// todo: Persist empty BKN raw content until metric serialization is available in BKN SDK.
-		// objectType.BKNRawContent = bknsdk.SerializeObjectType(bknObj)
-		m.BKNRawContent = ""
+		metricObj := logics.ToBKNMetricDefinition(m)
+		m.BKNRawContent = bknsdk.SerializeMetric(metricObj)
 	}
 
 	var creates []*interfaces.MetricDefinition
-	creates, err = ms.handleMetricImportMode(ctx, importMode, entries)
+	var updates []*interfaces.MetricDefinition
+	creates, updates, err = ms.handleMetricImportMode(ctx, importMode, entries)
 	if err != nil {
 		return nil, err
 	}
-	if len(creates) == 0 {
-		return []string{}, nil
+
+	ids = make([]string, 0, len(creates)+len(updates))
+
+	for _, def := range updates {
+		if err := ms.UpdateMetric(ctx, tx, def, strictMode); err != nil {
+			return nil, err
+		}
+		ids = append(ids, def.ID)
 	}
 
-	ids = make([]string, 0, len(creates))
+	if len(creates) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return ids, nil
+	}
+
 	for _, def := range creates {
 		err = ms.ma.CreateMetric(ctx, tx, def)
 		if err != nil {
@@ -247,14 +258,11 @@ func (ms *metricService) CreateMetrics(ctx context.Context, tx *sql.Tx, entries 
 	return ids, nil
 }
 
-// handleMetricImportMode 按 import_mode 过滤待创建的指标（与 handleObjectTypeImportMode 对齐；overwrite 暂未支持）。
-func (ms *metricService) handleMetricImportMode(ctx context.Context, mode string, metrics []*interfaces.MetricDefinition) ([]*interfaces.MetricDefinition, error) {
-	if mode == interfaces.ImportMode_Overwrite {
-		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-			WithErrorDetails("import_mode overwrite is not supported for metrics yet")
-	}
-
+// handleMetricImportMode splits metrics into creates and updates by import_mode (overwrite aligned with object types).
+func (ms *metricService) handleMetricImportMode(ctx context.Context, mode string, metrics []*interfaces.MetricDefinition) ([]*interfaces.MetricDefinition, []*interfaces.MetricDefinition, error) {
 	creates := make([]*interfaces.MetricDefinition, 0, len(metrics))
+	updates := make([]*interfaces.MetricDefinition, 0)
+
 	for _, m := range metrics {
 		knID, branch := m.KnID, m.Branch
 		id := strings.TrimSpace(m.ID)
@@ -265,13 +273,13 @@ func (ms *metricService) handleMetricImportMode(ctx context.Context, mode string
 		if id != "" {
 			existNameByID, idExist, qerr = ms.ma.CheckMetricExistByID(ctx, knID, branch, id)
 			if qerr != nil {
-				return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				return nil, nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 					berrors.BknBackend_Metric_InternalError_CheckMetricIfExistFailed).WithErrorDetails(qerr.Error())
 			}
 		}
 		existIDByName, nameExist, qerr = ms.ma.CheckMetricExistByName(ctx, knID, branch, m.Name)
 		if qerr != nil {
-			return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+			return nil, nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_Metric_InternalError_CheckMetricIfExistFailed).WithErrorDetails(qerr.Error())
 		}
 
@@ -279,28 +287,46 @@ func (ms *metricService) handleMetricImportMode(ctx context.Context, mode string
 			switch mode {
 			case interfaces.ImportMode_Normal:
 				if idExist {
-					return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
+					return nil, nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
 						WithErrorDetails(fmt.Sprintf("metric id '%s' already exists (name in DB: %s)", id, existNameByID))
 				}
 				if nameExist && existIDByName != id {
-					return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_Duplicated_Name).
+					return nil, nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_Duplicated_Name).
 						WithErrorDetails(fmt.Sprintf("metric name '%s' already exists", m.Name))
 				}
 			case interfaces.ImportMode_Ignore:
 				continue
+			case interfaces.ImportMode_Overwrite:
+				if idExist && nameExist && existIDByName != id {
+					return nil, nil, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_Metric_Duplicated_Name).
+						WithErrorDetails(fmt.Sprintf("metric id '%s' and name '%s' conflict with existing id '%s'", id, m.Name, existIDByName))
+				}
+				if idExist && nameExist && existIDByName == id {
+					updates = append(updates, m)
+					continue
+				}
+				if idExist && !nameExist {
+					updates = append(updates, m)
+					continue
+				}
+				if !idExist && nameExist {
+					return nil, nil, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_Metric_Duplicated_Name).
+						WithErrorDetails(fmt.Sprintf("metric name '%s' already exists", m.Name))
+				}
+				continue
 			default:
-				return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_ImportMode).
+				return nil, nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_ImportMode).
 					WithErrorDetails("unsupported import_mode")
 			}
 		}
 
 		creates = append(creates, m)
 	}
-	return creates, nil
+	return creates, updates, nil
 }
 
 func (ms *metricService) ListMetrics(ctx context.Context, query interfaces.MetricsListQueryParams) (*interfaces.MetricsList, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListMetrics")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ListMetrics")
 	defer span.End()
 
 	err := ms.ps.CheckPermission(ctx, interfaces.PermissionResource{
@@ -344,7 +370,7 @@ func (ms *metricService) ListMetrics(ctx context.Context, query interfaces.Metri
 }
 
 func (ms *metricService) GetMetricByID(ctx context.Context, knID, branch, metricID string) (*interfaces.MetricDefinition, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetMetricByID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetMetricByID")
 	defer span.End()
 
 	err := ms.ps.CheckPermission(ctx, interfaces.PermissionResource{
@@ -367,7 +393,7 @@ func (ms *metricService) GetMetricByID(ctx context.Context, knID, branch, metric
 }
 
 func (ms *metricService) GetMetricsByIDs(ctx context.Context, knID, branch string, metricIDs []string) ([]*interfaces.MetricDefinition, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetMetricsByIDs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "GetMetricsByIDs")
 	defer span.End()
 
 	metricIDs = common.DuplicateSlice(metricIDs)
@@ -381,7 +407,7 @@ func (ms *metricService) GetMetricsByIDs(ctx context.Context, knID, branch strin
 }
 
 func (ms *metricService) CheckMetricExistByID(ctx context.Context, knID, branch, metricID string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验指标[%s]的存在性", metricID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验指标[%s]的存在性", metricID))
 	defer span.End()
 
 	name, exist, err := ms.ma.CheckMetricExistByID(ctx, knID, branch, metricID)
@@ -397,7 +423,7 @@ func (ms *metricService) CheckMetricExistByID(ctx context.Context, knID, branch,
 }
 
 func (ms *metricService) CheckMetricExistByName(ctx context.Context, knID, branch, name string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验指标名称[%s]的存在性", name))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验指标名称[%s]的存在性", name))
 	defer span.End()
 
 	id, exist, err := ms.ma.CheckMetricExistByName(ctx, knID, branch, name)
@@ -412,14 +438,20 @@ func (ms *metricService) CheckMetricExistByName(ctx context.Context, knID, branc
 	return id, exist, nil
 }
 
-func (ms *metricService) ValidateMetrics(ctx context.Context, entries []*interfaces.MetricDefinition, strictMode bool, importMode string) error {
+func (ms *metricService) ValidateMetrics(ctx context.Context, entries []*interfaces.MetricDefinition, strictMode bool, importMode string, batch *interfaces.BatchIDIndex) error {
 	_ = importMode
 	if len(entries) == 0 {
 		return nil
 	}
 	for _, e := range entries {
 		if strictMode {
-			if err := ms.validateMetricStrictExternalDeps(ctx, nil, e); err != nil {
+			var err error
+			if batch != nil {
+				err = ms.validateMetricStrictExternalDepsFromBatch(ctx, e, batch)
+			} else {
+				err = ms.validateMetricStrictExternalDeps(ctx, nil, e)
+			}
+			if err != nil {
 				return err
 			}
 		}
@@ -428,7 +460,7 @@ func (ms *metricService) ValidateMetrics(ctx context.Context, entries []*interfa
 }
 
 func (ms *metricService) UpdateMetric(ctx context.Context, tx *sql.Tx, req *interfaces.MetricDefinition, strictMode bool) (err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateMetric")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdateMetric")
 	defer span.End()
 
 	knID := strings.TrimSpace(req.KnID)
@@ -490,9 +522,8 @@ func (ms *metricService) UpdateMetric(ctx context.Context, tx *sql.Tx, req *inte
 	}
 	req.UpdateTime = time.Now().UnixMilli()
 
-	// todo: Persist empty BKN raw content until metric serialization is available in BKN SDK.
-	// objectType.BKNRawContent = bknsdk.SerializeObjectType(bknObj)
-	req.BKNRawContent = ""
+	metricObj := logics.ToBKNMetricDefinition(req)
+	req.BKNRawContent = bknsdk.SerializeMetric(metricObj)
 
 	err = ms.ma.UpdateMetric(ctx, tx, req)
 	if err != nil {
@@ -513,7 +544,7 @@ func (ms *metricService) UpdateMetric(ctx context.Context, tx *sql.Tx, req *inte
 }
 
 func (ms *metricService) DeleteMetricsByIDs(ctx context.Context, tx *sql.Tx, knID, branch string, metricIDs []string) (err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteMetricsByIDs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeleteMetricsByIDs")
 	defer span.End()
 
 	if len(metricIDs) == 0 {
@@ -574,7 +605,7 @@ func (ms *metricService) DeleteMetricsByIDs(ctx context.Context, tx *sql.Tx, knI
 
 // DeleteMetricsByKnID 内部接口，不校验权限；tx 必须传（与 DeleteActionTypesByKnID 一致）。
 func (ms *metricService) DeleteMetricsByKnID(ctx context.Context, tx *sql.Tx, knID, branch string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteMetricsByKnID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "DeleteMetricsByKnID")
 	defer span.End()
 
 	if tx == nil {
@@ -605,7 +636,7 @@ func (ms *metricService) DeleteMetricsByKnID(ctx context.Context, tx *sql.Tx, kn
 }
 
 func (ms *metricService) SearchMetrics(ctx context.Context, query *interfaces.ConceptsQuery) (interfaces.MetricSearchResult, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "SearchMetrics")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "SearchMetrics")
 	defer span.End()
 
 	response := interfaces.MetricSearchResult{
@@ -794,7 +825,7 @@ func (ms *metricService) SearchMetrics(ctx context.Context, query *interfaces.Co
 
 // getMetricDatasetTotal returns total document count for the metric concept query (same pattern as object_type.GetTotal).
 func (ms *metricService) getMetricDatasetTotal(ctx context.Context, filterCondition map[string]any) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "logic layer: search metric concept total")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "logic layer: search metric concept total")
 	defer span.End()
 
 	params := &interfaces.ResourceDataQueryParams{
@@ -862,8 +893,6 @@ func (ms *metricService) getTotalWithLargeScopeRefs(ctx context.Context, filterC
 }
 
 func (ms *metricService) validateMetricStrictExternalDeps(ctx context.Context, tx *sql.Tx, metric *interfaces.MetricDefinition) error {
-
-	// 校验统计主体
 	scopeRef := strings.TrimSpace(metric.ScopeRef)
 	if scopeRef == "" {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
@@ -878,7 +907,29 @@ func (ms *metricService) validateMetricStrictExternalDeps(ctx context.Context, t
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("metric[%s]'s scope_ref[%s] object type not found", metric.ID, scopeRef))
 	}
+	batchindex.EnsureObjectTypePropertyMap(ot)
+	return ms.validateMetricAgainstResolvedOT(ctx, metric, ot, scopeRef)
+}
 
+func (ms *metricService) validateMetricStrictExternalDepsFromBatch(ctx context.Context, metric *interfaces.MetricDefinition, batch *interfaces.BatchIDIndex) error {
+	if batch == nil {
+		return ms.validateMetricStrictExternalDeps(ctx, nil, metric)
+	}
+	scopeRef := strings.TrimSpace(metric.ScopeRef)
+	if scopeRef == "" {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
+			WithErrorDetails("scope_ref is required (service dependency check)")
+	}
+	ot := batch.ObjectTypes[scopeRef]
+	if ot == nil {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("metric[%s]'s scope_ref[%s] object type not found in batch payload", metric.ID, scopeRef))
+	}
+	batchindex.EnsureObjectTypePropertyMap(ot)
+	return ms.validateMetricAgainstResolvedOT(ctx, metric, ot, scopeRef)
+}
+
+func (ms *metricService) validateMetricAgainstResolvedOT(ctx context.Context, metric *interfaces.MetricDefinition, ot *interfaces.ObjectType, scopeRef string) error {
 	ds := ot.DataSource
 	if ds == nil || strings.TrimSpace(ds.ID) == "" {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).

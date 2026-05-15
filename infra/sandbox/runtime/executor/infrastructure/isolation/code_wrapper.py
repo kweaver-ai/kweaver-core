@@ -28,6 +28,7 @@ COMMON_SHELL_COMMANDS = {
     "env",
     "find",
     "git",
+    "go",
     "grep",
     "head",
     "java",

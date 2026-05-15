@@ -55,10 +55,10 @@
             "name": "rds"
         },
         {
-            "name": "mq"
+            "name": "opensearch"
         },
         {
-            "name": "opensearch"
+            "name": "mq"
         }
     ]
 }

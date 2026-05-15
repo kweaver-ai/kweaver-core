@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -82,17 +82,12 @@ func NewConceptGroupService(appSetting *common.AppSetting) interfaces.ConceptGro
 func (cgs *conceptGroupService) CheckConceptGroupExistByID(ctx context.Context, knID string, branch string,
 	cgID string) (string, bool, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验概念分组[%v]的存在性", cgID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验概念分组[%v]的存在性", cgID))
 	defer span.End()
 
 	cgName, exist, err := cgs.cga.CheckConceptGroupExistByID(ctx, knID, branch, cgID)
 	if err != nil {
-		logger.Errorf("CheckConceptGroupExistByID error: %s", err.Error())
-
-		span.SetStatus(codes.Error, fmt.Sprintf("按ID[%v]获取概念分组失败", knID))
-		// 记录处理的 sql 字符串
-		o11y.Error(ctx, fmt.Sprintf("按ID[%v]获取概念分组失败: %v", knID, err))
-
+		otellog.LogError(ctx, fmt.Sprintf("按ID[%v]获取概念分组失败", knID), err)
 		return "", exist, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ConceptGroup_InternalError_CheckConceptGroupIfExistFailed).WithErrorDetails(err.Error())
 	}
@@ -102,17 +97,12 @@ func (cgs *conceptGroupService) CheckConceptGroupExistByID(ctx context.Context, 
 }
 
 func (cgs *conceptGroupService) CheckConceptGroupExistByName(ctx context.Context, knID string, branch string, cgName string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验概念分组[%v]的存在性", cgName))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验概念分组[%v]的存在性", cgName))
 	defer span.End()
 
 	cgID, exist, err := cgs.cga.CheckConceptGroupExistByName(ctx, knID, branch, cgName)
 	if err != nil {
-		logger.Errorf("CheckConceptGroupExistByName error: %s", err.Error())
-
-		span.SetStatus(codes.Error, fmt.Sprintf("按名称[%v]获取概念分组失败", cgName))
-		// 记录处理的 sql 字符串
-		o11y.Error(ctx, fmt.Sprintf("按名称[%v]获取概念分组失败: %v", cgName, err))
-
+		otellog.LogError(ctx, fmt.Sprintf("按名称[%v]获取概念分组失败", cgName), err)
 		return cgID, exist, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ConceptGroup_InternalError_CheckConceptGroupIfExistFailed).WithErrorDetails(err.Error())
 	}
@@ -125,7 +115,7 @@ func (cgs *conceptGroupService) CheckConceptGroupExistByName(ctx context.Context
 func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.Tx,
 	conceptGroup *interfaces.ConceptGroup, mode string, strictMode bool) (string, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create concept group")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create concept group")
 	defer span.End()
 
 	// 判断userid是否有创建概念分组的权限（策略决策）
@@ -177,10 +167,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 		// 0. 开始事务
 		tx, err = cgs.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return "", rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ConceptGroup_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -193,19 +180,14 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("CreateConceptGroup Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateConceptGroup Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "CreateConceptGroup Transaction Commit Failed", err)
 					return
 				}
-				logger.Infof("CreateConceptGroup Transaction Commit Success")
-				o11y.Debug(ctx, "CreateConceptGroup Transaction Commit Success")
+				otellog.LogDebug(ctx, "CreateConceptGroup Transaction Commit Success")
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("CreateConceptGroup Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateConceptGroup Transaction Rollback Error: %s", err.Error()))
+					otellog.LogError(ctx, "CreateConceptGroup Transaction Rollback Error", err)
 				}
 			}
 		}()
@@ -349,7 +331,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 func (cgs *conceptGroupService) ValidateConceptGroups(ctx context.Context, knID string, branch string,
 	conceptGroups []*interfaces.ConceptGroup, strictMode bool, parentBatch *interfaces.BatchIDIndex, mode string) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "ValidateConceptGroups")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ValidateConceptGroups")
 	defer span.End()
 
 	if len(conceptGroups) == 0 {
@@ -409,7 +391,7 @@ func (cgs *conceptGroupService) ValidateConceptGroups(ctx context.Context, knID 
 func (cgs *conceptGroupService) ListConceptGroups(ctx context.Context,
 	query interfaces.ConceptGroupsQueryParams) ([]*interfaces.ConceptGroup, int, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询概念分组列表")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询概念分组列表")
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -496,7 +478,7 @@ func (cgs *conceptGroupService) GetConceptGroupByID(ctx context.Context, knID st
 	cgID string, mode string) (*interfaces.ConceptGroup, error) {
 
 	// 获取概念分组
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("查询概念分组[%s]信息", knID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("查询概念分组[%s]信息", knID))
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -591,7 +573,7 @@ func (cgs *conceptGroupService) GetConceptGroupByID(ctx context.Context, knID st
 
 func (cgs *conceptGroupService) GetConceptGroupIDsByKnID(ctx context.Context, knID string, branch string) ([]string, error) {
 	// 获取概念分组
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("查询概念分组[%s]信息", knID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("查询概念分组[%s]信息", knID))
 	defer span.End()
 
 	// 获取模型基本信息
@@ -612,7 +594,7 @@ func (cgs *conceptGroupService) GetConceptGroupIDsByKnID(ctx context.Context, kn
 // 获取概念分组的统计信息
 func (cgs *conceptGroupService) GetStatByConceptGroup(ctx context.Context, conceptGroup *interfaces.ConceptGroup) (*interfaces.Statistics, error) {
 	// 获取概念分组
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("查询概念分组[%s]信息", conceptGroup.KNID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("查询概念分组[%s]信息", conceptGroup.KNID))
 	defer span.End()
 
 	//  数量从对象类、概念对象关系、概念分组表中联合查询得到
@@ -682,7 +664,7 @@ func (cgs *conceptGroupService) GetStatByConceptGroup(ctx context.Context, conce
 
 // 更新概念分组
 func (cgs *conceptGroupService) UpdateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *interfaces.ConceptGroup, strictMode bool) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update concept group")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update concept group")
 	defer span.End()
 
 	// 判断userid是否有创建概念分组的权限（策略决策）
@@ -751,10 +733,7 @@ func (cgs *conceptGroupService) UpdateConceptGroup(ctx context.Context, tx *sql.
 		// 0. 开始事务
 		tx, err = cgs.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ConceptGroup_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -766,18 +745,14 @@ func (cgs *conceptGroupService) UpdateConceptGroup(ctx context.Context, tx *sql.
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("UpdateConceptGroup Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateConceptGroup Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "UpdateConceptGroup Transaction Commit Failed", err)
+					return
 				}
-				logger.Infof("UpdateConceptGroup Transaction Commit Success:%v", conceptGroup.CGName)
-				o11y.Debug(ctx, fmt.Sprintf("UpdateConceptGroup Transaction Commit Success: %s", conceptGroup.CGName))
+				otellog.LogDebug(ctx, fmt.Sprintf("UpdateConceptGroup Transaction Commit Success: %s", conceptGroup.CGName))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("UpdateConceptGroup Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateConceptGroup Transaction Rollback Error: %s", rollbackErr.Error()))
+					otellog.LogError(ctx, "UpdateConceptGroup Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -809,7 +784,7 @@ func (cgs *conceptGroupService) UpdateConceptGroup(ctx context.Context, tx *sql.
 }
 
 func (cgs *conceptGroupService) DeleteConceptGroupByID(ctx context.Context, tx *sql.Tx, knID string, branch string, cgID string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete concept group by id")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete concept group by id")
 	defer span.End()
 
 	// 判断userid是否有删除概念分组的权限
@@ -825,10 +800,7 @@ func (cgs *conceptGroupService) DeleteConceptGroupByID(ctx context.Context, tx *
 		// 0. 开始事务
 		tx, err = cgs.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ConceptGroup_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -842,19 +814,14 @@ func (cgs *conceptGroupService) DeleteConceptGroupByID(ctx context.Context, tx *
 			// 提交事务
 			err = tx.Commit()
 			if err != nil {
-				logger.Errorf("DeleteConceptGroup Transaction Commit Failed:%v", err)
-				span.SetStatus(codes.Error, "提交事务失败")
-				o11y.Error(ctx, fmt.Sprintf("DeleteConceptGroup Transaction Commit Failed: %s", err.Error()))
+				otellog.LogError(ctx, "DeleteConceptGroup Transaction Commit Failed", err)
 				return
 			}
-			logger.Infof("DeleteConceptGroup Transaction Commit Success")
-			o11y.Debug(ctx, "DeleteConceptGroup Transaction Commit Success")
+			otellog.LogDebug(ctx, "DeleteConceptGroup Transaction Commit Success")
 		default:
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				logger.Errorf("DeleteConceptGroup Transaction Rollback Error:%v", rollbackErr)
-				span.SetStatus(codes.Error, "事务回滚失败")
-				o11y.Error(ctx, fmt.Sprintf("DeleteConceptGroup Transaction Rollback Error: %s", err.Error()))
+				otellog.LogError(ctx, "DeleteConceptGroup Transaction Rollback Error", err)
 			}
 		}
 	}()
@@ -871,8 +838,7 @@ func (cgs *conceptGroupService) DeleteConceptGroupByID(ctx context.Context, tx *
 	logger.Infof("DeleteConceptGroupByID: Rows affected is %v, request delete CGID is %s in knowledge network [%s] branch [%s]!",
 		rowsAffect, cgID, knID, branch)
 	if rowsAffect != int64(1) {
-		logger.Warnf("DeleteConceptGroupByID number %v not equal %v!", rowsAffect, 1)
-		o11y.Warn(ctx, fmt.Sprintf("DeleteConceptGroupByID number %v not equal %v!", rowsAffect, 1))
+		otellog.LogWarn(ctx, fmt.Sprintf("DeleteConceptGroupByID number %v not equal %v!", rowsAffect, 1))
 	}
 
 	// 删除组下所有的绑定关系
@@ -905,13 +871,11 @@ func (cgs *conceptGroupService) DeleteConceptGroupByID(ctx context.Context, tx *
 
 // 内部方法，删除概念分组，不检查权限，tx必须传入
 func (cgs *conceptGroupService) DeleteConceptGroupsByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete concept group by knID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete concept group by knID")
 	defer span.End()
 
 	if tx == nil {
-		logger.Errorf("missing transaction")
-		o11y.Error(ctx, "missing transaction")
-		span.SetStatus(codes.Error, "缺少事务")
+		otellog.LogError(ctx, "missing transaction", nil)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ConceptGroup_InternalError_MissingTransaction).
 			WithErrorDetails("missing transaction")
@@ -945,7 +909,7 @@ func (cgs *conceptGroupService) DeleteConceptGroupsByKnID(ctx context.Context, t
 
 // 更新知识网络详情
 func (cgs *conceptGroupService) UpdateConceptGroupDetail(ctx context.Context, knID string, branch string, cgID string, detail string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("Update concept group detail[%s]", knID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("Update concept group detail[%s]", knID))
 	defer span.End()
 
 	// 更新知识网络详情
@@ -966,7 +930,7 @@ func (cgs *conceptGroupService) UpdateConceptGroupDetail(ctx context.Context, kn
 func (cgs *conceptGroupService) handleConceptGroupImportMode(ctx context.Context, mode string,
 	conceptGroup *interfaces.ConceptGroup) (isCreate bool, isUpdate bool, err error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "concept group import mode logic")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "concept group import mode logic")
 	defer span.End()
 
 	isCreate = false
@@ -1059,7 +1023,7 @@ func (cgs *conceptGroupService) handleConceptGroupImportMode(ctx context.Context
 }
 
 func (cgs *conceptGroupService) InsertDatasetData(ctx context.Context, origConceptGroup *interfaces.ConceptGroup) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "概念分组概念索引写入")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "概念分组概念索引写入")
 	defer span.End()
 
 	conceptGroup := &interfaces.ConceptGroup{
@@ -1131,7 +1095,7 @@ func (cgs *conceptGroupService) InsertDatasetData(ctx context.Context, origConce
 func (cgs *conceptGroupService) AddObjectTypesToConceptGroup(ctx context.Context, tx *sql.Tx, knID string, branch string,
 	cgID string, otIDs []interfaces.ID, importMode string, strictMode bool) ([]string, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "添加对象类到概念分组中")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "添加对象类到概念分组中")
 	defer span.End()
 
 	var err error
@@ -1139,10 +1103,7 @@ func (cgs *conceptGroupService) AddObjectTypesToConceptGroup(ctx context.Context
 		// 0. 开始事务
 		tx, err = cgs.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return []string{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ConceptGroup_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -1154,18 +1115,14 @@ func (cgs *conceptGroupService) AddObjectTypesToConceptGroup(ctx context.Context
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("AddObjectTypesToConceptGroup Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("AddObjectTypesToConceptGroup Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "AddObjectTypesToConceptGroup Transaction Commit Failed", err)
+					return
 				}
-				logger.Infof("AddObjectTypesToConceptGroup Transaction Commit Success:kn_id:%s,branch:%s,cg_id:%s,ot_ids:%v", knID, branch, cgID, otIDs)
-				o11y.Debug(ctx, fmt.Sprintf("AddObjectTypesToConceptGroup Transaction Commit Success:kn_id:%s,branch:%s,cg_id:%s,ot_ids:%v", knID, branch, cgID, otIDs))
+				otellog.LogDebug(ctx, fmt.Sprintf("AddObjectTypesToConceptGroup Transaction Commit Success:kn_id:%s,branch:%s,cg_id:%s,ot_ids:%v", knID, branch, cgID, otIDs))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("AddObjectTypesToConceptGroup Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("AddObjectTypesToConceptGroup Transaction Rollback Error: %s", rollbackErr.Error()))
+					otellog.LogError(ctx, "AddObjectTypesToConceptGroup Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -1295,7 +1252,7 @@ func (cgs *conceptGroupService) AddObjectTypesToConceptGroup(ctx context.Context
 func (cgs *conceptGroupService) ListConceptGroupRelations(ctx context.Context,
 	query interfaces.ConceptGroupRelationsQueryParams) ([]interfaces.ConceptGroupRelation, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询概念与分组的关系列表")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询概念与分组的关系列表")
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -1310,10 +1267,7 @@ func (cgs *conceptGroupService) ListConceptGroupRelations(ctx context.Context,
 	// 0. 开始事务
 	tx, err := cgs.db.Begin()
 	if err != nil {
-		logger.Errorf("Begin transaction error: %s", err.Error())
-		span.SetStatus(codes.Error, "事务开启失败")
-		o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+		otellog.LogError(ctx, "Begin transaction error", err)
 		return []interfaces.ConceptGroupRelation{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ConceptGroup_InternalError_BeginTransactionFailed).
 			WithErrorDetails(err.Error())
@@ -1325,18 +1279,14 @@ func (cgs *conceptGroupService) ListConceptGroupRelations(ctx context.Context,
 			// 提交事务
 			err = tx.Commit()
 			if err != nil {
-				logger.Errorf("ListConceptGroupRelations Transaction Commit Failed:%v", err)
-				span.SetStatus(codes.Error, "提交事务失败")
-				o11y.Error(ctx, fmt.Sprintf("ListConceptGroupRelations Transaction Commit Failed: %s", err.Error()))
+				otellog.LogError(ctx, "ListConceptGroupRelations Transaction Commit Failed", err)
+				return
 			}
-			logger.Infof("ListConceptGroupRelations Transaction Commit Success:%v", query)
-			o11y.Debug(ctx, fmt.Sprintf("ListConceptGroupRelations Transaction Commit Success: %v", query))
+			otellog.LogDebug(ctx, fmt.Sprintf("ListConceptGroupRelations Transaction Commit Success: %v", query))
 		default:
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				logger.Errorf("ListConceptGroupRelations Transaction Rollback Error:%v", rollbackErr)
-				span.SetStatus(codes.Error, "事务回滚失败")
-				o11y.Error(ctx, fmt.Sprintf("ListConceptGroupRelations Transaction Rollback Error: %s", rollbackErr.Error()))
+				otellog.LogError(ctx, "ListConceptGroupRelations Transaction Rollback Error", rollbackErr)
 			}
 		}
 	}()
@@ -1381,7 +1331,7 @@ func (cgs *conceptGroupService) ListConceptGroupRelations(ctx context.Context,
 
 // 从概念分组中移除对象类
 func (cgs *conceptGroupService) DeleteObjectTypesFromGroup(ctx context.Context, tx *sql.Tx, knID string, branch string, cgID string, otIDs []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete concept group relations")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete concept group relations")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -1397,10 +1347,7 @@ func (cgs *conceptGroupService) DeleteObjectTypesFromGroup(ctx context.Context, 
 		// 0. 开始事务
 		tx, err = cgs.db.Begin()
 		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ConceptGroup_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -1412,18 +1359,14 @@ func (cgs *conceptGroupService) DeleteObjectTypesFromGroup(ctx context.Context, 
 				// 提交事务
 				err = tx.Commit()
 				if err != nil {
-					logger.Errorf("DeleteObjectTypesFromGroup Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("DeleteObjectTypesFromGroup Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "DeleteObjectTypesFromGroup Transaction Commit Failed", err)
+					return
 				}
-				logger.Infof("DeleteObjectTypesFromGroup Transaction Commit Success: kn_id:%s,branch:%s,cg_id:%s,ot_ids:%v", knID, branch, cgID, otIDs)
-				o11y.Debug(ctx, fmt.Sprintf("DeleteObjectTypesFromGroup Transaction Commit Success: kn_id:%s,branch:%s,cg_id:%s,ot_ids:%v", knID, branch, cgID, otIDs))
+				otellog.LogDebug(ctx, fmt.Sprintf("DeleteObjectTypesFromGroup Transaction Commit Success: kn_id:%s,branch:%s,cg_id:%s,ot_ids:%v", knID, branch, cgID, otIDs))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
-					logger.Errorf("DeleteObjectTypesFromGroup Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("DeleteObjectTypesFromGroup Transaction Rollback Error: %s", rollbackErr.Error()))
+					otellog.LogError(ctx, "DeleteObjectTypesFromGroup Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -1446,8 +1389,7 @@ func (cgs *conceptGroupService) DeleteObjectTypesFromGroup(ctx context.Context, 
 
 	logger.Infof("DeleteObjectTypesFromGroup: Rows affected is %v, request delete ATIDs is %v!", rowsAffect, len(otIDs))
 	if rowsAffect != int64(len(otIDs)) {
-		logger.Warnf("Delete action types number %v not equal requerst action types number %v!", rowsAffect, len(otIDs))
-		o11y.Warn(ctx, fmt.Sprintf("Delete action types number %v not equal requerst action types number %v!", rowsAffect, len(otIDs)))
+		otellog.LogWarn(ctx, fmt.Sprintf("Delete action types number %v not equal requerst action types number %v!", rowsAffect, len(otIDs)))
 	}
 
 	span.SetStatus(codes.Ok, "")

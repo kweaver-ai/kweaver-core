@@ -194,6 +194,23 @@ CREATE TABLE IF NOT EXISTS t_resource (
 
 
 -- ==========================================
+-- 3. t_entity_extension Catalog/Resource 可检索业务 KV（extensions）副表
+-- Issue #382 方案 B
+-- ==========================================
+CREATE TABLE IF NOT EXISTS t_entity_extension (
+    f_entity_kind VARCHAR(20) NOT NULL COMMENT '实体类型: catalog / resource，与 f_entity_id 共同标识扩展所属实体',
+    f_entity_id VARCHAR(40) NOT NULL COMMENT '等于 t_catalog.f_id 或 t_resource.f_id',
+    f_key       VARCHAR(128) NOT NULL COMMENT '扩展键，建议 dip: 等业务前缀',
+    f_value     VARCHAR(512) NOT NULL COMMENT '扩展值，可为 JSON 文本',
+    f_create_time BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间（毫秒）',
+    f_update_time BIGINT(20) NOT NULL DEFAULT 0 COMMENT '更新时间（毫秒）',
+    PRIMARY KEY (f_entity_kind, f_entity_id, f_key),
+    KEY idx_entity (f_entity_kind, f_entity_id),
+    KEY idx_entity_key_value (f_entity_kind, f_entity_id, f_key, f_value(191))
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT='实体级 extensions 行存储（与 schema_definition 内 Property.extensions 分离）';
+
+
+-- ==========================================
 -- 4. t_resource_schema_history Schema历史表
 -- ==========================================
 CREATE TABLE IF NOT EXISTS t_resource_schema_history (

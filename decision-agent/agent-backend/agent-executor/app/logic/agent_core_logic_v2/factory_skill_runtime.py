@@ -23,17 +23,15 @@ This layer does NOT cache results and is NOT directly visible to the model.
 It is called by FactorySkillLoadTool / FactorySkillReadTool / FactorySkillExecuteTool.
 """
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from app.common.stand_log import StandLogger
-from app.driven.dip.agent_factory_service import AgentFactoryService
+from app.driven.dip.agent_operator_integration_service import AgentOperatorIntegrationService
 
 # Reuse path validation from the SDK's skill_validator to avoid duplicating rules.
 # These are the same checks used by the local resource_skillkit handlers.
 from dolphin.lib.skillkits.resource.skill_validator import (
     validate_skill_file_path as _validate_file_path,
-    validate_skill_script_path as _validate_script_path,
 )
 
 
@@ -95,7 +93,7 @@ def _ownership_check(
 
 
 async def load_skill(
-    service: AgentFactoryService,
+    service: AgentOperatorIntegrationService,
     skill_id: str,
     request_headers: Optional[dict] = None,
 ) -> Dict[str, Any]:
@@ -180,7 +178,7 @@ async def load_skill(
 
 
 async def read_skill_file(
-    service: AgentFactoryService,
+    service: AgentOperatorIntegrationService,
     skill_id: str,
     file_path: str,
     request_headers: Optional[dict] = None,
@@ -243,7 +241,7 @@ async def read_skill_file(
     mime_type: str = file_meta.get("mime_type", "")
     file_type: str = file_meta.get("file_type", "")
     rel_path_returned: str = file_meta.get("rel_path", "")
-    
+
     # Log the API response for debugging
     StandLogger.info(
         f"read_skill_file received file_meta type={type(file_meta)}, "
@@ -283,7 +281,7 @@ async def read_skill_file(
 
 
 async def execute_skill_script(
-    service: AgentFactoryService,
+    service: AgentOperatorIntegrationService,
     skill_id: str,
     entry_shell: str,
     request_headers: Optional[dict] = None,

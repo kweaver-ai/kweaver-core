@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	libmq "github.com/kweaver-ai/kweaver-go-lib/mq"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/spf13/viper"
 
@@ -75,8 +76,8 @@ type RateLimitingConfig struct {
 
 // ConcurrencyConfig 并发控制配置项
 type ConcurrencyConfig struct {
-	Enabled     bool                      `mapstructure:"enabled"`
-	Global      GlobalConcurrencyConfig   `mapstructure:"global"`
+	Enabled bool                    `mapstructure:"enabled"`
+	Global  GlobalConcurrencyConfig `mapstructure:"global"`
 }
 
 // GlobalConcurrencyConfig 全局并发配置
@@ -86,12 +87,12 @@ type GlobalConcurrencyConfig struct {
 
 // AppSetting app配置项
 type AppSetting struct {
-	ServerSetting        ServerSetting             `mapstructure:"server"`
-	LogSetting           logger.LogSetting         `mapstructure:"log"`
-	ObservabilitySetting o11y.ObservabilitySetting `mapstructure:"observability"`
-	CryptoSetting        CryptoSetting             `mapstructure:"crypto"`
-	DepServices          map[string]map[string]any `mapstructure:"depServices"`
-	RateLimitingSetting  RateLimitingConfig        `mapstructure:"rateLimiting"`
+	ServerSetting       ServerSetting             `mapstructure:"server"`
+	LogSetting          logger.LogSetting         `mapstructure:"log"`
+	OtelSetting         otel.OtelConfig           `mapstructure:"otel"`
+	CryptoSetting       CryptoSetting             `mapstructure:"crypto"`
+	DepServices         map[string]map[string]any `mapstructure:"depServices"`
+	RateLimitingSetting RateLimitingConfig        `mapstructure:"rateLimiting"`
 
 	DBSetting           libdb.DBSetting
 	MQSetting           libmq.MQSetting
@@ -107,6 +108,7 @@ type AppSetting struct {
 }
 
 const (
+	// ConfigFile 配置文件信息
 	configPath string = "./config/"
 	configName string = "vega-backend-config"
 	configType string = "yaml"
@@ -126,8 +128,9 @@ const (
 )
 
 var (
-	appSetting  *AppSetting
-	vp          *viper.Viper
+	appSetting *AppSetting
+	vp         *viper.Viper
+
 	settingOnce sync.Once
 
 	// 当前系统时区
@@ -141,6 +144,7 @@ func NewSetting() *AppSetting {
 		vp = viper.New()
 		initSetting(vp)
 	})
+
 	return appSetting
 }
 
@@ -173,6 +177,20 @@ func loadSetting(vp *viper.Viper) {
 		logger.Fatalf("err:%s\n", err)
 	}
 
+	// 联调/CI：允许用环境变量覆盖监听端口，避免与本地已占用端口冲突
+	if hp := strings.TrimSpace(os.Getenv("VEGA_HTTP_PORT")); hp != "" {
+		if v, err := strconv.Atoi(hp); err == nil && v > 0 && v < 65536 {
+			appSetting.ServerSetting.HttpPort = v
+			logger.Infof("HttpPort overridden by VEGA_HTTP_PORT=%d", v)
+		}
+	}
+
+	// 联调脚本（如 issue382）：无挂载密钥时关闭 crypto，避免读取 /opt/... 失败
+	if v := strings.TrimSpace(os.Getenv("VEGA_CRYPTO_DISABLED")); strings.EqualFold(v, "1") || strings.EqualFold(v, "true") {
+		appSetting.CryptoSetting.Enabled = false
+		logger.Info("Crypto disabled via VEGA_CRYPTO_DISABLED env")
+	}
+
 	// 加载时区
 	loc, err := time.LoadLocation(os.Getenv("TZ"))
 	if err != nil {
@@ -188,6 +206,7 @@ func loadSetting(vp *viper.Viper) {
 	SetLogSetting(appSetting.LogSetting)
 
 	SetDBSetting()
+	overrideDBSettingFromEnv()
 
 	SetMQSetting()
 
@@ -197,27 +216,20 @@ func loadSetting(vp *viper.Viper) {
 
 	SetKafkaConnectSetting()
 
-	if GetAuthEnabled() {
-		SetHydraAdminSetting()
-		SetPermissionSetting()
-		SetUserMgmtSetting()
-	}
+	SetHydraAdminSetting()
+
+	SetPermissionSetting()
+
+	SetUserMgmtSetting()
 
 	SetMfModelManagerSetting()
 	SetMfModelApiSetting()
 
-	serverInfo := o11y.ServerInfo{
-		ServerName:    version.ServerName,
-		ServerVersion: version.ServerVersion,
-		Language:      version.LanguageGo,
-		GoVersion:     version.GoVersion,
-		GoArch:        version.GoArch,
-	}
-	logger.Infof("ServerName: %s, ServerVersion: %s, Language: %s, GoVersion: %s, GoArch: %s, POD_NAME: %s",
+	appSetting.OtelSetting.ServiceName = version.ServerName
+	appSetting.OtelSetting.ServiceVersion = version.ServerVersion
+	logger.Infof("ServerName: %s, ServerVersion: %s, Language: %s, GoVersion: %s, GoArch: %s",
 		version.ServerName, version.ServerVersion, version.LanguageGo,
-		version.GoVersion, version.GoArch, o11y.POD_NAME)
-
-	o11y.Init(serverInfo, appSetting.ObservabilitySetting)
+		version.GoVersion, version.GoArch)
 
 	s, _ := sonic.MarshalString(appSetting)
 	logger.Debug(s)
@@ -229,24 +241,38 @@ func SetDBSetting() {
 		logger.Fatalf("service %s not found in depServices", rdsServiceName)
 	}
 
-	dbName := DATA_BASE_NAME
-	if d, ok := setting["database"].(string); ok && d != "" {
-		dbName = d
-	}
-	password := setting["password"]
-	pwd := ""
-	switch p := password.(type) {
-	case int:
-		pwd = strconv.Itoa(p)
-	case string:
-		pwd = p
-	}
 	appSetting.DBSetting = libdb.DBSetting{
 		Host:     setting["host"].(string),
 		Port:     setting["port"].(int),
 		Username: setting["user"].(string),
-		Password: pwd,
-		DBName:   dbName,
+		Password: setting["password"].(string),
+		DBName:   DATA_BASE_NAME,
+	}
+}
+
+// overrideDBSettingFromEnv 联调/脚本用：覆盖 depServices 解析出的 DB 连接（如本地 127.0.0.1:3306）
+func overrideDBSettingFromEnv() {
+	if h := strings.TrimSpace(os.Getenv("VEGA_DB_HOST")); h != "" {
+		appSetting.DBSetting.Host = h
+		logger.Infof("DB Host overridden by VEGA_DB_HOST=%s", h)
+	}
+	if p := strings.TrimSpace(os.Getenv("VEGA_DB_PORT")); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 && v < 65536 {
+			appSetting.DBSetting.Port = v
+			logger.Infof("DB Port overridden by VEGA_DB_PORT=%d", v)
+		}
+	}
+	if u := strings.TrimSpace(os.Getenv("VEGA_DB_USER")); u != "" {
+		appSetting.DBSetting.Username = u
+		logger.Infof("DB Username overridden by VEGA_DB_USER")
+	}
+	if pw, ok := os.LookupEnv("VEGA_DB_PASSWORD"); ok {
+		appSetting.DBSetting.Password = pw
+		logger.Info("DB Password overridden by VEGA_DB_PASSWORD")
+	}
+	if db := strings.TrimSpace(os.Getenv("VEGA_DB_NAME")); db != "" {
+		appSetting.DBSetting.DBName = db
+		logger.Infof("DB Name overridden by VEGA_DB_NAME=%s", db)
 	}
 }
 
@@ -288,83 +314,28 @@ func SetOpenSearchSetting() {
 	}
 }
 
-// SetRedisSetting 设置 Redis 配置
-func SetRedisSetting() {
-	setting, ok := appSetting.DepServices[redisServiceName]
+// GetAuthEnabled 获取认证开关状态
+// 通过环境变量 AUTH_ENABLED 控制，默认 true（安全优先）
+func GetAuthEnabled() bool {
+	envVal := os.Getenv("AUTH_ENABLED")
+	// 仅当显式设置为 false 或 0 时禁用认证
+	return envVal != "false" && envVal != "0"
+}
+
+func SetHydraAdminSetting() {
+	if !GetAuthEnabled() {
+		logger.Info("ISF authentication disabled via AUTH_ENABLED env, skipping hydra-admin configuration")
+		return
+	}
+	setting, ok := appSetting.DepServices[hydraAdminServiceName]
 	if !ok {
-		logger.Fatalf("service %s not found in depServices", redisServiceName)
+		logger.Fatalf("service %s not found in depServices", hydraAdminServiceName)
 	}
-
-	connectInfo, ok := setting["connectinfo"].(map[string]any)
-	if !ok {
-		logger.Fatalf("service %s connectInfo not found in depServices", redisServiceName)
+	appSetting.HydraAdminSetting = hydra.HydraAdminSetting{
+		HydraAdminProcotol: setting["protocol"].(string),
+		HydraAdminHost:     setting["host"].(string),
+		HydraAdminPort:     setting["port"].(int),
 	}
-
-	appSetting.RedisSetting = RedisSetting{
-		ConnectType:      setting["connecttype"].(string),
-		Username:         connectInfo["username"].(string),
-		Password:         connectInfo["password"].(string),
-		SentinelHost:     connectInfo["sentinelhost"].(string),
-		SentinelPort:     connectInfo["sentinelport"].(int),
-		SentinelUsername: connectInfo["sentinelusername"].(string),
-		SentinelPassword: connectInfo["sentinelpassword"].(string),
-		MasterGroupName:  connectInfo["mastergroupname"].(string),
-
-		Host:       connectInfo["host"].(string),
-		Port:       connectInfo["port"].(int),
-		MasterHost: connectInfo["masterhost"].(string),
-		MasterPort: connectInfo["masterport"].(int),
-		SlaveHost:  connectInfo["slavehost"].(string),
-		SlavePort:  connectInfo["slaveport"].(int),
-	}
-}
-
-// GetDBSetting 获取DB配置
-func GetDBSetting() libdb.DBSetting {
-	return appSetting.DBSetting
-}
-
-// GetOpenSearchSetting 获取OpenSearch配置
-func GetOpenSearchSetting() rest.OpenSearchClientConfig {
-	return appSetting.OpenSearchSetting
-}
-
-// GetServerSetting 获取Server配置
-func GetServerSetting() ServerSetting {
-	return appSetting.ServerSetting
-}
-
-// GetHttpPort 获取HTTP端口
-func GetHttpPort() string {
-	return fmt.Sprintf(":%d", appSetting.ServerSetting.HttpPort)
-}
-
-// loadCryptoKeys 从文件加载 RSA 密钥
-func loadCryptoKeys() error {
-	if !appSetting.CryptoSetting.Enabled {
-		return nil
-	}
-
-	if appSetting.CryptoSetting.PrivateKeyPath == "" {
-		return fmt.Errorf("privateKeyPath is required when crypto is enabled")
-	}
-	if appSetting.CryptoSetting.PublicKeyPath == "" {
-		return fmt.Errorf("publicKeyPath is required when crypto is enabled")
-	}
-
-	privateKeyContent, err := os.ReadFile(appSetting.CryptoSetting.PrivateKeyPath)
-	if err != nil {
-		return fmt.Errorf("failed to read private key file: %w", err)
-	}
-	appSetting.CryptoSetting.PrivateKey = string(privateKeyContent)
-
-	publicKeyContent, err := os.ReadFile(appSetting.CryptoSetting.PublicKeyPath)
-	if err != nil {
-		return fmt.Errorf("failed to read public key file: %w", err)
-	}
-	appSetting.CryptoSetting.PublicKey = string(publicKeyContent)
-
-	return nil
 }
 
 func SetPermissionSetting() {
@@ -401,27 +372,63 @@ func SetUserMgmtSetting() {
 	appSetting.UserMgmtUrl = fmt.Sprintf("%s://%s:%d", protocol, host, port)
 }
 
-// GetAuthEnabled 获取认证开关状态
-// 通过环境变量 AUTH_ENABLED 控制，默认 true（安全优先）
-func GetAuthEnabled() bool {
-	envVal := os.Getenv("AUTH_ENABLED")
-	return envVal != "false" && envVal != "0"
+// SetRedisSetting 设置 Redis 配置
+func SetRedisSetting() {
+	setting, ok := appSetting.DepServices[redisServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", redisServiceName)
+	}
+
+	connectInfo, ok := setting["connectinfo"].(map[string]any)
+	if !ok {
+		logger.Fatalf("service %s connectInfo not found in depServices", redisServiceName)
+	}
+
+	appSetting.RedisSetting = RedisSetting{
+		ConnectType:      setting["connecttype"].(string),
+		Username:         connectInfo["username"].(string),
+		Password:         connectInfo["password"].(string),
+		SentinelHost:     connectInfo["sentinelhost"].(string),
+		SentinelPort:     connectInfo["sentinelport"].(int),
+		SentinelUsername: connectInfo["sentinelusername"].(string),
+		SentinelPassword: connectInfo["sentinelpassword"].(string),
+		MasterGroupName:  connectInfo["mastergroupname"].(string),
+
+		Host:       connectInfo["host"].(string),
+		Port:       connectInfo["port"].(int),
+		MasterHost: connectInfo["masterhost"].(string),
+		MasterPort: connectInfo["masterport"].(int),
+		SlaveHost:  connectInfo["slavehost"].(string),
+		SlavePort:  connectInfo["slaveport"].(int),
+	}
 }
 
-func SetHydraAdminSetting() {
-	if !GetAuthEnabled() {
-		logger.Info("ISF authentication disabled via AUTH_ENABLED env, skipping hydra-admin configuration")
-		return
+// loadCryptoKeys 从文件加载 RSA 密钥
+func loadCryptoKeys() error {
+	if !appSetting.CryptoSetting.Enabled {
+		return nil
 	}
-	setting, ok := appSetting.DepServices[hydraAdminServiceName]
-	if !ok {
-		logger.Fatalf("service %s not found in depServices", hydraAdminServiceName)
+
+	if appSetting.CryptoSetting.PrivateKeyPath == "" {
+		return fmt.Errorf("privateKeyPath is required when crypto is enabled")
 	}
-	appSetting.HydraAdminSetting = hydra.HydraAdminSetting{
-		HydraAdminProcotol: setting["protocol"].(string),
-		HydraAdminHost:     setting["host"].(string),
-		HydraAdminPort:     setting["port"].(int),
+	if appSetting.CryptoSetting.PublicKeyPath == "" {
+		return fmt.Errorf("publicKeyPath is required when crypto is enabled")
 	}
+
+	privateKeyContent, err := os.ReadFile(appSetting.CryptoSetting.PrivateKeyPath)
+	if err != nil {
+		return fmt.Errorf("failed to read private key file: %w", err)
+	}
+	appSetting.CryptoSetting.PrivateKey = string(privateKeyContent)
+
+	publicKeyContent, err := os.ReadFile(appSetting.CryptoSetting.PublicKeyPath)
+	if err != nil {
+		return fmt.Errorf("failed to read public key file: %w", err)
+	}
+	appSetting.CryptoSetting.PublicKey = string(publicKeyContent)
+
+	return nil
 }
 
 func SetKafkaConnectSetting() {

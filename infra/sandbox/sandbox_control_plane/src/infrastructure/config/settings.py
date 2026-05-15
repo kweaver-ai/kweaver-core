@@ -3,11 +3,11 @@
 
 使用 Pydantic Settings 管理应用配置。
 """
-import os
+
 from functools import lru_cache
 from urllib.parse import quote_plus
 
-from pydantic import Field, field_validator, computed_field
+from pydantic import Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,9 +33,7 @@ class Settings(BaseSettings):
     workers: int = Field(default=4)
 
     # ============== 数据库配置 ==============
-    database_url: str = Field(
-        default="mysql+aiomysql://sandbox:password@localhost:3308/kweaver"
-    )
+    database_url: str = Field(default="mysql+aiomysql://sandbox:password@localhost:3308/kweaver")
     db_pool_size: int = Field(default=20)
     db_max_overflow: int = Field(default=40)
     db_pool_recycle: int = Field(default=3600)
@@ -66,14 +64,16 @@ class Settings(BaseSettings):
         优先使用 RDS 环境变量构建数据库连接，如果未设置则使用 database_url
         """
         # 如果所有必需的 RDS 字段都已设置，则使用 RDS 配置
-        if all([
-            self.db_type,
-            self.db_host,
-            self.db_port is not None,
-            self.db_user,
-            self.db_password is not None,
-            self.db_database,
-        ]):
+        if all(
+            [
+                self.db_type,
+                self.db_host,
+                self.db_port is not None,
+                self.db_user,
+                self.db_password is not None,
+                self.db_database,
+            ]
+        ):
             # 构建 aiomysql 连接 URL
             # 格式: mysql+aiomysql://user:password@host:port/database
             user = quote_plus(self.db_user)
@@ -110,6 +110,8 @@ class Settings(BaseSettings):
 
     # ============== Kubernetes 配置 ==============
     kubernetes_namespace: str = Field(default="sandbox-runtime")
+    executor_image_pull_policy: str = Field(default="IfNotPresent")
+    executor_image_pull_secrets: str = Field(default="")
 
     # ============== 执行配置 ==============
     default_timeout: int = Field(default=300)
@@ -117,14 +119,29 @@ class Settings(BaseSettings):
     default_cpu: str = Field(default="1")
     default_memory: str = Field(default="512Mi")
     default_disk: str = Field(default="1Gi")
+    default_template_id: str = Field(default="python-basic")
+    default_multi_language_template_image: str = Field(default="")
+    max_upload_file_size_mb: int = Field(default=100, ge=1)
+    max_extracted_file_count: int = Field(default=10000, ge=1)
+    max_extracted_total_size_mb: int = Field(default=512, ge=1)
     disable_bwrap: bool = Field(default=False)  # 禁用 Bubblewrap（本地开发环境）
-    control_plane_url: str | None = Field(default=None)  # Control Plane URL for executor callback (None = auto-generate from namespace)
+    control_plane_url: str | None = Field(
+        default=None
+    )  # Control Plane URL for executor callback (None = auto-generate from namespace)
 
     # ============== 清理配置 ==============
-    idle_threshold_minutes: int = Field(default=-1, ge=-1, description="空闲超时时间（分钟），-1 表示无限期（不清理空闲会话）")
-    max_lifetime_hours: int = Field(default=-1, ge=-1, description="最大生命周期（小时），-1 表示无限期")
+    idle_threshold_minutes: int = Field(
+        default=-1, ge=-1, description="空闲超时时间（分钟），-1 表示无限期（不清理空闲会话）"
+    )
+    max_lifetime_hours: int = Field(
+        default=-1, ge=-1, description="最大生命周期（小时），-1 表示无限期"
+    )
     cleanup_interval_seconds: int = Field(default=300, ge=1)
-    creating_timeout_seconds: int = Field(default=300, ge=30, description="会话创建超时时间（秒），超过此时间的 creating 状态会话将被标记为 failed")
+    creating_timeout_seconds: int = Field(
+        default=300,
+        ge=30,
+        description="会话创建超时时间（秒），超过此时间的 creating 状态会话将被标记为 failed",
+    )
 
     # ============== 重试配置 ==============
     max_retry_attempts: int = Field(default=3)
@@ -185,7 +202,7 @@ class Settings(BaseSettings):
         return v
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """
     获取配置单例

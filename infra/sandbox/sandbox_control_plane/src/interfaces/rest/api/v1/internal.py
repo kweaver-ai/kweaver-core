@@ -4,6 +4,7 @@
 定义由 Executor 调用的内部 API 端点。
 这些端点仅在容器网络内可访问。
 """
+
 import logging
 from datetime import datetime
 from typing import Dict
@@ -37,8 +38,13 @@ if USE_SQL_REPOSITORIES:
     _get_execution_repository = get_sql_execution_repository
     _get_session_repository = get_sql_session_repository
 else:
-    from src.infrastructure.dependencies import get_execution_repository as get_mock_execution_repository
-    from src.infrastructure.dependencies import get_session_repository as get_mock_session_repository
+    from src.infrastructure.dependencies import (
+        get_execution_repository as get_mock_execution_repository,
+    )
+    from src.infrastructure.dependencies import (
+        get_session_repository as get_mock_session_repository,
+    )
+
     _get_execution_repository = get_mock_execution_repository
     _get_session_repository = get_mock_session_repository
 
@@ -61,6 +67,7 @@ async def handle_container_ready(
     if session:
         # 更新会话状态为 RUNNING
         from src.domain.value_objects.execution_status import SessionStatus
+
         session.status = SessionStatus.RUNNING
 
         await session_repo.save(session)
@@ -160,7 +167,9 @@ async def report_execution_result(
             # 转换 artifacts 字符串列表为 Artifact 对象
             now = datetime.now()
             artifact_objects = [
-                Artifact(path=path, size=0, mime_type="", type=ArtifactType.ARTIFACT, created_at=now)
+                Artifact(
+                    path=path, size=0, mime_type="", type=ArtifactType.ARTIFACT, created_at=now
+                )
                 for path in report.artifacts
             ]
 

@@ -4,6 +4,7 @@
 使用 SQLAlchemy 实现执行仓储接口。
 按照数据表命名规范使用 f_ 前缀字段名。
 """
+
 import time
 from typing import List, Optional
 from datetime import datetime
@@ -28,6 +29,7 @@ class SqlExecutionRepository(IExecutionRepository):
     async def save(self, execution: Execution) -> None:
         """保存执行记录"""
         import json
+
         model = await self._session.get(ExecutionModel, execution.id)
         now_ms = int(time.time() * 1000)
 
@@ -40,10 +42,18 @@ class SqlExecutionRepository(IExecutionRepository):
             model.f_stdout = execution.stdout
             model.f_stderr = execution.stderr
             model.f_exit_code = execution.state.exit_code or 0
-            model.f_return_value = json.dumps(execution.return_value, ensure_ascii=False) if execution.return_value else ""
-            model.f_metrics = json.dumps(execution.metrics, ensure_ascii=False) if execution.metrics else ""
+            model.f_return_value = (
+                json.dumps(execution.return_value, ensure_ascii=False)
+                if execution.return_value
+                else ""
+            )
+            model.f_metrics = (
+                json.dumps(execution.metrics, ensure_ascii=False) if execution.metrics else ""
+            )
             model.f_error_message = execution.state.error_message or ""
-            model.f_completed_at = int(execution.completed_at.timestamp() * 1000) if execution.completed_at else 0
+            model.f_completed_at = (
+                int(execution.completed_at.timestamp() * 1000) if execution.completed_at else 0
+            )
             model.f_updated_at = now_ms
         else:
             # 创建新记录
@@ -65,11 +75,7 @@ class SqlExecutionRepository(IExecutionRepository):
         model = result.scalar_one_or_none()
         return model.to_entity() if model else None
 
-    async def find_by_session_id(
-        self,
-        session_id: str,
-        limit: int = 100
-    ) -> List[Execution]:
+    async def find_by_session_id(self, session_id: str, limit: int = 100) -> List[Execution]:
         """根据会话 ID 查找执行记录"""
         stmt = (
             select(ExecutionModel)
@@ -82,11 +88,7 @@ class SqlExecutionRepository(IExecutionRepository):
 
     async def find_by_status(self, status: str, limit: int = 100) -> List[Execution]:
         """根据状态查找执行记录"""
-        stmt = (
-            select(ExecutionModel)
-            .where(ExecutionModel.f_status == status)
-            .limit(limit)
-        )
+        stmt = select(ExecutionModel).where(ExecutionModel.f_status == status).limit(limit)
         result = await self._session.execute(stmt)
         return [model.to_entity() for model in result.scalars().all()]
 
@@ -96,10 +98,7 @@ class SqlExecutionRepository(IExecutionRepository):
         # 如需支持，需要添加 f_retry_count 字段到 ExecutionModel
         return []
 
-    async def find_heartbeat_timeouts(
-        self,
-        timeout_threshold: datetime
-    ) -> List[Execution]:
+    async def find_heartbeat_timeouts(self, timeout_threshold: datetime) -> List[Execution]:
         """查找心跳超时的执行"""
         # 注意：last_heartbeat_at 字段不在数据库模型中
         return []

@@ -21,6 +21,7 @@ from executor.application.services.heartbeat_service import (
 )
 from executor.application.services.lifecycle_service import (
     LifecycleService,
+    register_signal_handlers,
     map_exit_code_to_reason,
     get_lifecycle_service,
     register_lifecycle_service,
@@ -246,6 +247,20 @@ class TestLifecycleService:
 
         event = mock_callback_port.report_lifecycle.call_args[0][0]
         assert event.exit_reason == ExitReason.SIGTERM
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_send_container_exited_failure_and_invalid_reason(
+        self, lifecycle_service, mock_callback_port
+    ):
+        """Test send_container_exited handles callback failure and invalid reason."""
+        mock_callback_port.report_lifecycle.return_value = False
+
+        assert await lifecycle_service.send_container_exited(1, "error") is False
+
+        mock_callback_port.report_lifecycle.reset_mock()
+        assert await lifecycle_service.send_container_exited(1, "not-a-reason") is False
+        mock_callback_port.report_lifecycle.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_shutdown_without_signal(self, lifecycle_service, mock_callback_port, mock_heartbeat_port):
@@ -278,6 +293,25 @@ class TestLifecycleService:
         event = mock_callback_port.report_lifecycle.call_args[0][0]
         assert event.exit_reason == ExitReason.SIGKILL
         assert event.exit_code == 137
+
+    @pytest.mark.asyncio
+    async def test_shutdown_stops_heartbeat_when_port_is_lifecycle_service(self, mock_callback_port):
+        """Test shutdown invokes stop_all when heartbeat port is also a lifecycle service."""
+        with patch.dict(os.environ, {"CONTAINER_ID": "container-123"}):
+            service = LifecycleService(
+                callback_port=mock_callback_port,
+                heartbeat_port=mock_callback_port,
+                executor_port=8080,
+            )
+        service._heartbeat_port = service
+        service._tasks = {"exec-1": object()}
+        service.stop_all = AsyncMock()
+        service._report_execution_crash = AsyncMock()
+
+        await service.shutdown(signal.SIGTERM)
+
+        service._report_execution_crash.assert_awaited_once_with("exec-1")
+        service.stop_all.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_shutdown_twice(self, lifecycle_service, mock_callback_port, mock_heartbeat_port):
@@ -342,6 +376,89 @@ class TestLifecycleService:
                 executor_port=8080,
             )
             assert service.get_container_id() == "unknown"
+
+    @pytest.mark.asyncio
+    async def test_mark_active_executions_crashed_handles_report_errors(
+        self, lifecycle_service
+    ):
+        """Test active execution crash reporting continues after individual failures."""
+        lifecycle_service._heartbeat_port = lifecycle_service
+        lifecycle_service._tasks = {"exec-1": object(), "exec-2": object()}
+        lifecycle_service._report_execution_crash = AsyncMock(side_effect=[RuntimeError("boom"), None])
+
+        await lifecycle_service._mark_active_executions_crashed()
+
+        assert lifecycle_service._report_execution_crash.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_report_execution_crash_success_and_callback_failure(
+        self, lifecycle_service, mock_callback_port
+    ):
+        """Test crash heartbeat payload and internal exception handling."""
+        await lifecycle_service._report_execution_crash("exec-1")
+
+        execution_id, heartbeat = mock_callback_port.report_heartbeat.call_args.args
+        assert execution_id == "exec-1"
+        assert heartbeat.progress["status"] == "crashed"
+        assert heartbeat.progress["reason"] == "executor_shutdown"
+
+        mock_callback_port.report_heartbeat.side_effect = RuntimeError("callback failed")
+        await lifecycle_service._report_execution_crash("exec-2")
+
+    def test_register_signal_handlers_registers_sigterm_and_sigint(self):
+        """Test signal handler registration without installing real handlers."""
+        registered = {}
+
+        def fake_signal(signum, handler):
+            registered[signum] = handler
+
+        with patch("executor.application.services.lifecycle_service.signal.signal", fake_signal):
+            register_signal_handlers()
+
+        assert signal.SIGTERM in registered
+        assert signal.SIGINT in registered
+
+    def test_registered_signal_handler_schedules_shutdown(self, lifecycle_service):
+        """Test the generated signal handler schedules shutdown when service exists."""
+        registered = {}
+        created_tasks = []
+
+        def fake_signal(signum, handler):
+            registered[signum] = handler
+
+        with (
+            patch("executor.application.services.lifecycle_service.signal.signal", fake_signal),
+            patch(
+                "executor.application.services.lifecycle_service.get_lifecycle_service",
+                return_value=lifecycle_service,
+            ),
+            patch(
+                "executor.application.services.lifecycle_service.asyncio.create_task",
+                side_effect=lambda coro: created_tasks.append(coro),
+            ),
+        ):
+            register_signal_handlers()
+            registered[signal.SIGTERM](signal.SIGTERM, None)
+
+        assert len(created_tasks) == 1
+        created_tasks[0].close()
+
+    def test_registered_signal_handler_no_service(self):
+        """Test the generated signal handler is a no-op without a lifecycle service."""
+        registered = {}
+
+        def fake_signal(signum, handler):
+            registered[signum] = handler
+
+        with (
+            patch("executor.application.services.lifecycle_service.signal.signal", fake_signal),
+            patch(
+                "executor.application.services.lifecycle_service.get_lifecycle_service",
+                return_value=None,
+            ),
+        ):
+            register_signal_handlers()
+            registered[signal.SIGTERM](signal.SIGTERM, None)
 
 
 class TestGlobalHeartbeatService:

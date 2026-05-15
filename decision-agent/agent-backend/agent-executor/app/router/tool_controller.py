@@ -1,16 +1,22 @@
 import json
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, Request
 from sse_starlette import EventSourceResponse
 
 from app.common.config import Config
 from app.models.tool_requests import (
     ZhipuSearchRequest,
     OnlineSearchCiteRequest,
+    SkillLoadRequest,
+    SkillReadFileRequest,
+    SkillExecuteScriptRequest,
 )
 from app.models.tool_responses import (
     OnlineSearchCiteResponse,
     ZhipuSearchResponse,
+    SkillLoadResponse,
+    SkillReadFileResponse,
+    SkillExecuteScriptResponse,
 )
 
 
@@ -109,3 +115,81 @@ async def online_search_cite_tool(
                 yield f"{json.dumps(current_response.model_dump(), ensure_ascii=False)}"
 
         return EventSourceResponse(generate_stream(), ping=3600)
+
+
+@router.post(
+    "/builtin_skill_load",
+    response_model=SkillLoadResponse,
+    summary="内置工具：加载 Skill 包",
+)
+async def builtin_skill_load(
+    request: Request,
+    body: SkillLoadRequest,
+) -> SkillLoadResponse:
+    """
+    加载指定 Skill 包的说明文档（SKILL.md）及文件列表。
+
+    - **skill_id**: Skill 标识符
+
+    返回 SKILL.md 内容、可用脚本列表和参考文件列表。
+    """
+    from app.driven.dip.agent_operator_integration_service import agent_operator_integration_service
+    from app.logic.agent_core_logic_v2.factory_skill_runtime import load_skill
+
+    headers = dict(request.headers)
+    result = await load_skill(agent_operator_integration_service, body.skill_id, request_headers=headers)
+    return SkillLoadResponse(**result.get("answer", result))
+
+
+@router.post(
+    "/builtin_skill_read_file",
+    response_model=SkillReadFileResponse,
+    summary="内置工具：读取 Skill 包内文件",
+)
+async def builtin_skill_read_file(
+    request: Request,
+    body: SkillReadFileRequest,
+) -> SkillReadFileResponse:
+    """
+    读取指定 Skill 包内的单个文本文件内容。
+
+    - **skill_id**: Skill 标识符
+    - **file_path**: 文件在 Skill 包内的相对路径（如 references/guide.md）
+
+    返回文件的完整文本内容。
+    """
+    from app.driven.dip.agent_operator_integration_service import agent_operator_integration_service
+    from app.logic.agent_core_logic_v2.factory_skill_runtime import read_skill_file
+
+    headers = dict(request.headers)
+    result = await read_skill_file(
+        agent_operator_integration_service, body.skill_id, body.file_path, request_headers=headers
+    )
+    return SkillReadFileResponse(**result.get("answer", result))
+
+
+@router.post(
+    "/builtin_skill_execute_script",
+    response_model=SkillExecuteScriptResponse,
+    summary="内置工具：执行 Skill 包脚本",
+)
+async def builtin_skill_execute_script(
+    request: Request,
+    body: SkillExecuteScriptRequest,
+) -> SkillExecuteScriptResponse:
+    """
+    在执行工厂沙箱中执行指定 Skill 包的脚本。
+
+    - **skill_id**: Skill 标识符
+    - **entry_shell**: 来自 SKILL.md 的入口 Shell 命令（如 python scripts/analyze.py）
+
+    返回执行结果，包含 stdout、stderr、exit_code 和 duration_ms。
+    """
+    from app.driven.dip.agent_operator_integration_service import agent_operator_integration_service
+    from app.logic.agent_core_logic_v2.factory_skill_runtime import execute_skill_script
+
+    headers = dict(request.headers)
+    result = await execute_skill_script(
+        agent_operator_integration_service, body.skill_id, body.entry_shell, request_headers=headers
+    )
+    return SkillExecuteScriptResponse(**result.get("answer", result))

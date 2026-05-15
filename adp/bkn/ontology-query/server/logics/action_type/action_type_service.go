@@ -12,14 +12,12 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/tidwall/sjson"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
-	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
-	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"ontology-query/common"
 	cond "ontology-query/common/condition"
@@ -56,7 +54,7 @@ func NewActionTypeService(appSetting *common.AppSetting) interfaces.ActionTypeSe
 func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 	query *interfaces.ActionQuery) (interfaces.Actions, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询行动类的行动数据")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询行动类的行动数据")
 	defer span.End()
 
 	var resps interfaces.Actions
@@ -64,14 +62,8 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 	// 1. 先获取行动类信息
 	actionType, _, exists, err := ats.omAccess.GetActionType(ctx, query.KNID, query.Branch, query.ActionTypeID)
 	if err != nil {
-		logger.Errorf("Get Action Type error: %s", err.Error())
-
-		// 添加异常时的 trace 属性
 		span.SetAttributes(attribute.Key("at_id").String(query.ActionTypeID))
-		span.SetStatus(codes.Error, "Get Action Type error")
-		span.End()
-		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Get Action Type error: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("Get Action Type error: %v", err), err)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			oerrors.OntologyQuery_ObjectType_InternalError_GetObjectTypesByIDFailed).WithErrorDetails(err.Error())
@@ -79,14 +71,11 @@ func (ats *actionTypeService) GetActionsByActionTypeID(ctx context.Context,
 	if !exists {
 		logger.Debugf("Action Type %d not found!", query.ActionTypeID)
 
-		// 添加异常时的 trace 属性
 		span.SetAttributes(attribute.Key("model_id").String(query.ActionTypeID))
-		span.SetStatus(codes.Error, "Action Type not found!")
-		span.End()
-		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Action Type [%s] not found!", query.ActionTypeID))
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_ObjectType_ObjectTypeNotFound)
+		otellog.LogError(ctx, fmt.Sprintf("Action Type [%s] not found!", query.ActionTypeID), httpErr)
 
-		return resps, rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_ObjectType_ObjectTypeNotFound)
+		return resps, httpErr
 	}
 
 	if missing := logics.MissingActionInputDynamicParamNames(&actionType, query.DynamicParams); len(missing) > 0 {

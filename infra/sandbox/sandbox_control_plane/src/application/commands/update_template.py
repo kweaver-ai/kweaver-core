@@ -3,6 +3,7 @@
 
 定义更新模板的命令 DTO。
 """
+
 from dataclasses import dataclass
 from typing import Optional, Dict
 
@@ -10,6 +11,7 @@ from typing import Optional, Dict
 @dataclass
 class UpdateTemplateCommand:
     """更新模板命令"""
+
     template_id: str
     name: Optional[str] = None
     image_url: Optional[str] = None

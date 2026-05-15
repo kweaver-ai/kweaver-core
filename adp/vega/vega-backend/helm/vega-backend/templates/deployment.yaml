@@ -62,7 +62,7 @@ spec:
         image: {{ template "vega-backend.image" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
-          - name: manager
+          - name: backend
             containerPort: {{ .Values.service.vegaBackend.port }}
         livenessProbe:
           tcpSocket:
@@ -99,10 +99,10 @@ spec:
           - name: MQ_TYPE
             value: {{ .Values.depServices.mq.mqType | quote }}
           {{- end }}
-          - name: AUTH_ENABLED
-            value: {{ .Values.auth.enabled | quote }}
           - name: DM_SVC_PATH
             value: /opt/vega-backend/config
+          - name: AUTH_ENABLED
+            value: {{ .Values.auth.enabled | quote }}
         resources: {{- toYaml .Values.resources | nindent 10 }}
         volumeMounts:
           - name: {{ .Values.moduleName }}-cm

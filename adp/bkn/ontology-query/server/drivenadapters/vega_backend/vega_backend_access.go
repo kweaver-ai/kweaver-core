@@ -15,7 +15,6 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"ontology-query/common"
@@ -61,7 +60,7 @@ func (v *vegaBackendAccess) buildHeaders(ctx context.Context) map[string]string 
 func (v *vegaBackendAccess) QueryResourceData(ctx context.Context, resourceID string, params *interfaces.ResourceDataQueryParams) (*interfaces.DatasetQueryResponse, error) {
 	httpURL := fmt.Sprintf("%s/resources/%s/data", v.baseURL, url.PathEscape(resourceID))
 	headers := v.buildHeaders(ctx)
-	headers[o11y.HTTP_HEADER_METHOD_OVERRIDE] = http.MethodGet
+	headers[interfaces.HTTP_HEADER_METHOD_OVERRIDE] = http.MethodGet
 
 	respCode, respData, err := v.httpClient.PostNoUnmarshal(ctx, httpURL, headers, params)
 	paramsJSON, _ := sonic.Marshal(params)

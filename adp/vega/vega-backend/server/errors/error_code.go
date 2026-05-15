@@ -101,4 +101,5 @@ func init() {
 	rest.Register(QueryErrCodeList)
 	rest.Register(LogicViewErrCodeList)
 	rest.Register(DiscoverScheduleErrCodeList)
+	rest.Register(ExtensionsErrCodeList)
 }

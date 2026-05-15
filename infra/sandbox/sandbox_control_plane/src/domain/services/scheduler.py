@@ -3,6 +3,7 @@
 
 定义调度器的抽象接口，负责选择最优运行时节点。
 """
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional, TYPE_CHECKING
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 @dataclass
 class RuntimeNode:
     """运行时节点值对象"""
+
     id: str
     type: str  # "docker" or "kubernetes"
     url: str  # 节点 API 地址
@@ -42,6 +44,7 @@ class RuntimeNode:
 @dataclass
 class ScheduleRequest:
     """调度请求"""
+
     template_id: str
     resource_limit: ResourceLimit
     session_id: str | None = None

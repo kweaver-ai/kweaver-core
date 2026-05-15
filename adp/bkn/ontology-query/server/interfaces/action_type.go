@@ -36,16 +36,35 @@ type ActionParam struct {
 	DynamicParams    map[string]any `json:"dynamic_params"`               // 动态参数map
 }
 
+// ExpectedOperation 表示契约中的预期操作语义，枚举与行动类 `action_type` / `action_intent` 一致（与 bkn-backend 同名类型对齐）。
+type ExpectedOperation string
+
+const (
+	ExpectedOperationAdd    string = "add"
+	ExpectedOperationModify string = "modify"
+	ExpectedOperationDelete string = "delete"
+)
+
+// ImpactContractItem 对应 bkn-backend 行动影响契约条目（与 action_type rebuild 对齐）。
+type ImpactContractItem struct {
+	ObjectTypeID      string   `json:"object_type_id,omitempty"`
+	ExpectedOperation string   `json:"expected_operation,omitempty"`
+	Description       string   `json:"description,omitempty"`
+	AffectedFields    []string `json:"affected_fields,omitempty"`
+}
+
 type ActionType struct {
-	ATID         string        `json:"id"`
-	ATName       string        `json:"name"`
-	ActionType   string        `json:"action_type"`
-	ObjectTypeID string        `json:"object_type_id"`
-	Condition    *cond.CondCfg `json:"condition,omitempty"`
-	Affect       *ActionAffect `json:"affect"`
-	ActionSource ActionSource  `json:"action_source"`
-	Parameters   []Parameter   `json:"parameters"`
-	Schedule     Schedule      `json:"schedule"`
+	ATID            string               `json:"id"`
+	ATName          string               `json:"name"`
+	ActionType      string               `json:"action_type"`
+	ActionIntent    string               `json:"action_intent,omitempty"`
+	ObjectTypeID    string               `json:"object_type_id"`
+	ImpactContracts []ImpactContractItem `json:"impact_contracts,omitempty"`
+	Condition       *cond.CondCfg        `json:"condition,omitempty"`
+	Affect          *ActionAffect        `json:"affect"`
+	ActionSource    ActionSource         `json:"action_source"`
+	Parameters      []Parameter          `json:"parameters"`
+	Schedule        Schedule             `json:"schedule"`
 }
 
 type ActionAffect struct {

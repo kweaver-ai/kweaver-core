@@ -49,6 +49,10 @@ func (r *skillRestHandler) RegisterPrivate(engine *gin.RouterGroup) {
 	engine.POST("/skills/:skill_id/files/read", r.SkillHandler.ReadSkillFile)
 	// 执行技能
 	engine.POST("/skills/:skill_id/execute", r.SkillHandler.ExecuteSkill)
+	/*管理态读接口*/
+	engine.GET("/skills/:skill_id/management/content", r.SkillHandler.GetManagementContent)
+	engine.POST("/skills/:skill_id/management/files/read", r.SkillHandler.ReadManagementFile)
+	engine.GET("/skills/:skill_id/management/download", r.SkillHandler.DownloadManagementSkill)
 }
 
 func (r *skillRestHandler) RegisterPublic(engine *gin.RouterGroup) {
@@ -88,6 +92,10 @@ func (r *skillRestHandler) RegisterPublic(engine *gin.RouterGroup) {
 	engine.POST("/skills/:skill_id/execute", r.SkillHandler.ExecuteSkill)
 	// 查询技能发布历史
 	engine.GET("/skills/:skill_id/history", r.SkillHandler.GetSkillReleaseHistory)
+	/*管理态读接口*/
+	engine.GET("/skills/:skill_id/management/content", r.SkillHandler.GetManagementContent)
+	engine.POST("/skills/:skill_id/management/files/read", r.SkillHandler.ReadManagementFile)
+	engine.GET("/skills/:skill_id/management/download", r.SkillHandler.DownloadManagementSkill)
 	/*构建接口*/
 	engine.POST("/skills/index/build", r.SkillHandler.CreateSkillIndexBuildTask)
 	engine.GET("/skills/index/build", r.SkillHandler.QuerySkillIndexBuildTaskList)

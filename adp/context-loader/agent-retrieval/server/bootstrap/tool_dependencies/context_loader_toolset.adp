@@ -4,12 +4,12 @@
       {
         "box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
         "box_name": "contextloader工具集",
-        "box_desc": "contextloader工具集",
+        "box_desc": "ContextLoader 标准内置工具集；契约版本: 0.8.0",
         "box_svc_url": "http://agent-retrieval:30779",
         "status": "published",
         "category_type": "data_query",
         "category_name": "数据查询",
-        "is_internal": false,
+        "is_internal": true,
         "source": "custom",
         "tools": [
           {
@@ -478,8 +478,15 @@
                     },
                     "SearchScope": {
                       "type": "object",
-                      "description": "Schema 探索范围。至少需要开启一种概念类型；不传时默认四类全开。\n`search_scope` 仅约束响应输出，不阻断系统内部使用相关线索辅助召回。\n四个资源开关不能同时为 `false`；若同时为 `false`，接口返回参数错误。\n",
+                      "description": "Schema 探索范围。至少需要开启一种概念类型；不传时默认四类全开。\n`concept_groups` 用于按 BKN 概念分组限定 Schema 召回范围，只作用于概念层发现，不作为实例数据过滤条件。\n`search_scope` 仅约束响应输出，不阻断系统内部使用相关线索辅助召回。\n四个资源开关不能同时为 `false`；若同时为 `false`，接口返回参数错误。\n",
                       "properties": {
+                        "concept_groups": {
+                          "type": "array",
+                          "description": "BKN 概念分组 ID 列表，用于限定 object_types、relation_types、action_types 与 metric_types 的 Schema 召回范围；不传或为空数组表示不限定分组。分组语义由 BKN 完成（ContextLoader 直接调用 BKN 分组搜索接口并把列表透传下去）。当传入的分组在该知识网络中不存在时，BKN 当前会返回 5xx 错误（如 'BknBackend.ObjectType.InternalError' 含 'all concept group not found ...'），本工具会直接向上透传该错误而不是返回空结果，调用方据此区分'分组不存在'与'分组合法但范围内无概念'。",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "include_metric_types": {
                           "description": "是否包含指标类",
                           "default": true,

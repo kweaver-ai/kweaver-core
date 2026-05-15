@@ -45,9 +45,7 @@ class ExecutorResponseError(ExecutorError):
         self.executor_url = executor_url
         self.status_code = status_code
         self.message = message
-        super().__init__(
-            f"Executor at {executor_url} returned error {status_code}: {message}"
-        )
+        super().__init__(f"Executor at {executor_url} returned error {status_code}: {message}")
 
 
 class ExecutorValidationError(ExecutorError):
@@ -56,6 +54,4 @@ class ExecutorValidationError(ExecutorError):
     def __init__(self, executor_url: str, validation_errors: list):
         self.executor_url = executor_url
         self.validation_errors = validation_errors
-        super().__init__(
-            f"Executor at {executor_url} rejected request: {validation_errors}"
-        )
+        super().__init__(f"Executor at {executor_url} rejected request: {validation_errors}")

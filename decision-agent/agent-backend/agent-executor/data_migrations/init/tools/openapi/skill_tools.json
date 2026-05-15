@@ -1,0 +1,402 @@
+{
+    "openapi": "3.1.0",
+    "servers": [
+        {
+            "url": "http://agent-executor:30778",
+            "description": "服务器地址"
+        }
+    ],
+    "info": {
+        "title": "内置工具箱-Skill工具",
+        "description": "提供 Skill 加载、文件读取和脚本执行三项内置能力",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/agent-executor/v1/tools/builtin_skill_load": {
+            "post": {
+                "tags": ["internal-tools"],
+                "summary": "builtin_skill_load",
+                "description": "加载指定 Skill 包的说明文档（SKILL.md）及文件列表。\n\n- **skill_id**: Skill 标识符\n\n返回 SKILL.md 内容、可用脚本列表和参考文件列表。始终在使用 skill_id 时优先调用此工具。",
+                "operationId": "builtin_skill_load_post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SkillLoadRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SkillLoadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/agent-executor/v1/tools/builtin_skill_read_file": {
+            "post": {
+                "tags": ["internal-tools"],
+                "summary": "builtin_skill_read_file",
+                "description": "读取指定 Skill 包内的单个文本文件内容。\n\n- **skill_id**: Skill 标识符\n- **file_path**: 文件在 Skill 包内的相对路径（如 references/guide.md）\n\n仅在 builtin_skill_load 返回的文件列表中存在该路径时调用；每次只能读取一个文件。",
+                "operationId": "builtin_skill_read_file_post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SkillReadFileRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SkillReadFileResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/agent-executor/v1/tools/builtin_skill_execute_script": {
+            "post": {
+                "tags": ["internal-tools"],
+                "summary": "builtin_skill_execute_script",
+                "description": "在执行工厂沙箱中执行指定 Skill 包的脚本。\n\n- **skill_id**: Skill 标识符\n- **entry_shell**: 来自 SKILL.md 的入口 Shell 命令（如 python scripts/analyze.py）\n\n仅在阅读 SKILL.md 并确认需要执行脚本后调用；并非所有 Skill 都需要脚本执行。",
+                "operationId": "builtin_skill_execute_script_post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SkillExecuteScriptRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SkillExecuteScriptResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "SkillLoadRequest": {
+                "type": "object",
+                "required": ["skill_id"],
+                "title": "SkillLoadRequest",
+                "description": "加载 Skill 包请求",
+                "properties": {
+                    "skill_id": {
+                        "type": "string",
+                        "title": "Skill Id",
+                        "description": "Skill 标识符",
+                        "example": "my-skill-001"
+                    }
+                }
+            },
+            "SkillLoadResponse": {
+                "type": "object",
+                "required": ["skill_id", "skill_md_content"],
+                "title": "SkillLoadResponse",
+                "description": "加载 Skill 包响应",
+                "properties": {
+                    "skill_id": {
+                        "type": "string",
+                        "title": "Skill Id",
+                        "description": "Skill 标识符"
+                    },
+                    "skill_md_content": {
+                        "type": "string",
+                        "title": "Skill Md Content",
+                        "description": "SKILL.md 文件的完整文本内容"
+                    },
+                    "available_scripts": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "title": "Available Scripts",
+                        "description": "可执行脚本路径列表",
+                        "default": []
+                    },
+                    "available_references": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "title": "Available References",
+                        "description": "参考文件路径列表",
+                        "default": []
+                    },
+                    "source": {
+                        "type": "string",
+                        "title": "Source",
+                        "description": "数据来源标识",
+                        "default": "factory"
+                    },
+                    "error": {
+                        "type": "string",
+                        "nullable": true,
+                        "title": "Error",
+                        "description": "错误信息（成功时为 null）"
+                    }
+                }
+            },
+            "SkillReadFileRequest": {
+                "type": "object",
+                "required": ["skill_id", "file_path"],
+                "title": "SkillReadFileRequest",
+                "description": "读取 Skill 包内文件请求",
+                "properties": {
+                    "skill_id": {
+                        "type": "string",
+                        "title": "Skill Id",
+                        "description": "Skill 标识符",
+                        "example": "my-skill-001"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "title": "File Path",
+                        "description": "Skill 包内文件的相对路径",
+                        "example": "references/guide.md"
+                    }
+                }
+            },
+            "SkillReadFileResponse": {
+                "type": "object",
+                "required": ["skill_id", "file_path", "content"],
+                "title": "SkillReadFileResponse",
+                "description": "读取 Skill 包内文件响应",
+                "properties": {
+                    "skill_id": {
+                        "type": "string",
+                        "title": "Skill Id",
+                        "description": "Skill 标识符"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "title": "File Path",
+                        "description": "读取的文件相对路径"
+                    },
+                    "content": {
+                        "type": "string",
+                        "title": "Content",
+                        "description": "文件文本内容"
+                    },
+                    "source": {
+                        "type": "string",
+                        "title": "Source",
+                        "description": "数据来源标识",
+                        "default": "factory"
+                    },
+                    "error": {
+                        "type": "string",
+                        "nullable": true,
+                        "title": "Error",
+                        "description": "错误信息（成功时为 null）"
+                    }
+                }
+            },
+            "SkillExecuteScriptRequest": {
+                "type": "object",
+                "required": ["skill_id", "entry_shell"],
+                "title": "SkillExecuteScriptRequest",
+                "description": "执行 Skill 包脚本请求",
+                "properties": {
+                    "skill_id": {
+                        "type": "string",
+                        "title": "Skill Id",
+                        "description": "Skill 标识符",
+                        "example": "my-skill-001"
+                    },
+                    "entry_shell": {
+                        "type": "string",
+                        "title": "Entry Shell",
+                        "description": "来自 SKILL.md 的入口 Shell 命令",
+                        "example": "python scripts/analyze.py"
+                    }
+                }
+            },
+            "SkillExecuteScriptResponse": {
+                "type": "object",
+                "required": ["skill_id", "entry_shell"],
+                "title": "SkillExecuteScriptResponse",
+                "description": "执行 Skill 包脚本响应",
+                "properties": {
+                    "skill_id": {
+                        "type": "string",
+                        "title": "Skill Id",
+                        "description": "Skill 标识符"
+                    },
+                    "entry_shell": {
+                        "type": "string",
+                        "title": "Entry Shell",
+                        "description": "执行的入口 Shell 命令"
+                    },
+                    "command": {
+                        "type": "string",
+                        "title": "Command",
+                        "description": "实际执行的命令",
+                        "default": ""
+                    },
+                    "stdout": {
+                        "type": "string",
+                        "title": "Stdout",
+                        "description": "标准输出内容",
+                        "default": ""
+                    },
+                    "stderr": {
+                        "type": "string",
+                        "title": "Stderr",
+                        "description": "标准错误内容",
+                        "default": ""
+                    },
+                    "exit_code": {
+                        "type": "integer",
+                        "title": "Exit Code",
+                        "description": "退出码（0 表示成功）",
+                        "default": -1
+                    },
+                    "duration_ms": {
+                        "type": "integer",
+                        "title": "Duration Ms",
+                        "description": "执行耗时（毫秒）",
+                        "default": 0
+                    },
+                    "artifacts": {
+                        "type": "array",
+                        "items": { "type": "object" },
+                        "title": "Artifacts",
+                        "description": "产生的制品列表",
+                        "default": []
+                    },
+                    "source": {
+                        "type": "string",
+                        "title": "Source",
+                        "description": "数据来源标识",
+                        "default": "factory"
+                    },
+                    "error": {
+                        "type": "string",
+                        "nullable": true,
+                        "title": "Error",
+                        "description": "错误信息（成功时为 null）"
+                    }
+                }
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "required": ["Description", "ErrorCode", "ErrorDetails", "ErrorLink", "Solution"],
+                "title": "ErrorResponse",
+                "properties": {
+                    "Description": {
+                        "type": "string",
+                        "title": "Description",
+                        "description": "错误描述"
+                    },
+                    "ErrorCode": {
+                        "type": "string",
+                        "title": "ErrorCode",
+                        "description": "错误码"
+                    },
+                    "ErrorDetails": {
+                        "type": "string",
+                        "title": "ErrorDetails",
+                        "description": "错误详情"
+                    },
+                    "ErrorLink": {
+                        "type": "string",
+                        "title": "ErrorLink",
+                        "description": "错误链接"
+                    },
+                    "Solution": {
+                        "type": "string",
+                        "title": "Solution",
+                        "description": "解决方法"
+                    }
+                }
+            }
+        }
+    }
+}

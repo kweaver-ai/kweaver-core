@@ -1,0 +1,51 @@
+---
+type: metric
+id: pod_count_by_namespace
+name: 各命名空间 Pod 数量
+tags: [Kubernetes, Pod, 容量]
+---
+
+## Metric: 各命名空间 Pod 数量
+
+按命名空间分组统计 Pod 条数，用于观察多租户/多团队的资源分布与热点命名空间。
+
+### Metric attributes
+
+| Metric Type | Unit Type | Unit |
+|-------------|-----------|------|
+| atomic | count | 个 |
+
+### Scope
+
+| Scope Type | Scope Ref |
+|------------|-----------|
+| object_type | pod |
+
+### Calculation Formula
+
+```yaml
+kind: atomic
+
+atomic:
+  aggregation:
+    property: id
+    aggr: count
+  group_by:
+    - property: pod_namespace
+      description: 按 Kubernetes 命名空间聚合 Pod 数量
+  order_by:
+    - property: __value
+      direction: desc
+```
+
+### Time Dimension
+
+| Property | Default Range Policy |
+|----------|----------------------|
+| pod_created_at | last_24h |
+
+### Analysis Dimensions
+
+| Name | Display Name |
+|------|--------------|
+| pod_namespace | 命名空间 |

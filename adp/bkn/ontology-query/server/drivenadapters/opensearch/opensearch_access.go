@@ -14,13 +14,12 @@ import (
 	"sync"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"ontology-query/common"
 	"ontology-query/interfaces"
@@ -57,7 +56,7 @@ func NewOpenSearchAccess(appSetting *common.AppSetting) interfaces.OpenSearchAcc
 //
 // 返回：创建成功返回nil，失败返回具体错误信息
 func (o *openSearchAccess) CreateIndex(ctx context.Context, indexName string, body any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateIndex", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CreateIndex")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -79,7 +78,7 @@ func (o *openSearchAccess) CreateIndex(ctx context.Context, indexName string, bo
 	if err != nil {
 		return fmt.Errorf("failed to create index %s: %w", indexName, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
@@ -108,7 +107,7 @@ func (o *openSearchAccess) CreateIndex(ctx context.Context, indexName string, bo
 //	    // 索引不存在，需要创建
 //	}
 func (o *openSearchAccess) IndexExists(ctx context.Context, indexName string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "IndexExists", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "IndexExists")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -123,23 +122,24 @@ func (o *openSearchAccess) IndexExists(ctx context.Context, indexName string) (b
 	if err != nil {
 		return false, fmt.Errorf("failed to check index existence: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// 根据响应状态码判断索引是否存在
 	// 200 - 索引存在
 	// 404 - 索引不存在
 	// 其他状态码 - 错误
-	if res.StatusCode == 200 {
+	switch res.StatusCode {
+	case 200:
 		return true, nil
-	} else if res.StatusCode == 404 {
+	case 404:
 		return false, nil
-	} else {
+	default:
 		return false, fmt.Errorf("check index existence failed: %s, %s", res.Status(), res.String())
 	}
 }
 
 func (o *openSearchAccess) DeleteIndex(ctx context.Context, indexName string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteIndex", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteIndex")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -154,7 +154,7 @@ func (o *openSearchAccess) DeleteIndex(ctx context.Context, indexName string) er
 	if err != nil {
 		return fmt.Errorf("failed to delete index %s: %w", indexName, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
@@ -175,7 +175,7 @@ func (o *openSearchAccess) DeleteIndex(ctx context.Context, indexName string) er
 // 返回：插入成功返回nil，失败返回具体错误信息
 // 注意：数据插入后会立即刷新索引，使数据立即可搜索
 func (o *openSearchAccess) InsertData(ctx context.Context, indexName string, docID string, data any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "InsertData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "InsertData")
 	defer span.End()
 
 	span.SetAttributes(
@@ -201,7 +201,7 @@ func (o *openSearchAccess) InsertData(ctx context.Context, indexName string, doc
 	if err != nil {
 		return fmt.Errorf("failed to insert data with ID: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("insert data with ID failed: %s, %s", res.Status(), res.String())
@@ -228,7 +228,7 @@ func (o *openSearchAccess) InsertData(ctx context.Context, indexName string, doc
 //	  map[string]interface{}{"id": "doc2", "title": "文档2"},
 //	}
 func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string, dataList []any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "BulkInsertData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "BulkInsertData")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -276,7 +276,7 @@ func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string,
 	if err != nil {
 		return fmt.Errorf("failed to bulk insert data: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("bulk insert data failed: %s, %s", res.Status(), res.String())
@@ -321,7 +321,7 @@ func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string,
 //	  },
 //	}
 func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, query any) ([]interfaces.Hit, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "SearchData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "SearchData")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -344,7 +344,7 @@ func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, que
 	if err != nil {
 		return nil, fmt.Errorf("failed to search data: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, fmt.Errorf("search data failed: %s, %s", res.Status(), res.String())
@@ -386,7 +386,7 @@ func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, que
 // 返回：删除成功返回nil，失败返回具体错误信息
 // 注意：删除操作会立即刷新索引，使删除结果立即可见
 func (o *openSearchAccess) DeleteData(ctx context.Context, indexName string, docID string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteData")
 	defer span.End()
 
 	span.SetAttributes(
@@ -403,7 +403,7 @@ func (o *openSearchAccess) DeleteData(ctx context.Context, indexName string, doc
 	if err != nil {
 		return fmt.Errorf("failed to delete data %s from index %s: %w", docID, indexName, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		// 404错误表示文档不存在，不视为错误
@@ -429,7 +429,7 @@ func (o *openSearchAccess) DeleteData(ctx context.Context, indexName string, doc
 // 性能：建议单次批量删除的文档数量控制在合理范围内（如1000-5000条）
 // 容错：如果某个ID对应的文档不存在，不会影响其他文档的删除
 func (o *openSearchAccess) BulkDeleteData(ctx context.Context, indexName string, docIDs []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "BulkDeleteData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "BulkDeleteData")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -470,7 +470,7 @@ func (o *openSearchAccess) BulkDeleteData(ctx context.Context, indexName string,
 	if err != nil {
 		return fmt.Errorf("failed to bulk delete data: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// 检查响应状态
 	if res.IsError() {
@@ -481,7 +481,7 @@ func (o *openSearchAccess) BulkDeleteData(ctx context.Context, indexName string,
 }
 
 func (o *openSearchAccess) Count(ctx context.Context, indexName string, query any) ([]byte, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Count", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Count")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -505,7 +505,7 @@ func (o *openSearchAccess) Count(ctx context.Context, indexName string, query an
 	if err != nil {
 		return nil, fmt.Errorf("failed to Count: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, fmt.Errorf("Count failed: %s, %s", res.Status(), res.String())

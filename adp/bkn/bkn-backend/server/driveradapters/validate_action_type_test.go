@@ -702,6 +702,187 @@ func Test_ValidateActionType(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
+		Convey("Success backfills action_intent from action_type when empty\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:         "at1",
+					ATName:       "action1",
+					ActionType:   interfaces.ACTION_TYPE_ADD,
+					ObjectTypeID: "ot1",
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldBeNil)
+			So(at.ActionIntent, ShouldEqual, interfaces.ACTION_TYPE_ADD)
+		})
+
+		Convey("Success backfills action_type from action_intent when action_type empty\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:         "at1",
+					ATName:       "action1",
+					ActionIntent: interfaces.ACTION_TYPE_DELETE,
+					ObjectTypeID: "ot1",
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldBeNil)
+			So(at.ActionType, ShouldEqual, interfaces.ACTION_TYPE_DELETE)
+			So(at.ActionIntent, ShouldEqual, interfaces.ACTION_TYPE_DELETE)
+		})
+
+		Convey("Failed when action_type and action_intent both set but differ\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:         "at1",
+					ATName:       "action1",
+					ActionType:   interfaces.ACTION_TYPE_ADD,
+					ActionIntent: interfaces.ACTION_TYPE_MODIFY,
+					ObjectTypeID: "ot1",
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldNotBeNil)
+		})
+
+		Convey("Failed impact_contracts missing object_type_id\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:       "at1",
+					ATName:     "action1",
+					ActionType: interfaces.ACTION_TYPE_ADD,
+					ImpactContracts: []interfaces.ImpactContractItem{
+						{ExpectedOperation: interfaces.ExpectedOperationModify},
+					},
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldNotBeNil)
+		})
+
+		Convey("Failed impact_contracts missing expected_operation when object_type_id present\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:       "at1",
+					ATName:     "action1",
+					ActionType: interfaces.ACTION_TYPE_ADD,
+					ImpactContracts: []interfaces.ImpactContractItem{
+						{ObjectTypeID: "otx"},
+					},
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldNotBeNil)
+		})
+
+		Convey("Failed impact_contracts affected_fields empty string entry\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:       "at1",
+					ATName:     "action1",
+					ActionType: interfaces.ACTION_TYPE_ADD,
+					ImpactContracts: []interfaces.ImpactContractItem{
+						{ObjectTypeID: "otx", ExpectedOperation: interfaces.ExpectedOperationModify, AffectedFields: []string{"a", "  "}},
+					},
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldNotBeNil)
+		})
+
+		Convey("Success impact_contracts with valid entries\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:       "at1",
+					ATName:     "action1",
+					ActionType: interfaces.ACTION_TYPE_ADD,
+					ImpactContracts: []interfaces.ImpactContractItem{
+						{ObjectTypeID: "ot1", ExpectedOperation: interfaces.ExpectedOperationModify, AffectedFields: []string{"f1"}},
+					},
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldBeNil)
+		})
+
+		Convey("Failed impact_contracts expected_operation not in enum\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:       "at1",
+					ATName:     "action1",
+					ActionType: interfaces.ACTION_TYPE_ADD,
+					ImpactContracts: []interfaces.ImpactContractItem{
+						{ObjectTypeID: "ot1", ExpectedOperation: "update"},
+					},
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldNotBeNil)
+		})
+
+		Convey("Success affect-only folds into impact_contracts and keeps affect\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:       "at1",
+					ATName:     "action1",
+					ActionType: interfaces.ACTION_TYPE_ADD,
+					Affect: &interfaces.ActionAffect{
+						ObjectTypeID:   "ot_a",
+						Comment:        "note",
+						AffectedFields: []string{"s"},
+					},
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldBeNil)
+			So(at.Affect, ShouldNotBeNil)
+			So(at.Affect.ObjectTypeID, ShouldEqual, "ot_a")
+			So(len(at.ImpactContracts), ShouldEqual, 1)
+			So(at.ImpactContracts[0].ObjectTypeID, ShouldEqual, "ot_a")
+			So(at.ImpactContracts[0].Description, ShouldEqual, "note")
+			So(at.ImpactContracts[0].ExpectedOperation, ShouldEqual, interfaces.ExpectedOperationAdd)
+			So(at.ImpactContracts[0].AffectedFields, ShouldResemble, []string{"s"})
+			So(ValidateActionType(ctx, at, true), ShouldBeNil)
+		})
+
+		Convey("Failed folded affect yields empty impact object_type_id\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:       "at1",
+					ATName:     "action1",
+					ActionType: interfaces.ACTION_TYPE_ADD,
+					Affect:     &interfaces.ActionAffect{},
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldNotBeNil)
+		})
+
+		Convey("Failed when affect and impact_contracts both provided\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:       "at1",
+					ATName:     "action1",
+					ActionType: interfaces.ACTION_TYPE_ADD,
+					ImpactContracts: []interfaces.ImpactContractItem{
+						{ObjectTypeID: "ot1", ExpectedOperation: interfaces.ExpectedOperationModify},
+					},
+					Affect: &interfaces.ActionAffect{
+						ObjectTypeID: "ot_other",
+					},
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldNotBeNil)
+		})
+
+		Convey("Failed when affect and mismatched impact_contracts row coexist\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:       "at1",
+					ATName:     "action1",
+					ActionType: interfaces.ACTION_TYPE_ADD,
+					Affect: &interfaces.ActionAffect{
+						ObjectTypeID:   "ot_a",
+						AffectedFields: []string{"s"},
+					},
+					ImpactContracts: []interfaces.ImpactContractItem{
+						{ObjectTypeID: "ot_a", ExpectedOperation: interfaces.ExpectedOperationModify, AffectedFields: []string{"s"}},
+					},
+				},
+			}
+			So(ValidateActionType(ctx, at, true), ShouldNotBeNil)
+		})
+
 		Convey("Success with ObjectTypeID and multiple parameters with different ValueFrom\n", func() {
 			at := &interfaces.ActionType{
 				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{

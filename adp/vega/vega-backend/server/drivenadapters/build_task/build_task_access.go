@@ -14,12 +14,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/db"
-	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
 	"vega-backend/interfaces"
@@ -50,7 +48,7 @@ func NewBuildTaskAccess(appSetting *common.AppSetting) interfaces.BuildTaskAcces
 
 // Create creates a new build task.
 func (bta *buildTaskAccess) Create(ctx context.Context, buildTask *interfaces.BuildTask) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create build task", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Create build task")
 	defer span.End()
 
 	query := `
@@ -86,9 +84,7 @@ func (bta *buildTaskAccess) Create(ctx context.Context, buildTask *interfaces.Bu
 	)
 
 	if err != nil {
-		logger.Errorf("Create build task failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Create build task failed: %v", err))
-		span.SetStatus(codes.Error, "Create build task failed")
+		otellog.LogError(ctx, "Create build task failed", err)
 		return err
 	}
 
@@ -98,7 +94,7 @@ func (bta *buildTaskAccess) Create(ctx context.Context, buildTask *interfaces.Bu
 
 // GetByID retrieves a build task by ID.
 func (bta *buildTaskAccess) GetByID(ctx context.Context, id string) (*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get build task by ID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Get build task by ID")
 	defer span.End()
 
 	query := `
@@ -143,9 +139,7 @@ func (bta *buildTaskAccess) GetByID(ctx context.Context, id string) (*interfaces
 	}
 
 	if err != nil {
-		logger.Errorf("Get build task by ID failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Get build task by ID failed: %v", err))
-		span.SetStatus(codes.Error, "Get build task by ID failed")
+		otellog.LogError(ctx, "Get build task by ID failed", err)
 		return nil, err
 	}
 
@@ -165,7 +159,7 @@ func (bta *buildTaskAccess) GetByID(ctx context.Context, id string) (*interfaces
 
 // GetByResourceID retrieves a build task by resource ID.
 func (bta *buildTaskAccess) GetByResourceID(ctx context.Context, resourceID string) (*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get build task by resource ID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Get build task by resource ID")
 	defer span.End()
 
 	query := `
@@ -211,9 +205,7 @@ func (bta *buildTaskAccess) GetByResourceID(ctx context.Context, resourceID stri
 	}
 
 	if err != nil {
-		logger.Errorf("Scan build task row failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Scan build task row failed: %v", err))
-		span.SetStatus(codes.Error, "Scan build task row failed")
+		otellog.LogError(ctx, "Scan build task row failed", err)
 		return nil, err
 	}
 
@@ -233,7 +225,7 @@ func (bta *buildTaskAccess) GetByResourceID(ctx context.Context, resourceID stri
 
 // GetByCatalogID retrieves build tasks by catalog ID.
 func (bta *buildTaskAccess) GetByCatalogID(ctx context.Context, catalogID string) ([]*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get build tasks by catalog ID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Get build tasks by catalog ID")
 	defer span.End()
 
 	query := `
@@ -246,9 +238,7 @@ func (bta *buildTaskAccess) GetByCatalogID(ctx context.Context, catalogID string
 
 	rows, err := bta.db.QueryContext(ctx, query, catalogID)
 	if err != nil {
-		logger.Errorf("Get build tasks by catalog ID failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Get build tasks by catalog ID failed: %v", err))
-		span.SetStatus(codes.Error, "Get build tasks by catalog ID failed")
+		otellog.LogError(ctx, "Get build tasks by catalog ID failed", err)
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -282,9 +272,7 @@ func (bta *buildTaskAccess) GetByCatalogID(ctx context.Context, catalogID string
 		)
 
 		if err != nil {
-			logger.Errorf("Scan build task row failed: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Scan build task row failed: %v", err))
-			span.SetStatus(codes.Error, "Scan build task row failed")
+			otellog.LogError(ctx, "Scan build task row failed", err)
 			return nil, err
 		}
 
@@ -302,9 +290,7 @@ func (bta *buildTaskAccess) GetByCatalogID(ctx context.Context, catalogID string
 	}
 
 	if err = rows.Err(); err != nil {
-		logger.Errorf("Rows iteration failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Rows iteration failed: %v", err))
-		span.SetStatus(codes.Error, "Rows iteration failed")
+		otellog.LogError(ctx, "Rows iteration failed", err)
 		return nil, err
 	}
 
@@ -314,7 +300,7 @@ func (bta *buildTaskAccess) GetByCatalogID(ctx context.Context, catalogID string
 
 // UpdateStatus updates a build task's status and other fields.
 func (bta *buildTaskAccess) UpdateStatus(ctx context.Context, id string, updates map[string]interface{}) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update build task status", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update build task status")
 	defer span.End()
 
 	// Build update query dynamically
@@ -361,9 +347,7 @@ func (bta *buildTaskAccess) UpdateStatus(ctx context.Context, id string, updates
 	)
 
 	if err != nil {
-		logger.Errorf("Update build task status failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Update build task status failed: %v", err))
-		span.SetStatus(codes.Error, "Update build task status failed")
+		otellog.LogError(ctx, "Update build task status failed", err)
 		return err
 	}
 
@@ -373,7 +357,7 @@ func (bta *buildTaskAccess) UpdateStatus(ctx context.Context, id string, updates
 
 // GetStatus retrieves the status of a build task by ID.
 func (bta *buildTaskAccess) GetStatus(ctx context.Context, id string) (string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get build task status", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Get build task status")
 	defer span.End()
 
 	query := `
@@ -390,9 +374,7 @@ func (bta *buildTaskAccess) GetStatus(ctx context.Context, id string) (string, e
 	}
 
 	if err != nil {
-		logger.Errorf("Get build task status failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Get build task status failed: %v", err))
-		span.SetStatus(codes.Error, "Get build task status failed")
+		otellog.LogError(ctx, "Get build task status failed", err)
 		return "", err
 	}
 
@@ -402,7 +384,7 @@ func (bta *buildTaskAccess) GetStatus(ctx context.Context, id string) (string, e
 
 // List retrieves build tasks with optional filters and pagination.
 func (bta *buildTaskAccess) List(ctx context.Context, params interfaces.BuildTasksQueryParams) ([]*interfaces.BuildTask, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get build tasks with filters", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Get build tasks with filters")
 	defer span.End()
 
 	whereClauses := []string{}
@@ -431,9 +413,7 @@ func (bta *buildTaskAccess) List(ctx context.Context, params interfaces.BuildTas
 	var totalCount int64
 	countQuery := `SELECT COUNT(*) FROM ` + BUILD_TASK_TABLE_NAME + ` ` + whereClause
 	if err := bta.db.QueryRowContext(ctx, countQuery, args...).Scan(&totalCount); err != nil {
-		logger.Errorf("Count build tasks failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Count build tasks failed: %v", err))
-		span.SetStatus(codes.Error, "Count build tasks failed")
+		otellog.LogError(ctx, "Count build tasks failed", err)
 		return nil, 0, err
 	}
 
@@ -464,9 +444,7 @@ func (bta *buildTaskAccess) List(ctx context.Context, params interfaces.BuildTas
 	queryArgs := append(args, params.Limit, params.Offset)
 	rows, err := bta.db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
-		logger.Errorf("Get build tasks with filters failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Get build tasks with filters failed: %v", err))
-		span.SetStatus(codes.Error, "Get build tasks with filters failed")
+		otellog.LogError(ctx, "Get build tasks with filters failed", err)
 		return nil, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -481,9 +459,7 @@ func (bta *buildTaskAccess) List(ctx context.Context, params interfaces.BuildTas
 			&creatorID, &creatorType, &buildTask.CreateTime, &updaterID, &updaterType, &buildTask.UpdateTime,
 			&buildTask.EmbeddingFields, &buildTask.BuildKeyFields, &buildTask.EmbeddingModel, &buildTask.ModelDimensions,
 		); err != nil {
-			logger.Errorf("Scan build task row failed: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Scan build task row failed: %v", err))
-			span.SetStatus(codes.Error, "Scan build task row failed")
+			otellog.LogError(ctx, "Scan build task row failed", err)
 			return nil, 0, err
 		}
 		buildTask.Creator = interfaces.AccountInfo{ID: creatorID, Type: creatorType}
@@ -491,9 +467,7 @@ func (bta *buildTaskAccess) List(ctx context.Context, params interfaces.BuildTas
 		buildTasks = append(buildTasks, buildTask)
 	}
 	if err := rows.Err(); err != nil {
-		logger.Errorf("Rows iteration failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Rows iteration failed: %v", err))
-		span.SetStatus(codes.Error, "Rows iteration failed")
+		otellog.LogError(ctx, "Rows iteration failed", err)
 		return nil, 0, err
 	}
 
@@ -503,7 +477,7 @@ func (bta *buildTaskAccess) List(ctx context.Context, params interfaces.BuildTas
 
 // Delete deletes a build task by ID.
 func (bta *buildTaskAccess) Delete(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete build task", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Delete build task")
 	defer span.End()
 
 	query := `
@@ -513,17 +487,13 @@ func (bta *buildTaskAccess) Delete(ctx context.Context, id string) error {
 
 	result, err := bta.db.ExecContext(ctx, query, id)
 	if err != nil {
-		logger.Errorf("Delete build task failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete build task failed: %v", err))
-		span.SetStatus(codes.Error, "Delete build task failed")
+		otellog.LogError(ctx, "Delete build task failed", err)
 		return err
 	}
 
 	affected, err := result.RowsAffected()
 	if err != nil {
-		logger.Errorf("Get rows affected failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Get rows affected failed: %v", err))
-		span.SetStatus(codes.Error, "Get rows affected failed")
+		otellog.LogError(ctx, "Get rows affected failed", err)
 		return err
 	}
 

@@ -3,6 +3,7 @@ Kubernetes 调度服务
 
 实现调度策略，使用 Kubernetes API 创建 Pod。
 """
+
 import logging
 import os
 from typing import List, Optional
@@ -169,20 +170,14 @@ class K8sSchedulerService(IScheduler):
         # 创建 Pod
         try:
             pod_name = await self._container_scheduler.create_container(config)
-            logger.info(
-                f"Created Pod {pod_name} for session {session_id}"
-            )
+            logger.info(f"Created Pod {pod_name} for session {session_id}")
             return pod_name
 
         except Exception as e:
             logger.error(f"Failed to create Pod for session {session_id}: {e}")
             raise
 
-    async def destroy_container(
-        self,
-        container_id: str,
-        timeout: int = 10
-    ) -> None:
+    async def destroy_container(self, container_id: str, timeout: int = 10) -> None:
         """
         销毁 Pod
         """
@@ -235,7 +230,9 @@ class K8sSchedulerService(IScheduler):
                 working_directory=execution_request.working_directory,
             )
 
-            logger.info(f"Execution submitted successfully: execution_id={execution_id}, session_id={session_id}")
+            logger.info(
+                f"Execution submitted successfully: execution_id={execution_id}, session_id={session_id}"
+            )
 
             return execution_id
 

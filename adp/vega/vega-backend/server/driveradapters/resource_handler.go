@@ -12,27 +12,28 @@ import (
 	"net/http"
 	"strings"
 	"vega-backend/common"
+	"vega-backend/common/visitor"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
+	"vega-backend/logics/extensions"
 )
 
 // ========== ListResources ==========
 
 // ListResourcesByEx handles GET /api/vega-backend/v1/resources (External)
 func (r *restHandler) ListResourcesByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListResourcesByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 外网接口：校验token
@@ -45,12 +46,11 @@ func (r *restHandler) ListResourcesByEx(c *gin.Context) {
 
 // ListResourcesByIn handles GET /api/vega-backend/in/v1/resources (Internal)
 func (r *restHandler) ListResourcesByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListResourcesByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.listResources(c, ctx, span, visitor)
 }
 
@@ -62,7 +62,7 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	catalogID := c.Query("catalog_id")
 	category := c.Query("category")
@@ -78,12 +78,25 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 		offset, limit, sort, direction, interfaces.RESOURCE_SORT)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
+
+	extKeys := c.QueryArray("extension_key")
+	extVals := c.QueryArray("extension_value")
+	if err := extensions.ValidateExtensionQueryPairs(ctx, extKeys, extVals); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	includeExt := strings.EqualFold(strings.TrimSpace(c.Query("include_extensions")), "true")
+	includeExtKeys := strings.TrimSpace(c.Query("include_extension_keys"))
 
 	params := interfaces.ResourcesQueryParams{
 		PaginationQueryParams: pageParam,
@@ -91,12 +104,16 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 		Category:              category,
 		Status:                status,
 		Database:              database,
+		ExtensionKeys:         extKeys,
+		ExtensionValues:       extVals,
+		IncludeExtensions:     includeExt,
+		IncludeExtensionKeys:  includeExtKeys,
 	}
 
 	entries, total, err := r.rs.List(ctx, params)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -107,7 +124,7 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 	}
 
 	logger.Debug("Handler ListResources Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }
 
@@ -115,8 +132,7 @@ func (r *restHandler) listResources(c *gin.Context, ctx context.Context, span tr
 
 // CreateResourceByEx handles POST /api/vega-backend/v1/resources (External)
 func (r *restHandler) CreateResourceByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"CreateResourceByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 外网接口：校验token
@@ -129,12 +145,11 @@ func (r *restHandler) CreateResourceByEx(c *gin.Context) {
 
 // CreateResourceByIn handles POST /api/vega-backend/in/v1/resources (Internal)
 func (r *restHandler) CreateResourceByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"CreateResourceByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.createResource(c, ctx, span, visitor)
 }
 
@@ -146,20 +161,20 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	var req interfaces.ResourceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest,
 			verrors.VegaBackend_InvalidParameter_RequestBody).WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	if err := ValidateResourceRequest(ctx, &req); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -169,14 +184,14 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 	if csErr != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			verrors.VegaBackend_Resource_InternalError).WithErrorDetails(csErr.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !csExists {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_CatalogNotFound).
 			WithErrorDetails(fmt.Sprintf("catalog %s not found", req.CatalogID))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -186,13 +201,13 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			verrors.VegaBackend_Resource_InternalError).WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if exists {
 		httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_Resource_NameExists)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -203,14 +218,14 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 		if err != nil {
 			httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				verrors.VegaBackend_Resource_InternalError).WithErrorDetails(err.Error())
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
 		if exists {
 			httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_Resource_IDExists).
 				WithErrorDetails(fmt.Sprintf("id %s already exists", req.ID))
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -219,7 +234,7 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 	resource, err := r.rs.Create(ctx, &req)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -231,7 +246,7 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 	result := map[string]any{"id": resource.ID}
 
 	logger.Debug("Handler CreateResource Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, result)
 }
 
@@ -239,8 +254,7 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 
 // GetResourcesByEx handles GET /api/vega-backend/v1/resources/:ids (External)
 func (r *restHandler) GetResourcesByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetResourcesByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 外网接口：校验token
@@ -253,12 +267,11 @@ func (r *restHandler) GetResourcesByEx(c *gin.Context) {
 
 // GetResourcesByIn handles GET /api/vega-backend/in/v1/resources/:ids (Internal)
 func (r *restHandler) GetResourcesByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetResourcesByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.getResources(c, ctx, span, visitor)
 }
 
@@ -270,14 +283,14 @@ func (r *restHandler) getResources(c *gin.Context, ctx context.Context, span tra
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
-	ids := strings.Split(c.Param("ids"), ",")
+	ids := strings.Split(c.Param("id"), ",")
 
 	resources, err := r.rs.GetByIDs(ctx, ids)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -294,7 +307,7 @@ func (r *restHandler) getResources(c *gin.Context, ctx context.Context, span tra
 			if !found {
 				httpErr := rest.NewHTTPError(ctx, http.StatusNotFound,
 					verrors.VegaBackend_Resource_NotFound).WithErrorDetails(fmt.Sprintf("id %s not found", id))
-				o11y.AddHttpAttrs4HttpError(span, httpErr)
+				oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 				rest.ReplyError(c, httpErr)
 				return
 			}
@@ -304,7 +317,7 @@ func (r *restHandler) getResources(c *gin.Context, ctx context.Context, span tra
 	result := map[string]any{"entries": resources}
 
 	logger.Debug("Handler GetResource Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }
 
@@ -312,8 +325,7 @@ func (r *restHandler) getResources(c *gin.Context, ctx context.Context, span tra
 
 // UpdateResourceByEx handles PUT /api/vega-backend/v1/resources/:id (External)
 func (r *restHandler) UpdateResourceByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"UpdateResourceByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 外网接口：校验token
@@ -326,12 +338,11 @@ func (r *restHandler) UpdateResourceByEx(c *gin.Context) {
 
 // UpdateResourceByIn handles PUT /api/vega-backend/in/v1/resources/:id (Internal)
 func (r *restHandler) UpdateResourceByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"UpdateResourceByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.updateResource(c, ctx, span, visitor)
 }
 
@@ -343,7 +354,7 @@ func (r *restHandler) updateResource(c *gin.Context, ctx context.Context, span t
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	id := c.Param("id")
 
@@ -351,14 +362,14 @@ func (r *restHandler) updateResource(c *gin.Context, ctx context.Context, span t
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest,
 			verrors.VegaBackend_InvalidParameter_RequestBody).WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	if err := ValidateResourceRequest(ctx, &req); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -367,7 +378,7 @@ func (r *restHandler) updateResource(c *gin.Context, ctx context.Context, span t
 	resource, err := r.rs.GetByID(ctx, id)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -378,14 +389,14 @@ func (r *restHandler) updateResource(c *gin.Context, ctx context.Context, span t
 		exists, err := r.rs.CheckExistByName(ctx, req.CatalogID, req.Name)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
 		if exists {
 			span.SetStatus(codes.Error, "Resource name exists")
 			httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_Resource_NameExists)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -394,7 +405,7 @@ func (r *restHandler) updateResource(c *gin.Context, ctx context.Context, span t
 
 	if err := r.rs.Update(ctx, id, &req); err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -403,7 +414,7 @@ func (r *restHandler) updateResource(c *gin.Context, ctx context.Context, span t
 		interfaces.GenerateResourceAuditObject(id, req.Name), "")
 
 	logger.Debug("Handler UpdateResource Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -411,8 +422,7 @@ func (r *restHandler) updateResource(c *gin.Context, ctx context.Context, span t
 
 // DeleteResourcesByEx handles DELETE /api/vega-backend/v1/resources/:ids (External)
 func (r *restHandler) DeleteResourcesByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteResourcesByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 外网接口：校验token
@@ -425,12 +435,11 @@ func (r *restHandler) DeleteResourcesByEx(c *gin.Context) {
 
 // DeleteResourcesByIn handles DELETE /api/vega-backend/in/v1/resources/:ids (Internal)
 func (r *restHandler) DeleteResourcesByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteResourcesByIn", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 内网接口：user_id从header中取
-	visitor := GenerateVisitor(c)
+	visitor := visitor.GenerateVisitor(c)
 	r.deleteResources(c, ctx, span, visitor)
 }
 
@@ -442,9 +451,9 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
-	rawIDs := strings.Split(c.Param("ids"), ",")
+	rawIDs := strings.Split(c.Param("id"), ",")
 	ignoreMissing := strings.EqualFold(c.Query("ignore_missing"), "true")
 
 	// Pre-validate existence; collect ids to delete based on ignore_missing.
@@ -457,7 +466,7 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 		exists, err := r.rs.CheckExistByID(ctx, id)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -467,7 +476,7 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 			}
 			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound,
 				verrors.VegaBackend_Resource_NotFound).WithErrorDetails(fmt.Sprintf("id %s not found", id))
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -477,7 +486,7 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 	if len(idsToDelete) > 0 {
 		if err := r.rs.DeleteByIDs(ctx, idsToDelete); err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -489,7 +498,7 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 	}
 
 	logger.Debug("Handler DeleteResource Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -497,8 +506,7 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 
 // ListResourceSrcsByEx resource source list (External)
 func (r *restHandler) ListResourceSrcsByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListResourceSrcsByEx", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 外网接口：校验token
@@ -517,7 +525,7 @@ func (r *restHandler) listResourceSrcs(c *gin.Context, ctx context.Context, span
 	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 获取查询参数
 	id := c.Query("id")
@@ -532,9 +540,9 @@ func (r *restHandler) listResourceSrcs(c *gin.Context, ctx context.Context, span
 		offset, limit, sort, direction, interfaces.RESOURCE_SORT)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -548,7 +556,7 @@ func (r *restHandler) listResourceSrcs(c *gin.Context, ctx context.Context, span
 	entries, total, err := r.rs.ListResourceSrcs(ctx, params)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -559,7 +567,7 @@ func (r *restHandler) listResourceSrcs(c *gin.Context, ctx context.Context, span
 	}
 
 	logger.Debug("Handler ListResourceSrcs Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }
 

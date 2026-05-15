@@ -6,11 +6,13 @@
 package bkn
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net/http"
 	"testing"
 
+	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
@@ -90,6 +92,36 @@ func Test_bknService_ExportToTar(t *testing.T) {
 			So(err, ShouldNotBeNil)
 			So(errors.Is(err, getErr), ShouldBeTrue)
 			So(data, ShouldBeNil)
+		})
+
+		Convey("Export tar preserves metrics readable by LoadNetworkFromTar\n", func() {
+			kn := &interfaces.KN{
+				KNID:   "kn-metrics",
+				KNName: "KN With Metrics",
+				Branch: interfaces.MAIN_BRANCH,
+				Metrics: []*interfaces.MetricDefinition{
+					{
+						ID:         "pod_running_count",
+						Name:       "Running Pods",
+						MetricType: interfaces.MetricTypeAtomic,
+						ScopeRef:   "pod",
+						CalculationFormula: &interfaces.MetricCalculationFormula{
+							Aggregation: interfaces.MetricAggregation{
+								Property: "id",
+								Aggr:     interfaces.MetricAggrCount,
+							},
+						},
+					},
+				},
+			}
+			kns.EXPECT().GetKNByID(gomock.Any(), "kn-metrics", interfaces.MAIN_BRANCH, interfaces.Mode_Export).Return(kn, nil)
+
+			data, err := svc.ExportToTar(context.Background(), "kn-metrics", interfaces.MAIN_BRANCH)
+			So(err, ShouldBeNil)
+			loaded, err := bknsdk.LoadNetworkFromTar(bytes.NewReader(data))
+			So(err, ShouldBeNil)
+			So(len(loaded.Metrics), ShouldEqual, 1)
+			So(loaded.Metrics[0].ID, ShouldEqual, "pod_running_count")
 		})
 	})
 }

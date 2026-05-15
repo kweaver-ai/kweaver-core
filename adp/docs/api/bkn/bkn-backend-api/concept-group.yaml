@@ -482,6 +482,27 @@ components:
         name:
           description: 名称。查看详情时返回。
           type: string
+    ExpectedImpactOperation:
+      description: 与 `action_intent` / `action_type` 一致。
+      type: string
+      enum:
+        - add
+        - modify
+        - delete
+    ImpactContractItem:
+      description: 行动影响契约单条（与 `action-type.yaml`、`f_impact_contracts` 一致）。
+      type: object
+      properties:
+        object_type_id:
+          type: string
+        expected_operation:
+          $ref: "#/components/schemas/ExpectedImpactOperation"
+        description:
+          type: string
+        affected_fields:
+          type: array
+          items:
+            type: string
     ActionTypeDetail:
       description: 行动类
       required:
@@ -536,7 +557,15 @@ components:
           description: 业务知识网络ID
           type: string
         action_type:
-          description: 行动类型
+          deprecated: true
+          description: "**[已废弃]** 等价于 `action_intent`（add/modify/delete）。"
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        action_intent:
+          description: 与 `ActionType.action_type` 回填一致的首选字段。
           enum:
             - add
             - modify
@@ -552,8 +581,14 @@ components:
           $ref: "#/components/schemas/ActionCondition"
           description: 行动条件
         affect:
-          $ref: "#/components/schemas/AffectDetail"
-          description: 行动影响
+          deprecated: true
+          description: "**[已废弃]** 单行影响；等价信息见 `impact_contracts`。"
+          allOf:
+            - $ref: "#/components/schemas/AffectDetail"
+        impact_contracts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactContractItem"
         action_source:
           $ref: "#/components/schemas/ToolSource"
           description: 绑定的行动的资源
@@ -607,7 +642,9 @@ components:
           description: 工具ID
           type: string
     AffectDetail:
-      description: 行动影响
+      deprecated: true
+      description: |
+        **[已废弃]** 请消费 `impact_contracts`。
       required:
         - object_type
         - comment

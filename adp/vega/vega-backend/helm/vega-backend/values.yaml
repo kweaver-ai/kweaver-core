@@ -85,7 +85,7 @@ depServices:
     protocol: http
   user-management:
     host: user-management-private
-    port:  30980
+    port: 30980
     protocol: http
   hydra-admin:
     host: hydra-admin
@@ -117,6 +117,26 @@ config:
     maxAge: 100
     maxBackups: 20
     maxSize: 100
+  # OTel Collector 配置
+  otel:
+    # 服务名称
+    service_name: "vega-backend"
+    # 运行环境
+    environment: "production"
+    # OTLP 上报端点
+    otlp_endpoint: "otelcol-contrib:4318"
+
+    # Trace 配置
+    trace:
+      enabled: false
+      # 采样率: 0.0 - 1.0
+      sampling_rate: 1.0
+
+    # Log 配置
+    log:
+      enabled: false
+      # 日志级别: debug, info, warn, error
+      level: "info"
   # RSA 公钥配置
   crypto:
     enabled: false

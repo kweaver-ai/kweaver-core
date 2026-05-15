@@ -3,6 +3,7 @@
 
 定义会话相关的 HTTP 端点。
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from typing import List, Optional
 
@@ -32,7 +33,7 @@ from src.interfaces.rest.schemas.response import (
     SessionResponse,
     SessionListResponse,
     ExecuteCodeResponse,
-    ErrorResponse
+    ErrorResponse,
 )
 from src.infrastructure.dependencies import get_session_service_db
 
@@ -41,13 +42,12 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 @router.post("", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
 async def create_session(
-    request: CreateSessionRequest,
-    service: SessionService = Depends(get_session_service_db)
+    request: CreateSessionRequest, service: SessionService = Depends(get_session_service_db)
 ):
     """
     创建会话
 
-    - **template_id**: 模板 ID
+    - **template_id**: 模板 ID；未传时使用 DEFAULT_TEMPLATE_ID 配置
     - **timeout**: 超时时间（秒），默认 300，最大 3600
     - **cpu**: CPU 核心数，如 "1", "2"
     - **memory**: 内存限制，如 "512Mi", "1Gi"
@@ -61,11 +61,7 @@ async def create_session(
     from src.domain.value_objects.resource_limit import ResourceLimit
 
     try:
-        resource_limit = ResourceLimit(
-            cpu=request.cpu,
-            memory=request.memory,
-            disk=request.disk
-        )
+        resource_limit = ResourceLimit(cpu=request.cpu, memory=request.memory, disk=request.disk)
 
         dependencies_pip_specs = [dep.to_pip_spec() for dep in request.dependencies]
 
@@ -86,15 +82,9 @@ async def create_session(
         return _map_dto_to_response(session_dto)
 
     except ConflictError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("", response_model=SessionListResponse)
@@ -103,7 +93,7 @@ async def list_sessions(
     template_id: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
-    service: SessionService = Depends(get_session_service_db)
+    service: SessionService = Depends(get_session_service_db),
 ):
     """
     列出会话
@@ -116,10 +106,7 @@ async def list_sessions(
     - **offset**: 偏移量（用于分页，默认 0）
     """
     result = await service.list_sessions(
-        status=status,
-        template_id=template_id,
-        limit=limit,
-        offset=offset
+        status=status, template_id=template_id, limit=limit, offset=offset
     )
 
     return SessionListResponse(
@@ -127,15 +114,12 @@ async def list_sessions(
         total=result["total"],
         limit=result["limit"],
         offset=result["offset"],
-        has_more=result["has_more"]
+        has_more=result["has_more"],
     )
 
 
 @router.get("/{session_id}", response_model=SessionResponse)
-async def get_session(
-    session_id: str,
-    service: SessionService = Depends(get_session_service_db)
-):
+async def get_session(session_id: str, service: SessionService = Depends(get_session_service_db)):
     """获取会话详情"""
     from src.application.queries.get_session import GetSessionQuery
 
@@ -159,6 +143,7 @@ async def install_session_dependencies(
             session_id=session_id,
             python_package_index_url=request.python_package_index_url,
             dependencies=[dep.to_pip_spec() for dep in request.dependencies],
+            install_timeout=request.install_timeout,
         )
         session_dto = await service.install_session_dependencies(command)
         return _map_dto_to_response(session_dto)
@@ -172,8 +157,7 @@ async def install_session_dependencies(
 
 @router.post("/{session_id}/terminate", response_model=SessionResponse)
 async def terminate_session(
-    session_id: str,
-    service: SessionService = Depends(get_session_service_db)
+    session_id: str, service: SessionService = Depends(get_session_service_db)
 ):
     """
     终止会话（软终止，保留记录）
@@ -190,8 +174,7 @@ async def terminate_session(
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_session(
-    session_id: str,
-    service: SessionService = Depends(get_session_service_db)
+    session_id: str, service: SessionService = Depends(get_session_service_db)
 ):
     """
     删除会话（硬删除，级联删除执行记录）
@@ -221,9 +204,7 @@ def _map_dto_to_response(dto: SessionDTO) -> SessionResponse:
         env_vars=dto.env_vars,
         timeout=dto.timeout,
         python_package_index_url=dto.python_package_index_url,
-        requested_dependencies=[
-            DependencyResponse(**dep) for dep in dto.requested_dependencies
-        ],
+        requested_dependencies=[DependencyResponse(**dep) for dep in dto.requested_dependencies],
         installed_dependencies=[
             InstalledDependencyResponse(**dep) for dep in dto.installed_dependencies
         ],
@@ -234,5 +215,5 @@ def _map_dto_to_response(dto: SessionDTO) -> SessionResponse:
         created_at=dto.created_at,
         updated_at=dto.updated_at,
         completed_at=dto.completed_at,
-        last_activity_at=dto.last_activity_at
+        last_activity_at=dto.last_activity_at,
     )

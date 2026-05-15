@@ -1,0 +1,63 @@
+{{- if .Values.configMap.create }}
+{{- $templateImageRegistry := default "swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip" .Values.image.registry }}
+{{- $pythonBasicTemplate := .Values.image.defaultTemplate }}
+{{- if .Values.image.defaultTemplates }}
+{{- $pythonBasicTemplate = .Values.image.defaultTemplates.pythonBasic }}
+{{- end }}
+{{- $multiLanguageTemplate := dict "repository" "sandbox-template-multi-language" "tag" "" }}
+{{- if and .Values.image.defaultTemplates .Values.image.defaultTemplates.multiLanguage }}
+{{- $multiLanguageTemplate = .Values.image.defaultTemplates.multiLanguage }}
+{{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMap.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+data:
+  ENVIRONMENT: {{ .Values.controlPlane.env.ENVIRONMENT | quote }}
+  DEBUG: {{ .Values.controlPlane.env.DEBUG | quote }}
+  DATABASE_URL: {{ .Values.controlPlane.env.DATABASE_URL | quote }}
+  KUBERNETES_NAMESPACE: {{ .Values.namespace | quote }}
+  EXECUTOR_IMAGE_PULL_POLICY: {{ .Values.imagePullPolicy | quote }}
+  EXECUTOR_IMAGE_PULL_SECRETS: {{ join "," .Values.imagePullSecrets | quote }}
+  DEFAULT_TIMEOUT: {{ .Values.controlPlane.env.DEFAULT_TIMEOUT | quote }}
+  MAX_TIMEOUT: {{ .Values.controlPlane.env.MAX_TIMEOUT | quote }}
+  DEFAULT_CPU: {{ .Values.controlPlane.env.DEFAULT_CPU | quote }}
+  DEFAULT_MEMORY: {{ .Values.controlPlane.env.DEFAULT_MEMORY | quote }}
+  DEFAULT_DISK: {{ .Values.controlPlane.env.DEFAULT_DISK | quote }}
+  IDLE_THRESHOLD_MINUTES: {{ .Values.controlPlane.env.IDLE_THRESHOLD_MINUTES | quote }}
+  MAX_LIFETIME_HOURS: {{ .Values.controlPlane.env.MAX_LIFETIME_HOURS | quote }}
+  CLEANUP_INTERVAL_SECONDS: {{ .Values.controlPlane.env.CLEANUP_INTERVAL_SECONDS | quote }}
+  DISABLE_BWRAP: {{ .Values.controlPlane.env.DISABLE_BWRAP | quote }}
+  PYTHONUNBUFFERED: {{ .Values.controlPlane.env.PYTHONUNBUFFERED | quote }}
+  DEFAULT_TEMPLATE_IMAGE_REGISTRY: {{ $templateImageRegistry | quote }}
+  DEFAULT_TEMPLATE_IMAGE_REPOSITORY: {{ $pythonBasicTemplate.repository | quote }}
+  DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE_REPOSITORY: {{ $multiLanguageTemplate.repository | quote }}
+  {{- if $pythonBasicTemplate.tag }}
+  DEFAULT_TEMPLATE_IMAGE: "{{- if $templateImageRegistry }}{{ $templateImageRegistry }}/{{ end }}{{ $pythonBasicTemplate.repository }}:{{ $pythonBasicTemplate.tag }}"
+  {{- end }}
+  {{- if $multiLanguageTemplate.tag }}
+  DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE: "{{- if $templateImageRegistry }}{{ $templateImageRegistry }}/{{ end }}{{ $multiLanguageTemplate.repository }}:{{ $multiLanguageTemplate.tag }}"
+  {{- end }}
+  CONTROL_PLANE_URL: "http://{{ include "sandbox.controlPlaneName" . }}.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.controlPlane.service.port }}"
+  # Database connection from depServices.rds
+  {{- if .Values.depServices.rds }}
+  DB_TYPE: {{ .Values.depServices.rds.type | quote }}
+  DB_HOST: {{ .Values.depServices.rds.host | quote }}
+  DB_PORT: {{ .Values.depServices.rds.port | quote }}
+  DB_HOST_READ: {{ .Values.depServices.rds.hostRead | quote }}
+  DB_PORT_READ: {{ .Values.depServices.rds.portRead | quote }}
+  DB_USER: {{ .Values.depServices.rds.user | quote }}
+  DB_PASSWORD: {{ .Values.depServices.rds.password | quote }}
+  DB_DATABASE: {{ .Values.depServices.rds.database | quote }}
+  DB_MAX_CONNECTIONS: {{ .Values.depServices.rds.maxConnections | quote }}
+  DB_MAX_READ_CONNECTIONS: {{ .Values.depServices.rds.maxReadConnections | quote }}
+  DB_CHARSET: {{ .Values.depServices.rds.dbCharset | quote }}
+  DB_TIMEOUT: {{ .Values.depServices.rds.timeout | quote }}
+  DB_READ_TIMEOUT: {{ .Values.depServices.rds.readTimeout | quote }}
+  DB_WRITE_TIMEOUT: {{ .Values.depServices.rds.writeTimeout | quote }}
+  {{- end }}
+{{- end }}

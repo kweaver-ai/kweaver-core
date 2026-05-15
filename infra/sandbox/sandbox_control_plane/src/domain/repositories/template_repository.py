@@ -3,6 +3,7 @@
 
 定义模板持久化的抽象接口（Port）。
 """
+
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
@@ -32,11 +33,7 @@ class ITemplateRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_all(
-        self,
-        offset: int = 0,
-        limit: int = 100
-    ) -> List[Template]:
+    async def find_all(self, offset: int = 0, limit: int = 100) -> List[Template]:
         """查找所有模板"""
         pass
 

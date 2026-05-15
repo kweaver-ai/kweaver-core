@@ -3,6 +3,7 @@
 
 表示一个沙箱会话，是聚合根。
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -25,6 +26,7 @@ class InstalledDependency:
     用于跟踪会话中实际安装的依赖包信息。
     按照 sandbox-design-v2.1.md 章节 5.6 设计。
     """
+
     name: str
     version: str
     install_location: str  # 如 "/workspace/.venv/"
@@ -40,6 +42,7 @@ class Session:
     聚合根，负责管理会话的生命周期和相关的执行记录。
     扩展支持依赖安装功能，按照 sandbox-design-v2.1.md 章节 5.6 设计。
     """
+
     id: str
     template_id: str
     status: SessionStatus
@@ -124,10 +127,7 @@ class Session:
 
     def is_active(self) -> bool:
         """是否为活跃状态"""
-        return self.status in {
-            SessionStatus.CREATING,
-            SessionStatus.RUNNING
-        }
+        return self.status in {SessionStatus.CREATING, SessionStatus.RUNNING}
 
     def is_terminated(self) -> bool:
         """是否已终止"""

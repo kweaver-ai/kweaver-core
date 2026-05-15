@@ -3,13 +3,18 @@
 
 提供数据库会话感知的仓储实例。
 """
+
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from src.infrastructure.persistence.database import db_manager
 from src.infrastructure.persistence.repositories.sql_session_repository import SqlSessionRepository
-from src.infrastructure.persistence.repositories.sql_execution_repository import SqlExecutionRepository
-from src.infrastructure.persistence.repositories.sql_template_repository import SqlTemplateRepository
+from src.infrastructure.persistence.repositories.sql_execution_repository import (
+    SqlExecutionRepository,
+)
+from src.infrastructure.persistence.repositories.sql_template_repository import (
+    SqlTemplateRepository,
+)
 
 from src.domain.repositories.session_repository import ISessionRepository
 from src.domain.repositories.execution_repository import IExecutionRepository

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
 	"github.com/robfig/cron/v3"
 
 	"vega-backend/common"
@@ -221,13 +221,11 @@ func (sw *ScheduleWorker) executeSchedule(scheduleID string) {
 	// 从数据库获取最新的任务状态
 	schedule, err := sw.dss.GetByID(sw.ctx, scheduleID)
 	if err != nil {
-		logger.Errorf("Failed to get schedule %s: %v", scheduleID, err)
-		o11y.Error(sw.ctx, fmt.Sprintf("Failed to get schedule %s", scheduleID))
+		otellog.LogError(sw.ctx, fmt.Sprintf("Failed to get schedule %s", scheduleID), err)
 		return
 	}
 	if schedule == nil {
-		logger.Errorf("Schedule %s not found", scheduleID)
-		o11y.Error(sw.ctx, fmt.Sprintf("Schedule %s not found", scheduleID))
+		otellog.LogError(sw.ctx, fmt.Sprintf("Schedule %s not found", scheduleID), nil)
 		return
 	}
 
@@ -237,8 +235,7 @@ func (sw *ScheduleWorker) executeSchedule(scheduleID string) {
 
 		// 从调度器中移除已禁用的任务
 		if err := sw.unschedule(schedule.ID); err != nil {
-			logger.Errorf("Failed to unschedule disabled schedule %s: %v", schedule.ID, err)
-			o11y.Error(sw.ctx, fmt.Sprintf("Failed to unschedule disabled schedule %s", schedule.ID))
+			otellog.LogError(sw.ctx, fmt.Sprintf("Failed to unschedule disabled schedule %s", schedule.ID), err)
 			return
 		}
 
@@ -252,15 +249,13 @@ func (sw *ScheduleWorker) executeSchedule(scheduleID string) {
 
 		// 禁用过期任务
 		if err := sw.dss.Disable(sw.ctx, schedule.ID); err != nil {
-			logger.Errorf("Failed to disable expired schedule %s: %v", schedule.ID, err)
-			o11y.Error(sw.ctx, fmt.Sprintf("Failed to disable expired task %s", schedule.ID))
+			otellog.LogError(sw.ctx, fmt.Sprintf("Failed to disable expired task %s", schedule.ID), err)
 			return
 		}
 
 		// 从调度器中移除任务
 		if err := sw.unschedule(schedule.ID); err != nil {
-			logger.Errorf("Failed to unschedule expired schedule %s: %v", schedule.ID, err)
-			o11y.Error(sw.ctx, fmt.Sprintf("Failed to unschedule expired schedule %s", schedule.ID))
+			otellog.LogError(sw.ctx, fmt.Sprintf("Failed to unschedule expired schedule %s", schedule.ID), err)
 			return
 		}
 
@@ -270,8 +265,7 @@ func (sw *ScheduleWorker) executeSchedule(scheduleID string) {
 
 	// 执行任务
 	if err := sw.dss.ExecuteSchedule(sw.ctx, schedule); err != nil {
-		logger.Errorf("Failed to execute schedule %s: %v", schedule.ID, err)
-		o11y.Error(sw.ctx, fmt.Sprintf("Failed to execute schedule %s", schedule.ID))
+		otellog.LogError(sw.ctx, fmt.Sprintf("Failed to execute schedule %s", schedule.ID), err)
 		return
 	}
 

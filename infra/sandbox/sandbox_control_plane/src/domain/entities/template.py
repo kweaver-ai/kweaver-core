@@ -3,6 +3,7 @@
 
 定义沙箱环境模板。
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Dict
@@ -17,6 +18,7 @@ class Template:
 
     定义沙箱执行环境的配置模板。
     """
+
     id: str
     name: str
     image: str  # Docker 镜像

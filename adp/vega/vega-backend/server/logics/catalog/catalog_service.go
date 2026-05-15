@@ -15,20 +15,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	kwcrypto "github.com/kweaver-ai/kweaver-go-lib/crypto"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
 
 	"vega-backend/common"
 	catalogAccess "vega-backend/drivenadapters/catalog"
+	"vega-backend/drivenadapters/entityextension"
 	resourceAccess "vega-backend/drivenadapters/resource"
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 	"vega-backend/logics/connectors/factory"
+	"vega-backend/logics/extensions"
 	"vega-backend/logics/permission"
 	"vega-backend/logics/user_mgmt"
 )
@@ -77,7 +79,7 @@ func NewCatalogService(appSetting *common.AppSetting) interfaces.CatalogService 
 
 // Create creates a new Catalog.
 func (cs *catalogService) Create(ctx context.Context, req *interfaces.CatalogRequest) (string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create catalog")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create catalog")
 	defer span.End()
 
 	// 判断userid是否有创建业务知识网络的权限（策略决策）
@@ -103,9 +105,7 @@ func (cs *catalogService) Create(ctx context.Context, req *interfaces.CatalogReq
 		sensitiveFields := factory.GetFactory().GetSensitiveFields(req.ConnectorType)
 		decryptedConfig, err := cs.validateAndDecryptSensitiveFields(sensitiveFields, req.ConnectorCfg)
 		if err != nil {
-			logger.Errorf("Failed to validate sensitive fields: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to validate sensitive fields: %v", err))
-			span.SetStatus(codes.Error, "Validate sensitive fields failed")
+			otellog.LogError(ctx, "Failed to validate sensitive fields", err)
 			return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InvalidParameter_SensitiveFieldNotEncrypted).
 				WithErrorDetails(err.Error())
 		}
@@ -114,17 +114,13 @@ func (cs *catalogService) Create(ctx context.Context, req *interfaces.CatalogReq
 		connectorCfg := interfaces.ConnectorConfig(decryptedConfig)
 		connector, err := factory.GetFactory().CreateConnectorInstance(ctx, req.ConnectorType, connectorCfg)
 		if err != nil {
-			logger.Errorf("Failed to create connector: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to create connector: %v", err))
-			span.SetStatus(codes.Error, "Create connector failed")
+			otellog.LogError(ctx, "Failed to create connector", err)
 			return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InternalError_CreateFailed).
 				WithErrorDetails(err.Error())
 		}
 
 		if err := connector.TestConnection(ctx); err != nil {
-			logger.Errorf("Failed to test connection to data source: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to test connection to data source: %v", err))
-			span.SetStatus(codes.Error, "Connection failed")
+			otellog.LogError(ctx, "Failed to test connection to data source", err)
 			_ = connector.Close(ctx)
 			return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InternalError_TestConnectionFailed).
 				WithErrorDetails(err.Error())
@@ -158,11 +154,23 @@ func (cs *catalogService) Create(ctx context.Context, req *interfaces.CatalogReq
 
 	err = cs.ca.Create(ctx, catalog)
 	if err != nil {
-		logger.Errorf("Create catalog failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Create catalog failed: %v", err))
-		span.SetStatus(codes.Error, "Create catalog failed")
+		otellog.LogError(ctx, "Create catalog failed", err)
 		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_CreateFailed).
 			WithErrorDetails(err.Error())
+	}
+
+	if req.Extensions != nil {
+		if err := extensions.ValidateEntityExtensionsMap(ctx, *req.Extensions); err != nil {
+			_ = cs.ca.DeleteByIDs(ctx, []string{catalog.ID})
+			return "", err
+		}
+		if err := entityextension.NewStore(cs.appSetting).Replace(ctx, entityextension.KindCatalog, catalog.ID, *req.Extensions); err != nil {
+			_ = cs.ca.DeleteByIDs(ctx, []string{catalog.ID})
+			logger.Errorf("Replace catalog extensions failed: %v", err)
+			span.SetStatus(codes.Error, "Replace catalog extensions failed")
+			return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_CreateFailed).
+				WithErrorDetails(err.Error())
+		}
 	}
 
 	// 注册资源
@@ -185,7 +193,7 @@ func (cs *catalogService) Create(ctx context.Context, req *interfaces.CatalogReq
 
 // Get retrieves a Catalog by ID.
 func (cs *catalogService) GetByID(ctx context.Context, id string, withSensitiveFields bool) (*interfaces.Catalog, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get catalog")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get catalog")
 	defer span.End()
 
 	catalog, err := cs.ca.GetByID(ctx, id)
@@ -231,9 +239,7 @@ func (cs *catalogService) GetByID(ctx context.Context, id string, withSensitiveF
 		sensitiveFields := factory.GetFactory().GetSensitiveFields(catalog.ConnectorType)
 		decryptedConfig, err := cs.decryptSensitiveFields(sensitiveFields, catalog.ConnectorCfg)
 		if err != nil {
-			logger.Errorf("Failed to validate sensitive fields: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to validate sensitive fields: %v", err))
-			span.SetStatus(codes.Error, "Validate sensitive fields failed")
+			otellog.LogError(ctx, "Failed to validate sensitive fields", err)
 			return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InvalidParameter_SensitiveFieldNotEncrypted).
 				WithErrorDetails(err.Error())
 		}
@@ -246,7 +252,7 @@ func (cs *catalogService) GetByID(ctx context.Context, id string, withSensitiveF
 
 // GetByIDs retrieves a Catalog by IDs.
 func (cs *catalogService) GetByIDs(ctx context.Context, ids []string) ([]*interfaces.Catalog, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get catalogs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get catalogs")
 	defer span.End()
 
 	if len(ids) == 0 {
@@ -257,6 +263,12 @@ func (cs *catalogService) GetByIDs(ctx context.Context, ids []string) ([]*interf
 	catalogs, err := cs.ca.GetByIDs(ctx, ids)
 	if err != nil {
 		span.SetStatus(codes.Error, "Get catalog failed")
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+
+	if err := cs.ca.AttachListExtensions(ctx, interfaces.CatalogsQueryParams{IncludeExtensions: true}, catalogs); err != nil {
+		span.SetStatus(codes.Error, "Load catalog extensions failed")
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -299,7 +311,7 @@ func (cs *catalogService) GetByIDs(ctx context.Context, ids []string) ([]*interf
 
 // List lists Catalogs with filters.
 func (cs *catalogService) List(ctx context.Context, params interfaces.CatalogsQueryParams) ([]*interfaces.Catalog, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List catalogs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "List catalogs")
 	defer span.End()
 
 	// 查询所有catalog的ID
@@ -395,6 +407,12 @@ func (cs *catalogService) List(ctx context.Context, params interfaces.CatalogsQu
 		catalogs = append(catalogs, batchCatalogs...)
 	}
 
+	if err := cs.ca.AttachListExtensions(ctx, params, catalogs); err != nil {
+		span.SetStatus(codes.Error, "Attach catalog extensions failed")
+		return []*interfaces.Catalog{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+
 	// 设置catalog操作权限
 	for _, c := range catalogs {
 		if resrc, exist := matchResourceOpsMap[c.ID]; exist {
@@ -426,7 +444,7 @@ func (cs *catalogService) List(ctx context.Context, params interfaces.CatalogsQu
 
 // Update updates a Catalog.
 func (cs *catalogService) Update(ctx context.Context, id string, req *interfaces.CatalogRequest) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update catalog")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update catalog")
 	defer span.End()
 
 	catalog := req.OriginCatalog
@@ -454,9 +472,7 @@ func (cs *catalogService) Update(ctx context.Context, id string, req *interfaces
 		sensitiveFields := factory.GetFactory().GetSensitiveFields(req.ConnectorType)
 		decryptedConfig, err := cs.validateAndDecryptSensitiveFields(sensitiveFields, req.ConnectorCfg)
 		if err != nil {
-			logger.Errorf("Failed to validate sensitive fields: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to validate sensitive fields: %v", err))
-			span.SetStatus(codes.Error, "Validate sensitive fields failed")
+			otellog.LogError(ctx, "Failed to validate sensitive fields", err)
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InvalidParameter_SensitiveFieldNotEncrypted).
 				WithErrorDetails(err.Error())
 		}
@@ -465,17 +481,13 @@ func (cs *catalogService) Update(ctx context.Context, id string, req *interfaces
 		connectorCfg := interfaces.ConnectorConfig(decryptedConfig)
 		connector, err := factory.GetFactory().CreateConnectorInstance(ctx, req.ConnectorType, connectorCfg)
 		if err != nil {
-			logger.Errorf("Failed to create connector: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to create connector: %v", err))
-			span.SetStatus(codes.Error, "Create connector failed")
+			otellog.LogError(ctx, "Failed to create connector", err)
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InternalError_CreateFailed).
 				WithErrorDetails(err.Error())
 		}
 
 		if err := connector.TestConnection(ctx); err != nil {
-			logger.Errorf("Failed to test connection to data source: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Failed to test connection to data source: %v", err))
-			span.SetStatus(codes.Error, "Connection failed")
+			otellog.LogError(ctx, "Failed to test connection to data source", err)
 			_ = connector.Close(ctx)
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InternalError_TestConnectionFailed).
 				WithErrorDetails(err.Error())
@@ -506,6 +518,17 @@ func (cs *catalogService) Update(ctx context.Context, id string, req *interfaces
 			WithErrorDetails(err.Error())
 	}
 
+	if req.Extensions != nil {
+		if err := extensions.ValidateEntityExtensionsMap(ctx, *req.Extensions); err != nil {
+			return err
+		}
+		if err := entityextension.NewStore(cs.appSetting).Replace(ctx, entityextension.KindCatalog, catalog.ID, *req.Extensions); err != nil {
+			span.SetStatus(codes.Error, "Replace catalog extensions failed")
+			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_UpdateFailed).
+				WithErrorDetails(err.Error())
+		}
+	}
+
 	// 请求更新资源名称的接口，更新资源的名称
 	if req.IfNameModify {
 		err = cs.ps.UpdateResource(ctx, interfaces.PermissionResource{
@@ -524,7 +547,7 @@ func (cs *catalogService) Update(ctx context.Context, id string, req *interfaces
 
 // DeleteByIDs deletes Catalogs by IDs.
 func (cs *catalogService) DeleteByIDs(ctx context.Context, ids []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete catalogs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete catalogs")
 	defer span.End()
 
 	if len(ids) == 0 {
@@ -576,7 +599,7 @@ func (cs *catalogService) DeleteByIDs(ctx context.Context, ids []string) error {
 
 // CheckExistByID checks if a Catalog exists by ID.
 func (cs *catalogService) CheckExistByID(ctx context.Context, id string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Check catalog exist by ID")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Check catalog exist by ID")
 	defer span.End()
 
 	catalog, err := cs.ca.GetByID(ctx, id)
@@ -592,7 +615,7 @@ func (cs *catalogService) CheckExistByID(ctx context.Context, id string) (bool, 
 
 // CheckExistByName checks if a Catalog exists by name.
 func (cs *catalogService) CheckExistByName(ctx context.Context, name string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Check catalog exist by name")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Check catalog exist by name")
 	defer span.End()
 
 	catalog, err := cs.ca.GetByName(ctx, name)
@@ -608,7 +631,7 @@ func (cs *catalogService) CheckExistByName(ctx context.Context, name string) (bo
 
 // TestConnection tests catalog connection.
 func (cs *catalogService) TestConnection(ctx context.Context, catalog *interfaces.Catalog) (*interfaces.CatalogHealthCheckStatus, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Test catalog connection")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Test catalog connection")
 	defer span.End()
 
 	if catalog == nil {
@@ -704,14 +727,12 @@ func (cs *catalogService) decryptSensitiveFields(sensitiveFields []string,
 }
 
 func (cs *catalogService) UpdateMetadata(ctx context.Context, id string, metadata map[string]any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateMetadata")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "UpdateMetadata")
 	defer span.End()
 
 	err := cs.ca.UpdateMetadata(ctx, id, metadata)
 	if err != nil {
-		logger.Errorf("Update metadata failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Update metadata failed: %v", err))
-		span.SetStatus(codes.Error, "Update metadata failed")
+		otellog.LogError(ctx, "Update metadata failed", err)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_UpdateFailed).
 			WithErrorDetails(err.Error())
 	}
@@ -721,7 +742,7 @@ func (cs *catalogService) UpdateMetadata(ctx context.Context, id string, metadat
 
 // ListCatalogSrcs lists Catalog Sources with filters.
 func (cs *catalogService) ListCatalogSrcs(ctx context.Context, params interfaces.ListCatalogsQueryParams) ([]*interfaces.ListCatalogEntry, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListCatalogSrcs catalogs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ListCatalogSrcs catalogs")
 	defer span.End()
 
 	// 先查询所有catalog源的ID

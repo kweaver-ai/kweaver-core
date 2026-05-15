@@ -1,0 +1,304 @@
+<!-- 请勿直接编辑：本文件由 docs/user_manual/concepts 下的 `make aggregate` 生成。 -->
+<!-- 来源文件：index.md, agent-basics.md, publishing.md, agent-modes.md, runtime-control.md, product-terminology.md。dolphin-syntax.md 作为外部引用链接，不会拼接进聚合文档。 -->
+
+# Agent 概念指南（聚合版）
+
+> 本文件由脚本生成，请不要直接修改本文件；如需调整内容，请修改分文件文档后运行 `make -C docs/user_manual/concepts aggregate`。
+
+> Dolphin 语法文档为独立引用文档，不会被拼接进本聚合文件。请通过 <a href="./dolphin-syntax.md" target="_blank">Dolphin 语法文档</a> 单独查看。
+
+## 目录
+
+- [Agent 概念指南](#agent-概念指南)
+- [基础概念](#基础概念)
+- [发布逻辑](#发布逻辑)
+- [Agent 模式](#agent-模式)
+- [运行控制](#运行控制)
+- [产品术语与表达](#产品术语与表达)
+
+
+<!-- 来源：index.md -->
+
+## Agent 概念指南
+
+Agent 概念指南面向产品、前端、测试、实施和集成开发者，用来统一理解 Decision Agent 中的核心名词和行为边界。这里不重点讲接口参数或命令细节，而是解释为什么需要这些能力、它们在产品里怎么表达，以及 API、CLI、SDK 文档里相关字段如何对应。
+
+### 推荐阅读顺序
+
+1. [基础概念](#基础概念)：先理解 Agent、个人空间、广场和几个常见 ID。
+2. [发布逻辑](#发布逻辑)：理解发布、更新发布信息、重新发布，以及普通 Agent、技能 Agent、API Agent 的区别。
+3. [Agent 模式](#agent-模式)：理解默认模式、ReAct 模式和 Dolphin 模式的使用边界。
+4. [运行控制](#运行控制)：理解人工干预、中断恢复、终止执行和断线续连。
+5. [产品术语与表达](#产品术语与表达)：统一文档、页面和接口里的名词表达。
+
+### 与接入文档的关系
+
+本目录解释概念；具体接入请继续阅读：
+
+- [API 接入指南](../api/README.md)
+- [CLI 用户指南](../cli/README.md)
+- [TypeScript SDK 用户指南](../sdk/typescript/README.md)
+
+如果只想快速跑通调用，可以直接看 [可运行示例](../examples/README.md)。
+
+
+<!-- 来源：agent-basics.md -->
+
+## 基础概念
+
+### 什么是 Agent
+
+Agent 是由 Decision Agent 管理的一组智能体配置和运行能力。一个 Agent 通常包含名称、描述、头像、产品归属、输入输出定义、大模型配置、工具/技能、知识网络、运行模式等信息。
+
+从链路上看，Decision Agent 后端的 agent-factory 模块负责创建、保存、校验和发布 Agent；Agent Executor 负责执行 Agent；执行过程中会调用 Dolphin SDK 完成核心逻辑的执行。
+
+### 个人空间
+
+个人空间是用户创建和管理 Agent 的区域，也可以理解为“开发态”或“我的创建”。在这里可以创建 Agent、编辑配置、查看发布状态、发布、取消发布或删除。
+
+个人空间中的 Agent 可能处于以下状态：
+
+| 状态 | 含义 |
+| --- | --- |
+| 未发布 | 还没有可对外使用的发布版本。 |
+| 已发布 | 当前配置与已发布版本保持一致。 |
+| 已发布编辑中 | 已经发布过，但发布后又修改了配置内容，需要重新发布才会生成新的对外版本。 |
+
+### 广场
+
+广场是发布后的 Agent 被发现和使用的区域。Agent 发布到广场后，其他用户或业务系统才可以按发布版本使用它。
+
+部分 REST 接口路径中仍保留历史命名 `agent-market`，但产品和用户指南中的展示名称统一使用“广场”。
+
+### 常见 ID
+
+| 名称 | 说明 |
+| --- | --- |
+| `agent_id` | Agent 的唯一标识 ID，管理接口、CLI 管理命令、SDK 管理能力通常使用它。 |
+| `agent_key` | 另一个 Agent 的唯一标识 ID，通常可以通过 Agent 详情接口解析出 `agent_key`。<br><br>**注意**：<br>1. `agent_key` 与 `agent_id` 不同，`agent_key` 可以在创建时进行自定义，便于业务系统识别和调用，也可以跨环境使用（即不同的环境可以使用相同的 `agent_key`）。<br>2. 在对话等接口中可以使用 `agent_key` 来调用 Agent。<br>3. `agent_id` 由系统自动生成，不可自定义，不能跨环境使用。 |
+| `version` | Agent 版本。<br>未发布的固定为 `v0`（即使已经发布过，但如果编辑后未发布，版本仍为 `v0`。此时同时存在 `v0` 和已发布的版本。所以 `v0` 通常表示未发布的版本，或最近编辑的版本。如果当前是已发布状态，此时 `v0` 和最新发布的版本是同一个版本）。<br>每次发布会产生新的发布版本（从 `v1` 开始递增，版本号依次为 `v1`、`v2`、`v3`...）。 |
+| `conversation_id` | 对话 ID，用于继续多轮对话和查询对话历史。 |
+| `agent_run_id` | 一次执行 ID，用于追踪一次 Agent 调用的运行过程。 |
+
+
+<!-- 来源：publishing.md -->
+
+## 发布逻辑
+
+### 什么是发布
+
+发布是把当前 Agent 配置保存为一个可对外使用的发布版本。发布时后端会校验当前配置，生成新的 Agent 版本，并将当前 Agent 配置快照写入发布记录和发布历史。
+
+如果不发布，Agent 可以在个人空间里继续编辑和调试，但不会作为发布版本出现在广场，也不能作为 API Agent 或技能 Agent 对外使用。
+
+自己用是可以的（通过接口、cli 等方式），如果不需要对外使用做为 API 或技能等，可以不发布。
+
+### 普通 Agent、技能 Agent 和 API Agent
+
+发布时可以选择是否发布为特殊类型：
+
+| 类型 | 含义 |
+| --- | --- |
+| 普通 Agent | 没有勾选发布为技能 Agent、API Agent 等特殊类型的 Agent。通常用于普通对话使用。 |
+| 技能 Agent（sub-agent） | 发布为 `skill_agent`，可作为工具或子 Agent 被其他 Agent 编排使用。 |
+| API Agent | 发布为 `api_agent`，用于 API Chat 等面向系统集成的调用场景。普通页面对话可用，不代表 API Chat 一定可用；API Chat 通常要求发布为 API Agent。 <br><br>**注意**：目前和普通 Agent 区分已不明显，后续可能会进行合并或调整。|
+
+后端还保留 `web_sdk_agent`、`data_flow_agent` 等发布形态，属于更细分的集成能力，普通接入可先忽略。
+
+### 更新发布信息
+
+更新发布信息是修改已经发布版本的发布元信息，例如发布到哪里、发布为什么类型、分类和权限控制等。它的前提是 Agent 处于“已发布”状态，也就是配置内容没有发生变化。
+
+从当前代码逻辑看，`PUT /api/agent-factory/v3/agent/{agent_id}/publish-info` 会更新已有 release 记录中的发布描述、发布位置、发布类型、权限和分类，并返回原有版本号。它不会调用版本号生成逻辑，也不会写入新的发布历史，所以不会生成新的 Agent 版本。
+
+界面上这种场景显示的是“更新发布信息”按钮。
+
+### 重新发布
+
+重新发布，也可以理解为再次发布，是指 Agent 已经发布过，但发布后又修改了配置内容。此时个人空间状态会变成“已发布编辑中”，界面上显示“发布”按钮，而不是“更新发布信息”按钮。
+
+再次点击发布会把当前配置作为新的发布版本发布出去。后端会基于最新发布历史生成下一个版本号，并新增一条发布历史。
+
+### 什么时候需要重新发布
+
+只要希望外部使用方看到配置内容变化，就需要重新发布。常见场景包括：
+
+- 修改输入输出配置。
+- 修改大模型配置或默认模型。
+- 修改系统提示词、角色设定或 Agent 模式。
+- 增删工具、技能、MCP 或知识网络。
+- 修改 Dolphin、ReAct 等运行编排相关配置。
+
+总之，只要配置内容发生了变化，就可以考虑重新发布。
+
+如果只是调整发布范围、发布类型、分类或权限，并且配置内容没有变化，则使用“更新发布信息”。
+
+
+<!-- 来源：agent-modes.md -->
+
+## Agent 模式
+
+Agent 模式决定 Agent 在运行时如何组织提示词、工具调用、编排逻辑和输出结果。当前主要包括默认模式、ReAct 模式和 Dolphin 模式。
+
+### 默认模式
+
+默认模式背后对应的是 Dolphin 语法的`/explore`模式（探索模式），适合简单、直接的 Agent。会根据用户的`query`、`system_prompt`、`tools`等自动探索执行。
+
+可以简单理解成是一条 Dolphin 语句。
+
+默认模式也承担历史配置的兼容职责。
+
+### ReAct 模式
+
+ReAct 是优先推荐的 Agent 模式。它适合需要工具调用、分步思考和更稳定执行流程的 Agent，同时不要求用户编写 Dolphin 语法。
+
+在配置上，ReAct 模式通常使用 `mode: "react"`，并通过 `react_config` 控制历史、缓存等运行策略。`react_config` 只应在 ReAct 模式下配置。
+
+`react_config`是可选的，如果不配置，和`默认模式`的行为一致。
+
+### Dolphin 模式（多条 Dolphin 语句）
+
+Dolphin 模式适合高级编排场景。它允许通过 Dolphin 语法描述更细粒度的执行流程，例如先调用工具、再进行判断、再组织输出，或者为特定业务场景生成一段自定义编排代码。
+
+在链路上，Agent Factory 保存和发布 Dolphin 相关配置；Agent Executor 在运行 Agent 时读取这些配置；Dolphin SDK 负责解释或执行 Dolphin 编排逻辑。
+
+Dolphin 模式通常涉及 `dolphin`、`pre_dolphin`、`post_dolphin` 等配置。启用 Dolphin 模式时，需要至少存在可执行的 Dolphin 内容；同时 Dolphin 模式不能和 `plan_mode` 同时启用。
+
+### Dolphin 语法文档
+
+Dolphin 语法文档作为独立参考资料维护，不会拼接进聚合文档。阅读 Dolphin 模式时，可以在新页面打开：
+
+<a href="./dolphin-syntax.md" target="_blank">Dolphin 语法文档</a>
+
+该文档保持来源内容不变，后续可随 Dolphin 语法文档同步更新。
+
+
+<!-- 来源：runtime-control.md -->
+
+## 运行控制
+
+运行控制用于处理 Agent 执行过程中的人工确认、恢复、终止和断线续连。这里先解释产品和运行时概念；具体 REST 请求请阅读 [人工干预与终止](../api/intervention-termination.md)。
+
+### 核心概念
+
+| 概念 | 说明 | 常见字段或接口 |
+| --- | --- | --- |
+| 人工干预 | 工具或 Sub-Agent 执行前需要用户确认，Executor 会暂停当前 run 并返回中断信息。 | `interrupt_info`、`intervention` |
+| 中断恢复 | 用户确认或跳过后，继续之前被暂停的一次执行。 | `resume_interrupt_info`、`agent_run_id`、`interrupted_assistant_message_id` |
+| 终止执行 | 主动停止正在运行的一次执行，必要时同步取消被中断的助手消息。 | `/chat/termination` |
+| 断线续连 | 流式连接断开但服务端 run 仍在继续时，重新接入并读取后续事件。 | `/chat/resume` |
+
+人工干预恢复和断线续连容易混淆：
+
+- 人工干预恢复是继续一个被 Dolphin / Executor 暂停的 run，需要再次调用 `chat/completion` 或 `debug/completion`，并传入 `resume_interrupt_info`。
+- 断线续连只是恢复读取还在运行的流式响应，使用 `/chat/resume`，请求体只需要 `conversation_id`。
+
+### 人工干预
+
+人工干预通常配置在工具技能或 Sub-Agent 技能上。执行到该工具或 Sub-Agent 时，Dolphin SDK 根据 `intervention` 配置生成中断事件，Agent Executor 将中断信息返回给 Decision Agent。
+
+常见配置字段：
+
+| 字段 | 说明 |
+| --- | --- |
+| `intervention` | 是否启用人工干预。 |
+| `intervention_confirmation_message` | 展示给用户的确认提示。 |
+
+典型场景是合同审核主 Agent 调用合同风险抽取 Sub-Agent 前，先让用户确认是否继续调用。
+
+### 中断恢复
+
+当响应中出现 `message.ext.interrupt_info` 时，客户端应保存三类信息：
+
+- `conversation_id`：对话 ID，用于继续同一段对话。
+- `agent_run_id`：被暂停的一次执行 ID。
+- `assistant_message_id`：被中断的助手消息 ID，恢复时作为 `interrupted_assistant_message_id` 传回。
+- `interrupt_info.handle` 和 `interrupt_info.data`：恢复执行所需的句柄和中断详情。
+
+这里有一个容易混淆的字段：Dolphin 外层中断事件可能用 `tool_confirmation` 表示“工具确认事件”，但真正传回 REST 恢复接口的句柄是 `interrupt_info.handle`，其中 `handle.interrupt_type` 当前为 `tool_interrupt`。接入方应原样保存并回传 `handle`，不要把它改写成外层事件类型。
+
+用户确认后，客户端再次调用对话接口，把 `interrupt_info.handle` 转成 `resume_interrupt_info.resume_handle`，并设置 `action`：
+
+| `action` | 含义 |
+| --- | --- |
+| `confirm` | 确认继续执行。 |
+| `skip` | 跳过当前被中断的工具或 Sub-Agent。 |
+
+如果允许用户修改工具参数，可以通过 `modified_args` 传回修改后的参数；不需要修改时传空数组或省略。
+
+恢复请求通常不需要再传新的 `query`。后端会根据 `conversation_id`、`agent_run_id`、`interrupted_assistant_message_id` 和 `resume_interrupt_info` 回到暂停点继续执行。
+
+### 终止执行
+
+终止执行用于用户主动停止一个正在运行的 run。它会尽量通知 Agent Executor 终止对应的 `agent_run_id`，同时关闭 Decision Agent 侧的流式 stop channel。
+
+如果传入 `interrupted_assistant_message_id`，后端还会把对应助手消息标记为 cancelled。这个字段适合在人工干预等待中用户选择终止时使用。
+
+### 断线续连
+
+流式对话过程中，Decision Agent 会按 `conversation_id` 在内存中保存当前响应快照和续连信号。如果客户端网络断开，而服务端 run 仍在继续，可以调用 `/chat/resume` 重新读取流式增量事件。
+
+断线续连有两个边界：
+
+- 它依赖运行中的内存态 `SessionMap`，run 结束后通常无法继续读取。
+- 它不会恢复人工干预；人工干预必须走 `resume_interrupt_info`。
+
+### 建议接入顺序
+
+1. 普通对话先保存 `conversation_id`、`agent_run_id` 和 `assistant_message_id`。
+2. 如果响应里有 `interrupt_info`，展示确认提示并保存 `handle`、`data`。
+3. 用户确认后调用原对话接口恢复执行。
+4. 用户取消或任务不再需要时调用终止接口。
+5. 只有流式连接断开且 run 仍在继续时，才调用 `/chat/resume`。
+
+
+<!-- 来源：product-terminology.md -->
+
+## 产品术语与表达
+
+本页用于统一用户指南、页面文案和接口字段中的常见表达。字段名保留英文原文，中文解释优先使用产品侧习惯说法。
+
+### Agent 相关
+
+| 表达 | 推荐中文 | 说明 |
+| --- | --- | --- |
+| Agent | Agent / 智能体 | 面向用户时可以写 Agent；需要中文解释时写智能体。 |
+| Personal Space | 个人空间 | 用户创建、编辑、调试和管理 Agent 的区域。 |
+| Square | 广场 | 已发布 Agent 的展示和使用区域。 |
+| Publish | 发布 | 生成可对外使用的发布版本。 |
+| Update Publish Info | 更新发布信息 | 只更新发布元信息，不生成新版本。 |
+| Republish | 重新发布 / 再次发布 | 配置变化后再次发布，生成新版本。 |
+
+### 对话、会话和执行
+
+| 英文字段/概念 | 中文名称 | 说明 |
+| --- | --- | --- |
+| `conversation` / `conversation_id` | 对话 | 面向用户的多轮上下文容器。 |
+| `session` / `conversation_session_id` | 会话 | 运行期会话，主要用于缓存、续连和临时状态。 |
+| `run` / `agent_run_id` | 一次执行 | 一次 Agent 接口调用或一次 Agent 执行过程。 |
+
+一个对话可以对应多个会话，一个会话可以包含一个或多个 run。普通接入优先关注 `conversation_id`；`session` 和 `run` 更多用于缓存、续连、调试和追踪。
+
+### 大模型相关表达
+
+面向用户时，优先使用“大模型”“模型”“模型配置”“默认模型”“模型参数”等说法。不要让用户直接理解底层服务或内部实现。
+
+常见表达建议：
+
+| 场景 | 推荐表达 |
+| --- | --- |
+| 选择 LLM | 选择大模型或模型。 |
+| 默认 LLM | 默认模型。 |
+| temperature、top_p、top_k | 模型参数。 |
+| 多个 LLM 配置 | 多个模型配置，其中一个需要设为默认模型。 |
+| 模型调用失败 | 大模型调用失败，建议检查模型配置和服务状态。 |
+
+### 模式相关表达
+
+| 模式 | 推荐表达 | 使用建议 |
+| --- | --- | --- |
+| `default` | 默认模式 / 角色指定 | 适合简单角色设定、固定回答规则和基础问答。 |
+| `react` | ReAct 模式 | 优先推荐的 Agent 模式，适合工具调用和较稳定的执行流程。 |
+| `dolphin` | Dolphin 模式 | 高级编排模式，适合需要自定义执行逻辑的场景。 |
+
+产品文案里可以强调 ReAct 模式的低门槛和推荐使用；Dolphin 模式应说明它更灵活，但需要理解 Dolphin 语法和编排逻辑。

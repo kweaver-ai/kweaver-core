@@ -3,6 +3,7 @@
 
 定义模板相关的 HTTP 端点。
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 
@@ -20,8 +21,7 @@ router = APIRouter(prefix="/templates", tags=["templates"])
 
 @router.post("", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
 async def create_template(
-    request: CreateTemplateRequest,
-    service: TemplateService = Depends(get_template_service_db)
+    request: CreateTemplateRequest, service: TemplateService = Depends(get_template_service_db)
 ):
     """
     创建模板
@@ -45,7 +45,7 @@ async def create_template(
         default_memory_mb=request.default_memory_mb,
         default_disk_mb=request.default_disk_mb,
         default_timeout_sec=request.default_timeout,
-        default_env_vars=request.default_env_vars
+        default_env_vars=request.default_env_vars,
     )
 
     template_dto = await service.create_template(command)
@@ -54,9 +54,7 @@ async def create_template(
 
 @router.get("", response_model=List[TemplateResponse])
 async def list_templates(
-    limit: int = 50,
-    offset: int = 0,
-    service: TemplateService = Depends(get_template_service_db)
+    limit: int = 50, offset: int = 0, service: TemplateService = Depends(get_template_service_db)
 ):
     """列出所有模板"""
     templates = await service.list_templates(limit=limit, offset=offset)
@@ -65,8 +63,7 @@ async def list_templates(
 
 @router.get("/{template_id}", response_model=TemplateResponse)
 async def get_template(
-    template_id: str,
-    service: TemplateService = Depends(get_template_service_db)
+    template_id: str, service: TemplateService = Depends(get_template_service_db)
 ):
     """获取模板详情"""
     query = GetTemplateQuery(template_id=template_id)
@@ -78,7 +75,7 @@ async def get_template(
 async def update_template(
     template_id: str,
     request: UpdateTemplateRequest,
-    service: TemplateService = Depends(get_template_service_db)
+    service: TemplateService = Depends(get_template_service_db),
 ):
     """更新模板"""
     command = UpdateTemplateCommand(
@@ -89,7 +86,7 @@ async def update_template(
         default_memory_mb=request.default_memory_mb,
         default_disk_mb=request.default_disk_mb,
         default_timeout_sec=request.default_timeout,
-        default_env_vars=request.default_env_vars
+        default_env_vars=request.default_env_vars,
     )
 
     template_dto = await service.update_template(command)
@@ -98,8 +95,7 @@ async def update_template(
 
 @router.delete("/{template_id}")
 async def delete_template(
-    template_id: str,
-    service: TemplateService = Depends(get_template_service_db)
+    template_id: str, service: TemplateService = Depends(get_template_service_db)
 ):
     """删除模板"""
     await service.delete_template(template_id)
@@ -120,5 +116,5 @@ def _map_dto_to_response(dto: TemplateDTO) -> TemplateResponse:
         default_env_vars=dto.default_env_vars,
         is_active=dto.is_active,
         created_at=dto.created_at,
-        updated_at=dto.updated_at
+        updated_at=dto.updated_at,
     )

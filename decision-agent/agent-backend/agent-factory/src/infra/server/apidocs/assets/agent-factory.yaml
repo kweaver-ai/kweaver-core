@@ -3060,11 +3060,6 @@ components:
                 knowledge_network_id:
                     description: 业务知识网络ID
                     type: string
-                object_types:
-                    description: 对象类型列表
-                    items:
-                        $ref: '#/components/schemas/datasourcevalobj.ObjectType'
-                    type: array
             required:
                 - knowledge_network_id
             type: object
@@ -3558,8 +3553,8 @@ components:
                     example: frame_abc123
                     type: string
                 interrupt_type:
-                    description: 中断类型（tool_confirmation）
-                    example: tool_confirmation
+                    description: 中断类型（恢复句柄使用 tool_interrupt；Dolphin 外层工具确认事件可能显示为 tool_confirmation）
+                    example: tool_interrupt
                     type: string
                 restart_block:
                     description: 是否重启代码块
@@ -3645,23 +3640,12 @@ components:
         knowledge_network:
             description: |
                 - 业务知识网络
-                  - 用户选择的业务知识网络和其下的“对象类”
-                    - 作用，在召回时会从选择的这些范围中进行召回。或在召回后只保留选择的这些范围中的内容。
+                  - 用户选择的业务知识网络。
+                    - 作用：在召回时从该知识网络范围中进行召回。
             properties:
                 knowledge_network_id:
                     description: 业务知识网络id
                     type: string
-                object_types:
-                    description: 对象类数组
-                    items:
-                        properties:
-                            object_type_id:
-                                description: 对象类id
-                                type: string
-                        required:
-                            - object_type_id
-                        type: object
-                    type: array
             required:
                 - knowledge_network_id
             type: object
@@ -4221,9 +4205,6 @@ components:
             type: array
         publish_upsert_req:
             properties:
-                business_domain_id:
-                    description: 业务域ID
-                    type: string
                 category_ids:
                     description: agent分类ID
                     items:
@@ -6097,9 +6078,6 @@ components:
             type: object
         upsert_req:
             properties:
-                business_domain_id:
-                    description: 业务域ID
-                    type: string
                 category_ids:
                     description: 分类ID数组
                     items:
@@ -6610,7 +6588,7 @@ paths:
             tags:
                 - 对话管理
         get:
-            description: 获取指定应用的会话列表，支持分页
+            description: 获取指定应用的对话列表，支持分页
             parameters:
                 - description: 应用 Key
                   in: path
@@ -6976,8 +6954,6 @@ paths:
                                         - kn_entry_id: "129"
                                     knowledge_network:
                                         - knowledge_network_id: "102"
-                                          object_types:
-                                            - object_type_id: "213"
                                     metric:
                                         - metric_model_id: "129"
                                 dolphin: /explore/(system_prompt=
@@ -7959,8 +7935,6 @@ paths:
                                         - kn_entry_id: "129"
                                     knowledge_network:
                                         - knowledge_network_id: "102"
-                                          object_types:
-                                            - object_type_id: "213"
                                     metric:
                                         - metric_model_id: "129"
                                 dolphin: /explore/(system_prompt=

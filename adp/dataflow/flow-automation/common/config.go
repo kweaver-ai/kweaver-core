@@ -79,6 +79,7 @@ type Config struct {
 	AccessAddress            AccessAddress            `mapstructure:"access_address"`
 	Sandbox                  Sandbox                  `mapstructure:"sandbox"`
 	FlowFileDownload         FlowFileDownload         `mapstructure:"flow_file_download"`
+	VegaBackendConfig        VegaBackendConfig        `mapstructure:"vegabackend"`
 }
 
 type DagInstanceEventArchivePolicy string
@@ -618,6 +619,12 @@ type FlowFileDownload struct {
 	BatchSize       int   `mapstructure:"batch_size"`       // 每次查询任务数
 	DownloadTimeout int   `mapstructure:"download_timeout"` // 下载超时(秒)
 	MaxFileSize     int64 `mapstructure:"max_file_size"`    // 最大文件大小(字节)
+}
+
+// VegaBackendConfig vega-backend 服务配置
+type VegaBackendConfig struct {
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
 }
 
 // BindEnvs bind envs

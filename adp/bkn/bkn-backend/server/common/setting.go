@@ -17,14 +17,14 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	libmq "github.com/kweaver-ai/kweaver-go-lib/mq"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/spf13/viper"
 
 	"bkn-backend/version"
 )
 
-// server配置项
+// ServerSetting server配置项
 type ServerSetting struct {
 	RunMode                  string        `mapstructure:"runMode"`
 	HttpPort                 int           `mapstructure:"httpPort"`
@@ -42,12 +42,12 @@ type ServerSetting struct {
 	ScheduleLockTimeout  int `mapstructure:"scheduleLockTimeout"`  // in seconds, default 300 (5 min)
 }
 
-// app配置项
+// AppSetting app配置项
 type AppSetting struct {
-	ServerSetting        ServerSetting             `mapstructure:"server"`
-	LogSetting           logger.LogSetting         `mapstructure:"log"`
-	ObservabilitySetting o11y.ObservabilitySetting `mapstructure:"observability"`
-	DepServices          map[string]map[string]any `mapstructure:"depServices"`
+	ServerSetting ServerSetting             `mapstructure:"server"`
+	LogSetting    logger.LogSetting         `mapstructure:"log"`
+	OtelSetting   otel.OtelConfig           `mapstructure:"otel"`
+	DepServices   map[string]map[string]any `mapstructure:"depServices"`
 
 	DBSetting         libdb.DBSetting
 	MQSetting         libmq.MQSetting
@@ -163,15 +163,15 @@ func loadSetting(vp *viper.Viper) {
 
 	SetHydraAdminSetting()
 
+	SetPermissionSetting()
+
+	SetUserMgmtSetting()
+
 	SetDataModelSetting()
 
 	SetDataViewSetting()
 
 	SetUniQuerySetting()
-
-	SetPermissionSetting()
-
-	SetUserMgmtSetting()
 
 	SetModelFactoryManagerSetting()
 
@@ -185,18 +185,11 @@ func loadSetting(vp *viper.Viper) {
 
 	SetAgentOperatorSetting()
 
-	serverInfo := o11y.ServerInfo{
-		ServerName:    version.ServerName,
-		ServerVersion: version.ServerVersion,
-		Language:      version.LanguageGo,
-		GoVersion:     version.GoVersion,
-		GoArch:        version.GoArch,
-	}
-	logger.Infof("ServerName: %s, ServerVersion: %s, Language: %s, GoVersion: %s, GoArch: %s, POD_NAME: %s",
+	appSetting.OtelSetting.ServiceName = version.ServerName
+	appSetting.OtelSetting.ServiceVersion = version.ServerVersion
+	logger.Infof("ServerName: %s, ServerVersion: %s, Language: %s, GoVersion: %s, GoArch: %s",
 		version.ServerName, version.ServerVersion, version.LanguageGo,
-		version.GoVersion, version.GoArch, o11y.POD_NAME)
-
-	o11y.Init(serverInfo, appSetting.ObservabilitySetting)
+		version.GoVersion, version.GoArch)
 
 	s, _ := sonic.MarshalString(appSetting)
 	logger.Debug(s)
@@ -279,6 +272,40 @@ func SetHydraAdminSetting() {
 	}
 }
 
+func SetPermissionSetting() {
+	if !GetAuthEnabled() {
+		logger.Info("ISF authentication disabled via AUTH_ENABLED env, skipping authorization configuration")
+		return
+	}
+	setting, ok := appSetting.DepServices[permissionServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", permissionServiceName)
+	}
+
+	protocol := setting["protocol"].(string)
+	host := setting["host"].(string)
+	port := setting["port"].(int)
+
+	appSetting.PermissionUrl = fmt.Sprintf("%s://%s:%d/api/authorization/v1", protocol, host, port)
+}
+
+func SetUserMgmtSetting() {
+	if !GetAuthEnabled() {
+		logger.Info("ISF authentication disabled via AUTH_ENABLED env, skipping user-management configuration")
+		return
+	}
+	setting, ok := appSetting.DepServices[userMgmtServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", userMgmtServiceName)
+	}
+
+	protocol := setting["protocol"].(string)
+	host := setting["host"].(string)
+	port := setting["port"].(int)
+
+	appSetting.UserMgmtUrl = fmt.Sprintf("%s://%s:%d", protocol, host, port)
+}
+
 func SetDataModelSetting() {
 	setting, ok := appSetting.DepServices[dataModelServiceName]
 	if !ok {
@@ -316,40 +343,6 @@ func SetUniQuerySetting() {
 	port := setting["port"].(int)
 
 	appSetting.UniQueryUrl = fmt.Sprintf("%s://%s:%d/api/mdl-uniquery/in/v1", protocol, host, port)
-}
-
-func SetPermissionSetting() {
-	if !GetAuthEnabled() {
-		logger.Info("ISF authentication disabled via AUTH_ENABLED env, skipping authorization configuration")
-		return
-	}
-	setting, ok := appSetting.DepServices[permissionServiceName]
-	if !ok {
-		logger.Fatalf("service %s not found in depServices", permissionServiceName)
-	}
-
-	protocol := setting["protocol"].(string)
-	host := setting["host"].(string)
-	port := setting["port"].(int)
-
-	appSetting.PermissionUrl = fmt.Sprintf("%s://%s:%d/api/authorization/v1", protocol, host, port)
-}
-
-func SetUserMgmtSetting() {
-	if !GetAuthEnabled() {
-		logger.Info("ISF authentication disabled via AUTH_ENABLED env, skipping user-management configuration")
-		return
-	}
-	setting, ok := appSetting.DepServices[userMgmtServiceName]
-	if !ok {
-		logger.Fatalf("service %s not found in depServices", userMgmtServiceName)
-	}
-
-	protocol := setting["protocol"].(string)
-	host := setting["host"].(string)
-	port := setting["port"].(int)
-
-	appSetting.UserMgmtUrl = fmt.Sprintf("%s://%s:%d", protocol, host, port)
 }
 
 func SetModelFactoryManagerSetting() {

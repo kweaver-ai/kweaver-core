@@ -3,6 +3,7 @@
 
 配置和提供应用所需的所有依赖项。
 """
+
 import asyncio
 import os
 import time
@@ -70,7 +71,7 @@ class MockSessionRepository(ISessionRepository):
 
     async def find_by_container_id(self, container_id: str):
         for session in self._sessions.values():
-            if getattr(session, 'container_id', None) == container_id:
+            if getattr(session, "container_id", None) == container_id:
                 return session
         return None
 
@@ -97,7 +98,9 @@ class MockSessionRepository(ISessionRepository):
         return sum(1 for s in self._sessions.values() if s.status == status)
 
     async def count_by_node(self, runtime_node: str) -> int:
-        return sum(1 for s in self._sessions.values() if getattr(s, 'node_id', None) == runtime_node)
+        return sum(
+            1 for s in self._sessions.values() if getattr(s, "node_id", None) == runtime_node
+        )
 
     async def find_sessions(
         self,
@@ -109,12 +112,14 @@ class MockSessionRepository(ISessionRepository):
         sessions = list(self._sessions.values())
         if status is not None:
             sessions = [
-                s for s in sessions
-                if getattr(getattr(s, "status", None), "value", getattr(s, "status", None)) == status
+                s
+                for s in sessions
+                if getattr(getattr(s, "status", None), "value", getattr(s, "status", None))
+                == status
             ]
         if template_id is not None:
             sessions = [s for s in sessions if s.template_id == template_id]
-        return sessions[offset:offset + limit]
+        return sessions[offset : offset + limit]
 
     async def count_sessions(
         self,
@@ -216,7 +221,7 @@ class MockTemplateRepository(ITemplateRepository):
         return None
 
     async def find_all(self, offset: int = 0, limit: int = 100):
-        return list(self._templates.values())[offset:offset+limit]
+        return list(self._templates.values())[offset : offset + limit]
 
     async def delete(self, template_id: str) -> None:
         if template_id in self._templates:
@@ -280,14 +285,15 @@ class MockRuntimeNodeRepository:
             self.type = type
             self.url = url
             self.status = status
-            self.cpu_usage = kwargs.get('cpu_usage', 0.3)
-            self.mem_usage = kwargs.get('mem_usage', 0.4)
-            self.session_count = kwargs.get('session_count', 0)
-            self.max_sessions = kwargs.get('max_sessions', 100)
-            self.cached_templates = kwargs.get('cached_templates', [])
+            self.cpu_usage = kwargs.get("cpu_usage", 0.3)
+            self.mem_usage = kwargs.get("mem_usage", 0.4)
+            self.session_count = kwargs.get("session_count", 0)
+            self.max_sessions = kwargs.get("max_sessions", 100)
+            self.cached_templates = kwargs.get("cached_templates", [])
 
         def to_runtime_node(self):
             from src.domain.services.scheduler import RuntimeNode
+
             return RuntimeNode(
                 id=self.id,
                 type=self.type,
@@ -346,7 +352,9 @@ class MockRuntimeNodeRepository:
 class MockStorageService(IStorageService):
     """Mock 存储服务（用于开发测试）"""
 
-    async def upload_file(self, s3_path: str, content: bytes, content_type: str = "application/octet-stream"):
+    async def upload_file(
+        self, s3_path: str, content: bytes, content_type: str = "application/octet-stream"
+    ):
         pass
 
     async def download_file(self, s3_path: str) -> bytes:
@@ -381,6 +389,7 @@ def initialize_dependencies(app: FastAPI):
 
     # 注意：数据库管理器的初始化现在是异步的，需要在 lifespan 中调用
     # 这里不再同步调用 initialize()
+    settings = get_settings()
 
     # 创建仓储实例（根据配置选择 Mock 或 SQL）
     if USE_SQL_REPOSITORIES:
@@ -431,6 +440,8 @@ def initialize_dependencies(app: FastAPI):
         file_service = FileService(
             session_repo=session_repo,
             storage_service=storage_service,
+            max_extracted_file_count=settings.max_extracted_file_count,
+            max_extracted_total_size_mb=settings.max_extracted_total_size_mb,
         )
 
         # 存储到应用状态
@@ -453,6 +464,7 @@ def initialize_dependencies(app: FastAPI):
     elif IS_IN_KUBERNETES:
         # Kubernetes 环境：使用 K8s 调度器
         from src.infrastructure.container_scheduler.k8s_scheduler import K8sScheduler
+
         settings = get_settings()
 
         _container_scheduler_singleton = K8sScheduler(
@@ -497,39 +509,45 @@ def get_file_service(app: FastAPI) -> FileService:
 # Database-based dependency injection (request-scoped)
 # ============================================================================
 
+
 async def get_db_session():
     """获取数据库会话（FastAPI 依赖）"""
     async with db_manager.get_session() as session:
         yield session
 
 
-def get_execution_repository(
-    session = Depends(get_db_session)
-) -> IExecutionRepository:
+def get_execution_repository(session=Depends(get_db_session)) -> IExecutionRepository:
     """获取执行仓储（SQL 或 Mock）"""
     if USE_SQL_REPOSITORIES:
-        from src.infrastructure.persistence.repositories.sql_execution_repository import SqlExecutionRepository
+        from src.infrastructure.persistence.repositories.sql_execution_repository import (
+            SqlExecutionRepository,
+        )
+
         return SqlExecutionRepository(session)
     return MockExecutionRepository()
 
 
 def get_session_repository(
-    session = Depends(get_db_session),
-    execution_repo: IExecutionRepository = Depends(get_execution_repository)
+    session=Depends(get_db_session),
+    execution_repo: IExecutionRepository = Depends(get_execution_repository),
 ) -> ISessionRepository:
     """获取会话仓储（SQL 或 Mock）"""
     if USE_SQL_REPOSITORIES:
-        from src.infrastructure.persistence.repositories.sql_session_repository import SqlSessionRepository
+        from src.infrastructure.persistence.repositories.sql_session_repository import (
+            SqlSessionRepository,
+        )
+
         return SqlSessionRepository(session, execution_repo)
     return MockSessionRepository()
 
 
-def get_template_repository(
-    session = Depends(get_db_session)
-) -> ITemplateRepository:
+def get_template_repository(session=Depends(get_db_session)) -> ITemplateRepository:
     """获取模板仓储（SQL 或 Mock）"""
     if USE_SQL_REPOSITORIES:
-        from src.infrastructure.persistence.repositories.sql_template_repository import SqlTemplateRepository
+        from src.infrastructure.persistence.repositories.sql_template_repository import (
+            SqlTemplateRepository,
+        )
+
         return SqlTemplateRepository(session)
     return MockTemplateRepository()
 
@@ -543,12 +561,13 @@ def get_scheduler() -> IScheduler:
     return MockScheduler()
 
 
-def get_runtime_node_repository(
-    session = Depends(get_db_session)
-):
+def get_runtime_node_repository(session=Depends(get_db_session)):
     """获取运行时节点仓储（SQL 或 Mock）"""
     if USE_SQL_REPOSITORIES:
-        from src.infrastructure.persistence.repositories.sql_runtime_node_repository import SqlRuntimeNodeRepository
+        from src.infrastructure.persistence.repositories.sql_runtime_node_repository import (
+            SqlRuntimeNodeRepository,
+        )
+
         return SqlRuntimeNodeRepository(session)
     return MockRuntimeNodeRepository()
 
@@ -556,12 +575,13 @@ def get_runtime_node_repository(
 def get_container_scheduler():
     """获取容器调度器"""
     from src.infrastructure.container_scheduler.docker_scheduler import DockerScheduler
+
     return DockerScheduler(docker_url=_get_docker_url())
 
 
 def get_docker_scheduler_service(
-    runtime_node_repo = Depends(get_runtime_node_repository),
-    template_repo = Depends(get_template_repository),
+    runtime_node_repo=Depends(get_runtime_node_repository),
+    template_repo=Depends(get_template_repository),
 ) -> IScheduler:
     """获取调度服务（Docker 或 K8s）"""
     return _create_scheduler_service(
@@ -648,6 +668,7 @@ def get_storage_service():
     # 直接使用 S3
     if settings.s3_access_key_id:
         from src.infrastructure.storage.s3_storage import S3Storage
+
         _storage_service_singleton = S3Storage()
         logger.info(f"Using S3 storage: endpoint={settings.s3_endpoint_url}")
         return _storage_service_singleton
@@ -672,7 +693,7 @@ def get_session_service_db(
     execution_repo: IExecutionRepository = Depends(get_execution_repository),
     template_repo: ITemplateRepository = Depends(get_template_repository),
     scheduler: IScheduler = Depends(get_docker_scheduler_service),
-    storage_service = Depends(get_storage_service),
+    storage_service=Depends(get_storage_service),
     executor_client: ExecutorClient = Depends(get_executor_client),
 ) -> SessionService:
     """获取会话服务（使用数据库仓储和 Docker 调度器）"""
@@ -847,12 +868,15 @@ def get_template_service_db(
 
 def get_file_service_db(
     session_repo: ISessionRepository = Depends(get_session_repository),
-    storage_service = Depends(get_storage_service),
+    storage_service=Depends(get_storage_service),
 ) -> FileService:
     """获取文件服务（使用数据库仓储）"""
+    settings = get_settings()
     return FileService(
         session_repo=session_repo,
         storage_service=storage_service,
+        max_extracted_file_count=settings.max_extracted_file_count,
+        max_extracted_total_size_mb=settings.max_extracted_total_size_mb,
     )
 
 
@@ -884,9 +908,7 @@ def _create_direct_session_repository(db_mgr):
             """直接查询数据库"""
             result = []
             async with self._db_mgr.get_session() as session:
-                stmt = select(SessionModel).filter(
-                    SessionModel.f_status == status
-                ).limit(limit)
+                stmt = select(SessionModel).filter(SessionModel.f_status == status).limit(limit)
                 models_result = await session.execute(stmt)
                 for model in models_result.scalars():
                     session_entity = Session(
@@ -908,7 +930,8 @@ def _create_direct_session_repository(db_mgr):
                         timeout=model.f_timeout,
                         created_at=model._millis_to_datetime(model.f_created_at) or datetime.now(),
                         updated_at=model._millis_to_datetime(model.f_updated_at) or datetime.now(),
-                        last_activity_at=model._millis_to_datetime(model.f_last_activity_at) or datetime.now(),
+                        last_activity_at=model._millis_to_datetime(model.f_last_activity_at)
+                        or datetime.now(),
                     )
                     result.append(session_entity)
             return result
@@ -937,18 +960,20 @@ def _create_direct_session_repository(db_mgr):
                         timeout=model.f_timeout,
                         created_at=model._millis_to_datetime(model.f_created_at) or datetime.now(),
                         updated_at=model._millis_to_datetime(model.f_updated_at) or datetime.now(),
-                        last_activity_at=model._millis_to_datetime(model.f_last_activity_at) or datetime.now(),
+                        last_activity_at=model._millis_to_datetime(model.f_last_activity_at)
+                        or datetime.now(),
                     )
                 return None
 
         async def save(self, session):
             """保存 session"""
             import time
+
             async with self._db_mgr.get_session() as db:
                 model = await db.get(SessionModel, session.id)
                 if model:
                     # 处理 status 可能是枚举或字符串的情况
-                    if hasattr(session.status, 'value'):
+                    if hasattr(session.status, "value"):
                         model.f_status = session.status.value
                     else:
                         model.f_status = session.status
@@ -970,11 +995,7 @@ def _create_direct_session_repository(db_mgr):
                     stmt = stmt.where(SessionModel.f_status == status)
                 if template_id is not None:
                     stmt = stmt.where(SessionModel.f_template_id == template_id)
-                stmt = (
-                    stmt.order_by(SessionModel.f_created_at.desc())
-                    .limit(limit)
-                    .offset(offset)
-                )
+                stmt = stmt.order_by(SessionModel.f_created_at.desc()).limit(limit).offset(offset)
                 models_result = await session.execute(stmt)
                 return [model.to_entity() for model in models_result.scalars().all()]
 
@@ -1022,6 +1043,7 @@ def _create_direct_execution_repository(db_mgr):
 
         async def save(self, execution):
             import time
+
             async with self._db_mgr.get_session() as session:
                 model = await session.get(ExecutionModel, execution.id)
                 if model is None:
@@ -1033,9 +1055,7 @@ def _create_direct_execution_repository(db_mgr):
                 model.f_exit_code = execution.state.exit_code or 0
                 model.f_error_message = execution.state.error_message or ""
                 model.f_completed_at = (
-                    int(execution.completed_at.timestamp() * 1000)
-                    if execution.completed_at
-                    else 0
+                    int(execution.completed_at.timestamp() * 1000) if execution.completed_at else 0
                 )
                 model.f_updated_at = int(time.time() * 1000)
                 await session.commit()

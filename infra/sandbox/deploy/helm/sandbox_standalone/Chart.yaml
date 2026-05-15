@@ -1,0 +1,15 @@
+apiVersion: v2
+name: sandbox
+description: Standalone Sandbox Platform chart with Control Plane, Web Console, MariaDB, and MinIO
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - sandbox
+  - standalone
+  - code-execution
+  - isolation
+  - kubernetes
+maintainers:
+  - name: Sandbox Team
+    email: sandbox@example.com

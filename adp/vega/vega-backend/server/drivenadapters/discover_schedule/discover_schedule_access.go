@@ -15,15 +15,14 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
 	"github.com/robfig/cron/v3"
 	_ "github.com/rs/xid"
 	attr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
 	"vega-backend/interfaces"
@@ -79,8 +78,7 @@ func NewDiscoverScheduleAccess(appSetting *common.AppSetting) interfaces.Discove
 }
 
 func (dsa *discoverScheduleAccess) Enable(ctx context.Context, id string) error {
-	_, span := ar_trace.Tracer.Start(ctx, "Enable discover_schedule",
-		trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "Enable discover_schedule")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("schedule_id").String(id))
@@ -88,18 +86,14 @@ func (dsa *discoverScheduleAccess) Enable(ctx context.Context, id string) error 
 	// Get schedule to calculate next run time
 	schedule, err := dsa.GetByID(ctx, id)
 	if err != nil {
-		logger.Errorf("Failed to get discover schedule: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to get discover schedule: %v", err))
-		span.SetStatus(codes.Error, "Get schedule failed")
+		otellog.LogError(ctx, "Failed to get discover schedule", err)
 		return err
 	}
 
 	// Calculate next run time from now
 	nextRun, err := calculateNextRun(schedule.CronExpr, time.Now())
 	if err != nil {
-		logger.Errorf("Failed to calculate next run time: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to calculate next run time: %v", err))
-		span.SetStatus(codes.Error, "Calculate next run failed")
+		otellog.LogError(ctx, "Failed to calculate next run time", err)
 		return fmt.Errorf("invalid cron expression: %w", err)
 	}
 	// Build update SQL
@@ -109,20 +103,16 @@ func (dsa *discoverScheduleAccess) Enable(ctx context.Context, id string) error 
 		Where(sq.Eq{"f_id": id}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build enable discover_schedule sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build enable discover_schedule sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build enable discover_schedule sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Enable discover_schedule SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Enable discover_schedule SQL: %s", sqlStr))
 
 	// Execute update
 	_, err = dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Enable discover_schedule failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Enable discover_schedule failed: %v", err))
-		span.SetStatus(codes.Error, "Enable failed")
+		otellog.LogError(ctx, "Enable discover_schedule failed", err)
 		return err
 	}
 
@@ -132,8 +122,7 @@ func (dsa *discoverScheduleAccess) Enable(ctx context.Context, id string) error 
 }
 
 func (dsa *discoverScheduleAccess) Disable(ctx context.Context, id string) error {
-	_, span := ar_trace.Tracer.Start(ctx, "Disable discover_schedule",
-		trace.WithSpanKind(trace.SpanKindClient))
+	_, span := oteltrace.StartNamedClientSpan(ctx, "Disable discover_schedule")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("schedule_id").String(id))
@@ -144,20 +133,16 @@ func (dsa *discoverScheduleAccess) Disable(ctx context.Context, id string) error
 		Where(sq.Eq{"f_id": id}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build disable discover_schedule sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build disable discover_schedule sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build disable discover_schedule sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Disable discover_schedule SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Disable discover_schedule SQL: %s", sqlStr))
 
 	// Execute update
 	_, err = dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Disable discover_schedule failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Disable discover_schedule failed: %v", err))
-		span.SetStatus(codes.Error, "Disable failed")
+		otellog.LogError(ctx, "Disable discover_schedule failed", err)
 		return err
 	}
 
@@ -174,7 +159,7 @@ func (dsa *discoverScheduleAccess) Disable(ctx context.Context, id string) error
  */
 func (dsa *discoverScheduleAccess) Create(ctx context.Context, schedule *interfaces.DiscoverSchedule) error {
 	// 使用OpenTelemetry追踪函数执行过程，创建一个客户端类型的span
-	ctx, span := ar_trace.Tracer.Start(ctx, "Insert into t_discover_schedule", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Insert into t_discover_schedule")
 	defer span.End() // 确保span在函数结束时结束
 	// 设置span的属性，包含数据库URL和类型信息
 	span.SetAttributes(
@@ -184,9 +169,7 @@ func (dsa *discoverScheduleAccess) Create(ctx context.Context, schedule *interfa
 	// Calculate next run time
 	nextRun, err := calculateNextRun(schedule.CronExpr, time.Now())
 	if err != nil {
-		logger.Errorf("Failed to calculate next run time: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to calculate next run time: %v", err))
-		span.SetStatus(codes.Error, "Calculate next run failed")
+		otellog.LogError(ctx, "Failed to calculate next run time", err)
 		return fmt.Errorf("invalid cron expression: %w", err)
 	}
 	schedule.NextRun = nextRun.UnixMilli()
@@ -223,20 +206,16 @@ func (dsa *discoverScheduleAccess) Create(ctx context.Context, schedule *interfa
 			schedule.CreateTime,
 		).ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build insert discover_schedule sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build insert discover_schedule sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build insert discover_schedule sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Insert discover_schedule SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Insert discover_schedule SQL: %s", sqlStr))
 
 	// Execute insert
 	_, err = dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Insert discover_schedule failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Insert discover_schedule failed: %v", err))
-		span.SetStatus(codes.Error, "Insert failed")
+		otellog.LogError(ctx, "Insert discover_schedule failed", err)
 		return err
 	}
 
@@ -247,8 +226,7 @@ func (dsa *discoverScheduleAccess) Create(ctx context.Context, schedule *interfa
 
 // GetByID retrieves a discover schedule by ID.
 func (dsa *discoverScheduleAccess) GetByID(ctx context.Context, id string) (*interfaces.DiscoverSchedule, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query discover_schedule by ID",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query discover_schedule by ID")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("schedule_id").String(id))
@@ -320,8 +298,7 @@ func (dsa *discoverScheduleAccess) GetByID(ctx context.Context, id string) (*int
 
 // List lists discover schedules with filters.
 func (dsa *discoverScheduleAccess) List(ctx context.Context, params interfaces.DiscoverScheduleQueryParams) ([]*interfaces.DiscoverSchedule, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List discover_schedules",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "List discover_schedules")
 	defer span.End()
 
 	// Build select query
@@ -435,8 +412,7 @@ func (dsa *discoverScheduleAccess) List(ctx context.Context, params interfaces.D
 
 // Update updates a discover schedule.
 func (dsa *discoverScheduleAccess) Update(ctx context.Context, schedule *interfaces.DiscoverSchedule) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update discover_schedule",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update discover_schedule")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("schedule_id").String(schedule.ID))
@@ -446,9 +422,7 @@ func (dsa *discoverScheduleAccess) Update(ctx context.Context, schedule *interfa
 	// Recalculate next run time if cron expression changed
 	nextRun, err := calculateNextRun(schedule.CronExpr, time.Now())
 	if err != nil {
-		logger.Errorf("Failed to calculate next run time: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to calculate next run time: %v", err))
-		span.SetStatus(codes.Error, "Calculate next run failed")
+		otellog.LogError(ctx, "Failed to calculate next run time", err)
 		return fmt.Errorf("invalid cron expression: %w", err)
 	}
 	schedule.NextRun = nextRun.UnixMilli()
@@ -469,20 +443,16 @@ func (dsa *discoverScheduleAccess) Update(ctx context.Context, schedule *interfa
 
 	sqlStr, vals, err := updateBuilder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build update discover_schedule sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build update discover_schedule sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build update discover_schedule sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Update discover_schedule SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Update discover_schedule SQL: %s", sqlStr))
 
 	// Execute update
 	result, err := dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Update discover_schedule failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Update discover_schedule failed: %v", err))
-		span.SetStatus(codes.Error, "Update failed")
+		otellog.LogError(ctx, "Update discover_schedule failed", err)
 		return err
 	}
 
@@ -504,8 +474,7 @@ func (dsa *discoverScheduleAccess) Update(ctx context.Context, schedule *interfa
 
 // Delete deletes a discover schedule by ID.
 func (dsa *discoverScheduleAccess) Delete(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete discover_schedule",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Delete discover_schedule")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("schedule_id").String(id))
@@ -515,20 +484,16 @@ func (dsa *discoverScheduleAccess) Delete(ctx context.Context, id string) error 
 		Where(sq.Eq{"f_id": id}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build delete discover_schedule sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build delete discover_schedule sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build delete discover_schedule sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Delete discover_schedule SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Delete discover_schedule SQL: %s", sqlStr))
 
 	// Execute delete
 	result, err := dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Delete discover_schedule failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete discover_schedule failed: %v", err))
-		span.SetStatus(codes.Error, "Delete failed")
+		otellog.LogError(ctx, "Delete discover_schedule failed", err)
 		return err
 	}
 
@@ -550,8 +515,7 @@ func (dsa *discoverScheduleAccess) Delete(ctx context.Context, id string) error 
 
 // GetEnabledSchedules retrieves all enabled discover schedules.
 func (dsa *discoverScheduleAccess) GetEnabledSchedules(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query enabled discover_schedules",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query enabled discover_schedules")
 	defer span.End()
 
 	now := time.Now().UnixMilli()
@@ -627,25 +591,20 @@ func (dsa *discoverScheduleAccess) GetEnabledSchedules(ctx context.Context) ([]*
 
 // UpdateLastRun updates the last run time and calculates next run time.
 func (dsa *discoverScheduleAccess) UpdateLastRun(ctx context.Context, id string, lastRun int64) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update last run for discover_schedule",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Update last run for discover_schedule")
 	defer span.End()
 
 	// Get schedule to calculate next run
 	schedule, err := dsa.GetByID(ctx, id)
 	if err != nil {
-		logger.Errorf("Failed to get discover schedule: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to get discover schedule: %v", err))
-		span.SetStatus(codes.Error, "Get schedule failed")
+		otellog.LogError(ctx, "Failed to get discover schedule", err)
 		return err
 	}
 
 	// Calculate next run time
 	nextRun, err := calculateNextRun(schedule.CronExpr, time.UnixMilli(lastRun))
 	if err != nil {
-		logger.Errorf("Failed to calculate next run time: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to calculate next run time: %v", err))
-		span.SetStatus(codes.Error, "Calculate next run failed")
+		otellog.LogError(ctx, "Failed to calculate next run time", err)
 		return fmt.Errorf("invalid cron expression: %w", err)
 	}
 
@@ -662,20 +621,16 @@ func (dsa *discoverScheduleAccess) UpdateLastRun(ctx context.Context, id string,
 		Where(sq.Eq{"f_id": id}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build update last run discover_schedule sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build update last run discover_schedule sql: %v", err))
-		span.SetStatus(codes.Error, "Build sql failed")
+		otellog.LogError(ctx, "Failed to build update last run discover_schedule sql", err)
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Update last run discover_schedule SQL: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("Update last run discover_schedule SQL: %s", sqlStr))
 
 	// Execute update
 	result, err := dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Update last run discover_schedule failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Update last run discover_schedule failed: %v", err))
-		span.SetStatus(codes.Error, "Update failed")
+		otellog.LogError(ctx, "Update last run discover_schedule failed", err)
 		return err
 	}
 

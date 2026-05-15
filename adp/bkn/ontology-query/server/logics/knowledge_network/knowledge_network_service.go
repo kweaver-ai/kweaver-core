@@ -12,13 +12,12 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/kweaver-ai/kweaver-go-lib/logger"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/otellog"
+	"github.com/kweaver-ai/kweaver-go-lib/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
-	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
-	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"ontology-query/common"
 	cond "ontology-query/common/condition"
@@ -58,7 +57,8 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 	query *interfaces.SubGraphQueryBaseOnSource) (interfaces.ObjectSubGraph, error) {
 
 	// 1.获取对象类信息
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询对象子图")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询对象子图")
+	defer span.End()
 	var resps interfaces.ObjectSubGraph
 
 	// 1. 在指定的业务知识网络下，根据起点对象类、方向、路径长度获取所有路径。
@@ -70,15 +70,9 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 			PathLength:        query.PathLength,
 		})
 	if err != nil {
-		logger.Errorf("GetRelationTypePathsBaseOnSource error: %s", err.Error())
-
-		// 添加异常时的 trace 属性
 		span.SetAttributes(attribute.Key("kn_id").String(query.KNID))
 		span.SetAttributes(attribute.Key("branch").String(query.Branch))
-		span.SetStatus(codes.Error, "Get RelationTypePathsBaseOnSource error")
-		span.End()
-		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Get RelationTypePathsBaseOnSource error: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("Get RelationTypePathsBaseOnSource error: %v", err), err)
 
 		return resps, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			oerrors.OntologyQuery_ObjectType_InternalError_GetObjectTypesByIDFailed).WithErrorDetails(err.Error())
@@ -117,7 +111,7 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 	}
 
 	// 起点类已经查询完成，limit已经得到，后续的路径探索用系统默认的最大值进行探索
-	query.PageQuery.Limit = interfaces.MAX_PATHS
+	query.Limit = interfaces.MAX_PATHS
 	objectGraph, err := kns.buildObjectSubgraph(ctx, query, typePaths, startObjects)
 	if err != nil {
 		return resps, err
@@ -135,7 +129,7 @@ func (kns *knowledgeNetworkService) SearchSubgraph(ctx context.Context,
 func (kns *knowledgeNetworkService) SearchSubgraphByTypePath(ctx context.Context,
 	query *interfaces.SubGraphQueryBaseOnTypePath) (interfaces.PathsEntries, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询路径的对象子图")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询路径的对象子图")
 	defer span.End()
 
 	// 多个路径，并发查，各查各的，各自有过滤条件
@@ -184,7 +178,7 @@ func (kns *knowledgeNetworkService) buildObjectSubgraphByTypePaths(
 
 	defer typePathsObjectCtx.wg.Done()
 
-	ctx, span := ar_trace.Tracer.Start(typePathsObjectCtx.ctx, "查询路径的对象子图")
+	ctx, span := oteltrace.StartNamedInternalSpan(typePathsObjectCtx.ctx, "查询路径的对象子图")
 	defer span.End()
 
 	// 1. 查各个边的关系类信息，补充 typeEdge 里的 RelationType
@@ -195,14 +189,8 @@ func (kns *knowledgeNetworkService) buildObjectSubgraphByTypePaths(
 		// 获取关系类信息
 		relationType, exists, err := kns.omAccess.GetRelationType(ctx, query.KNID, query.Branch, edge.RelationTypeId)
 		if err != nil {
-			logger.Errorf("Get relation type error: %s", err.Error())
-
-			// 添加异常时的 trace 属性
 			span.SetAttributes(attribute.Key("rt_id").String(edge.RelationTypeId))
-			span.SetStatus(codes.Error, "Get relation type error")
-			span.End()
-			// 记录异常日志
-			o11y.Error(ctx, fmt.Sprintf("Get relation type error: %v", err))
+			otellog.LogError(ctx, fmt.Sprintf("Get relation type error: %v", err), err)
 
 			err = rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				oerrors.OntologyQuery_KnowledgeNetwork_InternalError_GetRelationTypeFailed).WithErrorDetails(err.Error())
@@ -213,14 +201,9 @@ func (kns *knowledgeNetworkService) buildObjectSubgraphByTypePaths(
 		if !exists {
 			logger.Debugf("relation type %d not found!", edge.RelationTypeId)
 
-			// 添加异常时的 trace 属性
 			span.SetAttributes(attribute.Key("rt_id").String(edge.RelationTypeId))
-			span.SetStatus(codes.Error, "relation type not found!")
-			span.End()
-			// 记录异常日志
-			o11y.Error(ctx, fmt.Sprintf("relation type [%s] not found!", edge.RelationTypeId))
-
 			err = rest.NewHTTPError(ctx, http.StatusNotFound, oerrors.OntologyQuery_KnowledgeNetwork_RelationTypeNotFound)
+			otellog.LogError(ctx, fmt.Sprintf("relation type [%s] not found!", edge.RelationTypeId), err)
 
 			typePathsObjectCtx.errCh <- err
 			return
@@ -331,7 +314,7 @@ func (kns *knowledgeNetworkService) buildObjectSubgraph(ctx context.Context,
 ) (*interfaces.ObjectSubGraph, error) {
 
 	logger.Infof("开始构建对象子图 - 概念路径数: %d, 起点对象数: %d, 总限制: %d",
-		len(typePaths), len(startObjects.Datas), query.PathQuotaManager.TotalLimit)
+		len(typePaths), len(startObjects.Datas), query.TotalLimit)
 
 	errCh := make(chan error, len(typePaths))
 	typePathObjectCtx := &typePathObjectsContext{
@@ -439,10 +422,10 @@ func (kns *knowledgeNetworkService) buildSingleTypePathObjects(
 		defer typePathObjectCtx.mu.Unlock()
 
 		// 检查合并后是否会超过限制. 按需合并
-		currentGlobal := atomic.LoadInt64(&query.PathQuotaManager.GlobalCount)
-		if currentGlobal > query.PathQuotaManager.TotalLimit {
+		currentGlobal := atomic.LoadInt64(&query.GlobalCount)
+		if currentGlobal > query.TotalLimit {
 			// 合并一批超，那么就合并差的那部分进去，直到超
-			fixedNum := query.PathQuotaManager.TotalLimit - int64(len(typePathObjectCtx.relationPaths))
+			fixedNum := query.TotalLimit - int64(len(typePathObjectCtx.relationPaths))
 			// 限制 fixedNum 不超过当前批次的实际数量，避免数组越界
 			if fixedNum > int64(len(currentObjectPaths)) {
 				fixedNum = int64(len(currentObjectPaths))
@@ -1225,11 +1208,11 @@ func (kns *knowledgeNetworkService) extendPathsWithNewEdge(query *interfaces.Sub
 		for _, edge := range newPath.Relations {
 			pathKey = fmt.Sprintf("%s-%s:%s->%s", pathKey, edge.RelationTypeId, edge.SourceObjectId, edge.TargetObjectId)
 		}
-		if query.BatchQueryState.Visited[pathKey] {
+		if query.Visited[pathKey] {
 			logger.Warnf("检测到重复路径: %s", pathKey)
 			pathExisted = true
 		}
-		query.BatchQueryState.Visited[pathKey] = true
+		query.Visited[pathKey] = true
 
 		newPaths = append(newPaths, newPath)
 	}
@@ -1254,7 +1237,7 @@ func (kns *knowledgeNetworkService) isPathEndsWith(path interfaces.RelationPath,
 func (kns *knowledgeNetworkService) SearchSubgraphByObjects(ctx context.Context,
 	query *interfaces.SubGraphQueryBaseOnObjects) (interfaces.ObjectSubGraph, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "基于一组对象实例组织关系子图")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "基于一组对象实例组织关系子图")
 	defer span.End()
 
 	var result interfaces.ObjectSubGraph

@@ -122,7 +122,7 @@ func Test_PermissionServiceImpl_CheckPermission(t *testing.T) {
 
 		Convey("Success: pa returns true\n", func() {
 			ctx := withAccountInfo(context.Background(), "u1", "user")
-			pa.EXPECT().CheckPermission(ctx, gomock.Any()).Return(true, nil)
+			pa.EXPECT().CheckPermission(gomock.Any(), gomock.Any()).Return(true, nil)
 
 			err := svc.CheckPermission(ctx, resource, ops)
 			So(err, ShouldBeNil)
@@ -130,7 +130,7 @@ func Test_PermissionServiceImpl_CheckPermission(t *testing.T) {
 
 		Convey("Failed: pa returns false (forbidden)\n", func() {
 			ctx := withAccountInfo(context.Background(), "u1", "user")
-			pa.EXPECT().CheckPermission(ctx, gomock.Any()).Return(false, nil)
+			pa.EXPECT().CheckPermission(gomock.Any(), gomock.Any()).Return(false, nil)
 
 			err := svc.CheckPermission(ctx, resource, ops)
 			So(err, ShouldNotBeNil)
@@ -138,7 +138,7 @@ func Test_PermissionServiceImpl_CheckPermission(t *testing.T) {
 
 		Convey("Failed: pa returns error\n", func() {
 			ctx := withAccountInfo(context.Background(), "u1", "user")
-			pa.EXPECT().CheckPermission(ctx, gomock.Any()).Return(false, errors.New("access error"))
+			pa.EXPECT().CheckPermission(gomock.Any(), gomock.Any()).Return(false, errors.New("access error"))
 
 			err := svc.CheckPermission(ctx, resource, ops)
 			So(err, ShouldNotBeNil)
@@ -161,7 +161,7 @@ func Test_PermissionServiceImpl_CreateResources(t *testing.T) {
 
 		Convey("Success: pa.CreateResources returns nil\n", func() {
 			ctx := withAccountInfo(context.Background(), "u1", "user")
-			pa.EXPECT().CreateResources(ctx, gomock.Any()).Return(nil)
+			pa.EXPECT().CreateResources(gomock.Any(), gomock.Any()).Return(nil)
 
 			err := svc.CreateResources(ctx, resources, ops)
 			So(err, ShouldBeNil)
@@ -169,7 +169,7 @@ func Test_PermissionServiceImpl_CreateResources(t *testing.T) {
 
 		Convey("Failed: pa.CreateResources returns error\n", func() {
 			ctx := withAccountInfo(context.Background(), "u1", "user")
-			pa.EXPECT().CreateResources(ctx, gomock.Any()).Return(errors.New("create failed"))
+			pa.EXPECT().CreateResources(gomock.Any(), gomock.Any()).Return(errors.New("create failed"))
 
 			err := svc.CreateResources(ctx, resources, ops)
 			So(err, ShouldNotBeNil)
@@ -189,7 +189,7 @@ func Test_PermissionServiceImpl_DeleteResources(t *testing.T) {
 
 		Convey("Success: pa.DeleteResources returns nil\n", func() {
 			ctx := context.Background()
-			pa.EXPECT().DeleteResources(ctx, gomock.Any()).Return(nil)
+			pa.EXPECT().DeleteResources(gomock.Any(), gomock.Any()).Return(nil)
 
 			err := svc.DeleteResources(ctx, "kn", []string{"kn1"})
 			So(err, ShouldBeNil)
@@ -197,7 +197,7 @@ func Test_PermissionServiceImpl_DeleteResources(t *testing.T) {
 
 		Convey("Failed: pa.DeleteResources returns error\n", func() {
 			ctx := context.Background()
-			pa.EXPECT().DeleteResources(ctx, gomock.Any()).Return(errors.New("delete failed"))
+			pa.EXPECT().DeleteResources(gomock.Any(), gomock.Any()).Return(errors.New("delete failed"))
 
 			err := svc.DeleteResources(ctx, "kn", []string{"kn1"})
 			So(err, ShouldNotBeNil)
@@ -223,7 +223,7 @@ func Test_PermissionServiceImpl_FilterResources(t *testing.T) {
 					ResourceID: "kn1", Operations: []string{"read"},
 				},
 			}
-			pa.EXPECT().FilterResources(ctx, gomock.Any()).Return(paResult, nil)
+			pa.EXPECT().FilterResources(gomock.Any(), gomock.Any()).Return(paResult, nil)
 
 			result, err := svc.FilterResources(ctx, "kn", []string{"kn1"}, []string{"read"}, true, []string{"read"})
 			So(err, ShouldBeNil)
@@ -232,7 +232,7 @@ func Test_PermissionServiceImpl_FilterResources(t *testing.T) {
 
 		Convey("Failed: pa.FilterResources returns error\n", func() {
 			ctx := withAccountInfo(context.Background(), "u1", "user")
-			pa.EXPECT().FilterResources(ctx, gomock.Any()).Return(nil, errors.New("filter error"))
+			pa.EXPECT().FilterResources(gomock.Any(), gomock.Any()).Return(nil, errors.New("filter error"))
 
 			result, err := svc.FilterResources(ctx, "kn", []string{"kn1"}, []string{"read"}, true, []string{"read"})
 			So(err, ShouldNotBeNil)

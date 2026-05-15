@@ -3,6 +3,7 @@
 
 定义存储的抽象接口，负责文件存储操作。
 """
+
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
@@ -17,10 +18,7 @@ class IStorageService(ABC):
 
     @abstractmethod
     async def upload_file(
-        self,
-        s3_path: str,
-        content: bytes,
-        content_type: str = "application/octet-stream"
+        self, s3_path: str, content: bytes, content_type: str = "application/octet-stream"
     ) -> None:
         """
         上传文件
@@ -72,11 +70,7 @@ class IStorageService(ABC):
         pass
 
     @abstractmethod
-    async def generate_presigned_url(
-        self,
-        s3_path: str,
-        expiration_seconds: int = 3600
-    ) -> str:
+    async def generate_presigned_url(self, s3_path: str, expiration_seconds: int = 3600) -> str:
         """
         生成预签名 URL
 
@@ -100,11 +94,7 @@ class IStorageService(ABC):
         pass
 
     @abstractmethod
-    async def list_files(
-        self,
-        prefix: str,
-        limit: int = 1000
-    ) -> list:
+    async def list_files(self, prefix: str, limit: int = 1000) -> list:
         """
         列出文件
 
@@ -118,10 +108,7 @@ class IStorageService(ABC):
         pass
 
     @abstractmethod
-    async def delete_prefix(
-        self,
-        prefix: str
-    ) -> int:
+    async def delete_prefix(self, prefix: str) -> int:
         """
         删除指定前缀的所有文件（用于会话清理）
 

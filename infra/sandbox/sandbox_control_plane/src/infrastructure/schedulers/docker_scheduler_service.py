@@ -3,6 +3,7 @@ Docker 调度服务
 
 实现调度策略，选择最优节点并创建容器。
 """
+
 from typing import List, Optional
 
 from src.domain.services.scheduler import (
@@ -81,10 +82,7 @@ class DockerSchedulerService(IScheduler):
             raise RuntimeError("No healthy runtime nodes available")
 
         # 2. 按模板亲和性排序
-        affinity_nodes = [
-            node for node in healthy_nodes
-            if node.has_template(request.template_id)
-        ]
+        affinity_nodes = [node for node in healthy_nodes if node.has_template(request.template_id)]
 
         logger.debug(
             "Node affinity check",
@@ -143,10 +141,7 @@ class DockerSchedulerService(IScheduler):
         1. 负载比率最低
         2. 如果比率相同，选择会话数最少的
         """
-        return min(
-            nodes,
-            key=lambda n: (n.get_load_ratio(), n.session_count)
-        )
+        return min(nodes, key=lambda n: (n.get_load_ratio(), n.session_count))
 
     async def create_container_for_session(
         self,
@@ -271,7 +266,9 @@ class DockerSchedulerService(IScheduler):
 
             # 获取容器状态确认
             try:
-                container_info = await self._container_scheduler.get_container_status(container_name)
+                container_info = await self._container_scheduler.get_container_status(
+                    container_name
+                )
                 logger.info(
                     "Container status after start",
                     session_id=session_id,
@@ -301,11 +298,7 @@ class DockerSchedulerService(IScheduler):
             )
             raise
 
-    async def destroy_container(
-        self,
-        container_id: str,
-        timeout: int = 10
-    ) -> None:
+    async def destroy_container(self, container_id: str, timeout: int = 10) -> None:
         """
         销毁容器
 

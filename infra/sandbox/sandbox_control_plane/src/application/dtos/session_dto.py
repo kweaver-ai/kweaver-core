@@ -3,6 +3,7 @@
 
 用于应用层与接口层之间的数据传输。
 """
+
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -13,6 +14,7 @@ from src.shared.utils.dependencies import parse_pip_spec
 @dataclass
 class SessionDTO:
     """会话数据传输对象"""
+
     id: str
     template_id: str
     status: str
@@ -74,9 +76,7 @@ class SessionDTO:
             timeout=session.timeout,
             language_runtime=session.runtime_type,
             python_package_index_url=session.python_package_index_url,
-            requested_dependencies=[
-                parse_pip_spec(dep) for dep in session.requested_dependencies
-            ],
+            requested_dependencies=[parse_pip_spec(dep) for dep in session.requested_dependencies],
             installed_dependencies=[
                 {
                     "name": dep.name,

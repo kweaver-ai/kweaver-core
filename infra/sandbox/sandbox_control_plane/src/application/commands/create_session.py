@@ -4,6 +4,7 @@
 定义创建会话的命令对象。
 扩展支持依赖安装，按照 sandbox-design-v2.1.md 章节 5 设计。
 """
+
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -18,7 +19,8 @@ class CreateSessionCommand:
 
     扩展支持 Python 依赖安装功能。
     """
-    template_id: str
+
+    template_id: Optional[str] = None
     timeout: int = 300
     resource_limit: ResourceLimit | None = None
     env_vars: Dict[str, str] | None = None

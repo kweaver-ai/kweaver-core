@@ -501,7 +501,7 @@ func bknMetricDataSliceToDataSlice(in []interfaces.BknMetricData) []interfaces.D
 func buildEntryDimKey(entry map[string]any, groupDims []metricGroupByDimension) string {
 	var b strings.Builder
 	for _, d := range groupDims {
-		b.WriteString(fmt.Sprintf("%v|", entry[d.ResourceFieldName]))
+		fmt.Fprintf(&b, "%v|", entry[d.ResourceFieldName])
 	}
 	return b.String()
 }

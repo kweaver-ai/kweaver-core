@@ -110,11 +110,12 @@ type KN struct {
 	Branch         string `json:"branch,omitempty" mapstructure:"branch"`
 	BusinessDomain string `json:"business_domain,omitempty" mapstructure:"business_domain"`
 
-	ConceptGroups []*ConceptGroup `json:"concept_groups,omitempty" mapstructure:"concept_groups"`
-	ObjectTypes   []*ObjectType   `json:"object_types,omitempty" mapstructure:"object_types"`
-	RelationTypes []*RelationType `json:"relation_types,omitempty" mapstructure:"relation_types"`
-	ActionTypes   []*ActionType   `json:"action_types,omitempty" mapstructure:"action_types"`
-	RiskTypes     []*RiskType     `json:"risk_types,omitempty" mapstructure:"risk_types"`
+	ConceptGroups []*ConceptGroup     `json:"concept_groups,omitempty" mapstructure:"concept_groups"`
+	ObjectTypes   []*ObjectType       `json:"object_types,omitempty" mapstructure:"object_types"`
+	RelationTypes []*RelationType     `json:"relation_types,omitempty" mapstructure:"relation_types"`
+	ActionTypes   []*ActionType       `json:"action_types,omitempty" mapstructure:"action_types"`
+	RiskTypes     []*RiskType         `json:"risk_types,omitempty" mapstructure:"risk_types"`
+	Metrics       []*MetricDefinition `json:"metrics,omitempty" mapstructure:"metrics"`
 
 	Creator    AccountInfo `json:"creator" mapstructure:"creator"`
 	CreateTime int64       `json:"create_time" mapstructure:"create_time"`
@@ -219,4 +220,6 @@ type BatchIDIndex struct {
 	RelationTypeIDs map[string]struct{}
 	ActionTypeIDs   map[string]struct{}
 	ConceptGroupIDs map[string]struct{}
+	// Metrics maps metric id -> declaration from the KN payload for duplicate/conflict checks and strict cross-validation against batch.ObjectTypes (same batch OT semantics as relation/action validators).
+	Metrics map[string]*MetricDefinition
 }

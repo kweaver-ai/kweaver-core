@@ -83,6 +83,11 @@ func ValidateActionType(ctx context.Context, actionType *interfaces.ActionType, 
 	// 去掉tag前后空格以及数组去重
 	actionType.Tags = libCommon.TagSliceTransform(actionType.Tags)
 
+	err = syncIntentWithType(ctx, actionType)
+	if err != nil {
+		return err
+	}
+
 	// 校验行动类型为有效类型
 	if !interfaces.ActionTypeMap[actionType.ActionType] {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
@@ -146,6 +151,20 @@ func ValidateActionType(ctx context.Context, actionType *interfaces.ActionType, 
 		}
 	}
 
+	err = syncImpactAffect(ctx, actionType)
+	if err != nil {
+		return err
+	}
+
+	if err = validateAffectExpectedOperation(ctx, actionType.Affect); err != nil {
+		return err
+	}
+
+	err = validateImpactContracts(ctx, actionType.ImpactContracts)
+	if err != nil {
+		return err
+	}
+
 	// 行动条件非空时，校验行动条件（strict_mode 关闭时不校验）
 	if actionType.Condition != nil && strictMode {
 		err = validateActionCondition(ctx, actionType.Condition, actionType.ObjectTypeID)
@@ -155,6 +174,122 @@ func ValidateActionType(ctx context.Context, actionType *interfaces.ActionType, 
 	}
 
 	return nil
+}
+
+// syncIntentWithType：action_type / action_intent 保持一致，缺一则互相回填。
+func syncIntentWithType(ctx context.Context, actionType *interfaces.ActionType) error {
+	at := strings.TrimSpace(actionType.ActionType)
+	ai := strings.TrimSpace(actionType.ActionIntent)
+	actionType.ActionType = at
+	actionType.ActionIntent = ai
+	if at != "" && ai != "" && at != ai {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("action_intent [%s] must match action_type [%s]", ai, at))
+	}
+	if at != "" && ai == "" {
+		actionType.ActionIntent = at
+	}
+	if ai != "" && at == "" {
+		actionType.ActionType = ai
+	}
+	return nil
+}
+
+// validateAffectExpectedOperation：若请求体在 affect 中填写了 expected_operation，须为合法枚举（与 action_intent 一致）；省略则不校验（折行仍以 action_type 为准）。
+func validateAffectExpectedOperation(ctx context.Context, aff *interfaces.ActionAffect) error {
+	if aff == nil {
+		return nil
+	}
+	op := strings.TrimSpace(string(aff.ExpectedOperation))
+	if op == "" {
+		return nil
+	}
+	if !interfaces.IsValidExpectedOperation(op) {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("affect.expected_operation must be one of [add, modify, delete], got [%s]", op))
+	}
+	return nil
+}
+
+func validateImpactContracts(ctx context.Context, items []interfaces.ImpactContractItem) error {
+	for i := range items {
+		if strings.TrimSpace(items[i].ObjectTypeID) == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("impact_contracts[%d].object_type_id must not be empty", i))
+		}
+		op := strings.TrimSpace(string(items[i].ExpectedOperation))
+		if op == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("impact_contracts[%d].expected_operation must not be empty", i))
+		}
+		if !interfaces.IsValidExpectedOperation(op) {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("impact_contracts[%d].expected_operation must be one of [add, modify, delete], got [%s]", i, op))
+		}
+		for j := range items[i].AffectedFields {
+			if strings.TrimSpace(items[i].AffectedFields[j]) == "" {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("impact_contracts[%d].affected_fields[%d] must not be an empty string", i, j))
+			}
+		}
+	}
+	return nil
+}
+
+// syncImpactAffect：请求里 affect 与 impact_contracts 不得同时出现（除「仅 affect 折行后」形成的一行与原生 affect 共存）。
+// 仅 affect 时补一行 impact_contracts（ExpectedOperation=action_type），不修改、不清空 affect。
+func syncImpactAffect(ctx context.Context, actionType *interfaces.ActionType) error {
+	hasIC := len(actionType.ImpactContracts) > 0
+	hasAff := actionType.Affect != nil
+	if hasIC && hasAff {
+		if foldedImpactMatchesAffect(actionType) {
+			return nil
+		}
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+			WithErrorDetails("provide either affect or impact_contracts, not both")
+	}
+	if !hasAff || hasIC {
+		return nil
+	}
+	a := actionType.Affect
+	fields := make([]string, len(a.AffectedFields))
+	copy(fields, a.AffectedFields)
+	actionType.ImpactContracts = []interfaces.ImpactContractItem{
+		{
+			ObjectTypeID:      strings.TrimSpace(a.ObjectTypeID),
+			ExpectedOperation: actionType.ActionType,
+			Description:       strings.TrimSpace(a.Comment),
+			AffectedFields:    fields,
+		},
+	}
+	return nil
+}
+
+// foldedImpactMatchesAffect：当前唯一一行 impact_contracts 是否即由 affect 折行得到（用于重复校验幂等）。
+func foldedImpactMatchesAffect(at *interfaces.ActionType) bool {
+	if len(at.ImpactContracts) != 1 || at.Affect == nil {
+		return false
+	}
+	ic := at.ImpactContracts[0]
+	a := at.Affect
+	if strings.TrimSpace(ic.ObjectTypeID) != strings.TrimSpace(a.ObjectTypeID) {
+		return false
+	}
+	if string(ic.ExpectedOperation) != at.ActionType {
+		return false
+	}
+	if strings.TrimSpace(ic.Description) != strings.TrimSpace(a.Comment) {
+		return false
+	}
+	if len(ic.AffectedFields) != len(a.AffectedFields) {
+		return false
+	}
+	for i := range ic.AffectedFields {
+		if strings.TrimSpace(ic.AffectedFields[i]) != strings.TrimSpace(a.AffectedFields[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 // 校验行动条件的合法性

@@ -15,14 +15,14 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/kweaver-go-lib/otel"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/spf13/viper"
 
 	"ontology-query/version"
 )
 
-// server配置项
+// ServerSetting server配置项
 type ServerSetting struct {
 	RunMode                  string        `mapstructure:"runMode"`
 	HttpPort                 int           `mapstructure:"httpPort"`
@@ -35,12 +35,12 @@ type ServerSetting struct {
 	FilteredCrossJoinMaxEdgeExpand int `mapstructure:"filteredCrossJoinMaxEdgeExpand"`
 }
 
-// app配置项
+// AppSetting app配置项
 type AppSetting struct {
-	ServerSetting        ServerSetting             `mapstructure:"server"`
-	LogSetting           logger.LogSetting         `mapstructure:"log"`
-	ObservabilitySetting o11y.ObservabilitySetting `mapstructure:"observability"`
-	DepServices          map[string]map[string]any `mapstructure:"depServices"`
+	ServerSetting ServerSetting             `mapstructure:"server"`
+	LogSetting    logger.LogSetting         `mapstructure:"log"`
+	OtelSetting   otel.OtelConfig           `mapstructure:"otel"`
+	DepServices   map[string]map[string]any `mapstructure:"depServices"`
 
 	OpenSearchSetting rest.OpenSearchClientConfig
 	HydraAdminSetting hydra.HydraAdminSetting
@@ -149,18 +149,11 @@ func loadSetting(vp *viper.Viper) {
 
 	SetAgentOperatorSetting()
 
-	serverInfo := o11y.ServerInfo{
-		ServerName:    version.ServerName,
-		ServerVersion: version.ServerVersion,
-		Language:      version.LanguageGo,
-		GoVersion:     version.GoVersion,
-		GoArch:        version.GoArch,
-	}
-	logger.Infof("ServerName: %s, ServerVersion: %s, Language: %s, GoVersion: %s, GoArch: %s, POD_NAME: %s",
+	appSetting.OtelSetting.ServiceName = version.ServerName
+	appSetting.OtelSetting.ServiceVersion = version.ServerVersion
+	logger.Infof("ServerName: %s, ServerVersion: %s, Language: %s, GoVersion: %s, GoArch: %s",
 		version.ServerName, version.ServerVersion, version.LanguageGo,
-		version.GoVersion, version.GoArch, o11y.POD_NAME)
-
-	o11y.Init(serverInfo, appSetting.ObservabilitySetting)
+		version.GoVersion, version.GoArch)
 
 	s, _ := sonic.MarshalString(appSetting)
 	logger.Debug(s)
@@ -261,9 +254,11 @@ func SetVegaBackendSetting() {
 	if !ok {
 		logger.Fatalf("service %s not found in depServices", vegaBackendServiceName)
 	}
+
 	protocol := setting["protocol"].(string)
 	host := setting["host"].(string)
 	port := setting["port"].(int)
+
 	appSetting.VegaBackendUrl = fmt.Sprintf("%s://%s:%d/api/vega-backend/in/v1", protocol, host, port)
 }
 
