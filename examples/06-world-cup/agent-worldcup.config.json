@@ -241,6 +241,112 @@
         "intervention": false,
         "intervention_confirmation_message": "",
         "result_process_strategies": null
+      },
+      {
+        "tool_id": "f46fa5df-f371-447f-8451-2d2f34cc78e9",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-business-domain",
+            "input_type": "string",
+            "input_desc": "业务域",
+            "map_type": "var",
+            "map_value": "header.x-business-domain",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户 ID",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型 user/app",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "知识网络 ID（从 Agent data_source 注入）",
+            "map_type": "var",
+            "map_value": "self_config.data_source.knowledge_network[0].knowledge_network_id",
+            "enable": true
+          },
+          {
+            "input_name": "ot_id",
+            "input_type": "string",
+            "input_desc": "对象类 ID。先调 search_schema 拿 concept_id。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "limit",
+            "input_type": "integer",
+            "input_desc": "返回数量，默认 10，范围 1-100",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "properties",
+            "input_type": "array",
+            "input_desc": "指定返回的属性字段；默认全部。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "sort",
+            "input_type": "array",
+            "input_desc": "排序字段数组，例如 [{\"field\":\"year\",\"direction\":\"desc\"}]",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "condition",
+            "input_type": "object",
+            "input_desc": "过滤条件，含 field/operation/value/value_from。value_from 仅支持 const 且必须与 value 同传。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "need_total",
+            "input_type": "boolean",
+            "input_desc": "是否返回总数，默认 false",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "response_format",
+            "input_type": "string",
+            "input_desc": "json 或 toon，默认 json",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "include_logic_params",
+            "input_type": "boolean",
+            "input_desc": "是否包含逻辑属性，默认 false",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
       }
     ],
     "agents": [],
