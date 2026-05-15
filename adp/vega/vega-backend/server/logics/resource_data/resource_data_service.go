@@ -191,6 +191,9 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 	case interfaces.ResourceCategoryLogicView:
 		// 准备 sort参数
 		params = rds.prepareSortParams(resource, params)
+		// 准备 output
+		params = rds.prepareOutputFieldsParams(resource, params)
+
 		// 逻辑视图查询数据
 		data, total, err := rds.lvs.Query(ctx, resource, params)
 		if err != nil {
@@ -203,6 +206,11 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		return data, total, nil
 
 	case interfaces.ResourceCategoryFileset:
+		// 准备 sort参数
+		params = rds.prepareSortParams(resource, params)
+		// 准备 output
+		params = rds.prepareOutputFieldsParams(resource, params)
+
 		data, total, err := rds.QueryData(ctx, catalog, resource, params)
 		if err != nil {
 			otellog.LogError(ctx, "Query fileset data failed", err)
