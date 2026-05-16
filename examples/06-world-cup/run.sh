@@ -449,7 +449,10 @@ step_4_render_bkn() {
     echo "  catalog_id=$catalog_id" >&2
 
     local raw body nres
-    raw="$("${KWEAV[@]}" vega catalog resources "$catalog_id" --category table --limit 500 2>&1)"
+    # Note: 0.8.0 dropped /catalogs/:id/resources nested endpoint in favor of the
+    # top-level /resources?catalog_id=... filter. `vega resource list --catalog-id`
+    # SDK call hits the new path on both 0.7.0 and 0.8.0.
+    raw="$("${KWEAV[@]}" vega resource list --catalog-id "$catalog_id" --category table --limit 500 2>&1)"
     body="$(printf '%s' "$raw" | _extract_cli_json)" || { echo "Error parsing vega catalog resources output." >&2; exit 1; }
     nres="$(printf '%s' "$body" | jq '.entries | length')"
     echo "  table resources returned: $nres" >&2
@@ -606,9 +609,15 @@ for tbl, rid in sorted(table_to_rid.items()):
     print(f"{tbl}\t{rid}\t{ef}\t{flag}")
 PY
 
-    # Pre-fetch ALL build tasks once (0.7.0's list endpoint ignores ?resource_id=)
+    # Pre-fetch ALL build tasks once. 0.8.0 moved the route from nested
+    # /resources/buildtask to top-level /build-tasks. Try new path first, fall
+    # back to old. Both ignore the ?resource_id= filter on their respective
+    # versions, so we filter client-side via jq.
     local all_tasks_json
-    all_tasks_json="$("${KWEAV[@]}" call "/api/vega-backend/v1/resources/buildtask?limit=500" 2>/dev/null | _extract_cli_json 2>/dev/null || echo '{"entries":[]}')"
+    all_tasks_json="$("${KWEAV[@]}" call "/api/vega-backend/v1/build-tasks?limit=500" 2>/dev/null | _extract_cli_json 2>/dev/null || true)"
+    if [ -z "$all_tasks_json" ] || ! printf '%s' "$all_tasks_json" | jq -e '.entries // .data' >/dev/null 2>&1; then
+        all_tasks_json="$("${KWEAV[@]}" call "/api/vega-backend/v1/resources/buildtask?limit=500" 2>/dev/null | _extract_cli_json 2>/dev/null || echo '{"entries":[]}')"
+    fi
     [ -z "$all_tasks_json" ] && all_tasks_json='{"entries":[]}'
 
     # For each resource, check if a build task already exists; if not, create + start one.
@@ -639,21 +648,34 @@ PY
             body='{"mode":"batch","build_key_fields":"key_id"}'
         fi
 
+        # Create the task. 0.8.0 uses POST /build-tasks with resource_id in body;
+        # 0.7.0 uses POST /resources/buildtask/<rid>. Try new path first.
         local tid="" create_raw
-        create_raw="$("${KWEAV[@]}" call "/api/vega-backend/v1/resources/buildtask/$rid" -X POST -d "$body" 2>/dev/null || true)"
+        local body_v08
+        body_v08="$(printf '%s' "$body" | jq -c --arg rid "$rid" '. + {resource_id: $rid}')"
+        create_raw="$("${KWEAV[@]}" call "/api/vega-backend/v1/build-tasks" -X POST -d "$body_v08" 2>/dev/null || true)"
         if [ -n "$create_raw" ]; then
-            tid="$(printf '%s' "$create_raw" | _extract_cli_json 2>/dev/null | jq -r '.task_id // empty' 2>/dev/null | head -1 || true)"
+            tid="$(printf '%s' "$create_raw" | _extract_cli_json 2>/dev/null | jq -r '.task_id // .id // empty' 2>/dev/null | head -1 || true)"
         fi
         if [ -z "$tid" ]; then
-            # Likely "构建任务已存在" (existing stopped/failed task) — keep moving.
+            # Fallback to 0.7.0 nested path
+            create_raw="$("${KWEAV[@]}" call "/api/vega-backend/v1/resources/buildtask/$rid" -X POST -d "$body" 2>/dev/null || true)"
+            if [ -n "$create_raw" ]; then
+                tid="$(printf '%s' "$create_raw" | _extract_cli_json 2>/dev/null | jq -r '.task_id // empty' 2>/dev/null | head -1 || true)"
+            fi
+        fi
+        if [ -z "$tid" ]; then
             printf "  %-25s ⊘ create_skipped (existing or API error)\n" "$tbl" >&2
             skipped=$((skipped+1))
             continue
         fi
 
-        # Start the task
-        "${KWEAV[@]}" call "/api/vega-backend/v1/resources/buildtask/$rid/$tid/status" \
-            -X PUT -d '{"status":"running","execute_type":"full"}' >/dev/null 2>&1 || true
+        # Start the task. 0.8.0: POST /build-tasks/<tid>/start; 0.7.0: PUT /resources/buildtask/<rid>/<tid>/status.
+        if ! "${KWEAV[@]}" call "/api/vega-backend/v1/build-tasks/$tid/start" \
+                -X POST -d '{"execute_type":"full"}' >/dev/null 2>&1; then
+            "${KWEAV[@]}" call "/api/vega-backend/v1/resources/buildtask/$rid/$tid/status" \
+                -X PUT -d '{"status":"running","execute_type":"full"}' >/dev/null 2>&1 || true
+        fi
         local kind="keyword"; [ -n "$ef" ] && [ -n "$emodel" ] && kind="vector"
         local warn=""; [ "$risk" = "RISK" ] && warn="  (⚠ may loop on 0.7.0 — agent fallback to SQL)"
         printf "  %-25s create+start (%s)%s\n" "$tbl" "$kind" "$warn" >&2
