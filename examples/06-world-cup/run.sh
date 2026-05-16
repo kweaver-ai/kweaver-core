@@ -72,7 +72,7 @@ Env (see env.sample):
   VEGA_MYSQL_*                    Override DB_* for connector when Vega's network
                                   view differs (HOST/PORT/USER/PASS/DATABASES).
   BKN_PUSH_BRANCH=main            Branch for `kweaver bkn push`.
-  DO_INDEX=1                      Build vega resource indexes after push (default). Set =0 to skip.
+  DO_INDEX=1                      Build vector indexes on 7 entity tables after push (default). Set =0 to skip.
   EMBEDDING_MODEL_NAME=text-embedding-v4-cn   Model_name registered via mf-model-manager
                                   (resolved to model_id at runtime). Unset / not found → keyword only.
   DO_TOOLBOX=1                    Step 6: set 0 to skip toolbox import + publish.
@@ -498,8 +498,7 @@ step_5_push_bkn() {
     if [ "$DRY_RUN" = 1 ]; then
         echo "  plan: kweaver bkn validate $RENDERED_DIR" >&2
         echo "  plan: kweaver bkn push $RENDERED_DIR --branch ${BKN_PUSH_BRANCH:-main}" >&2
-        echo "  plan: create vega resource build-tasks for 27 wc_* resources" >&2
-        echo "  plan:   7 entity tables additionally get embedding_fields (vector)" >&2
+        echo "  plan: create vega vector build-tasks for 7 entity resources (embedding_fields)" >&2
         return 0
     fi
 
@@ -525,12 +524,9 @@ step_5_push_bkn() {
         "${KWEAV[@]}" bkn push "$RENDERED_DIR" --branch "${BKN_PUSH_BRANCH:-main}"
     fi
 
-    # Build vega resource-level indexes (OpenSearch datasets) for all wc_* resources.
-    # Why: ontology-query injects `_score` into the SELECT clause for resource-backed
-    # OTs. MySQL has no `_score` → Error 1054. Vega-backend transparently routes
-    # QueryResourceData to the OpenSearch dataset when one exists (OpenSearch
-    # natively has `_score`), bypassing the bug.
-    # The 7 high-value entity tables also get vector embeddings for fuzzy search.
+    # Build vega resource-level vector indexes (OpenSearch datasets) for the 7
+    # high-value entity tables (awards/tournaments/teams/stadiums/managers/referees/players)
+    # so the LLM can do fuzzy / cross-language name matching at query time.
     if [ "${DO_INDEX:-1}" = 1 ]; then
         _build_vega_indexes
     fi
@@ -603,7 +599,9 @@ runaway_risk = {
     "players", "squads", "manager_appearances", "team_appearances",
 }
 for tbl, rid in sorted(table_to_rid.items()):
-    ef = vec.get(tbl, "")
+    if tbl not in vec:
+        continue
+    ef = vec[tbl]
     flag = "RISK" if tbl in runaway_risk else "OK"
     print(f"{tbl}\t{rid}\t{ef}\t{flag}")
 PY
