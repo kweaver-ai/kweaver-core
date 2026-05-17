@@ -1,0 +1,86 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "vega_sql_execute",
+    "version": "1.0.0",
+    "description": "对 Vega 资源执行 SQL（MySQL/MariaDB/PostgreSQL/OpenSearch DSL）。SQL 中用 {{<resource_id>}} 占位引用 Vega resource。例：SELECT * FROM {{abc123}} LIMIT 5"
+  },
+  "servers": [
+    {"url": "http://vega-backend-svc:13014"}
+  ],
+  "paths": {
+    "/api/vega-backend/in/v1/resources/query": {
+      "post": {
+        "summary": "vega_sql_execute",
+        "operationId": "vega_sql_execute",
+        "description": "对 Vega 资源执行 SQL。",
+        "parameters": [
+          {
+            "name": "x-business-domain",
+            "in": "header",
+            "description": "业务域；与 CLI config 同源。",
+            "required": false,
+            "schema": {"type": "string", "default": "bd_public"}
+          },
+          {
+            "name": "x-account-id",
+            "in": "header",
+            "description": "内部链路账号 ID；与 x-account-type 成对。",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "x-account-type",
+            "in": "header",
+            "description": "内部链路账号类型（user / app）。",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["query", "resource_type"],
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "SQL 字符串。SQL 中用 {{<resource_id>}} 占位引用 Vega resource。例：SELECT * FROM {{abc123}} LIMIT 5"
+                  },
+                  "resource_type": {
+                    "type": "string",
+                    "description": "目标 connector 类型；取值之一：mysql / mariadb / postgresql / opensearch"
+                  },
+                  "stream_size": {
+                    "type": "integer",
+                    "description": "可选；批流大小（范围 100-10000，默认 10000）"
+                  },
+                  "query_timeout": {
+                    "type": "integer",
+                    "description": "可选；查询超时秒数（范围 1-3600，默认 60）"
+                  },
+                  "query_id": {
+                    "type": "string",
+                    "description": "可选；游标会话 id（分页/续传）"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "查询结果",
+            "content": {
+              "application/json": {
+                "schema": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

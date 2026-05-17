@@ -1,0 +1,403 @@
+{
+  "input": {
+    "fields": [
+      {
+        "name": "user_input",
+        "type": "string",
+        "desc": ""
+      },
+      {
+        "name": "query",
+        "type": "string",
+        "desc": ""
+      },
+      {
+        "name": "history",
+        "type": "object",
+        "desc": ""
+      },
+      {
+        "name": "header",
+        "type": "object",
+        "desc": ""
+      },
+      {
+        "name": "self_config",
+        "type": "object",
+        "desc": ""
+      },
+      {
+        "name": "tool",
+        "type": "object",
+        "desc": ""
+      }
+    ],
+    "rewrite": null,
+    "augment": null
+  },
+  "system_prompt": "你是世界杯数据分析助手。知识来自网络 worldcup_vega_catalog_bkn：赛程、球队、球员、进球、小组积分、奖项等。优先用对象类查询与关系，引用具体届次、球队、球员名称。\n\n【语言与查询】底层数据与字段取值以英文为主。用户若以中文称呼球队、球员、国家、届次或奖项等，在调用检索/查询工具前须先对齐为英文名（或与知识网络一致的规范英文名）：可先 search_schema / 语义检索再结合实例核对，不得在 condition、关键词或关系路径中直接使用未经验证的中文名称当作库内取值。\n回答用户时可用中文叙述，但对工具传入的字符串与过滤条件应尽量使用英文名。\n\n【检索】已启用 Context Loader 工具箱（search_schema、query_object_instance、query_instance_subgraph、get_action_info、get_logic_properties_values、find_skills 等）。请先按需调用工具获取知识网络中的事实与关系，再结合结果回答；不要编造未经验证的赛程/积分/球员数据。",
+  "dolphin": "",
+  "mode": "default",
+  "is_dolphin_mode": 0,
+  "pre_dolphin": null,
+  "post_dolphin": null,
+  "data_source": {
+    "kg": null,
+    "doc": null,
+    "metric": null,
+    "kn_entry": null,
+    "knowledge_network": [
+      {
+        "knowledge_network_id": "worldcup_vega_catalog_bkn",
+        "object_types": null
+      }
+    ],
+    "advanced_config": null
+  },
+  "skills": {
+    "tools": [
+      {
+        "tool_id": "52b35175-cee3-41ea-91c0-1d70e8371f9c",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-business-domain",
+            "input_type": "string",
+            "input_desc": "业务域",
+            "map_type": "var",
+            "map_value": "header.x-business-domain",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型：user / app / anonymous",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户 ID，用于内部服务调用",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "response_format",
+            "input_type": "string",
+            "input_desc": "响应格式：json 或 toon，默认 json",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "retrieval_config",
+            "input_type": "object",
+            "input_desc": "召回配置参数，用于控制不同类型的召回场景（概念召回、语义实例召回、属性过滤）。如果不提供，将使用系统默认配置。",
+            "children": [
+              {
+                "input_name": "concept_retrieval",
+                "input_type": "object",
+                "input_desc": "概念召回/概念流程配置参数（原最外层参数已收敛到此处）",
+                "children": [
+                  {
+                    "input_name": "schema_brief",
+                    "input_type": "boolean",
+                    "input_desc": "概念召回时是否返回精简schema。True仅返回必要字段（概念ID/名称/关系source&target），不返回大字段。",
+                    "map_type": "fixedValue",
+                    "map_value": "false",
+                    "enable": true
+                  },
+                  {
+                    "input_name": "top_k",
+                    "input_type": "integer",
+                    "input_desc": "概念召回返回最相关关系类型数量（对象类型会随关系类型自动过滤）。",
+                    "map_type": "auto",
+                    "map_value": "",
+                    "enable": true
+                  },
+                  {
+                    "input_name": "include_sample_data",
+                    "input_type": "boolean",
+                    "input_desc": "是否获取对象类型的样例数据。True会为每个召回对象类型获取一条样例数据。",
+                    "map_type": "auto",
+                    "map_value": "",
+                    "enable": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "input_name": "enable_rerank",
+            "input_type": "boolean",
+            "input_desc": "是否启用重排序。如果为true，则启用重排序。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "指定的知识网络ID，必须传递（从 Agent data_source.knowledge_network[0] 注入）",
+            "map_type": "var",
+            "map_value": "self_config.data_source.knowledge_network[0].knowledge_network_id",
+            "enable": true
+          },
+          {
+            "input_name": "only_schema",
+            "input_type": "boolean",
+            "input_desc": "是否只召回概念（schema），不召回语义实例。如果为True，则只返回object_types、relation_types和action_types，不返回nodes。",
+            "map_type": "fixedValue",
+            "map_value": "true",
+            "enable": true
+          },
+          {
+            "input_name": "query",
+            "input_type": "string",
+            "input_desc": "用户查询问题或关键词，多个关键词之间用空格隔开",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      },
+      {
+        "tool_id": "__VEGA_TOOL_ID__",
+        "tool_box_id": "__VEGA_BOX_ID__",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-business-domain",
+            "input_type": "string",
+            "input_desc": "业务域",
+            "map_type": "var",
+            "map_value": "header.x-business-domain",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户ID",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型 user/app",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "query",
+            "input_type": "string",
+            "input_desc": "SQL；用 {{<resource_id>}} 占位引用 Vega resource。从 search_schema 返回的 data_source.id 拿到 resource_id。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "resource_type",
+            "input_type": "string",
+            "input_desc": "connector 类型；本网络全部为 mysql",
+            "map_type": "fixedValue",
+            "map_value": "mysql",
+            "enable": true
+          },
+          {
+            "input_name": "stream_size",
+            "input_type": "integer",
+            "input_desc": "可选 100-10000",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "query_timeout",
+            "input_type": "integer",
+            "input_desc": "可选 1-3600 秒",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "query_id",
+            "input_type": "string",
+            "input_desc": "可选游标 id",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      },
+      {
+        "tool_id": "f46fa5df-f371-447f-8451-2d2f34cc78e9",
+        "tool_box_id": "e521d454-4a0b-4dc9-8a28-d0986de1cef9",
+        "tool_timeout": 300,
+        "tool_input": [
+          {
+            "input_name": "x-business-domain",
+            "input_type": "string",
+            "input_desc": "业务域",
+            "map_type": "var",
+            "map_value": "header.x-business-domain",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-id",
+            "input_type": "string",
+            "input_desc": "账户 ID",
+            "map_type": "var",
+            "map_value": "header.x-account-id",
+            "enable": true
+          },
+          {
+            "input_name": "x-account-type",
+            "input_type": "string",
+            "input_desc": "账户类型 user/app",
+            "map_type": "var",
+            "map_value": "header.x-account-type",
+            "enable": true
+          },
+          {
+            "input_name": "kn_id",
+            "input_type": "string",
+            "input_desc": "知识网络 ID（从 Agent data_source 注入）",
+            "map_type": "var",
+            "map_value": "self_config.data_source.knowledge_network[0].knowledge_network_id",
+            "enable": true
+          },
+          {
+            "input_name": "ot_id",
+            "input_type": "string",
+            "input_desc": "对象类 ID。先调 search_schema 拿 concept_id。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "limit",
+            "input_type": "integer",
+            "input_desc": "返回数量，默认 10，范围 1-100",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "properties",
+            "input_type": "array",
+            "input_desc": "指定返回的属性字段；默认全部。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "sort",
+            "input_type": "array",
+            "input_desc": "排序字段数组，例如 [{\"field\":\"year\",\"direction\":\"desc\"}]",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "condition",
+            "input_type": "object",
+            "input_desc": "过滤条件，含 field/operation/value/value_from。value_from 仅支持 const 且必须与 value 同传。",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": true
+          },
+          {
+            "input_name": "need_total",
+            "input_type": "boolean",
+            "input_desc": "是否返回总数，默认 false",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "response_format",
+            "input_type": "string",
+            "input_desc": "json 或 toon，默认 json",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          },
+          {
+            "input_name": "include_logic_params",
+            "input_type": "boolean",
+            "input_desc": "是否包含逻辑属性，默认 false",
+            "map_type": "auto",
+            "map_value": "",
+            "enable": false
+          }
+        ],
+        "intervention": false,
+        "intervention_confirmation_message": "",
+        "result_process_strategies": null
+      }
+    ],
+    "agents": [],
+    "mcps": [],
+    "skills": null
+  },
+  "llms": [
+    {
+      "is_default": true,
+      "llm_config": {
+        "id": "2053831336808026112",
+        "name": "qwen-plus",
+        "model_type": "llm",
+        "temperature": 0.7,
+        "top_p": 1,
+        "top_k": 1,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "max_tokens": 4096
+      }
+    }
+  ],
+  "is_data_flow_set_enabled": 0,
+  "opening_remark_config": null,
+  "preset_questions": null,
+  "output": {
+    "variables": {
+      "answer_var": "answer",
+      "doc_retrieval_var": "doc_retrieval_res",
+      "graph_retrieval_var": "graph_retrieval_res",
+      "related_questions_var": "related_questions",
+      "other_vars": null,
+      "middle_output_vars": null
+    },
+    "default_format": "markdown"
+  },
+  "built_in_can_edit_fields": null,
+  "memory": null,
+  "related_question": null,
+  "plan_mode": null,
+  "react_config": null,
+  "conversation_history_config": {
+    "strategy": "count",
+    "count_params": {
+      "count_limit": 10
+    },
+    "time_window_params": null,
+    "token_limit_params": null
+  },
+  "metadata": {
+    "config_tpl_version": "v1",
+    "config_last_set_timestamp": 1778509133151601700
+  }
+}
